@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<releases>
+  <release versionCode="1" versionName="1.0.0">
+    <locale code="fr-FR">Première version.</locale>
+    <locale code="en-US">First release.</locale>
+  </release>
+</releases>

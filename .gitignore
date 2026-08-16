@@ -1,0 +1,19 @@
+# Built
+/.gradle/
+**/build/
+/local.properties
+*.iml
+.idea/
+.DS_Store
+captures/
+.cxx/
+
+# geoking-tools
+scripts/.keystore-credentials
+*.keystore
+google-services.json
+playstore/whatsnew/whatsnew-*
+
+# Secrets
+.env
+*.jks

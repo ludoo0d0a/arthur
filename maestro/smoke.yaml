@@ -1,0 +1,8 @@
+appId: fr.geoking.arthur
+---
+- launchApp
+- assertVisible:
+    id: control_plane_title
+- assertVisible: "Arthur Control Plane"
+- tapOn:
+    id: start_ambient

@@ -3,8 +3,10 @@ package fr.geoking.arthur.phone
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,17 +25,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import fr.geoking.arthur.R
+import fr.geoking.arthur.fractal.FractalEffectCanvas
+import fr.geoking.arthur.fractal.FractalQuality
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.shared.source.BundledPackSource
-import fr.geoking.arthur.fractal.FractalEffectCanvas
 import fr.geoking.arthur.tv.AmbientActivity
-import androidx.compose.foundation.layout.Box
 import org.koin.android.ext.android.inject
 
 class MainActivity : ComponentActivity() {
@@ -60,19 +65,41 @@ class MainActivity : ComponentActivity() {
 fun ControlPlaneScreen(
     contentEngine: ContentEngine,
     onStartAmbient: () -> Unit,
+    initialCatalog: List<Artwork>? = null,
+    initialSelected: Artwork? = null,
+    showFractalPreview: Boolean = true,
 ) {
-    var catalog by remember { mutableStateOf<List<Artwork>>(emptyList()) }
-    var selected by remember { mutableStateOf<Artwork?>(null) }
+    var catalog by remember { mutableStateOf(initialCatalog.orEmpty()) }
+    var selected by remember { mutableStateOf(initialSelected) }
 
-    LaunchedEffect(Unit) {
-        catalog = contentEngine.catalog(
-            PreparedRotation(
-                sourceIds = listOf(BundledPackSource.ID),
-                artworkIds = emptyList(),
-            ),
-        )
+    LaunchedEffect(contentEngine, initialCatalog) {
+        if (initialCatalog == null) {
+            catalog = contentEngine.catalog(
+                PreparedRotation(
+                    sourceIds = listOf(BundledPackSource.ID),
+                    artworkIds = emptyList(),
+                ),
+            )
+        }
     }
 
+    ControlPlaneContent(
+        catalog = catalog,
+        selected = selected,
+        onSelect = { selected = it },
+        onStartAmbient = onStartAmbient,
+        showFractalPreview = showFractalPreview,
+    )
+}
+
+@Composable
+fun ControlPlaneContent(
+    catalog: List<Artwork>,
+    selected: Artwork?,
+    onSelect: (Artwork) -> Unit,
+    onStartAmbient: () -> Unit,
+    showFractalPreview: Boolean = true,
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -81,12 +108,12 @@ fun ControlPlaneScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
-            text = "Arthur Control Plane",
+            text = stringResource(R.string.control_plane_title),
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.testTag("control_plane_title"),
         )
         Text(
-            text = "Configure sources and preview Artwork for Auto / TV canvases.",
+            text = stringResource(R.string.control_plane_subtitle),
             style = MaterialTheme.typography.bodyMedium,
         )
         LazyColumn(
@@ -100,25 +127,26 @@ fun ControlPlaneScreen(
                     text = "${art.title} · ${art.kind}",
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { selected = art }
+                        .clickable { onSelect(art) }
                         .padding(vertical = 12.dp)
                         .testTag("artwork_${art.id}"),
                     style = MaterialTheme.typography.titleMedium,
                 )
             }
         }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(160.dp)
-                .testTag("fractal_preview"),
-        ) {
-            FractalEffectCanvas(isActive = true, quality = fr.geoking.arthur.fractal.FractalQuality.Low)
+        if (showFractalPreview) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp)
+                    .testTag("fractal_preview"),
+            ) {
+                FractalEffectCanvas(isActive = true, quality = FractalQuality.Low)
+            }
         }
         selected?.let {
-
             Text(
-                text = "Preview: ${it.title}",
+                text = stringResource(R.string.preview_label, it.title),
                 modifier = Modifier.testTag("preview_title"),
                 style = MaterialTheme.typography.titleLarge,
             )
@@ -129,8 +157,29 @@ fun ControlPlaneScreen(
                 .align(Alignment.CenterHorizontally)
                 .testTag("start_ambient"),
         ) {
-            Text("Start ambient")
+            Text(stringResource(R.string.start_ambient))
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+    }
+}
+
+@Composable
+fun AmbientScreenContent(
+    title: String,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFF1A1A2E))
+            .testTag("ambient_screen"),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = title,
+            color = Color.White,
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.testTag("ambient_title"),
+        )
     }
 }

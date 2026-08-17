@@ -4,11 +4,12 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.service.dreams.DreamService
-import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.activity.ComponentActivity
-import androidx.core.content.ContextCompat
+import androidx.activity.compose.setContent
+import androidx.compose.material3.MaterialTheme
 import fr.geoking.arthur.R
+import fr.geoking.arthur.phone.AmbientScreenContent
 import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.shared.source.BundledPackSource
@@ -29,20 +30,11 @@ class AmbientActivity : ComponentActivity() {
                 ),
             ).firstOrNull()?.title ?: getString(R.string.app_name)
         }
-        val tv = TextView(this).apply {
-            text = title
-            textSize = 28f
-            setTextColor(ContextCompat.getColor(context, android.R.color.white))
-            setBackgroundColor(0xFF1A1A2E.toInt())
-            setPadding(48, 48, 48, 48)
-            tag = "ambient_title"
+        setContent {
+            MaterialTheme {
+                AmbientScreenContent(title = title)
+            }
         }
-        setContentView(
-            FrameLayout(this).apply {
-                setBackgroundColor(0xFF1A1A2E.toInt())
-                addView(tv)
-            },
-        )
     }
 
     companion object {

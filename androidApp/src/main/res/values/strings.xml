@@ -2,6 +2,9 @@
 <resources>
     <string name="app_name">Arthur</string>
     <string name="control_plane_title">Arthur Control Plane</string>
+    <string name="control_plane_subtitle">Configure sources and preview Artwork for Auto / TV canvases.</string>
     <string name="start_ambient">Start ambient</string>
+    <string name="preview_label">Preview: %1$s</string>
+    <string name="ambient_title">Ambient</string>
     <string name="dream_description">Arthur ambient art</string>
 </resources>

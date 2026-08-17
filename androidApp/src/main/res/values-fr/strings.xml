@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Arthur</string>
+    <string name="control_plane_title">Arthur — Plan de contrôle</string>
+    <string name="control_plane_subtitle">Configurez les sources et prévisualisez les œuvres pour Auto / TV.</string>
+    <string name="start_ambient">Démarrer l’ambient</string>
+    <string name="preview_label">Aperçu : %1$s</string>
+    <string name="ambient_title">Ambient</string>
+    <string name="dream_description">Art ambient Arthur</string>
+</resources>

@@ -2,7 +2,6 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.kotlinAndroid)
     alias(libs.plugins.composeCompiler)
-    // Applied only when google-services.json is present (see bottom).
 }
 
 android {
@@ -27,6 +26,10 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
     }
 
     packaging {
@@ -69,6 +72,81 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.android)
     testImplementation(libs.ktor.server.cio)
     testImplementation(libs.ktor.client.okhttp)
+    // Phone @Preview screenshots (Robolectric + Roborazzi) — same stack as Scora
+    testImplementation(libs.robolectric)
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.roborazzi.compose)
+    testImplementation(libs.androidx.activity.compose)
+    testImplementation(libs.compose.ui.test.junit4)
+    testImplementation(libs.compose.ui.test.manifest)
+}
+
+val phoneScreenshotOutputDir =
+    rootProject.layout.projectDirectory
+        .dir("screenshots/phone")
+        .asFile.absolutePath
+
+val phoneFramedScreenshotOutputDir =
+    rootProject.layout.projectDirectory
+        .dir("screenshots/phone/framed")
+        .asFile.absolutePath
+
+fun resolveScreenshotLocales(): String {
+    val raw = (findProperty("screenshotLocales") as String?)?.trim().orEmpty()
+    return when {
+        raw.equals("all", ignoreCase = true) -> "en,fr"
+        raw.isNotEmpty() -> raw
+        else -> "en"
+    }
+}
+
+afterEvaluate {
+    val screenshotLocales = resolveScreenshotLocales()
+    val screenshotTasks = gradle.startParameter.taskNames
+    val framedOnly = screenshotTasks.any { it.contains("generatePhoneScreenshotsFramed") }
+    val screenOnly =
+        !framedOnly && screenshotTasks.any { it.contains("generatePhoneScreenshots") }
+
+    if (framedOnly) {
+        tasks.named<Test>("testDebugUnitTest").configure {
+            filter {
+                includeTestsMatching("fr.geoking.arthur.preview.PhonePreviewFramedScreenshotTest")
+            }
+            systemProperty("screenshot.outputDir", phoneFramedScreenshotOutputDir)
+            systemProperty("screenshot.locales", screenshotLocales)
+            systemProperty("screenshot.baseQualifiers", "w439dp-h919dp-xxhdpi")
+            systemProperty("roborazzi.test.record", "true")
+            systemProperty("roborazzi.test.compare", "false")
+        }
+    }
+    if (screenOnly) {
+        tasks.named<Test>("testDebugUnitTest").configure {
+            filter {
+                includeTestsMatching("fr.geoking.arthur.preview.PhonePreviewScreenshotTest")
+            }
+            systemProperty("screenshot.outputDir", phoneScreenshotOutputDir)
+            systemProperty("screenshot.locales", screenshotLocales)
+            systemProperty("screenshot.baseQualifiers", "w411dp-h891dp-xxhdpi")
+            systemProperty("roborazzi.test.record", "true")
+            systemProperty("roborazzi.test.compare", "false")
+        }
+    }
+}
+
+tasks.register("generatePhoneScreenshots") {
+    group = "screenshots"
+    description =
+        "Renders phone key screens to screenshots/phone/{lang}/ " +
+            "(screen-only; Robolectric + Roborazzi; -PscreenshotLocales=en,fr|all)"
+    dependsOn("testDebugUnitTest")
+}
+
+tasks.register("generatePhoneScreenshotsFramed") {
+    group = "screenshots"
+    description =
+        "Renders phone key screens to screenshots/phone/framed/{lang}/ " +
+            "(device chassis; Robolectric + Roborazzi; -PscreenshotLocales=en,fr|all)"
+    dependsOn("testDebugUnitTest")
 }
 
 val googleServices = file("google-services.json")

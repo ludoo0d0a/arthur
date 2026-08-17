@@ -36,3 +36,15 @@ export JAVA_HOME="$HOME/.sdkman/candidates/java/21.0.2-open"
 - Hosting: https://arthur-geoking.web.app
 - Privacy: https://arthur-geoking.web.app/privacy.html
 - Firebase project: `arthur-geoking`
+
+## Screenshots (Roborazzi)
+
+Same stack as Scora (Robolectric + Roborazzi 1.69.0, 411×891 dp @ xxhdpi):
+
+```bash
+export JAVA_HOME="$HOME/.sdkman/candidates/java/21.0.2-open"
+./gradlew :androidApp:generatePhoneScreenshots -PscreenshotLocales=en,fr
+./gradlew :androidApp:generatePhoneScreenshotsFramed -PscreenshotLocales=en,fr
+```
+
+Output: `screenshots/phone/{lang}/` and `screenshots/phone/framed/{lang}/`.

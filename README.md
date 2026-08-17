@@ -30,3 +30,9 @@ export JAVA_HOME="$HOME/.sdkman/candidates/java/21.0.2-open"
 ```bash
 ../geoking-tools/templates/bootstrap-new-app.sh --package fr.geoking.arthur --name Arthur
 ```
+
+## Privacy / web
+
+- Hosting: https://arthur-geoking.web.app
+- Privacy: https://arthur-geoking.web.app/privacy.html
+- Firebase project: `arthur-geoking`

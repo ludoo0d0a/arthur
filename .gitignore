@@ -17,3 +17,4 @@ playstore/whatsnew/whatsnew-*
 # Secrets
 .env
 *.jks
+.firebase/

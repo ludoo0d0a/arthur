@@ -1,7 +1,9 @@
 package fr.geoking.arthur
 
 import android.app.Application
-import fr.geoking.arthur.shared.domain.FakePremiumEntitlement
+import fr.geoking.arthur.billing.FakePurchasesGateway
+import fr.geoking.arthur.billing.PurchasesGateway
+import fr.geoking.arthur.billing.RevenueCatPremiumEntitlement
 import fr.geoking.arthur.shared.domain.PremiumEntitlement
 import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.shared.source.BundledPackSource
@@ -20,7 +22,9 @@ class ArthurApp : Application() {
 }
 
 val appModule = module {
-    single<PremiumEntitlement> { FakePremiumEntitlement(isPremium = false) }
+    single { FakePurchasesGateway(premium = false) }
+    single<PurchasesGateway> { get<FakePurchasesGateway>() }
+    single<PremiumEntitlement> { RevenueCatPremiumEntitlement(get()) }
     single { BundledPackSource() }
     single {
         ContentEngine(

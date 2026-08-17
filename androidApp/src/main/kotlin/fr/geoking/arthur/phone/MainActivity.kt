@@ -31,7 +31,9 @@ import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.shared.source.BundledPackSource
+import fr.geoking.arthur.fractal.FractalEffectCanvas
 import fr.geoking.arthur.tv.AmbientActivity
+import androidx.compose.foundation.layout.Box
 import org.koin.android.ext.android.inject
 
 class MainActivity : ComponentActivity() {
@@ -105,7 +107,16 @@ fun ControlPlaneScreen(
                 )
             }
         }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(160.dp)
+                .testTag("fractal_preview"),
+        ) {
+            FractalEffectCanvas(isActive = true, quality = fr.geoking.arthur.fractal.FractalQuality.Low)
+        }
         selected?.let {
+
             Text(
                 text = "Preview: ${it.title}",
                 modifier = Modifier.testTag("preview_title"),

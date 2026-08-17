@@ -18,3 +18,4 @@ playstore/whatsnew/whatsnew-*
 .env
 *.jks
 .firebase/
+.wrangler/

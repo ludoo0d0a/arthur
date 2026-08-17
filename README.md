@@ -33,9 +33,13 @@ export JAVA_HOME="$HOME/.sdkman/candidates/java/21.0.2-open"
 
 ## Privacy / web
 
-- Hosting: https://arthur-geoking.web.app
-- Privacy: https://arthur-geoking.web.app/privacy.html
-- Firebase project: `arthur-geoking`
+Static site in `website/`, published on Cloudflare (`wrangler.jsonc`, no build step). Pushes to `main` that touch `website/` trigger `.github/workflows/cloudflare-pages.yml`.
+
+- Hosting: https://arthur.geoking.fr
+- Privacy: https://arthur.geoking.fr/privacy.html
+- Firebase project (Analytics / Crashlytics only): `arthur-geoking`
+
+Local preview: `npx wrangler dev`. Manual deploy: `npx wrangler deploy`.
 
 ## Screenshots (Roborazzi)
 

@@ -1,0 +1,14 @@
+{
+  "name": "arthur",
+  "account_id": "04efa4000e37d6c1df300af5da041485",
+  "compatibility_date": "2026-08-17",
+  "assets": {
+    "directory": "./website"
+  },
+  "routes": [
+    {
+      "pattern": "arthur.geoking.fr",
+      "custom_domain": true
+    }
+  ]
+}

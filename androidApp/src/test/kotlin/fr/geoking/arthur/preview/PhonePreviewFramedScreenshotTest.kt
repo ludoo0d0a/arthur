@@ -1,10 +1,9 @@
 package fr.geoking.arthur.preview
 
 import android.app.Application
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import fr.geoking.arthur.phone.AmbientScreenContent
 import fr.geoking.arthur.phone.ControlPlaneContent
+import fr.geoking.arthur.phone.theme.ArthurTheme
 import fr.geoking.arthur.shared.source.BundledPackSource
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -33,16 +32,14 @@ class PhonePreviewFramedScreenshotTest {
             fileName = "control_plane.png",
             withFrame = true,
         ) {
-            MaterialTheme {
-                Surface {
-                    ControlPlaneContent(
-                        catalog = catalog,
-                        selected = catalog.first(),
-                        onSelect = {},
-                        onStartAmbient = {},
-                        showFractalPreview = false,
-                    )
-                }
+            ArthurTheme {
+                ControlPlaneContent(
+                    catalog = catalog,
+                    selected = catalog.first(),
+                    onSelect = {},
+                    onStartAmbient = {},
+                    showFractalPreview = false,
+                )
             }
         }
     }
@@ -53,7 +50,7 @@ class PhonePreviewFramedScreenshotTest {
             fileName = "ambient.png",
             withFrame = true,
         ) {
-            MaterialTheme {
+            ArthurTheme {
                 AmbientScreenContent(title = catalog.first().title)
             }
         }

@@ -1,11 +1,9 @@
 package fr.geoking.arthur.preview
 
 import android.app.Application
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.ui.Modifier
 import fr.geoking.arthur.phone.AmbientScreenContent
 import fr.geoking.arthur.phone.ControlPlaneContent
+import fr.geoking.arthur.phone.theme.ArthurTheme
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.source.BundledPackSource
@@ -33,16 +31,14 @@ class PhonePreviewScreenshotTest {
     @Test
     fun control_plane() {
         PhonePreviewScreenshotCapture.capture("control_plane.png") {
-            MaterialTheme {
-                Surface(modifier = Modifier) {
-                    ControlPlaneContent(
-                        catalog = catalog,
-                        selected = catalog.first(),
-                        onSelect = {},
-                        onStartAmbient = {},
-                        showFractalPreview = false,
-                    )
-                }
+            ArthurTheme {
+                ControlPlaneContent(
+                    catalog = catalog,
+                    selected = catalog.first(),
+                    onSelect = {},
+                    onStartAmbient = {},
+                    showFractalPreview = false,
+                )
             }
         }
     }
@@ -50,22 +46,20 @@ class PhonePreviewScreenshotTest {
     @Test
     fun control_plane_sources() {
         PhonePreviewScreenshotCapture.capture("control_plane_sources.png") {
-            MaterialTheme {
-                Surface {
-                    ControlPlaneContent(
-                        catalog = catalog + Artwork(
-                            id = "demo-fractal",
-                            title = "Mandelbrot preset",
-                            attribution = "Arthur",
-                            sourceId = BundledPackSource.ID,
-                            kind = ArtworkKind.FractalPreset,
-                        ),
-                        selected = null,
-                        onSelect = {},
-                        onStartAmbient = {},
-                        showFractalPreview = false,
-                    )
-                }
+            ArthurTheme {
+                ControlPlaneContent(
+                    catalog = catalog + Artwork(
+                        id = "demo-fractal",
+                        title = "Mandelbrot preset",
+                        attribution = "Arthur",
+                        sourceId = BundledPackSource.ID,
+                        kind = ArtworkKind.FractalPreset,
+                    ),
+                    selected = null,
+                    onSelect = {},
+                    onStartAmbient = {},
+                    showFractalPreview = false,
+                )
             }
         }
     }
@@ -73,7 +67,7 @@ class PhonePreviewScreenshotTest {
     @Test
     fun ambient() {
         PhonePreviewScreenshotCapture.capture("ambient.png") {
-            MaterialTheme {
+            ArthurTheme {
                 AmbientScreenContent(title = catalog.first().title)
             }
         }

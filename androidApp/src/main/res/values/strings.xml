@@ -7,4 +7,15 @@
     <string name="preview_label">Preview: %1$s</string>
     <string name="ambient_title">Ambient</string>
     <string name="dream_description">Arthur ambient art</string>
+    <string name="rotation_section">Prepared rotation</string>
+    <string name="fractal_hero_label">Live fractal canvas</string>
+    <string name="gallery_hero_label">Gallery canvas</string>
+    <string name="selected_artwork">Selected</string>
+    <string name="kind_painting">Painting</string>
+    <string name="kind_sculpture">Sculpture</string>
+    <string name="kind_photo">Photo</string>
+    <string name="kind_fractal">Fractal</string>
+    <string name="kind_custom_fractal">Custom fractal</string>
+    <string name="kind_genart">Genart</string>
+    <string name="kind_personal">Personal photo</string>
 </resources>

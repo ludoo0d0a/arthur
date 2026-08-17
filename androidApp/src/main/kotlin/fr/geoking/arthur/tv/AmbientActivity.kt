@@ -6,10 +6,12 @@ import android.os.Bundle
 import android.service.dreams.DreamService
 import android.widget.TextView
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
-import androidx.compose.material3.MaterialTheme
+import androidx.activity.enableEdgeToEdge
 import fr.geoking.arthur.R
 import fr.geoking.arthur.phone.AmbientScreenContent
+import fr.geoking.arthur.phone.theme.ArthurTheme
 import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.shared.source.BundledPackSource
@@ -22,6 +24,10 @@ class AmbientActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+        )
         val title = runBlocking {
             contentEngine.catalog(
                 PreparedRotation(
@@ -31,7 +37,7 @@ class AmbientActivity : ComponentActivity() {
             ).firstOrNull()?.title ?: getString(R.string.app_name)
         }
         setContent {
-            MaterialTheme {
+            ArthurTheme {
                 AmbientScreenContent(title = title)
             }
         }

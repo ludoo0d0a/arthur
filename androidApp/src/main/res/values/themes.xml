@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Arthur" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.Arthur" parent="android:Theme.Material.NoActionBar">
+        <item name="android:colorBackground">@color/arthur_background</item>
+        <item name="android:statusBarColor">@color/arthur_background</item>
+        <item name="android:navigationBarColor">@color/arthur_background</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowBackground">@color/arthur_splash</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+    </style>
 </resources>

@@ -131,6 +131,13 @@ afterEvaluate {
             systemProperty("roborazzi.test.compare", "false")
         }
     }
+    if (!framedOnly && !screenOnly) {
+        tasks.named<Test>("testDebugUnitTest").configure {
+            filter {
+                excludeTestsMatching("fr.geoking.arthur.preview.*")
+            }
+        }
+    }
 }
 
 tasks.register("generatePhoneScreenshots") {

@@ -1,7 +1,30 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.kotlinAndroid)
     alias(libs.plugins.composeCompiler)
+}
+
+val localProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+
+fun secret(key: String): String {
+    val keys = listOf(key, key.lowercase(), key.uppercase()).distinct()
+    for (k in keys) {
+        val v = localProps.getProperty(k)
+            ?: project.findProperty(k)?.toString()
+            ?: System.getenv(k)
+        if (!v.isNullOrBlank()) return v
+    }
+    return ""
+}
+
+val versionProps = Properties().apply {
+    val f = rootProject.file("playstore/version.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
 }
 
 android {
@@ -12,10 +35,12 @@ android {
         applicationId = "fr.geoking.arthur"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = (System.getenv("VERSION_CODE") ?: versionProps.getProperty("versionCode") ?: "1").toInt()
+        versionName = (System.getenv("VERSION_NAME")?.takeIf { it.isNotBlank() }
+            ?: versionProps.getProperty("versionName") ?: "1.0").removePrefix("v")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField("String", "REVENUECAT_API_KEY", "\"${project.findProperty("REVENUECAT_API_KEY") ?: ""}\"")
+        buildConfigField("String", "REVENUECAT_API_KEY", "\"${secret("REVENUECAT_API_KEY")}\"")
+        buildConfigField("String", "WEB_CLIENT_ID", "\"${secret("WEB_CLIENT_ID")}\"")
     }
 
     buildFeatures {
@@ -23,9 +48,29 @@ android {
         buildConfig = true
     }
 
+    val keystorePath = secret("KEYSTORE_FILE")
+    signingConfigs {
+        create("release") {
+            if (keystorePath.isNotBlank()) {
+                storeFile = file(keystorePath)
+                storePassword = secret("KEYSTORE_PASSWORD")
+                keyAlias = secret("KEY_ALIAS")
+                keyPassword = secret("KEY_PASSWORD")
+            }
+        }
+    }
+
+    buildTypes {
+        getByName("release") {
+            if (keystorePath.isNotBlank()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
+    }
+
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
     testOptions {
@@ -38,7 +83,7 @@ android {
 }
 
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(21)
 }
 
 dependencies {

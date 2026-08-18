@@ -14,5 +14,8 @@ jobs:
   build:
     uses: ludoo0d0a/geoking-ci/.github/workflows/android-ci.yml@main
     with:
-      artifact_name: MYAPP-debug-apk   # ← renommer (ex. scora-debug-apk)
+      artifact_name: arthur-debug-apk
+      gradle_module: ':androidApp'
+      apk_glob: 'androidApp/build/outputs/apk/debug/*.apk'
+      google_services_path: 'androidApp/google-services.json'
     secrets: inherit

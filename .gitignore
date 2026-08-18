@@ -10,9 +10,12 @@ captures/
 
 # geoking-tools
 scripts/.keystore-credentials
+scripts/.play-service-account.json
+scripts/.adb-wireless
 *.keystore
 google-services.json
-playstore/whatsnew/whatsnew-*
+playstore/whatsnew/
+/secrets/*.json
 
 # Secrets
 .env

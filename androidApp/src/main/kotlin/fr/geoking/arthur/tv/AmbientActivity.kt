@@ -10,8 +10,8 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import fr.geoking.arthur.R
-import fr.geoking.arthur.phone.AmbientScreenContent
 import fr.geoking.arthur.phone.theme.ArthurTheme
+import fr.geoking.arthur.ui.screens.AmbientScreenContent
 import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.shared.source.BundledPackSource

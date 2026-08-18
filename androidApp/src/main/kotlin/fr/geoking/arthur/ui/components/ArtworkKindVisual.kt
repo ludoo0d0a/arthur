@@ -1,4 +1,4 @@
-package fr.geoking.arthur.phone
+package fr.geoking.arthur.ui.components
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes

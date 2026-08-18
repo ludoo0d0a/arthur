@@ -1,9 +1,9 @@
 package fr.geoking.arthur.preview
 
 import android.app.Application
-import fr.geoking.arthur.phone.AmbientScreenContent
-import fr.geoking.arthur.phone.ControlPlaneContent
 import fr.geoking.arthur.phone.theme.ArthurTheme
+import fr.geoking.arthur.ui.screens.AmbientScreenContent
+import fr.geoking.arthur.ui.screens.ControlPlaneContent
 import fr.geoking.arthur.shared.source.BundledPackSource
 import org.junit.Test
 import org.junit.runner.RunWith

@@ -4,17 +4,19 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Key geometry stays inside the ~66dp adaptive safe zone. -->
-    <!-- Canvas / rounded square -->
+    <!-- Material adaptive safe zone ~66dp; triangle A monogram on violet. -->
     <path
-        android:fillColor="#F4C84A"
-        android:pathData="M54,44 h24 a8,8 0 0,1 8,8 v24 a8,8 0 0,1 -8,8 h-24 a8,8 0 0,1 -8,-8 v-24 a8,8 0 0,1 8,-8 z" />
-    <!-- Paint disc -->
+        android:fillColor="#5EEAD4"
+        android:fillAlpha="0.22"
+        android:pathData="M54,22 L86,86 L22,86 Z" />
     <path
-        android:fillColor="#E85A48"
-        android:pathData="M24,48 a20,20 0 1,0 40,0 a20,20 0 1,0 -40,0" />
-    <!-- Accent dab -->
+        android:fillColor="#C4B5FD"
+        android:pathData="M54,28 L80,82 L28,82 Z" />
     <path
-        android:fillColor="#3B9AE8"
-        android:pathData="M63,40 a9,9 0 1,0 18,0 a9,9 0 1,0 -18,0" />
+        android:fillColor="#2A1848"
+        android:pathData="M54,44 L68,76 L40,76 Z" />
+    <path
+        android:fillColor="#F9A8D4"
+        android:pathData="M54,28 L80,82 L68,82 L54,52 Z"
+        android:fillAlpha="0.55" />
 </vector>

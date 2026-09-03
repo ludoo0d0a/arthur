@@ -17,7 +17,7 @@ robolectric = "4.16.1"
 roborazzi = "1.69.0"
 leanback = "1.2.0"
 firebase-bom = "33.10.0"
-purchases = "8.19.1"
+purchases = "10.20.0"
 play-app-update = "2.1.0"
 
 [libraries]

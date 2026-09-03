@@ -8,9 +8,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import fr.geoking.arthur.genart.engines.AuroraEngine
+import fr.geoking.arthur.genart.engines.BirdFlockEngine
+import fr.geoking.arthur.genart.engines.BreathCirclesEngine
+import fr.geoking.arthur.genart.engines.ConstellationEngine
+import fr.geoking.arthur.genart.engines.DunesEngine
+import fr.geoking.arthur.genart.engines.FallingLeavesEngine
+import fr.geoking.arthur.genart.engines.FireEmbersEngine
+import fr.geoking.arthur.genart.engines.GrassEngine
 import fr.geoking.arthur.genart.engines.MicroEngine
+import fr.geoking.arthur.genart.engines.MountainsEngine
 import fr.geoking.arthur.genart.engines.ParticlesEngine
+import fr.geoking.arthur.genart.engines.PondRipplesEngine
 import fr.geoking.arthur.genart.engines.Pseudo3DEngine
+import fr.geoking.arthur.genart.engines.SnowEngine
 import fr.geoking.arthur.genart.engines.SoftShadowsEngine
 import fr.geoking.arthur.genart.engines.SphereEngine
 import fr.geoking.arthur.genart.engines.TonalGeometryEngine
@@ -98,6 +109,94 @@ fun GenartEffectCanvas(
             modifier = canvasModifier,
         )
         GenartEngineId.Micro -> MicroEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.Snow -> SnowEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.Grass -> GrassEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.BirdFlock -> BirdFlockEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.Mountains -> MountainsEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.Aurora -> AuroraEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.PondRipples -> PondRipplesEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.FallingLeaves -> FallingLeavesEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.BreathCircles -> BreathCirclesEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.FireEmbers -> FireEmbersEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.Dunes -> DunesEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.Constellation -> ConstellationEngine(
             isActive = isActive,
             paletteColors = palette,
             quality = quality,

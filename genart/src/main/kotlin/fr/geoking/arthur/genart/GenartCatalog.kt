@@ -9,6 +9,17 @@ enum class GenartEngineId {
     Sphere,
     Waves,
     Micro,
+    Snow,
+    Grass,
+    BirdFlock,
+    Mountains,
+    Aurora,
+    PondRipples,
+    FallingLeaves,
+    BreathCircles,
+    FireEmbers,
+    Dunes,
+    Constellation,
 }
 
 enum class GenartQuality { Low, Medium, High }
@@ -30,6 +41,17 @@ object GenartCatalog {
         GenartCatalogEntry(GenartEngineId.Sphere, "genart.sphere", "Orbiting Sphere"),
         GenartCatalogEntry(GenartEngineId.Waves, "genart.waves", "Layered Waves"),
         GenartCatalogEntry(GenartEngineId.Micro, "genart.micro", "Volumetric Rays"),
+        GenartCatalogEntry(GenartEngineId.Snow, "genart.snow", "Falling Snow"),
+        GenartCatalogEntry(GenartEngineId.Grass, "genart.grass", "Grass in Wind"),
+        GenartCatalogEntry(GenartEngineId.BirdFlock, "genart.birdflock", "Bird Flock"),
+        GenartCatalogEntry(GenartEngineId.Mountains, "genart.mountains", "Layered Mountains"),
+        GenartCatalogEntry(GenartEngineId.Aurora, "genart.aurora", "Aurora Ribbons"),
+        GenartCatalogEntry(GenartEngineId.PondRipples, "genart.pondripples", "Pond Ripples"),
+        GenartCatalogEntry(GenartEngineId.FallingLeaves, "genart.fallingleaves", "Falling Leaves"),
+        GenartCatalogEntry(GenartEngineId.BreathCircles, "genart.breathcircles", "Breath Circles"),
+        GenartCatalogEntry(GenartEngineId.FireEmbers, "genart.fireembers", "Fireplace Embers"),
+        GenartCatalogEntry(GenartEngineId.Dunes, "genart.dunes", "Wind-Blown Dunes"),
+        GenartCatalogEntry(GenartEngineId.Constellation, "genart.constellation", "Constellation Twinkle"),
     )
 
     fun engineForId(id: String): GenartEngineId? =

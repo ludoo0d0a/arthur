@@ -11,13 +11,13 @@ Ideas backlog for on-device procedural **Genart** (Compose Canvas in `:genart`).
 - **Live creatures** = silhouettes, flocks, schools, tiny agents — not detailed anatomy sims.
 - Status: `idea` until an engine ships (then add a stable `genart.*` id in `GenartCatalog`).
 
-**Shipped today (reference):** drifting particles, wire lattice, soft shadows, vanishing tunnel, tonal geometry.
+**Shipped today (reference):** drifting particles, wire lattice, soft shadows, vanishing tunnel, tonal geometry, orbiting sphere, layered waves, volumetric rays, falling snow (`genart.snow`), grass in wind (`genart.grass`), bird flock (`genart.birdflock`), layered mountains (`genart.mountains`), aurora ribbons (`genart.aurora`), pond ripples (`genart.pondripples`), falling leaves (`genart.fallingleaves`), breath circles (`genart.breathcircles`), fireplace embers (`genart.fireembers`), wind-blown dunes (`genart.dunes`), constellation twinkle (`genart.constellation`).
 
 ## Backlog by category
 
 ### Weather
 
-- Snow
+- Snow — shipped as `genart.snow`
 - Rain
 - Storm (soft; no strobing lightning)
 - Water drops on window
@@ -37,7 +37,7 @@ Ideas backlog for on-device procedural **Genart** (Compose Canvas in `:genart`).
 - Stars
 - Ocean waves
 - Lake
-- Grass in wind
+- Grass in wind — shipped as `genart.grass`
 - Reeds
 - Moss / lichen grow
 - Desert dunes
@@ -48,7 +48,7 @@ Ideas backlog for on-device procedural **Genart** (Compose Canvas in `:genart`).
 Calm agents only:
 
 - School of fish
-- Bird flock (boids)
+- Bird flock (boids) — shipped as `genart.birdflock`
 - Ant trails
 - Distant dinosaur silhouettes
 - Sleeping pet outline (cat / dog / pig)
@@ -65,12 +65,12 @@ Prefer distant / abstract maps and slow orbits — not busy traffic:
 - Planets
 - Solar system
 - Rivers
-- Mountains
+- Mountains — shipped as `genart.mountains`
 - Fields
 
 ### Light & sky
 
-- Aurora
+- Aurora — shipped as `genart.aurora`
 - Sunbeams through haze
 - Moonlight ripples
 - Candle ember
@@ -78,7 +78,7 @@ Prefer distant / abstract maps and slow orbits — not busy traffic:
 
 ### Water & fluids
 
-- Pond ripples
+- Pond ripples — shipped as `genart.pondripples`
 - Ink in water
 - Rising bubbles
 - Lava-lamp blobs
@@ -86,7 +86,7 @@ Prefer distant / abstract maps and slow orbits — not busy traffic:
 
 ### Seasons & time
 
-- Falling leaves
+- Falling leaves — shipped as `genart.fallingleaves`
 - Cherry blossom petals
 - Soft day → night wash
 - First frost crystals
@@ -95,7 +95,7 @@ Prefer distant / abstract maps and slow orbits — not busy traffic:
 
 Extends the current genart family:
 
-- Breath circles
+- Breath circles — shipped as `genart.breathcircles`
 - Soft ribbons
 - Morphing blobs
 - Silk folds
@@ -105,13 +105,13 @@ Extends the current genart family:
 
 - Aquarium
 - Terrarium drip
-- Fireplace embers
+- Fireplace embers — shipped as `genart.fireembers`
 - Steam curl
 - Rain on glass (shared with Weather)
 
 ### Sand & earth
 
-- Wind-blown dunes
+- Wind-blown dunes — shipped as `genart.dunes`
 - Drifting pollen
 - Soft landslide dust
 - Pebble shore wash
@@ -122,7 +122,7 @@ Calmer slice overlapping Planet:
 
 - Nebula drift
 - Quiet orbit trails
-- Constellation twinkle
+- Constellation twinkle — shipped as `genart.constellation`
 - Eclipse corona
 
 ## Out of scope / hard (parked)

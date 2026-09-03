@@ -27,64 +27,46 @@ class GenartSource(
         const val SPHERE = "genart.sphere"
         const val WAVES = "genart.waves"
         const val MICRO = "genart.micro"
+        const val SNOW = "genart.snow"
+        const val GRASS = "genart.grass"
+        const val BIRD_FLOCK = "genart.birdflock"
+        const val MOUNTAINS = "genart.mountains"
+        const val AURORA = "genart.aurora"
+        const val POND_RIPPLES = "genart.pondripples"
+        const val FALLING_LEAVES = "genart.fallingleaves"
+        const val BREATH_CIRCLES = "genart.breathcircles"
+        const val FIRE_EMBERS = "genart.fireembers"
+        const val DUNES = "genart.dunes"
+        const val CONSTELLATION = "genart.constellation"
 
         fun defaultCatalog(): List<Artwork> = listOf(
-            Artwork(
-                id = PARTICLES,
-                title = "Drifting Particles",
-                attribution = "Arthur Genart",
-                sourceId = ID,
-                kind = ArtworkKind.Genart,
-            ),
-            Artwork(
-                id = PSEUDO3D,
-                title = "Wire Lattice",
-                attribution = "Arthur Genart",
-                sourceId = ID,
-                kind = ArtworkKind.Genart,
-            ),
-            Artwork(
-                id = SOFT_SHADOWS,
-                title = "Soft Shadows",
-                attribution = "Arthur Genart",
-                sourceId = ID,
-                kind = ArtworkKind.Genart,
-            ),
-            Artwork(
-                id = TUNNEL,
-                title = "Vanishing Tunnel",
-                attribution = "Arthur Genart",
-                sourceId = ID,
-                kind = ArtworkKind.Genart,
-            ),
-            Artwork(
-                id = TONAL_GEOMETRY,
-                title = "Tonal Geometry",
-                attribution = "Arthur Genart",
-                sourceId = ID,
-                kind = ArtworkKind.Genart,
-            ),
-            Artwork(
-                id = SPHERE,
-                title = "Orbiting Sphere",
-                attribution = "Arthur Genart",
-                sourceId = ID,
-                kind = ArtworkKind.Genart,
-            ),
-            Artwork(
-                id = WAVES,
-                title = "Layered Waves",
-                attribution = "Arthur Genart",
-                sourceId = ID,
-                kind = ArtworkKind.Genart,
-            ),
-            Artwork(
-                id = MICRO,
-                title = "Volumetric Rays",
-                attribution = "Arthur Genart",
-                sourceId = ID,
-                kind = ArtworkKind.Genart,
-            ),
+            entry(PARTICLES, "Drifting Particles"),
+            entry(PSEUDO3D, "Wire Lattice"),
+            entry(SOFT_SHADOWS, "Soft Shadows"),
+            entry(TUNNEL, "Vanishing Tunnel"),
+            entry(TONAL_GEOMETRY, "Tonal Geometry"),
+            entry(SPHERE, "Orbiting Sphere"),
+            entry(WAVES, "Layered Waves"),
+            entry(MICRO, "Volumetric Rays"),
+            entry(SNOW, "Falling Snow"),
+            entry(GRASS, "Grass in Wind"),
+            entry(BIRD_FLOCK, "Bird Flock"),
+            entry(MOUNTAINS, "Layered Mountains"),
+            entry(AURORA, "Aurora Ribbons"),
+            entry(POND_RIPPLES, "Pond Ripples"),
+            entry(FALLING_LEAVES, "Falling Leaves"),
+            entry(BREATH_CIRCLES, "Breath Circles"),
+            entry(FIRE_EMBERS, "Fireplace Embers"),
+            entry(DUNES, "Wind-Blown Dunes"),
+            entry(CONSTELLATION, "Constellation Twinkle"),
+        )
+
+        private fun entry(id: String, title: String) = Artwork(
+            id = id,
+            title = title,
+            attribution = "Arthur Genart",
+            sourceId = ID,
+            kind = ArtworkKind.Genart,
         )
     }
 }

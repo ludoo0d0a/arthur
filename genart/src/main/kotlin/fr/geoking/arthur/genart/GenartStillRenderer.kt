@@ -5,8 +5,19 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RadialGradient
 import android.graphics.Shader
+import fr.geoking.arthur.genart.stills.AuroraStill
+import fr.geoking.arthur.genart.stills.BirdFlockStill
+import fr.geoking.arthur.genart.stills.BreathCirclesStill
+import fr.geoking.arthur.genart.stills.ConstellationStill
+import fr.geoking.arthur.genart.stills.DunesStill
+import fr.geoking.arthur.genart.stills.FallingLeavesStill
+import fr.geoking.arthur.genart.stills.FireEmbersStill
+import fr.geoking.arthur.genart.stills.GrassStill
 import fr.geoking.arthur.genart.stills.MicroStill
+import fr.geoking.arthur.genart.stills.MountainsStill
 import fr.geoking.arthur.genart.stills.ParticlesStill
+import fr.geoking.arthur.genart.stills.PondRipplesStill
+import fr.geoking.arthur.genart.stills.SnowStill
 import fr.geoking.arthur.genart.stills.SphereStill
 import fr.geoking.arthur.genart.stills.WavesStill
 import kotlin.math.PI
@@ -59,7 +70,44 @@ object GenartStillRenderer {
                 pulseScale = 1f + pulse * 0.15f,
                 palette = palette,
             )
-            else -> drawFallback(canvas, size, generation, palette, engineId)
+            GenartEngineId.Snow -> SnowStill.draw(
+                canvas, size, generation, phase, rotationDeg, pulse, palette,
+            )
+            GenartEngineId.Grass -> GrassStill.draw(
+                canvas, size, generation, phase, rotationDeg, pulse, palette,
+            )
+            GenartEngineId.BirdFlock -> BirdFlockStill.draw(
+                canvas, size, generation, phase, rotationDeg, pulse, palette,
+            )
+            GenartEngineId.Mountains -> MountainsStill.draw(
+                canvas, size, generation, phase, rotationDeg, pulse, palette,
+            )
+            GenartEngineId.Aurora -> AuroraStill.draw(
+                canvas, size, generation, phase, rotationDeg, pulse, palette,
+            )
+            GenartEngineId.PondRipples -> PondRipplesStill.draw(
+                canvas, size, generation, phase, rotationDeg, pulse, palette,
+            )
+            GenartEngineId.FallingLeaves -> FallingLeavesStill.draw(
+                canvas, size, generation, phase, rotationDeg, pulse, palette,
+            )
+            GenartEngineId.BreathCircles -> BreathCirclesStill.draw(
+                canvas, size, generation, phase, rotationDeg, pulse, palette,
+            )
+            GenartEngineId.FireEmbers -> FireEmbersStill.draw(
+                canvas, size, generation, phase, rotationDeg, pulse, palette,
+            )
+            GenartEngineId.Dunes -> DunesStill.draw(
+                canvas, size, generation, phase, rotationDeg, pulse, palette,
+            )
+            GenartEngineId.Constellation -> ConstellationStill.draw(
+                canvas, size, generation, phase, rotationDeg, pulse, palette,
+            )
+            GenartEngineId.Pseudo3D,
+            GenartEngineId.SoftShadows,
+            GenartEngineId.Tunnel,
+            GenartEngineId.TonalGeometry,
+            -> drawFallback(canvas, size, generation, palette, engineId)
         }
     }
 

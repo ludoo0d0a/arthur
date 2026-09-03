@@ -6,8 +6,9 @@
   </defs>
   <g clip-path="url(#round)">
     <rect width="108" height="108" fill="#2A1848"/>
-    <path fill="#F4C84A" d="M54 44h24a8 8 0 0 1 8 8v24a8 8 0 0 1-8 8H54a8 8 0 0 1-8-8V52a8 8 0 0 1 8-8z"/>
-    <circle cx="44" cy="48" r="20" fill="#E85A48"/>
-    <circle cx="72" cy="40" r="9" fill="#3B9AE8"/>
+    <path fill="#5EEAD4" fill-opacity="0.22" d="M54 22L86 86H22Z"/>
+    <path fill="#C4B5FD" d="M54 28L80 82H28Z"/>
+    <path fill="#2A1848" d="M54 44L68 76H40Z"/>
+    <path fill="#F9A8D4" fill-opacity="0.55" d="M54 28L80 82H68L54 52Z"/>
   </g>
 </svg>

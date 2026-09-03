@@ -1,5 +1,6 @@
 package fr.geoking.arthur.ui.screens
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -10,7 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -21,6 +22,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -83,6 +86,17 @@ fun ControlPlaneContent(
     showFractalPreview: Boolean = true,
 ) {
     val scheme = MaterialTheme.colorScheme
+    val configuration = LocalConfiguration.current
+    val isTelevision = remember(configuration) {
+        configuration.uiMode and Configuration.UI_MODE_TYPE_MASK ==
+            Configuration.UI_MODE_TYPE_TELEVISION
+    }
+    val firstItemFocus = remember { FocusRequester() }
+    LaunchedEffect(isTelevision, catalog.firstOrNull()?.id) {
+        if (isTelevision && catalog.isNotEmpty()) {
+            firstItemFocus.requestFocus()
+        }
+    }
     Scaffold(
         modifier = modifier
             .fillMaxSize()
@@ -113,7 +127,7 @@ fun ControlPlaneContent(
                 modifier = Modifier
                     .padding(horizontal = 20.dp, vertical = 8.dp)
                     .fillMaxWidth()
-                    .height(168.dp)
+                    .height(if (isTelevision) 200.dp else 168.dp)
                     .testTag("fractal_preview"),
             )
             Text(
@@ -128,13 +142,14 @@ fun ControlPlaneContent(
                     .fillMaxWidth()
                     .testTag("artwork_list"),
                 contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(if (isTelevision) 14.dp else 10.dp),
             ) {
-                items(catalog, key = { it.id }) { art ->
+                itemsIndexed(catalog, key = { _, art -> art.id }) { index, art ->
                     ArtworkCard(
                         artwork = art,
                         selected = art.id == selected?.id,
                         onClick = { onSelect(art) },
+                        focusRequester = if (index == 0) firstItemFocus else null,
                     )
                 }
             }

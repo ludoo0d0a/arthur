@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.service.dreams.DreamService
+import android.view.WindowManager
 import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -12,6 +13,7 @@ import androidx.activity.enableEdgeToEdge
 import fr.geoking.arthur.R
 import fr.geoking.arthur.phone.theme.ArthurTheme
 import fr.geoking.arthur.shared.domain.PreparedRotation
+import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.shared.source.BundledPackSource
 import fr.geoking.arthur.ui.screens.AmbientScreenContent
@@ -28,6 +30,7 @@ class AmbientActivity : ComponentActivity() {
             statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
         )
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         val artworkId = intent.getStringExtra(EXTRA_ARTWORK_ID)
         val artwork = runBlocking {
             val catalog = contentEngine.catalog(
@@ -36,7 +39,7 @@ class AmbientActivity : ComponentActivity() {
                     artworkIds = emptyList(),
                 ),
             )
-            catalog.firstOrNull { it.id == artworkId } ?: catalog.firstOrNull()
+            resolveAmbientArtwork(catalog, artworkId)
         }
         val title = artwork?.title ?: getString(R.string.app_name)
         setContent {

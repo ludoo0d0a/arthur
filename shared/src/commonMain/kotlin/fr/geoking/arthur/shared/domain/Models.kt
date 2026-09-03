@@ -21,6 +21,33 @@ enum class ArtworkKind {
     PersonalPhoto,
 }
 
+/** Live procedural kinds (genart / fractal) vs still image Artwork. */
+val ArtworkKind.isGenerative: Boolean
+    get() = when (this) {
+        ArtworkKind.Genart,
+        ArtworkKind.FractalPreset,
+        ArtworkKind.CustomFractal,
+        -> true
+        ArtworkKind.Photo,
+        ArtworkKind.Painting,
+        ArtworkKind.Sculpture,
+        ArtworkKind.PersonalPhoto,
+        -> false
+    }
+
+val Artwork.isGenerative: Boolean
+    get() = kind.isGenerative
+
+/**
+ * Prefer the requested generative piece; otherwise first generative in [catalog].
+ * Stills are never chosen for Ambient playback when a generative alternative exists.
+ */
+fun resolveAmbientArtwork(catalog: List<Artwork>, artworkId: String?): Artwork? {
+    val requested = catalog.firstOrNull { it.id == artworkId }
+    if (requested?.isGenerative == true) return requested
+    return catalog.firstOrNull { it.isGenerative } ?: requested ?: catalog.firstOrNull()
+}
+
 /** A feed that supplies Artwork. */
 interface Source {
     val id: String

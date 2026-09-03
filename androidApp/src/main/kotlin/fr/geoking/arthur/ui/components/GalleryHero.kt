@@ -28,6 +28,7 @@ import fr.geoking.arthur.fractal.FractalQuality
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
+import fr.geoking.arthur.shared.domain.isGenerative
 
 @Composable
 internal fun GalleryHero(
@@ -36,11 +37,7 @@ internal fun GalleryHero(
     artwork: Artwork? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
-    val generative = artwork?.kind in setOf(
-        ArtworkKind.Genart,
-        ArtworkKind.FractalPreset,
-        ArtworkKind.CustomFractal,
-    )
+    val generative = artwork?.isGenerative == true
     Card(
         modifier = modifier,
         shape = MaterialTheme.shapes.extraLarge,

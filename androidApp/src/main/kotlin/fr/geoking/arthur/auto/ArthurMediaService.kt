@@ -12,18 +12,31 @@ import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.isGenerative
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 
 /**
- * Auto Canvas (Media): full Content Engine catalog as browse tree;
- * now-playing prefers live generative Artwork.
+ * Auto Canvas (Media): Ambient Rotation as browse tree + now-playing **static** album art.
+ * AA forbids animated graphics (SA-1 / IU-1); generative pieces are baked to stills and
+ * refreshed every [AmbientAlbumArt.ROTATION_INTERVAL_MS].
  */
 class ArthurMediaService : MediaBrowserServiceCompat() {
     private val contentEngine: ContentEngine by inject()
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private lateinit var session: MediaSessionCompat
     private var catalog: List<Artwork> = emptyList()
     private var current: Artwork? = null
+    private var generation: Long = 0L
+    private var playing: Boolean = false
+    private var rotationJob: Job? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -31,68 +44,114 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
             setCallback(
                 object : MediaSessionCompat.Callback() {
                     override fun onPlay() {
-                        publishPlayback(PlaybackStateCompat.STATE_PLAYING)
+                        setPlaying(true)
                     }
 
                     override fun onPause() {
-                        publishPlayback(PlaybackStateCompat.STATE_PAUSED)
+                        setPlaying(false)
                     }
 
                     override fun onSkipToNext() {
-                        playRelative(+1)
+                        scope.launch { advance(+1, userInitiated = true) }
                     }
 
                     override fun onSkipToPrevious() {
-                        playRelative(-1)
+                        scope.launch { advance(-1, userInitiated = true) }
                     }
 
                     override fun onPlayFromMediaId(mediaId: String?, extras: Bundle?) {
                         val art = catalog.firstOrNull { it.id == mediaId } ?: return
-                        current = art
-                        publishMetadata(art)
-                        publishPlayback(PlaybackStateCompat.STATE_PLAYING)
+                        scope.launch {
+                            current = art
+                            generation += 1
+                            publishArtwork(art)
+                            setPlaying(true)
+                        }
                     }
                 },
             )
             isActive = true
         }
         sessionToken = session.sessionToken
-        catalog = runBlocking {
-            contentEngine.catalog(
-                PreparedRotation(
-                    sourceIds = emptyList(),
-                    artworkIds = emptyList(),
-                ),
-            )
-        }
-        current = resolveAmbientArtwork(catalog, null)
-        current?.let {
-            publishMetadata(it)
-            publishPlayback(PlaybackStateCompat.STATE_PLAYING)
+        scope.launch {
+            catalog = withContext(Dispatchers.IO) {
+                contentEngine.catalog(
+                    PreparedRotation(
+                        sourceIds = emptyList(),
+                        artworkIds = emptyList(),
+                    ),
+                )
+            }
+            notifyChildrenChanged(ROOT)
+            current = resolveAmbientArtwork(catalog, null)
+            current?.let { publishArtwork(it) }
+            setPlaying(true)
         }
     }
 
-    private fun playRelative(delta: Int) {
-        val generative = catalog.filter { it.isGenerative }
-        val pool = generative.ifEmpty { catalog }
+    private fun setPlaying(value: Boolean) {
+        playing = value
+        publishPlayback(
+            if (value) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED,
+        )
+        if (value) startRotation() else rotationJob?.cancel()
+    }
+
+    private fun startRotation() {
+        rotationJob?.cancel()
+        rotationJob = scope.launch {
+            while (isActive) {
+                delay(AmbientAlbumArt.ROTATION_INTERVAL_MS)
+                if (playing) advance(+1, userInitiated = false)
+            }
+        }
+    }
+
+    private suspend fun advance(delta: Int, userInitiated: Boolean) {
+        val pool = rotationPool()
         if (pool.isEmpty()) return
         val index = pool.indexOfFirst { it.id == current?.id }.let { if (it < 0) 0 else it }
-        val next = pool[Math.floorMod(index + delta, pool.size)]
+        val nextIndex = if (delta >= 0) {
+            AmbientAlbumArt.advanceIndex(index, pool.size)
+        } else {
+            Math.floorMod(index - 1, pool.size)
+        }
+        val next = pool[nextIndex]
         current = next
-        publishMetadata(next)
-        publishPlayback(PlaybackStateCompat.STATE_PLAYING)
+        generation += 1
+        publishArtwork(next)
+        if (userInitiated && !playing) setPlaying(true)
     }
 
-    private fun publishMetadata(art: Artwork) {
+    private fun rotationPool(): List<Artwork> {
+        val generative = catalog.filter { it.isGenerative }
+        return generative.ifEmpty { catalog }
+    }
+
+    private suspend fun publishArtwork(art: Artwork) {
+        val gen = generation
+        withContext(Dispatchers.IO) {
+            val file = AmbientAlbumArt.cacheFile(this@ArthurMediaService, art.id, gen)
+            if (!file.exists()) {
+                AmbientStillRenderer.renderToFile(art, gen, file)
+            }
+        }
+        val uri = AmbientAlbumArt.contentUri(packageName, art.id, gen).toString()
         session.setMetadata(
             MediaMetadataCompat.Builder()
                 .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, art.id)
                 .putString(MediaMetadataCompat.METADATA_KEY_TITLE, art.title)
+                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE, art.title)
                 .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, art.attribution)
+                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, art.attribution)
                 .putString(
                     MediaMetadataCompat.METADATA_KEY_GENRE,
                     if (art.isGenerative) "generative" else art.kind.name,
                 )
+                .putString(MediaMetadataCompat.METADATA_KEY_ART_URI, uri)
+                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, uri)
+                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON_URI, uri)
+                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, AmbientAlbumArt.ROTATION_INTERVAL_MS)
                 .build(),
         )
     }
@@ -122,10 +181,12 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
         result: Result<MutableList<MediaBrowserCompat.MediaItem>>,
     ) {
         val items = catalog.map { art ->
+            val icon = AmbientAlbumArt.contentUri(packageName, art.id, 0L)
             val desc = MediaDescriptionCompat.Builder()
                 .setMediaId(art.id)
                 .setTitle(art.title)
                 .setSubtitle(art.attribution)
+                .setIconUri(icon)
                 .build()
             MediaBrowserCompat.MediaItem(desc, MediaBrowserCompat.MediaItem.FLAG_PLAYABLE)
         }.toMutableList()
@@ -133,6 +194,8 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
     }
 
     override fun onDestroy() {
+        rotationJob?.cancel()
+        scope.cancel()
         session.release()
         super.onDestroy()
     }

@@ -51,6 +51,12 @@
             </intent-filter>
         </service>
 
+        <provider
+            android:name=".auto.AlbumArtContentProvider"
+            android:authorities="${applicationId}.albumart"
+            android:exported="true"
+            android:grantUriPermissions="true" />
+
         <service
             android:name=".tv.ArthurDreamService"
             android:exported="true"

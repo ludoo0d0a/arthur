@@ -5,17 +5,17 @@ import android.content.Intent
 import android.os.Bundle
 import android.service.dreams.DreamService
 import android.view.WindowManager
-import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import fr.geoking.arthur.R
 import fr.geoking.arthur.phone.theme.ArthurTheme
 import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
-import fr.geoking.arthur.shared.source.BundledPackSource
 import fr.geoking.arthur.ui.screens.AmbientScreenContent
 import kotlinx.coroutines.runBlocking
 import org.koin.android.ext.android.inject
@@ -59,7 +59,7 @@ class AmbientActivity : ComponentActivity() {
     }
 }
 
-/** TV Canvas screensaver / Dream — metadata/still only (no live Compose engines). */
+/** TV Canvas screensaver / Dream — live generative Ambient via Compose. */
 class ArthurDreamService : DreamService() {
     private val contentEngine: ContentEngine by inject()
 
@@ -67,21 +67,25 @@ class ArthurDreamService : DreamService() {
         super.onAttachedToWindow()
         isInteractive = false
         isFullscreen = true
-        val title = runBlocking {
-            contentEngine.catalog(
+        isScreenBright = true
+        val artwork = runBlocking {
+            val catalog = contentEngine.catalog(
                 PreparedRotation(
-                    sourceIds = listOf(BundledPackSource.ID),
+                    sourceIds = emptyList(),
                     artworkIds = emptyList(),
                 ),
-            ).firstOrNull()?.title ?: getString(R.string.app_name)
+            )
+            resolveAmbientArtwork(catalog, null)
         }
+        val title = artwork?.title ?: getString(R.string.app_name)
         setContentView(
-            TextView(this).apply {
-                text = title
-                textSize = 32f
-                setTextColor(0xFFFFFFFF.toInt())
-                setBackgroundColor(0xFF000000.toInt())
-                setPadding(64, 64, 64, 64)
+            ComposeView(this).apply {
+                setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
+                setContent {
+                    ArthurTheme {
+                        AmbientScreenContent(title = title, artwork = artwork)
+                    }
+                }
             },
         )
     }

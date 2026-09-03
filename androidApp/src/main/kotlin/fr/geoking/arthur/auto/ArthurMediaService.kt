@@ -7,50 +7,106 @@ import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import androidx.media.MediaBrowserServiceCompat
+import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.PreparedRotation
+import fr.geoking.arthur.shared.domain.isGenerative
+import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
-import fr.geoking.arthur.shared.source.BundledPackSource
 import kotlinx.coroutines.runBlocking
 import org.koin.android.ext.android.inject
 
 /**
- * Auto Canvas (Media): Ambient Rotation as browse tree + now-playing artwork.
+ * Auto Canvas (Media): full Content Engine catalog as browse tree;
+ * now-playing prefers live generative Artwork.
  */
 class ArthurMediaService : MediaBrowserServiceCompat() {
     private val contentEngine: ContentEngine by inject()
     private lateinit var session: MediaSessionCompat
+    private var catalog: List<Artwork> = emptyList()
+    private var current: Artwork? = null
 
     override fun onCreate() {
         super.onCreate()
         session = MediaSessionCompat(this, "ArthurMedia").apply {
-            setCallback(object : MediaSessionCompat.Callback() {})
-            setPlaybackState(
-                PlaybackStateCompat.Builder()
-                    .setActions(PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PAUSE)
-                    .setState(PlaybackStateCompat.STATE_PAUSED, 0L, 1f)
-                    .build(),
+            setCallback(
+                object : MediaSessionCompat.Callback() {
+                    override fun onPlay() {
+                        publishPlayback(PlaybackStateCompat.STATE_PLAYING)
+                    }
+
+                    override fun onPause() {
+                        publishPlayback(PlaybackStateCompat.STATE_PAUSED)
+                    }
+
+                    override fun onSkipToNext() {
+                        playRelative(+1)
+                    }
+
+                    override fun onSkipToPrevious() {
+                        playRelative(-1)
+                    }
+
+                    override fun onPlayFromMediaId(mediaId: String?, extras: Bundle?) {
+                        val art = catalog.firstOrNull { it.id == mediaId } ?: return
+                        current = art
+                        publishMetadata(art)
+                        publishPlayback(PlaybackStateCompat.STATE_PLAYING)
+                    }
+                },
             )
             isActive = true
         }
         sessionToken = session.sessionToken
-        publishFirstArtwork()
-    }
-
-    private fun publishFirstArtwork() {
-        val catalog = runBlocking {
+        catalog = runBlocking {
             contentEngine.catalog(
                 PreparedRotation(
-                    sourceIds = listOf(BundledPackSource.ID),
+                    sourceIds = emptyList(),
                     artworkIds = emptyList(),
                 ),
             )
         }
-        val first = catalog.firstOrNull() ?: return
+        current = resolveAmbientArtwork(catalog, null)
+        current?.let {
+            publishMetadata(it)
+            publishPlayback(PlaybackStateCompat.STATE_PLAYING)
+        }
+    }
+
+    private fun playRelative(delta: Int) {
+        val generative = catalog.filter { it.isGenerative }
+        val pool = generative.ifEmpty { catalog }
+        if (pool.isEmpty()) return
+        val index = pool.indexOfFirst { it.id == current?.id }.let { if (it < 0) 0 else it }
+        val next = pool[Math.floorMod(index + delta, pool.size)]
+        current = next
+        publishMetadata(next)
+        publishPlayback(PlaybackStateCompat.STATE_PLAYING)
+    }
+
+    private fun publishMetadata(art: Artwork) {
         session.setMetadata(
             MediaMetadataCompat.Builder()
-                .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, first.id)
-                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, first.title)
-                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, first.attribution)
+                .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, art.id)
+                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, art.title)
+                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, art.attribution)
+                .putString(
+                    MediaMetadataCompat.METADATA_KEY_GENRE,
+                    if (art.isGenerative) "generative" else art.kind.name,
+                )
+                .build(),
+        )
+    }
+
+    private fun publishPlayback(state: Int) {
+        session.setPlaybackState(
+            PlaybackStateCompat.Builder()
+                .setActions(
+                    PlaybackStateCompat.ACTION_PLAY or
+                        PlaybackStateCompat.ACTION_PAUSE or
+                        PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
+                        PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS,
+                )
+                .setState(state, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 1f)
                 .build(),
         )
     }
@@ -65,14 +121,6 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
         parentId: String,
         result: Result<MutableList<MediaBrowserCompat.MediaItem>>,
     ) {
-        val catalog = runBlocking {
-            contentEngine.catalog(
-                PreparedRotation(
-                    sourceIds = listOf(BundledPackSource.ID),
-                    artworkIds = emptyList(),
-                ),
-            )
-        }
         val items = catalog.map { art ->
             val desc = MediaDescriptionCompat.Builder()
                 .setMediaId(art.id)

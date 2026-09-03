@@ -7,6 +7,7 @@ import fr.geoking.arthur.genart.GenartEngineId
 import fr.geoking.arthur.genart.GenartStillRenderer
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -47,6 +48,46 @@ class GenartStillRendererSmokeTest {
         sphere.recycle()
         waves.recycle()
         micro.recycle()
+    }
+
+    @Test
+    fun ambientStill_natureIds_bakeDistinctFrames() {
+        val snow = bake("genart.snow", 5L)
+        val aurora = bake("genart.aurora", 5L)
+        val dunes = bake("genart.dunes", 5L)
+        assertTrue(sampleHasPaint(snow))
+        assertTrue(sampleHasPaint(aurora))
+        assertTrue(sampleHasPaint(dunes))
+        assertNotEquals(checksum(snow), checksum(aurora))
+        assertNotEquals(checksum(aurora), checksum(dunes))
+        snow.recycle()
+        aurora.recycle()
+        dunes.recycle()
+    }
+
+    @Test
+    fun ambientStill_roadmapIds_bakeDistinctFrames() {
+        val ids = listOf(
+            "genart.snow",
+            "genart.grass",
+            "genart.birdflock",
+            "genart.mountains",
+            "genart.aurora",
+            "genart.pondripples",
+            "genart.fallingleaves",
+            "genart.breathcircles",
+            "genart.fireembers",
+            "genart.dunes",
+            "genart.constellation",
+        )
+        val checksums = ids.map { id ->
+            val bitmap = bake(id, 5L)
+            assertTrue("$id should be painted", sampleHasPaint(bitmap))
+            val sum = checksum(bitmap)
+            bitmap.recycle()
+            sum
+        }
+        assertEquals(ids.size, checksums.toSet().size)
     }
 
     @Test

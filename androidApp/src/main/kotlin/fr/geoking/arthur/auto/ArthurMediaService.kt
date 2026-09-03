@@ -27,6 +27,9 @@ import org.koin.android.ext.android.inject
  * Auto Canvas (Media): Ambient Rotation as browse tree + now-playing **static** album art.
  * AA forbids animated graphics (SA-1 / IU-1); generative pieces are baked to stills and
  * refreshed every [AmbientAlbumArt.ROTATION_INTERVAL_MS].
+ *
+ * Browse: root → source folders → playable art (≤2 levels). Genart/fractal folders use a
+ * grid content style so still previews are the primary affordance.
  */
 class ArthurMediaService : MediaBrowserServiceCompat() {
     private val contentEngine: ContentEngine by inject()
@@ -60,6 +63,7 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
                     }
 
                     override fun onPlayFromMediaId(mediaId: String?, extras: Bundle?) {
+                        if (mediaId == null || ArthurMediaBrowse.isFolder(mediaId)) return
                         val art = catalog.firstOrNull { it.id == mediaId } ?: return
                         scope.launch {
                             current = art
@@ -83,6 +87,9 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
                 )
             }
             notifyChildrenChanged(ROOT)
+            for (sourceId in ArthurMediaBrowse.rootSourceIds(catalog)) {
+                notifyChildrenChanged(ArthurMediaBrowse.folderId(sourceId))
+            }
             current = resolveAmbientArtwork(catalog, null)
             current?.let { publishArtwork(it) }
             setPlaying(true)
@@ -174,13 +181,36 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
         clientPackageName: String,
         clientUid: Int,
         rootHints: Bundle?,
-    ): BrowserRoot = BrowserRoot(ROOT, null)
+    ): BrowserRoot = BrowserRoot(ROOT, ArthurMediaBrowse.rootExtras())
 
     override fun onLoadChildren(
         parentId: String,
         result: Result<MutableList<MediaBrowserCompat.MediaItem>>,
     ) {
-        val items = catalog.map { art ->
+        result.sendResult(buildChildren(parentId).toMutableList())
+    }
+
+    private fun buildChildren(parentId: String): List<MediaBrowserCompat.MediaItem> {
+        if (parentId == ROOT) {
+            return ArthurMediaBrowse.rootSourceIds(catalog).map { sourceId ->
+                val title = ArthurMediaBrowse.folderTitle(sourceId)
+                val extras = if (ArthurMediaBrowse.usesPreviewGrid(sourceId)) {
+                    ArthurMediaBrowse.previewGridExtras()
+                } else {
+                    null
+                }
+                val desc = MediaDescriptionCompat.Builder()
+                    .setMediaId(ArthurMediaBrowse.folderId(sourceId))
+                    .setTitle(title)
+                    .setSubtitle(catalog.count { it.sourceId == sourceId }.toString() + " pieces")
+                    .setExtras(extras)
+                    .build()
+                MediaBrowserCompat.MediaItem(desc, MediaBrowserCompat.MediaItem.FLAG_BROWSABLE)
+            }
+        }
+
+        val items = ArthurMediaBrowse.childrenOf(parentId, catalog)
+        return items.map { art ->
             val icon = AmbientAlbumArt.contentUri(packageName, art.id, 0L)
             val desc = MediaDescriptionCompat.Builder()
                 .setMediaId(art.id)
@@ -189,8 +219,7 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
                 .setIconUri(icon)
                 .build()
             MediaBrowserCompat.MediaItem(desc, MediaBrowserCompat.MediaItem.FLAG_PLAYABLE)
-        }.toMutableList()
-        result.sendResult(items)
+        }
     }
 
     override fun onDestroy() {
@@ -201,6 +230,6 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
     }
 
     companion object {
-        const val ROOT = "arthur_root"
+        const val ROOT = ArthurMediaBrowse.ROOT
     }
 }

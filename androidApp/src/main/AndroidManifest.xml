@@ -3,8 +3,6 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
     <uses-feature
         android:name="android.software.leanback"
@@ -42,10 +40,12 @@
             android:exported="true"
             android:theme="@style/Theme.Arthur" />
 
+        <!-- Browse-only Auto MediaBrowserService (no startForeground). Re-add
+             FOREGROUND_SERVICE_MEDIA_PLAYBACK + foregroundServiceType when
+             actual media playback FGS is implemented, with a Play Console demo video. -->
         <service
             android:name=".auto.ArthurMediaService"
-            android:exported="true"
-            android:foregroundServiceType="mediaPlayback">
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>

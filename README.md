@@ -2,7 +2,7 @@
 
 Ambient art for **phone** (Control Plane), **Android Auto** (Media), and **Android TV** (screensaver).
 
-Domain language: [`CONTEXT.md`](CONTEXT.md) · Decisions: [`docs/adr/`](docs/adr/)
+Domain language: [`CONTEXT.md`](CONTEXT.md) · Decisions: [`docs/adr/`](docs/adr/) · Genart ideas: [`docs/roadmap-genart.md`](docs/roadmap-genart.md)
 
 ## Modules
 

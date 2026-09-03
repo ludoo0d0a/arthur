@@ -3,10 +3,15 @@ package fr.geoking.arthur.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.fractal.FractalEffectCanvas
 import fr.geoking.arthur.fractal.FractalQuality
 import fr.geoking.arthur.fractal.FractalType
@@ -39,7 +44,7 @@ fun ArtworkRenderer(
                         quality = quality,
                     )
                 } else {
-                    StillArtworkPlaceholder()
+                    StillArtworkPlaceholder(kind = artwork.kind)
                 }
             }
             ArtworkKind.FractalPreset, ArtworkKind.CustomFractal -> {
@@ -49,14 +54,19 @@ fun ArtworkRenderer(
                     forceType = fractalTypeForArtworkId(artwork.id),
                 )
             }
-            else -> StillArtworkPlaceholder()
+            else -> StillArtworkPlaceholder(kind = artwork.kind)
         }
     }
 }
 
+/** Gradient field with the artwork-kind glyph — used for bundled / museum stills. */
 @Composable
-private fun StillArtworkPlaceholder(modifier: Modifier = Modifier) {
+private fun StillArtworkPlaceholder(
+    kind: ArtworkKind,
+    modifier: Modifier = Modifier,
+) {
     val scheme = MaterialTheme.colorScheme
+    val visual = kind.visual()
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -65,7 +75,15 @@ private fun StillArtworkPlaceholder(modifier: Modifier = Modifier) {
                     colors = listOf(scheme.surfaceVariant, scheme.background),
                 ),
             ),
-    )
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            painter = painterResource(visual.iconRes),
+            contentDescription = null,
+            tint = visual.onContainer.copy(alpha = 0.42f),
+            modifier = Modifier.size(88.dp),
+        )
+    }
 }
 
 internal fun fractalTypeForArtworkId(artworkId: String): FractalType? =

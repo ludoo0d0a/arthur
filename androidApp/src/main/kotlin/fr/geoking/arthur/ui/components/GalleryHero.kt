@@ -28,7 +28,6 @@ import fr.geoking.arthur.fractal.FractalQuality
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
-import fr.geoking.arthur.shared.domain.isGenerative
 
 @Composable
 internal fun GalleryHero(
@@ -37,7 +36,6 @@ internal fun GalleryHero(
     artwork: Artwork? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
-    val generative = artwork?.isGenerative == true
     Card(
         modifier = modifier,
         shape = MaterialTheme.shapes.extraLarge,
@@ -45,7 +43,7 @@ internal fun GalleryHero(
     ) {
         Box {
             when {
-                generative && artwork != null -> {
+                artwork != null -> {
                     ArtworkRenderer(
                         artwork = artwork,
                         isActive = true,
@@ -97,9 +95,12 @@ internal fun GalleryHero(
     }
 }
 
-private fun heroLabelRes(livePreview: Boolean, kind: ArtworkKind?): Int = when {
-    kind == ArtworkKind.Genart -> R.string.genart_hero_label
-    kind == ArtworkKind.FractalPreset || kind == ArtworkKind.CustomFractal -> R.string.fractal_hero_label
-    livePreview -> R.string.fractal_hero_label
-    else -> R.string.gallery_hero_label
+private fun heroLabelRes(livePreview: Boolean, kind: ArtworkKind?): Int = when (kind) {
+    ArtworkKind.Genart -> R.string.genart_hero_label
+    ArtworkKind.FractalPreset, ArtworkKind.CustomFractal -> R.string.fractal_hero_label
+    ArtworkKind.Painting -> R.string.kind_painting
+    ArtworkKind.Sculpture -> R.string.kind_sculpture
+    ArtworkKind.Photo -> R.string.kind_photo
+    ArtworkKind.PersonalPhoto -> R.string.kind_personal
+    null -> if (livePreview) R.string.fractal_hero_label else R.string.gallery_hero_label
 }

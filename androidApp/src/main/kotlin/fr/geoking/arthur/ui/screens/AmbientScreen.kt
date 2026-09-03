@@ -21,7 +21,6 @@ import fr.geoking.arthur.fractal.FractalEffectCanvas
 import fr.geoking.arthur.fractal.FractalQuality
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.shared.domain.Artwork
-import fr.geoking.arthur.shared.domain.isGenerative
 import fr.geoking.arthur.ui.components.ArtworkRenderer
 
 @Composable
@@ -38,7 +37,7 @@ fun AmbientScreenContent(
         contentAlignment = Alignment.Center,
     ) {
         when {
-            artwork != null && artwork.isGenerative -> {
+            artwork != null -> {
                 ArtworkRenderer(
                     artwork = artwork,
                     isActive = isActive,
@@ -47,7 +46,6 @@ fun AmbientScreenContent(
                 )
             }
             else -> {
-                // Always animate Ambient — stills / missing selection fall back to fractal cycle.
                 FractalEffectCanvas(
                     isActive = isActive,
                     quality = FractalQuality.High,

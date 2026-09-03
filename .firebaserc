@@ -1,3 +1,7 @@
 {
-  "projects": { "default": "arthur-geoking" }
+  "projects": {
+    "default": "arthur-geoking"
+  },
+  "targets": {},
+  "etags": {}
 }

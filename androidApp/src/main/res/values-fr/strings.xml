@@ -19,4 +19,16 @@
     <string name="kind_custom_fractal">Fractale personnalisée</string>
     <string name="kind_genart">Genart</string>
     <string name="kind_personal">Photo personnelle</string>
+    <string name="custom_fractal_create">Créer une fractale perso</string>
+    <string name="custom_fractal_title">Fractale perso</string>
+    <string name="custom_fractal_hint">%1$d points · besoin de %2$d–%3$d</string>
+    <string name="custom_fractal_tap_prompt">Touchez le fond sombre pour placer des points</string>
+    <string name="custom_fractal_save">Enregistrer</string>
+    <string name="custom_fractal_close">Fermer</string>
+    <string name="custom_fractal_undo">Annuler</string>
+    <string name="custom_fractal_clear">Effacer</string>
+    <string name="custom_fractal_recolor">Recoloriser</string>
+    <string name="custom_fractal_premium_title">Fractale perso Premium</string>
+    <string name="custom_fractal_premium_body">Créez des fractales Bezier uniques à partir de points — art ambient façon AOD Realme pour Auto et TV.</string>
+    <string name="custom_fractal_unlock">Débloquer Premium</string>
 </resources>

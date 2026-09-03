@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -48,6 +49,7 @@ fun ControlPlaneScreen(
     initialCatalog: List<Artwork>? = null,
     initialSelected: Artwork? = null,
     showFractalPreview: Boolean = true,
+    onCreateCustomFractal: (() -> Unit)? = null,
 ) {
     var catalog by remember { mutableStateOf(initialCatalog.orEmpty()) }
     var selected by remember { mutableStateOf(initialSelected) }
@@ -73,6 +75,7 @@ fun ControlPlaneScreen(
         },
         modifier = modifier,
         showFractalPreview = showFractalPreview,
+        onCreateCustomFractal = onCreateCustomFractal,
     )
 }
 
@@ -84,6 +87,7 @@ fun ControlPlaneContent(
     onStartAmbient: () -> Unit,
     modifier: Modifier = Modifier,
     showFractalPreview: Boolean = true,
+    onCreateCustomFractal: (() -> Unit)? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
     val configuration = LocalConfiguration.current
@@ -121,6 +125,16 @@ fun ControlPlaneContent(
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp, vertical = 8.dp),
             )
+            if (onCreateCustomFractal != null) {
+                TextButton(
+                    onClick = onCreateCustomFractal,
+                    modifier = Modifier
+                        .padding(horizontal = 12.dp)
+                        .testTag("create_custom_fractal"),
+                ) {
+                    Text(stringResource(R.string.custom_fractal_create))
+                }
+            }
             GalleryHero(
                 livePreview = showFractalPreview,
                 artwork = selected,

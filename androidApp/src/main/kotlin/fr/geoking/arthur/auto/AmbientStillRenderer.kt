@@ -6,12 +6,16 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RadialGradient
 import android.graphics.Shader
+import fr.geoking.arthur.fractal.CustomFractalParams
+import fr.geoking.arthur.fractal.CustomFractalQuality
+import fr.geoking.arthur.fractal.CustomFractalStillRenderer
 import fr.geoking.arthur.genart.GenartCatalog
 import fr.geoking.arthur.genart.GenartEngineId
 import fr.geoking.arthur.genart.GenartStillRenderer
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.isGenerative
+import fr.geoking.arthur.shared.source.CustomFractalSource
 import java.io.File
 import kotlin.random.Random
 
@@ -36,6 +40,8 @@ object AmbientStillRenderer {
         val seed = artwork.id.hashCode().toLong() xor (generation * 0x9E3779B9L)
         when {
             artwork.kind == ArtworkKind.Genart -> drawGenart(canvas, artwork.id, generation)
+            artwork.kind == ArtworkKind.CustomFractal || CustomFractalSource.isCustomId(artwork.id) ->
+                drawCustomFractal(canvas, artwork.id, generation)
             artwork.isGenerative -> drawFractalField(canvas, artwork.id, seed)
             else -> drawStillPlaceholder(canvas, seed)
         }
@@ -58,10 +64,23 @@ object AmbientStillRenderer {
 
     fun kindForId(artworkId: String): ArtworkKind = when {
         artworkId.startsWith("genart.") -> ArtworkKind.Genart
+        CustomFractalSource.isCustomId(artworkId) -> ArtworkKind.CustomFractal
         artworkId.startsWith("fractal.") -> ArtworkKind.FractalPreset
         artworkId.startsWith("rijks-") -> ArtworkKind.Painting
         artworkId.startsWith("bundled-") -> ArtworkKind.Painting
         else -> ArtworkKind.Photo
+    }
+
+    private fun drawCustomFractal(canvas: Canvas, artworkId: String, generation: Long) {
+        val params = CustomFractalParams.fromArtworkId(artworkId)
+            ?: return drawStillPlaceholder(canvas, artworkId.hashCode().toLong() xor generation)
+        CustomFractalStillRenderer.draw(
+            canvas = canvas,
+            params = params,
+            size = SIZE,
+            generation = generation,
+            quality = CustomFractalQuality.Medium,
+        )
     }
 
     private fun drawStillPlaceholder(canvas: Canvas, seed: Long) {

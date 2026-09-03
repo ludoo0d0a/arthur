@@ -66,6 +66,10 @@ class ArthurMediaMappingTest {
         assertEquals(ArtworkKind.Genart, AmbientStillRenderer.kindForId("genart.waves"))
         assertEquals(ArtworkKind.Genart, AmbientStillRenderer.kindForId("genart.micro"))
         assertEquals(ArtworkKind.FractalPreset, AmbientStillRenderer.kindForId("fractal.mandelbrot"))
+        assertEquals(
+            ArtworkKind.CustomFractal,
+            AmbientStillRenderer.kindForId("customfractal.v1.c7.m0.p200_700_500_200_800_700"),
+        )
         assertEquals(ArtworkKind.Painting, AmbientStillRenderer.kindForId("rijks-SK-C-5"))
     }
 

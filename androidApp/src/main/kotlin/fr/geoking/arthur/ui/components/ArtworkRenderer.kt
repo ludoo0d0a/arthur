@@ -12,6 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import fr.geoking.arthur.fractal.CustomFractalEffectCanvas
+import fr.geoking.arthur.fractal.CustomFractalParams
 import fr.geoking.arthur.fractal.FractalEffectCanvas
 import fr.geoking.arthur.fractal.FractalQuality
 import fr.geoking.arthur.fractal.FractalType
@@ -47,7 +49,19 @@ fun ArtworkRenderer(
                     StillArtworkPlaceholder(kind = artwork.kind)
                 }
             }
-            ArtworkKind.FractalPreset, ArtworkKind.CustomFractal -> {
+            ArtworkKind.CustomFractal -> {
+                val params = CustomFractalParams.fromArtworkId(artwork.id)
+                if (params != null) {
+                    CustomFractalEffectCanvas(
+                        params = params,
+                        isActive = isActive,
+                        quality = quality.toFractalQuality(),
+                    )
+                } else {
+                    StillArtworkPlaceholder(kind = artwork.kind)
+                }
+            }
+            ArtworkKind.FractalPreset -> {
                 FractalEffectCanvas(
                     isActive = isActive,
                     quality = quality.toFractalQuality(),

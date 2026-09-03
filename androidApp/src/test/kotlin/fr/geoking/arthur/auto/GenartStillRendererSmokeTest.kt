@@ -49,6 +49,24 @@ class GenartStillRendererSmokeTest {
         micro.recycle()
     }
 
+    @Test
+    fun ambientStill_customFractal_bakesFromEncodedId() {
+        val id = "customfractal.v1.c42.m0.p200_700_500_200_800_700"
+        val a = AmbientStillRenderer.render(
+            Artwork(id = id, title = "Custom", sourceId = "customfractal", kind = ArtworkKind.CustomFractal),
+            generation = 1L,
+        )
+        val b = AmbientStillRenderer.render(
+            Artwork(id = id, title = "Custom", sourceId = "customfractal", kind = ArtworkKind.CustomFractal),
+            generation = 90L,
+        )
+        assertTrue(sampleHasPaint(a))
+        assertTrue(sampleHasPaint(b))
+        assertNotEquals(checksum(a), checksum(b))
+        a.recycle()
+        b.recycle()
+    }
+
     private fun bake(id: String, generation: Long): Bitmap =
         AmbientStillRenderer.render(
             Artwork(id = id, title = id, sourceId = "genart", kind = ArtworkKind.Genart),

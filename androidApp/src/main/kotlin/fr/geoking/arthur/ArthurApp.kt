@@ -4,9 +4,11 @@ import android.app.Application
 import fr.geoking.arthur.billing.FakePurchasesGateway
 import fr.geoking.arthur.billing.PurchasesGateway
 import fr.geoking.arthur.billing.RevenueCatPremiumEntitlement
+import fr.geoking.arthur.fractal.CustomFractalStore
 import fr.geoking.arthur.shared.domain.PremiumEntitlement
 import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.shared.source.BundledPackSource
+import fr.geoking.arthur.shared.source.CustomFractalSource
 import fr.geoking.arthur.shared.source.FractalSource
 import fr.geoking.arthur.shared.source.GenartSource
 import fr.geoking.arthur.shared.source.RijksmuseumSource
@@ -32,10 +34,16 @@ val appModule = module {
     single { FakePurchasesGateway(premium = false) }
     single<PurchasesGateway> { get<FakePurchasesGateway>() }
     single<PremiumEntitlement> { RevenueCatPremiumEntitlement(get()) }
+    single { CustomFractalStore(androidContext()) }
     single { HttpClient(OkHttp) }
     single { BundledPackSource() }
     single { GenartSource() }
     single { FractalSource() }
+    single {
+        CustomFractalSource(
+            loadArtworks = { get<CustomFractalStore>().list() },
+        )
+    }
     single {
         val client = get<HttpClient>()
         RijksmuseumSource(
@@ -49,6 +57,7 @@ val appModule = module {
                 get<RijksmuseumSource>(),
                 get<GenartSource>(),
                 get<FractalSource>(),
+                get<CustomFractalSource>(),
             ),
             entitlement = get(),
         )

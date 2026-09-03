@@ -1,0 +1,62 @@
+{
+  "version": "1.0.0",
+  "package": "fr.geoking.arthur",
+  "locales": [
+    {
+      "lang": "en",
+      "locale": "en-US",
+      "wearScreenshots": 0,
+      "phoneScreenshots": 4,
+      "listingText": "doc/playstore/text-en.md"
+    },
+    {
+      "lang": "fr",
+      "locale": "fr-FR",
+      "wearScreenshots": 0,
+      "phoneScreenshots": 4,
+      "listingText": "doc/playstore/text-fr.md"
+    }
+  ],
+  "wearScreenshots": [
+    "start.png",
+    "match.png",
+    "tiebreak.png",
+    "selection_judge_side.png",
+    "selection_service_side.png",
+    "end_win.png",
+    "settings_format.png",
+    "history.png"
+  ],
+  "wearSource": "framed",
+  "phoneSource": "montages",
+  "wearScreenDir": "screenshots/wear/screen",
+  "phoneMontagesDir": "screenshots/phone/montages",
+  "phoneScreenshots": [
+    "phone-installed.jpg",
+    "phone-connect.jpg",
+    "phone-notconnected.jpg",
+    "history.png",
+    "history_detail.png"
+  ],
+  "wearFramedDir": "screenshots/wear/framed",
+  "phoneDirs": [
+    "screenshots/phone"
+  ],
+  "imagesLayout": "{BCP-47}/images/wearOsScreenshots|phoneScreenshots",
+  "missingWear": [
+    "start.png",
+    "match.png",
+    "tiebreak.png",
+    "selection_judge_side.png",
+    "selection_service_side.png",
+    "end_win.png",
+    "settings_format.png",
+    "history.png"
+  ],
+  "missingPhone": [],
+  "missingCopy": [],
+  "pathTemplates": {
+    "changelog": "doc/playstore/changelog-{lang}.md",
+    "listingText": "doc/playstore/text-{lang}.md"
+  }
+}

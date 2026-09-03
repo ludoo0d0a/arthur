@@ -17,7 +17,11 @@
     "keystoreAlias": "key0",
     "keystoreDn": "CN=Arthur, OU=GeoKing, O=GeoKing, L=Paris, C=FR",
     "mainActivity": ".phone.MainActivity",
-    "signInLogTag": "ArthurSignIn"
+    "signInLogTag": "ArthurSignIn",
+    "playStore": {
+      "requireWearScreenshots": false,
+      "listingsDir": "doc/playstore/listings"
+    }
   },
   "urls": {
     "website": {

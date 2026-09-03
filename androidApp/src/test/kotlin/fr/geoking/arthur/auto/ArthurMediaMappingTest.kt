@@ -62,6 +62,9 @@ class ArthurMediaMappingTest {
     @Test
     fun kindForId_mapsPrefixes() {
         assertEquals(ArtworkKind.Genart, AmbientStillRenderer.kindForId("genart.tunnel"))
+        assertEquals(ArtworkKind.Genart, AmbientStillRenderer.kindForId("genart.sphere"))
+        assertEquals(ArtworkKind.Genart, AmbientStillRenderer.kindForId("genart.waves"))
+        assertEquals(ArtworkKind.Genart, AmbientStillRenderer.kindForId("genart.micro"))
         assertEquals(ArtworkKind.FractalPreset, AmbientStillRenderer.kindForId("fractal.mandelbrot"))
         assertEquals(ArtworkKind.Painting, AmbientStillRenderer.kindForId("rijks-SK-C-5"))
     }

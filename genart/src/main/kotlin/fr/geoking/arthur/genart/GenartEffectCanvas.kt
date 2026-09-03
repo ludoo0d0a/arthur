@@ -8,11 +8,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import fr.geoking.arthur.genart.engines.MicroEngine
 import fr.geoking.arthur.genart.engines.ParticlesEngine
 import fr.geoking.arthur.genart.engines.Pseudo3DEngine
 import fr.geoking.arthur.genart.engines.SoftShadowsEngine
+import fr.geoking.arthur.genart.engines.SphereEngine
 import fr.geoking.arthur.genart.engines.TonalGeometryEngine
 import fr.geoking.arthur.genart.engines.TunnelEngine
+import fr.geoking.arthur.genart.engines.WavesEngine
 
 /**
  * Dispatches to a procedural Canvas engine. Pauses visual intensity when [isActive] is false.
@@ -71,6 +74,30 @@ fun GenartEffectCanvas(
             modifier = canvasModifier,
         )
         GenartEngineId.TonalGeometry -> TonalGeometryEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.Sphere -> SphereEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.Waves -> WavesEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.Micro -> MicroEngine(
             isActive = isActive,
             paletteColors = palette,
             quality = quality,

@@ -6,7 +6,16 @@ import androidx.core.graphics.ColorUtils
 
 /** Seed → harmonious Compose colors shared by all genart engines. */
 object TonalPalette {
-    fun default(): List<Color> = fromSeed(Color(0xFF6366F1))
+    fun default(): List<Color> = fromAnimationPalette(AnimationPalettes.paletteFor(0))
+
+    fun fromAnimationPalette(palette: AnimationPalette): List<Color> =
+        palette.colorsAsComposeColor.ifEmpty { fromSeed(Color(0xFF6366F1)) }
+
+    fun toAnimationPalette(colors: List<Color>, name: String = "Custom"): AnimationPalette =
+        AnimationPalette(
+            name = name,
+            colors = colors.map { it.toArgb() },
+        )
 
     fun fromSeed(seed: Color): List<Color> {
         val hsl = FloatArray(3)

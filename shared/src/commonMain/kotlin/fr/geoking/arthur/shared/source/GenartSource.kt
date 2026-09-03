@@ -24,6 +24,9 @@ class GenartSource(
         const val SOFT_SHADOWS = "genart.softshadows"
         const val TUNNEL = "genart.tunnel"
         const val TONAL_GEOMETRY = "genart.tonalgeometry"
+        const val SPHERE = "genart.sphere"
+        const val WAVES = "genart.waves"
+        const val MICRO = "genart.micro"
 
         fun defaultCatalog(): List<Artwork> = listOf(
             Artwork(
@@ -57,6 +60,27 @@ class GenartSource(
             Artwork(
                 id = TONAL_GEOMETRY,
                 title = "Tonal Geometry",
+                attribution = "Arthur Genart",
+                sourceId = ID,
+                kind = ArtworkKind.Genart,
+            ),
+            Artwork(
+                id = SPHERE,
+                title = "Orbiting Sphere",
+                attribution = "Arthur Genart",
+                sourceId = ID,
+                kind = ArtworkKind.Genart,
+            ),
+            Artwork(
+                id = WAVES,
+                title = "Layered Waves",
+                attribution = "Arthur Genart",
+                sourceId = ID,
+                kind = ArtworkKind.Genart,
+            ),
+            Artwork(
+                id = MICRO,
+                title = "Volumetric Rays",
                 attribution = "Arthur Genart",
                 sourceId = ID,
                 kind = ArtworkKind.Genart,

@@ -6,13 +6,13 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RadialGradient
 import android.graphics.Shader
+import fr.geoking.arthur.genart.GenartCatalog
+import fr.geoking.arthur.genart.GenartEngineId
+import fr.geoking.arthur.genart.GenartStillRenderer
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.isGenerative
 import java.io.File
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
 import kotlin.random.Random
 
 /**
@@ -35,7 +35,7 @@ object AmbientStillRenderer {
         val canvas = Canvas(bitmap)
         val seed = artwork.id.hashCode().toLong() xor (generation * 0x9E3779B9L)
         when {
-            artwork.kind == ArtworkKind.Genart -> drawGenart(canvas, artwork.id, seed)
+            artwork.kind == ArtworkKind.Genart -> drawGenart(canvas, artwork.id, generation)
             artwork.isGenerative -> drawFractalField(canvas, artwork.id, seed)
             else -> drawStillPlaceholder(canvas, seed)
         }
@@ -89,41 +89,15 @@ object AmbientStillRenderer {
         canvas.drawCircle(SIZE * 0.5f, SIZE * 0.48f, SIZE * 0.18f, accent)
     }
 
-    private fun drawGenart(canvas: Canvas, artworkId: String, seed: Long) {
-        val rnd = Random(seed)
-        canvas.drawColor(Color.rgb(2, 6, 23))
-        canvas.drawPaint(
-            Paint().apply {
-                shader = RadialGradient(
-                    SIZE * 0.5f,
-                    SIZE * 0.45f,
-                    SIZE * 0.85f,
-                    Color.rgb(11, 18, 32),
-                    Color.rgb(2, 6, 23),
-                    Shader.TileMode.CLAMP,
-                )
-            },
+    private fun drawGenart(canvas: Canvas, artworkId: String, generation: Long) {
+        val engine = GenartCatalog.engineForId(artworkId)
+            ?: GenartEngineId.Particles
+        GenartStillRenderer.draw(
+            canvas = canvas,
+            engineId = engine,
+            size = SIZE,
+            generation = generation,
         )
-        val count = when {
-            artworkId.contains("particles") -> 64
-            artworkId.contains("tunnel") -> 28
-            else -> 40
-        }
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-        for (i in 0 until count) {
-            val t = (i + rnd.nextFloat()) / count
-            val angle = t * 2f * PI.toFloat() * (1.5f + rnd.nextFloat())
-            val radius = SIZE * (0.08f + 0.38f * t)
-            val x = SIZE * 0.5f + cos(angle) * radius
-            val y = SIZE * 0.48f + sin(angle * 0.9f) * radius * 0.85f
-            paint.color = Color.argb(
-                90 + rnd.nextInt(120),
-                80 + rnd.nextInt(140),
-                120 + rnd.nextInt(100),
-                180 + rnd.nextInt(60),
-            )
-            canvas.drawCircle(x, y, 3f + rnd.nextFloat() * 8f, paint)
-        }
     }
 
     private fun drawFractalField(canvas: Canvas, artworkId: String, seed: Long) {

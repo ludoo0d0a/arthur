@@ -15,6 +15,7 @@ jobs:
     uses: ludoo0d0a/geoking-ci/.github/workflows/android-ci.yml@main
     with:
       artifact_name: arthur-debug-apk
+      gradle_version: wrapper
       gradle_module: ':androidApp'
       apk_glob: 'androidApp/build/outputs/apk/debug/*.apk'
       google_services_path: 'androidApp/google-services.json'

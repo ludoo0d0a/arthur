@@ -11,10 +11,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import fr.geoking.arthur.R
 import fr.geoking.arthur.phone.theme.ArthurTheme
-import fr.geoking.arthur.ui.screens.AmbientScreenContent
 import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.shared.source.BundledPackSource
+import fr.geoking.arthur.ui.screens.AmbientScreenContent
 import kotlinx.coroutines.runBlocking
 import org.koin.android.ext.android.inject
 
@@ -28,27 +28,35 @@ class AmbientActivity : ComponentActivity() {
             statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
         )
-        val title = runBlocking {
-            contentEngine.catalog(
+        val artworkId = intent.getStringExtra(EXTRA_ARTWORK_ID)
+        val artwork = runBlocking {
+            val catalog = contentEngine.catalog(
                 PreparedRotation(
-                    sourceIds = listOf(BundledPackSource.ID),
+                    sourceIds = emptyList(),
                     artworkIds = emptyList(),
                 ),
-            ).firstOrNull()?.title ?: getString(R.string.app_name)
+            )
+            catalog.firstOrNull { it.id == artworkId } ?: catalog.firstOrNull()
         }
+        val title = artwork?.title ?: getString(R.string.app_name)
         setContent {
             ArthurTheme {
-                AmbientScreenContent(title = title)
+                AmbientScreenContent(title = title, artwork = artwork)
             }
         }
     }
 
     companion object {
-        fun intent(context: Context): Intent = Intent(context, AmbientActivity::class.java)
+        const val EXTRA_ARTWORK_ID = "artwork_id"
+
+        fun intent(context: Context, artworkId: String? = null): Intent =
+            Intent(context, AmbientActivity::class.java).apply {
+                if (artworkId != null) putExtra(EXTRA_ARTWORK_ID, artworkId)
+            }
     }
 }
 
-/** TV Canvas screensaver / Dream. */
+/** TV Canvas screensaver / Dream — metadata/still only (no live Compose engines). */
 class ArthurDreamService : DreamService() {
     private val contentEngine: ContentEngine by inject()
 

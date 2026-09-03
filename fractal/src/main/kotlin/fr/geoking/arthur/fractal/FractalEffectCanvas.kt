@@ -40,14 +40,15 @@ enum class FractalType { Mandelbrot, Julia, BurningShip, Tricorn }
 
 /**
  * Animated fractal background with a slow infinite zoom-in effect.
- * Cycles through different fractal types.
+ * Cycles through different fractal types unless [forceType] is set.
  */
 @Composable
 fun FractalEffectCanvas(
     isActive: Boolean,
     paletteColors: List<Color> = DefaultPalette,
     quality: FractalQuality = FractalQuality.Medium,
-    colorIntensity: FractalColorIntensity = FractalColorIntensity.Medium
+    colorIntensity: FractalColorIntensity = FractalColorIntensity.Medium,
+    forceType: FractalType? = null,
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "fractal_zoom")
     // Slow infinite zoom: from 1 to 80 over 50 seconds, then restart
@@ -62,20 +63,22 @@ fun FractalEffectCanvas(
     )
     val zoom = 1f + zoomProgress * 79f
 
-    // Track zoom cycles to change fractal type
+    // Track zoom cycles to change fractal type (ignored when forceType is set)
     var zoomCycleCount by remember { mutableStateOf(0) }
     var lastZoomProgress by remember { mutableStateOf(0f) }
 
-    LaunchedEffect(zoomProgress) {
+    LaunchedEffect(zoomProgress, forceType) {
+        if (forceType != null) return@LaunchedEffect
         if (zoomProgress < lastZoomProgress) {
             zoomCycleCount++
         }
         lastZoomProgress = zoomProgress
     }
 
-    val fractalType = remember(zoomCycleCount) {
+    val cyclingType = remember(zoomCycleCount) {
         FractalType.entries[zoomCycleCount % FractalType.entries.size]
     }
+    val fractalType = forceType ?: cyclingType
 
     // Optional phase for smooth color cycling
     val phase by infiniteTransition.animateFloat(

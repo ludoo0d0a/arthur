@@ -89,6 +89,7 @@ kotlin {
 dependencies {
     implementation(project(":shared"))
     implementation(project(":fractal"))
+    implementation(project(":genart"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)

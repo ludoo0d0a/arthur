@@ -7,6 +7,8 @@ import fr.geoking.arthur.shared.domain.FreeTierLimits
 import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.Source
 import fr.geoking.arthur.shared.source.BundledPackSource
+import fr.geoking.arthur.shared.source.FractalSource
+import fr.geoking.arthur.shared.source.GenartSource
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -77,5 +79,50 @@ class ContentEngineTest {
         )
         val rotation = engine.resolve(prepared)
         assertEquals(listOf("bundled-3", "bundled-1"), rotation.artworkIds)
+    }
+
+    @Test
+    fun genartSource_freeTier_capsAtTwo() = runBlocking {
+        val engine = ContentEngine(
+            sources = listOf(GenartSource()),
+            entitlement = FakePremiumEntitlement(isPremium = false),
+            limits = FreeTierLimits(maxGenart = 2),
+        )
+        val catalog = engine.catalog(
+            PreparedRotation(sourceIds = listOf(GenartSource.ID), artworkIds = emptyList()),
+        )
+        assertEquals(2, catalog.size)
+        assertTrue(catalog.all { it.kind == ArtworkKind.Genart })
+        assertEquals(
+            listOf(GenartSource.PARTICLES, GenartSource.PSEUDO3D),
+            catalog.map { it.id },
+        )
+    }
+
+    @Test
+    fun genartSource_premium_includesAllEngines() = runBlocking {
+        val engine = ContentEngine(
+            sources = listOf(GenartSource()),
+            entitlement = FakePremiumEntitlement(isPremium = true),
+        )
+        val catalog = engine.catalog(
+            PreparedRotation(sourceIds = listOf(GenartSource.ID), artworkIds = emptyList()),
+        )
+        assertEquals(GenartSource.defaultCatalog().size, catalog.size)
+        assertTrue(catalog.all { it.kind == ArtworkKind.Genart })
+    }
+
+    @Test
+    fun fractalSource_freeTier_capsPresets() = runBlocking {
+        val engine = ContentEngine(
+            sources = listOf(FractalSource()),
+            entitlement = FakePremiumEntitlement(isPremium = false),
+            limits = FreeTierLimits(maxFractalPresets = 3),
+        )
+        val catalog = engine.catalog(
+            PreparedRotation(sourceIds = listOf(FractalSource.ID), artworkIds = emptyList()),
+        )
+        assertEquals(3, catalog.size)
+        assertTrue(catalog.all { it.kind == ArtworkKind.FractalPreset })
     }
 }

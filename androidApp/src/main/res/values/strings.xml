@@ -9,6 +9,7 @@
     <string name="dream_description">Arthur ambient art</string>
     <string name="rotation_section">Prepared rotation</string>
     <string name="fractal_hero_label">Live fractal canvas</string>
+    <string name="genart_hero_label">Live genart canvas</string>
     <string name="gallery_hero_label">Gallery canvas</string>
     <string name="selected_artwork">Selected</string>
     <string name="kind_painting">Painting</string>

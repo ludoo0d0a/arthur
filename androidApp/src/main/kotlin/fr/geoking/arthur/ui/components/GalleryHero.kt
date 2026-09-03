@@ -25,28 +25,48 @@ import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.R
 import fr.geoking.arthur.fractal.FractalEffectCanvas
 import fr.geoking.arthur.fractal.FractalQuality
+import fr.geoking.arthur.genart.GenartQuality
+import fr.geoking.arthur.shared.domain.Artwork
+import fr.geoking.arthur.shared.domain.ArtworkKind
 
 @Composable
 internal fun GalleryHero(
     livePreview: Boolean,
     modifier: Modifier = Modifier,
+    artwork: Artwork? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
+    val generative = artwork?.kind in setOf(
+        ArtworkKind.Genart,
+        ArtworkKind.FractalPreset,
+        ArtworkKind.CustomFractal,
+    )
     Card(
         modifier = modifier,
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(containerColor = scheme.surfaceContainer),
     ) {
         Box {
-            if (livePreview) {
-                FractalEffectCanvas(isActive = true, quality = FractalQuality.Low)
-            } else {
-                Image(
-                    painter = painterResource(R.drawable.ic_hero_gallery),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
+            when {
+                generative && artwork != null -> {
+                    ArtworkRenderer(
+                        artwork = artwork,
+                        isActive = true,
+                        quality = GenartQuality.Low,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+                livePreview -> {
+                    FractalEffectCanvas(isActive = true, quality = FractalQuality.Low)
+                }
+                else -> {
+                    Image(
+                        painter = painterResource(R.drawable.ic_hero_gallery),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             }
             Box(
                 modifier = Modifier
@@ -71,13 +91,18 @@ internal fun GalleryHero(
                     modifier = Modifier.size(18.dp),
                 )
                 Text(
-                    text = stringResource(
-                        if (livePreview) R.string.fractal_hero_label else R.string.gallery_hero_label,
-                    ),
+                    text = stringResource(heroLabelRes(livePreview, artwork?.kind)),
                     style = MaterialTheme.typography.labelLarge,
                     color = scheme.onSurface,
                 )
             }
         }
     }
+}
+
+private fun heroLabelRes(livePreview: Boolean, kind: ArtworkKind?): Int = when {
+    kind == ArtworkKind.Genart -> R.string.genart_hero_label
+    kind == ArtworkKind.FractalPreset || kind == ArtworkKind.CustomFractal -> R.string.fractal_hero_label
+    livePreview -> R.string.fractal_hero_label
+    else -> R.string.gallery_hero_label
 }

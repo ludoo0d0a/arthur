@@ -7,6 +7,8 @@ import fr.geoking.arthur.billing.RevenueCatPremiumEntitlement
 import fr.geoking.arthur.shared.domain.PremiumEntitlement
 import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.shared.source.BundledPackSource
+import fr.geoking.arthur.shared.source.FractalSource
+import fr.geoking.arthur.shared.source.GenartSource
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 import org.koin.dsl.module
@@ -26,9 +28,15 @@ val appModule = module {
     single<PurchasesGateway> { get<FakePurchasesGateway>() }
     single<PremiumEntitlement> { RevenueCatPremiumEntitlement(get()) }
     single { BundledPackSource() }
+    single { GenartSource() }
+    single { FractalSource() }
     single {
         ContentEngine(
-            sources = listOf(get<BundledPackSource>()),
+            sources = listOf(
+                get<BundledPackSource>(),
+                get<GenartSource>(),
+                get<FractalSource>(),
+            ),
             entitlement = get(),
         )
     }

@@ -29,8 +29,8 @@ class MainActivity : ComponentActivity() {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     ControlPlaneScreen(
                         contentEngine = contentEngine,
-                        onStartAmbient = {
-                            startActivity(AmbientActivity.intent(this))
+                        onStartAmbient = { artwork ->
+                            startActivity(AmbientActivity.intent(this, artwork?.id))
                         },
                     )
                 }

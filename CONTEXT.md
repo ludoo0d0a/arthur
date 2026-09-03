@@ -9,7 +9,7 @@ The product name (wordplay on ART + Arthur). Android applicationId / root packag
 _Avoid_: Untitled, Ambient Gallery (as product name)
 
 **App Shell**:
-Single Android APK (`:androidApp`) hosting Control Plane UI, Auto Canvas (Media), and TV Canvas (screensaver + ambient launcher). Internal packages for phone / auto / tv; KMP `:shared` (+ `:fractal`) for domain logic. Not separate TV/phone store APKs in v1.
+Single Android APK (`:androidApp`) hosting Control Plane UI, Auto Canvas (Media), and TV Canvas (screensaver + ambient launcher). Internal packages for phone / auto / tv; KMP `:shared` (+ `:fractal`, `:genart`) for domain logic and generative renderers. Not separate TV/phone store APKs in v1.
 _Avoid_: Multi-APK store listing for v1, separate `:tv` application module as ship artifact
 
 **Control Plane**:
@@ -75,7 +75,7 @@ v1 path from repo to Play publication, automated via **geoking-tools** + **geoki
 _Avoid_: Hand-rolled CI unique to Arthur; shipping without Crashlytics/Analytics; blocking v1 on growth dashboard
 
 **Genart**:
-On-device procedural generative Artwork (shaders, particles, patterns — Julius theme family excluding Fractal Presets / Custom Fractal). Not a pre-rendered image catalog and not prompt-based AI image generation in v1.
+On-device procedural generative Artwork (Compose Canvas engines in `:genart` — particles, pseudo-3D lattice, soft shadows, tunnel, tonal geometry; Julius theme family excluding Fractal Presets / Custom Fractal). Not a pre-rendered image catalog and not prompt-based AI image generation in v1.
 _Avoid_: AI image gen, stock “genart” photo packs as the definition of Genart
 
 **Muzei Pattern**:

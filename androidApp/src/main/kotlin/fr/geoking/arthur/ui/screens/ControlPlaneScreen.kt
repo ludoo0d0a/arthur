@@ -39,7 +39,7 @@ import fr.geoking.arthur.ui.components.StartAmbientBar
 @Composable
 fun ControlPlaneScreen(
     contentEngine: ContentEngine,
-    onStartAmbient: () -> Unit,
+    onStartAmbient: (Artwork?) -> Unit,
     modifier: Modifier = Modifier,
     initialCatalog: List<Artwork>? = null,
     initialSelected: Artwork? = null,
@@ -50,9 +50,10 @@ fun ControlPlaneScreen(
 
     LaunchedEffect(contentEngine, initialCatalog) {
         if (initialCatalog == null) {
+            // Empty sourceIds → all registered Sources (bundled, genart, fractal)
             catalog = contentEngine.catalog(
                 PreparedRotation(
-                    sourceIds = listOf(BundledPackSource.ID),
+                    sourceIds = emptyList(),
                     artworkIds = emptyList(),
                 ),
             )
@@ -63,7 +64,7 @@ fun ControlPlaneScreen(
         catalog = catalog,
         selected = selected,
         onSelect = { selected = it },
-        onStartAmbient = onStartAmbient,
+        onStartAmbient = { onStartAmbient(selected) },
         modifier = modifier,
         showFractalPreview = showFractalPreview,
     )
@@ -105,6 +106,7 @@ fun ControlPlaneContent(
             )
             GalleryHero(
                 livePreview = showFractalPreview,
+                artwork = selected,
                 modifier = Modifier
                     .padding(horizontal = 20.dp, vertical = 8.dp)
                     .fillMaxWidth()

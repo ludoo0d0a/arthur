@@ -20,4 +20,5 @@ dependencyResolutionManagement {
 rootProject.name = "Arthur"
 include(":shared")
 include(":fractal")
+include(":genart")
 include(":androidApp")

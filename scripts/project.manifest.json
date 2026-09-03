@@ -58,7 +58,12 @@
       "integrity": "https://play.google.com/console/u/0/developers/8648842673731499425/app/4975932208827458164/keymanagement",
       "usersAndPermissions": "https://play.google.com/console/u/0/developers/8648842673731499425/users-and-permissions",
       "apiAccess": "https://play.google.com/console/u/0/developers/8648842673731499425/api-access",
-      "integrityHelp": "https://support.google.com/googleplay/android-developer/answer/9842756?hl=en"
+      "integrityHelp": "https://support.google.com/googleplay/android-developer/answer/9842756?hl=en",
+      "adIdDeclaration": "https://play.google.com/console/u/0/developers/8648842673731499425/app/4975932208827458164/app-content/ad-id-declaration",
+      "dataSafety": "https://play.google.com/console/u/0/developers/8648842673731499425/app/4975932208827458164/app-content/data-safety",
+      "contentRating": "https://play.google.com/console/u/0/developers/8648842673731499425/app/4975932208827458164/app-content/content-rating",
+      "targetAudience": "https://play.google.com/console/u/0/developers/8648842673731499425/app/4975932208827458164/app-content/target-audience",
+      "internalTesting": "https://play.google.com/console/u/0/developers/8648842673731499425/app/4975932208827458164/tracks/internal-testing"
     },
     "gemini": {
       "apiKeys": "https://aistudio.google.com/apikey"
@@ -79,5 +84,104 @@
     "zone": "geoking.fr",
     "subdomain": "arthur",
     "workerCustomDomain": true
+  },
+  "playConsole": {
+    "appType": "APPLICATION",
+    "category": "ART_AND_DESIGN",
+    "defaultLanguage": "en-US",
+    "contact": {
+      "email": "ludovic.valente@gmail.com",
+      "website": "https://arthur.geoking.fr",
+      "privacyPolicyUrl": "https://arthur.geoking.fr/privacy"
+    },
+    "storeListing": {
+      "locales": [
+        "en-US",
+        "fr-FR"
+      ],
+      "icon": "playstore/icon-512.png",
+      "featureGraphic": "playstore/feature-graphic.png",
+      "listingsDir": "doc/playstore/listings"
+    },
+    "distribution": {
+      "countries": [
+        "FR"
+      ],
+      "managedPublishing": false,
+      "internalTesting": {
+        "testersListName": "Testeurs - Tests internes",
+        "testerCount": 5,
+        "optInUrl": "https://play.google.com/apps/internaltest/4701754106511681599"
+      }
+    },
+    "declarations": {
+      "governmentApp": false,
+      "financialFeatures": false,
+      "healthApp": false,
+      "containsAds": false,
+      "advertisingId": {
+        "usesAdvertisingId": true,
+        "purposes": [
+          "ANALYTICS"
+        ],
+        "note": "Firebase Analytics merges com.google.android.gms.permission.AD_ID. Console requires Yes + Analytics (not advertising/marketing)."
+      },
+      "signInRequired": false,
+      "allFeaturesAvailableWithoutRestriction": true,
+      "targetAge": "18+",
+      "contentRating": {
+        "questionnaireCategory": "OTHER",
+        "iarcEmail": "ludovic.valente@gmail.com",
+        "notes": "IARC submitted; ESRB Everyone; in-app purchases declared. Questionnaire category: Tous les autres types."
+      },
+      "dataSafety": {
+        "csv": "scripts/playstore/data_safety.csv",
+        "collectsOrShares": true,
+        "encryptedInTransit": true,
+        "inAppAccounts": false,
+        "outsideAppAccounts": false,
+        "userDataDeletion": false,
+        "dataTypes": [
+          "PURCHASE_HISTORY",
+          "APP_INTERACTIONS",
+          "CRASH_LOGS",
+          "DIAGNOSTICS",
+          "DEVICE_IDS"
+        ],
+        "perType": {
+          "collectedAndShared": true,
+          "ephemeral": false,
+          "required": true,
+          "purposes": [
+            "APP_FUNCTIONALITY",
+            "ANALYTICS"
+          ]
+        }
+      },
+      "foregroundServices": {
+        "mediaPlayback": false,
+        "note": "ArthurMediaService is browse-only (MediaBrowserServiceCompat); do not declare FOREGROUND_SERVICE_MEDIA_PLAYBACK until real playback FGS exists."
+      }
+    },
+    "release": {
+      "productionVersionName": "1.0.0",
+      "productionVersionCode": 18,
+      "releaseNotes": {
+        "en-US": "First release.",
+        "fr-FR": "Première version."
+      },
+      "tracks": {
+        "internal": {
+          "status": "completed",
+          "versionName": "1.0.0",
+          "versionCode": 18
+        },
+        "production": {
+          "status": "draft",
+          "versionName": "1.0.0",
+          "versionCode": 18
+        }
+      }
+    }
   }
 }

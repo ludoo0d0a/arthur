@@ -24,16 +24,27 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import kotlin.math.abs
 import kotlin.math.ln
+import kotlin.math.pow
 
 enum class FractalQuality { Low, Medium, High }
 enum class FractalColorIntensity { Low, Medium, High }
 
+/** Rich multi-stop palette for smooth escape-time gradients. */
 private val DefaultPalette = listOf(
-    Color(0xFF6366F1),
+    Color(0xFF0B1026),
+    Color(0xFF1B1F5C),
+    Color(0xFF2E3A8C),
+    Color(0xFF1D4ED8),
+    Color(0xFF0EA5E9),
     Color(0xFF22D3EE),
+    Color(0xFF67E8F9),
     Color(0xFFA78BFA),
+    Color(0xFFC084FC),
     Color(0xFFF472B6),
+    Color(0xFFFB7185),
     Color(0xFFFBBF24),
+    Color(0xFFFDE68A),
+    Color(0xFFFFF7ED),
 )
 
 enum class FractalType { Mandelbrot, Julia, BurningShip, Tricorn }
@@ -47,7 +58,7 @@ fun FractalEffectCanvas(
     isActive: Boolean,
     paletteColors: List<Color> = DefaultPalette,
     quality: FractalQuality = FractalQuality.Medium,
-    colorIntensity: FractalColorIntensity = FractalColorIntensity.Medium,
+    colorIntensity: FractalColorIntensity = FractalColorIntensity.High,
     forceType: FractalType? = null,
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "fractal_zoom")
@@ -91,7 +102,7 @@ fun FractalEffectCanvas(
         label = "phase"
     )
     val brightness by animateFloatAsState(
-        targetValue = if (isActive) 1.2f else 1f,
+        targetValue = if (isActive) 1.15f else 1f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
         label = "brightness"
     )
@@ -111,14 +122,14 @@ fun FractalEffectCanvas(
         }
 
         val gridSize = when (quality) {
-            FractalQuality.Low -> 48
-            FractalQuality.Medium -> 72
-            FractalQuality.High -> 96
+            FractalQuality.Low -> 64
+            FractalQuality.Medium -> 96
+            FractalQuality.High -> 128
         }
         val maxIter = when (quality) {
-            FractalQuality.Low -> 64
-            FractalQuality.Medium -> 128
-            FractalQuality.High -> 256
+            FractalQuality.Low -> 96
+            FractalQuality.Medium -> 180
+            FractalQuality.High -> 320
         }
 
         val cellW = w / gridSize
@@ -126,16 +137,16 @@ fun FractalEffectCanvas(
         // Visible range in complex plane: smaller as zoom increases
         val halfSpan = 2f / zoom
 
-        // Dark background
+        // Deep atmospheric backdrop
         drawRect(
             brush = Brush.radialGradient(
                 colors = listOf(
                     Color(0xFF1E1B4B),
                     Color(0xFF0F172A),
-                    Color(0xFF020617)
+                    Color(0xFF020617),
                 ),
                 center = Offset(centerX, centerY),
-                radius = maxOf(w, h) * 0.8f
+                radius = maxOf(w, h) * 0.85f,
             )
         )
 
@@ -148,14 +159,22 @@ fun FractalEffectCanvas(
                 val re = cx - halfSpan + (sx / w) * (2f * halfSpan)
                 val im = cy - halfSpan + (1f - sy / h) * (2f * halfSpan)
 
-                val (escaped, smooth) = when (fractalType) {
+                val continuous = when (fractalType) {
                     FractalType.Mandelbrot -> mandelbrotSmooth(re, im, maxIter)
                     FractalType.Julia -> juliaSmooth(re, im, maxIter)
                     FractalType.BurningShip -> burningShipSmooth(re, im, maxIter)
                     FractalType.Tricorn -> tricornSmooth(re, im, maxIter)
                 }
 
-                val color = fractalColor(escaped, smooth, phase, brightness, isActive, paletteColors, colorIntensity, maxIter)
+                val color = fractalColor(
+                    continuous = continuous,
+                    phase = phase,
+                    brightness = brightness,
+                    isActive = isActive,
+                    paletteColors = paletteColors,
+                    intensity = colorIntensity,
+                    maxIter = maxIter,
+                )
                 drawRect(
                     color = color,
                     topLeft = Offset(ix * cellW, iy * cellH),
@@ -163,18 +182,31 @@ fun FractalEffectCanvas(
                 )
             }
         }
+
+        // Soft vignette + warm center glow for a polished still look
+        drawRect(
+            brush = Brush.radialGradient(
+                colors = listOf(
+                    Color(0x33F472B6),
+                    Color(0x140EA5E9),
+                    Color(0x99020617),
+                ),
+                center = Offset(centerX, centerY * 0.92f),
+                radius = maxOf(w, h) * 0.78f,
+            )
+        )
     }
 }
 
-private fun smoothEscape(n: Int, zr2: Double, zi2: Double): Pair<Int, Float> {
-    val logZn = ln(zr2 + zi2) / 2.0
-    val nu = ln(logZn / ln(2.0)) / ln(2.0)
-    val smooth = (n + 1 - nu).toFloat().coerceIn(0f, 1f)
-    return n to smooth
+/** Continuous escape-time iteration, or -1 when inside the set. */
+private fun smoothEscape(n: Int, zr2: Double, zi2: Double): Float {
+    val logZn = ln((zr2 + zi2).coerceAtLeast(1e-12)) / 2.0
+    val nu = ln((logZn / ln(2.0)).coerceAtLeast(1e-12)) / ln(2.0)
+    return (n + 1.0 - nu).toFloat()
 }
 
 /** Mandelbrot iteration with smooth escape. */
-private fun mandelbrotSmooth(cr: Float, ci: Float, maxIter: Int): Pair<Int, Float> {
+private fun mandelbrotSmooth(cr: Float, ci: Float, maxIter: Int): Float {
     var zr = 0.0
     var zi = 0.0
     var n = 0
@@ -188,10 +220,10 @@ private fun mandelbrotSmooth(cr: Float, ci: Float, maxIter: Int): Pair<Int, Floa
         zr = newZr
         n++
     }
-    return maxIter to 0f
+    return -1f
 }
 
-private fun juliaSmooth(zrStart: Float, ziStart: Float, maxIter: Int): Pair<Int, Float> {
+private fun juliaSmooth(zrStart: Float, ziStart: Float, maxIter: Int): Float {
     var zr = zrStart.toDouble()
     var zi = ziStart.toDouble()
     val cr = -0.7
@@ -200,26 +232,20 @@ private fun juliaSmooth(zrStart: Float, ziStart: Float, maxIter: Int): Pair<Int,
     while (n < maxIter) {
         val zr2 = zr * zr
         val zi2 = zi * zi
-        if (zr2 + zi2 > 4.0) {
-            val logZn = ln(zr2 + zi2) / 2.0
-            val nu = ln(logZn / ln(2.0)) / ln(2.0)
-            val smooth = (n + 1 - nu).toFloat().coerceIn(0f, 1f)
-            return n to smooth
-        }
+        if (zr2 + zi2 > 4.0) return smoothEscape(n, zr2, zi2)
         val newZi = 2 * zr * zi + ci
         val newZr = zr2 - zi2 + cr
         zi = newZi
         zr = newZr
         n++
     }
-    return maxIter to 0f
+    return -1f
 }
-
 
 /**
  * Burning Ship fractal: take absolute value of components each iteration.
  */
-private fun burningShipSmooth(cr: Float, ci: Float, maxIter: Int): Pair<Int, Float> {
+private fun burningShipSmooth(cr: Float, ci: Float, maxIter: Int): Float {
     var zr = 0.0
     var zi = 0.0
     var n = 0
@@ -234,13 +260,13 @@ private fun burningShipSmooth(cr: Float, ci: Float, maxIter: Int): Pair<Int, Flo
         zi = newZi
         n++
     }
-    return maxIter to 0f
+    return -1f
 }
 
 /**
  * Tricorn fractal (Mandelbar): z = conj(z)^2 + c
  */
-private fun tricornSmooth(cr: Float, ci: Float, maxIter: Int): Pair<Int, Float> {
+private fun tricornSmooth(cr: Float, ci: Float, maxIter: Int): Float {
     var zr = 0.0
     var zi = 0.0
     var n = 0
@@ -256,52 +282,68 @@ private fun tricornSmooth(cr: Float, ci: Float, maxIter: Int): Pair<Int, Float> 
         zi = nextZi
         n++
     }
-    return maxIter to 0f
+    return -1f
 }
 
 private fun fractalColor(
-    iterations: Int,
-    smooth: Float,
+    continuous: Float,
     phase: Float,
     brightness: Float,
     isActive: Boolean,
     paletteColors: List<Color>,
     intensity: FractalColorIntensity,
-    maxIter: Int
+    maxIter: Int,
 ): Color {
-    if (iterations >= maxIter) {
-        return Color(0xFF020617) // Inside: dark
-    }
-    val t = (iterations + smooth) / maxIter.toFloat()
-    val safePalette = if (paletteColors.isNotEmpty()) paletteColors else listOf(Color(0xFF6366F1))
-
-    val multiplier = when (intensity) {
-        FractalColorIntensity.Low -> 1.5f
-        FractalColorIntensity.Medium -> 3f
-        FractalColorIntensity.High -> 6f
+    if (continuous < 0f) {
+        return Color(0xFF020617) // Inside: near-black
     }
 
-    val idx = ((t * multiplier + phase) % 1f) * safePalette.size
-    val i0 = (idx.toInt() % safePalette.size).coerceIn(0, safePalette.size - 1)
-    val i1 = ((idx.toInt() + 1) % safePalette.size).coerceIn(0, safePalette.size - 1)
-    val frac = idx - idx.toInt()
-    val c0 = safePalette[i0]
-    val c1 = safePalette[i1]
-    val r = (c0.red * (1 - frac) + c1.red * frac).coerceIn(0f, 1f)
-    val g = (c0.green * (1 - frac) + c1.green * frac).coerceIn(0f, 1f)
-    val b = (c0.blue * (1 - frac) + c1.blue * frac).coerceIn(0f, 1f)
+    val safePalette = if (paletteColors.size >= 2) paletteColors else DefaultPalette
 
-    val alphaBase = when (intensity) {
-        FractalColorIntensity.Low -> 0.3f + 0.3f * t
-        FractalColorIntensity.Medium -> 0.4f + 0.5f * t
-        FractalColorIntensity.High -> 0.5f + 0.5f * t
+    // Cycle density: more bands → richer gradients around the set boundary
+    val cycles = when (intensity) {
+        FractalColorIntensity.Low -> 2.2f
+        FractalColorIntensity.Medium -> 4.5f
+        FractalColorIntensity.High -> 7.5f
     }
-    val alpha = alphaBase * brightness
+
+    // Log remapping keeps fine detail near the boundary without crushing outer bands
+    val normalized = (ln(1.0 + continuous.toDouble()) / ln(1.0 + maxIter.toDouble())).toFloat()
+    val t = ((normalized * cycles + phase).mod(1f) + 1f).mod(1f)
+
+    val color = samplePalette(safePalette, t)
+
+    // Soft luminosity lift toward the set edge (high continuous ≈ boundary)
+    val edge = (continuous / maxIter.toFloat()).coerceIn(0f, 1f)
+    val glow = 0.88f + 0.22f * edge.pow(0.55f)
+    val activeBoost = if (isActive) 1.06f else 1f
+    val gain = (glow * brightness * activeBoost).coerceIn(0.75f, 1.35f)
 
     return Color(
-        red = (r * brightness).coerceIn(0f, 1f),
-        green = (g * brightness).coerceIn(0f, 1f),
-        blue = (b * brightness).coerceIn(0f, 1f),
-        alpha = if (isActive) (alpha * 1.1f).coerceIn(0f, 1f) else alpha
+        red = (color.red * gain).coerceIn(0f, 1f),
+        green = (color.green * gain).coerceIn(0f, 1f),
+        blue = (color.blue * gain).coerceIn(0f, 1f),
+        alpha = 1f,
     )
+}
+
+/** Smooth Hermite interpolation across a multi-stop palette. */
+private fun samplePalette(palette: List<Color>, t: Float): Color {
+    val scaled = t * palette.size
+    val i0 = scaled.toInt().mod(palette.size)
+    val i1 = (i0 + 1).mod(palette.size)
+    val frac = smoothstep(scaled - scaled.toInt())
+    val c0 = palette[i0]
+    val c1 = palette[i1]
+    return Color(
+        red = c0.red + (c1.red - c0.red) * frac,
+        green = c0.green + (c1.green - c0.green) * frac,
+        blue = c0.blue + (c1.blue - c0.blue) * frac,
+        alpha = 1f,
+    )
+}
+
+private fun smoothstep(x: Float): Float {
+    val t = x.coerceIn(0f, 1f)
+    return t * t * (3f - 2f * t)
 }

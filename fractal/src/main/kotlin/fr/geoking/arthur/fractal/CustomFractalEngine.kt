@@ -57,11 +57,12 @@ object CustomFractalEngine {
 
     fun paletteArgb(colorSeed: Int): List<Int> {
         val rnd = Random(colorSeed.toLong() xor 0xA11CE7L)
-        return List(5) { i ->
-            val hue = (colorSeed * 37 + i * 47 + rnd.nextInt(40)) % 360
-            val sat = 0.55f + (i % 3) * 0.12f
-            val value = 0.72f + (i % 2) * 0.12f
-            hsvToRgb(hue.toFloat(), sat, value)
+        // Wider, brighter stops so stroke gradients read as luminous ribbons
+        return List(8) { i ->
+            val hue = (colorSeed * 37 + i * 41 + rnd.nextInt(28)) % 360
+            val sat = 0.62f + (i % 4) * 0.09f
+            val value = 0.78f + (i % 3) * 0.08f
+            hsvToRgb(hue.toFloat(), sat.coerceIn(0f, 1f), value.coerceIn(0f, 1f))
         }
     }
 
@@ -189,7 +190,7 @@ object CustomFractalEngine {
                 samples = (samples * 0.7f).toInt().coerceAtLeast(8),
                 alpha = alpha * 0.72f,
                 strokeScale = strokeScale * 0.65f,
-                colorIndex = (colorIndex + 1 + i) % 5,
+                colorIndex = (colorIndex + 1 + i) % 8,
                 branchAngle = branchAngle + 0.4f + i * 0.15f,
                 out = out,
                 rnd = rnd,

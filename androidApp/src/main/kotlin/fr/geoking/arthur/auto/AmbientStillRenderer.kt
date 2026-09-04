@@ -141,7 +141,7 @@ object AmbientStillRenderer {
     private fun drawFractalField(canvas: Canvas, artworkId: String, seed: Long) {
         val rnd = Random(seed)
         val pixels = IntArray(SIZE * SIZE)
-        val maxIter = 48
+        val maxIter = 220
         val cx = when {
             artworkId.contains("julia") -> -0.4 + rnd.nextDouble() * 0.1
             artworkId.contains("burning") -> -0.45
@@ -153,33 +153,50 @@ object AmbientStillRenderer {
             else -> 0.0 + rnd.nextDouble() * 0.05
         }
         val scale = 2.6 / SIZE
+        val hueBase = (seed and 0xFF).toInt()
         for (py in 0 until SIZE) {
             for (px in 0 until SIZE) {
-                var zx = (px - SIZE / 2.0) * scale + cx
-                var zy = (py - SIZE / 2.0) * scale + cy
+                val cr = (px - SIZE / 2.0) * scale + cx
+                val ci = (py - SIZE / 2.0) * scale + cy
+                var zx = if (artworkId.contains("julia")) cr else 0.0
+                var zy = if (artworkId.contains("julia")) ci else 0.0
+                val jx = if (artworkId.contains("julia")) cx else cr
+                val jy = if (artworkId.contains("julia")) cy else ci
                 var iter = 0
-                while (iter < maxIter && zx * zx + zy * zy < 4.0) {
-                    val xt = if (artworkId.contains("burning")) {
-                        zx * zx - zy * zy + cx
-                    } else {
-                        zx * zx - zy * zy + cx
+                var escaped = false
+                var zr2 = 0.0
+                var zi2 = 0.0
+                while (iter < maxIter) {
+                    zr2 = zx * zx
+                    zi2 = zy * zy
+                    if (zr2 + zi2 > 4.0) {
+                        escaped = true
+                        break
                     }
-                    val yt = if (artworkId.contains("tricorn")) {
-                        -2.0 * zx * zy + cy
-                    } else if (artworkId.contains("burning")) {
-                        2.0 * kotlin.math.abs(zx * zy) + cy
-                    } else {
-                        2.0 * zx * zy + cy
+                    val xt = zr2 - zi2 + jx
+                    val yt = when {
+                        artworkId.contains("tricorn") -> -2.0 * zx * zy + jy
+                        artworkId.contains("burning") -> 2.0 * kotlin.math.abs(zx * zy) + jy
+                        else -> 2.0 * zx * zy + jy
                     }
                     zx = if (artworkId.contains("burning")) kotlin.math.abs(xt) else xt
                     zy = yt
                     iter++
                 }
-                pixels[py * SIZE + px] = if (iter >= maxIter) {
+                pixels[py * SIZE + px] = if (!escaped) {
                     Color.rgb(2, 6, 23)
                 } else {
-                    val h = (iter * 7 + (seed and 0xFF).toInt()) % 360
-                    Color.HSVToColor(floatArrayOf(h.toFloat(), 0.55f, 0.35f + iter / maxIter.toFloat() * 0.55f))
+                    val logZn = kotlin.math.ln((zr2 + zi2).coerceAtLeast(1e-12)) / 2.0
+                    val nu = kotlin.math.ln((logZn / kotlin.math.ln(2.0)).coerceAtLeast(1e-12)) /
+                        kotlin.math.ln(2.0)
+                    val continuous = (iter + 1.0 - nu).toFloat()
+                    val t = (kotlin.math.ln(1.0 + continuous) / kotlin.math.ln(1.0 + maxIter))
+                        .toFloat()
+                    val cycles = 6.5f
+                    val hue = ((t * cycles * 360f) + hueBase + continuous * 2.4f).mod(360f)
+                    val sat = 0.62f + 0.28f * (1f - t)
+                    val value = 0.42f + 0.55f * t
+                    Color.HSVToColor(floatArrayOf(hue, sat.coerceIn(0f, 1f), value.coerceIn(0f, 1f)))
                 }
             }
         }

@@ -142,26 +142,47 @@ object AmbientStillRenderer {
         val rnd = Random(seed)
         val pixels = IntArray(SIZE * SIZE)
         val maxIter = 220
-        val cx = when {
-            artworkId.contains("julia") -> -0.4 + rnd.nextDouble() * 0.1
-            artworkId.contains("burning") -> -0.45
-            artworkId.contains("tricorn") -> 0.0
-            else -> -0.55 + rnd.nextDouble() * 0.08
+        val type = when {
+            artworkId.contains("phoenix") -> "phoenix"
+            artworkId.contains("julia") -> "julia"
+            artworkId.contains("burning") -> "burningship"
+            artworkId.contains("tricorn") -> "tricorn"
+            artworkId.contains("multibrot") -> "multibrot"
+            artworkId.contains("celtic") -> "celtic"
+            artworkId.contains("buffalo") -> "buffalo"
+            else -> "mandelbrot"
         }
-        val cy = when {
-            artworkId.contains("julia") -> 0.6
-            else -> 0.0 + rnd.nextDouble() * 0.05
+        val (cx, cy, span) = when (type) {
+            "julia" -> Triple(-0.4 + rnd.nextDouble() * 0.1, 0.6, 2.6)
+            "burningship" -> Triple(-1.75, -0.04, 2.2)
+            "tricorn" -> Triple(-0.2, rnd.nextDouble() * 0.04, 2.6)
+            "multibrot" -> Triple(0.0, 0.0, 2.4)
+            "celtic" -> Triple(-0.5, 0.0, 2.5)
+            "buffalo" -> Triple(-0.65, -0.45, 2.4)
+            "phoenix" -> Triple(0.0, 0.0, 2.8)
+            else -> Triple(-0.55 + rnd.nextDouble() * 0.08, rnd.nextDouble() * 0.05, 2.6)
         }
-        val scale = 2.6 / SIZE
+        val scale = span / SIZE
         val hueBase = (seed and 0xFF).toInt()
+        val isJuliaLike = type == "julia" || type == "phoenix"
         for (py in 0 until SIZE) {
             for (px in 0 until SIZE) {
                 val cr = (px - SIZE / 2.0) * scale + cx
                 val ci = (py - SIZE / 2.0) * scale + cy
-                var zx = if (artworkId.contains("julia")) cr else 0.0
-                var zy = if (artworkId.contains("julia")) ci else 0.0
-                val jx = if (artworkId.contains("julia")) cx else cr
-                val jy = if (artworkId.contains("julia")) cy else ci
+                var zx = if (isJuliaLike) cr else 0.0
+                var zy = if (isJuliaLike) ci else 0.0
+                var prevX = 0.0
+                var prevY = 0.0
+                val jx = when (type) {
+                    "julia" -> cx
+                    "phoenix" -> 0.5667
+                    else -> cr
+                }
+                val jy = when (type) {
+                    "julia" -> cy
+                    "phoenix" -> -0.5
+                    else -> ci
+                }
                 var iter = 0
                 var escaped = false
                 var zr2 = 0.0
@@ -173,22 +194,51 @@ object AmbientStillRenderer {
                         escaped = true
                         break
                     }
-                    val xt = zr2 - zi2 + jx
-                    val yt = when {
-                        artworkId.contains("tricorn") -> -2.0 * zx * zy + jy
-                        artworkId.contains("burning") -> 2.0 * kotlin.math.abs(zx * zy) + jy
-                        else -> 2.0 * zx * zy + jy
+                    val nextX: Double
+                    val nextY: Double
+                    when (type) {
+                        "tricorn" -> {
+                            nextX = zr2 - zi2 + jx
+                            nextY = -2.0 * zx * zy + jy
+                        }
+                        "burningship" -> {
+                            nextX = kotlin.math.abs(zr2 - zi2 + jx)
+                            nextY = 2.0 * kotlin.math.abs(zx * zy) + jy
+                        }
+                        "multibrot" -> {
+                            nextX = zx * (zr2 - 3.0 * zi2) + jx
+                            nextY = zy * (3.0 * zr2 - zi2) + jy
+                        }
+                        "celtic" -> {
+                            nextX = kotlin.math.abs(zr2 - zi2) + jx
+                            nextY = 2.0 * zx * zy + jy
+                        }
+                        "buffalo" -> {
+                            nextX = kotlin.math.abs(zr2 - zi2) + jx
+                            nextY = -kotlin.math.abs(2.0 * zx * zy) + jy
+                        }
+                        "phoenix" -> {
+                            nextX = zr2 - zi2 + jx + jy * prevX
+                            nextY = 2.0 * zx * zy + jy * prevY
+                            prevX = zx
+                            prevY = zy
+                        }
+                        else -> {
+                            nextX = zr2 - zi2 + jx
+                            nextY = 2.0 * zx * zy + jy
+                        }
                     }
-                    zx = if (artworkId.contains("burning")) kotlin.math.abs(xt) else xt
-                    zy = yt
+                    zx = nextX
+                    zy = nextY
                     iter++
                 }
                 pixels[py * SIZE + px] = if (!escaped) {
                     Color.rgb(2, 6, 23)
                 } else {
+                    val power = if (type == "multibrot") 3.0 else 2.0
                     val logZn = kotlin.math.ln((zr2 + zi2).coerceAtLeast(1e-12)) / 2.0
                     val nu = kotlin.math.ln((logZn / kotlin.math.ln(2.0)).coerceAtLeast(1e-12)) /
-                        kotlin.math.ln(2.0)
+                        kotlin.math.ln(power)
                     val continuous = (iter + 1.0 - nu).toFloat()
                     val t = (kotlin.math.ln(1.0 + continuous) / kotlin.math.ln(1.0 + maxIter))
                         .toFloat()

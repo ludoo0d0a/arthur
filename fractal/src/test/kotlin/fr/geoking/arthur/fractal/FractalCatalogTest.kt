@@ -8,7 +8,7 @@ import org.junit.Test
 class FractalCatalogTest {
     @Test
     fun freePresets_includeJuliusTypes() {
-        assertEquals(4, FractalCatalog.freePresets().size)
+        assertEquals(8, FractalCatalog.freePresets().size)
     }
 
     @Test

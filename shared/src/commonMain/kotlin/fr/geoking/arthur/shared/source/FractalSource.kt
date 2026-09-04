@@ -23,6 +23,10 @@ class FractalSource(
         const val JULIA = "fractal.julia"
         const val BURNING_SHIP = "fractal.burningship"
         const val TRICORN = "fractal.tricorn"
+        const val MULTIBROT = "fractal.multibrot"
+        const val CELTIC = "fractal.celtic"
+        const val BUFFALO = "fractal.buffalo"
+        const val PHOENIX = "fractal.phoenix"
 
         fun defaultCatalog(): List<Artwork> = listOf(
             Artwork(
@@ -49,6 +53,34 @@ class FractalSource(
             Artwork(
                 id = TRICORN,
                 title = "Tricorn",
+                attribution = "Arthur Fractal Presets",
+                sourceId = ID,
+                kind = ArtworkKind.FractalPreset,
+            ),
+            Artwork(
+                id = MULTIBROT,
+                title = "Multibrot",
+                attribution = "Arthur Fractal Presets",
+                sourceId = ID,
+                kind = ArtworkKind.FractalPreset,
+            ),
+            Artwork(
+                id = CELTIC,
+                title = "Celtic",
+                attribution = "Arthur Fractal Presets",
+                sourceId = ID,
+                kind = ArtworkKind.FractalPreset,
+            ),
+            Artwork(
+                id = BUFFALO,
+                title = "Buffalo",
+                attribution = "Arthur Fractal Presets",
+                sourceId = ID,
+                kind = ArtworkKind.FractalPreset,
+            ),
+            Artwork(
+                id = PHOENIX,
+                title = "Phoenix",
                 attribution = "Arthur Fractal Presets",
                 sourceId = ID,
                 kind = ArtworkKind.FractalPreset,

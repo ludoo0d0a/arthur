@@ -47,7 +47,16 @@ private val DefaultPalette = listOf(
     Color(0xFFFFF7ED),
 )
 
-enum class FractalType { Mandelbrot, Julia, BurningShip, Tricorn }
+enum class FractalType {
+    Mandelbrot,
+    Julia,
+    BurningShip,
+    Tricorn,
+    Multibrot,
+    Celtic,
+    Buffalo,
+    Phoenix,
+}
 
 /**
  * Animated fractal background with a slow infinite zoom-in effect.
@@ -116,9 +125,13 @@ fun FractalEffectCanvas(
         // Different zoom targets for different fractals
         val (cx, cy) = when (fractalType) {
             FractalType.Mandelbrot -> 0.25f to 0.0f
-            FractalType.Julia -> 0.0f to 0.0f // Classic Julia set usually centered
+            FractalType.Julia -> 0.0f to 0.0f
             FractalType.BurningShip -> -1.75f to -0.02f
             FractalType.Tricorn -> -0.25f to 0.0f
+            FractalType.Multibrot -> 0.0f to 0.0f
+            FractalType.Celtic -> -0.5f to 0.0f
+            FractalType.Buffalo -> -0.65f to -0.45f
+            FractalType.Phoenix -> 0.0f to 0.0f
         }
 
         val gridSize = when (quality) {
@@ -164,6 +177,10 @@ fun FractalEffectCanvas(
                     FractalType.Julia -> juliaSmooth(re, im, maxIter)
                     FractalType.BurningShip -> burningShipSmooth(re, im, maxIter)
                     FractalType.Tricorn -> tricornSmooth(re, im, maxIter)
+                    FractalType.Multibrot -> multibrotSmooth(re, im, maxIter)
+                    FractalType.Celtic -> celticSmooth(re, im, maxIter)
+                    FractalType.Buffalo -> buffaloSmooth(re, im, maxIter)
+                    FractalType.Phoenix -> phoenixSmooth(re, im, maxIter)
                 }
 
                 val color = fractalColor(
@@ -199,9 +216,9 @@ fun FractalEffectCanvas(
 }
 
 /** Continuous escape-time iteration, or -1 when inside the set. */
-private fun smoothEscape(n: Int, zr2: Double, zi2: Double): Float {
+private fun smoothEscape(n: Int, zr2: Double, zi2: Double, power: Double = 2.0): Float {
     val logZn = ln((zr2 + zi2).coerceAtLeast(1e-12)) / 2.0
-    val nu = ln((logZn / ln(2.0)).coerceAtLeast(1e-12)) / ln(2.0)
+    val nu = ln((logZn / ln(2.0)).coerceAtLeast(1e-12)) / ln(power)
     return (n + 1.0 - nu).toFloat()
 }
 
@@ -278,6 +295,88 @@ private fun tricornSmooth(cr: Float, ci: Float, maxIter: Int): Float {
         // (zr - i zi)^2 = zr^2 - zi^2 - 2 i zr zi
         val nextZr = zr2 - zi2 + cr
         val nextZi = -2.0 * zr * zi + ci
+        zr = nextZr
+        zi = nextZi
+        n++
+    }
+    return -1f
+}
+
+/** Cubic Multibrot: z³ + c */
+private fun multibrotSmooth(cr: Float, ci: Float, maxIter: Int): Float {
+    var zr = 0.0
+    var zi = 0.0
+    var n = 0
+    while (n < maxIter) {
+        val zr2 = zr * zr
+        val zi2 = zi * zi
+        if (zr2 + zi2 > 4.0) return smoothEscape(n, zr2, zi2, power = 3.0)
+        // (zr + i zi)^3 = (zr² - 3 zi²) zr + i (3 zr² - zi²) zi
+        val nextZr = zr * (zr2 - 3.0 * zi2) + cr
+        val nextZi = zi * (3.0 * zr2 - zi2) + ci
+        zr = nextZr
+        zi = nextZi
+        n++
+    }
+    return -1f
+}
+
+/** Celtic Mandelbrot: |Re(z²)| + i Im(z²) + c */
+private fun celticSmooth(cr: Float, ci: Float, maxIter: Int): Float {
+    var zr = 0.0
+    var zi = 0.0
+    var n = 0
+    while (n < maxIter) {
+        val zr2 = zr * zr
+        val zi2 = zi * zi
+        if (zr2 + zi2 > 4.0) return smoothEscape(n, zr2, zi2)
+        val nextZr = abs(zr2 - zi2) + cr
+        val nextZi = 2.0 * zr * zi + ci
+        zr = nextZr
+        zi = nextZi
+        n++
+    }
+    return -1f
+}
+
+/** Buffalo: |Re(z²)| − i |Im(z²)| style absolute fold. */
+private fun buffaloSmooth(cr: Float, ci: Float, maxIter: Int): Float {
+    var zr = 0.0
+    var zi = 0.0
+    var n = 0
+    while (n < maxIter) {
+        val zr2 = zr * zr
+        val zi2 = zi * zi
+        if (zr2 + zi2 > 4.0) return smoothEscape(n, zr2, zi2)
+        val nextZr = abs(zr2 - zi2) + cr
+        val nextZi = -abs(2.0 * zr * zi) + ci
+        zr = nextZr
+        zi = nextZi
+        n++
+    }
+    return -1f
+}
+
+/**
+ * Phoenix Julia: zₙ₊₁ = zₙ² + Re(c) + Im(c)·zₙ₋₁
+ * Classic parameters c ≈ 0.5667 − 0.5i.
+ */
+private fun phoenixSmooth(zrStart: Float, ziStart: Float, maxIter: Int): Float {
+    var zr = zrStart.toDouble()
+    var zi = ziStart.toDouble()
+    var pr = 0.0
+    var pi = 0.0
+    val cr = 0.5667
+    val ci = -0.5
+    var n = 0
+    while (n < maxIter) {
+        val zr2 = zr * zr
+        val zi2 = zi * zi
+        if (zr2 + zi2 > 4.0) return smoothEscape(n, zr2, zi2)
+        val nextZr = zr2 - zi2 + cr + ci * pr
+        val nextZi = 2.0 * zr * zi + ci * pi
+        pr = zr
+        pi = zi
         zr = nextZr
         zi = nextZi
         n++

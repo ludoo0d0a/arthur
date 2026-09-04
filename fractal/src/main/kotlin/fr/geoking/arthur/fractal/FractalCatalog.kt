@@ -9,6 +9,10 @@ enum class FractalPresetType {
     Julia,
     BurningShip,
     Tricorn,
+    Multibrot,
+    Celtic,
+    Buffalo,
+    Phoenix,
 }
 
 data class FractalPreset(

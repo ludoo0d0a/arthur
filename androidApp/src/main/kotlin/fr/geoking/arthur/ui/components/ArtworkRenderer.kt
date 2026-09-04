@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
@@ -128,7 +129,7 @@ private fun RemoteStillImage(
             bitmap = bmp.asImageBitmap(),
             contentDescription = null,
             contentScale = ContentScale.Crop,
-            modifier = modifier.fillMaxSize(),
+            modifier = modifier.fillMaxSize().testTag("artwork_remote_image"),
         )
     } else {
         StillArtworkPlaceholder(kind = kind, modifier = modifier)
@@ -146,6 +147,7 @@ private fun StillArtworkPlaceholder(
     Box(
         modifier = modifier
             .fillMaxSize()
+            .testTag("artwork_placeholder")
             .background(
                 Brush.radialGradient(
                     colors = listOf(scheme.surfaceVariant, scheme.background),
@@ -168,6 +170,10 @@ internal fun fractalTypeForArtworkId(artworkId: String): FractalType? =
         "julia" -> FractalType.Julia
         "burningship" -> FractalType.BurningShip
         "tricorn" -> FractalType.Tricorn
+        "multibrot" -> FractalType.Multibrot
+        "celtic" -> FractalType.Celtic
+        "buffalo" -> FractalType.Buffalo
+        "phoenix" -> FractalType.Phoenix
         else -> null
     }
 

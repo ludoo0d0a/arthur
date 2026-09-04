@@ -19,13 +19,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.io.InputStream
-import java.net.URL
 import fr.geoking.arthur.fractal.CustomFractalEffectCanvas
 import fr.geoking.arthur.fractal.CustomFractalParams
 import fr.geoking.arthur.fractal.FractalEffectCanvas
@@ -37,10 +34,14 @@ import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.source.FractalSource
+import fr.geoking.arthur.source.ArtworkImageCache
+import java.net.URL
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Renders Artwork for Control Plane hero and phone Ambient.
- * Generative kinds use live Canvas engines; stills use a tonal placeholder.
+ * Generative kinds use live Canvas engines; stills prefer local cache then remote URL.
  */
 @Composable
 fun ArtworkRenderer(
@@ -52,15 +53,24 @@ fun ArtworkRenderer(
     Box(modifier = modifier.fillMaxSize()) {
         when (artwork.kind) {
             ArtworkKind.Genart -> {
-                val engine = GenartCatalog.engineForId(artwork.id)
-                if (engine != null) {
-                    GenartEffectCanvas(
-                        engine = engine,
-                        isActive = isActive,
-                        quality = quality,
+                if (!artwork.localPath.isNullOrBlank()) {
+                    RemoteStillImage(
+                        artworkId = artwork.id,
+                        localPath = artwork.localPath,
+                        remoteUrl = null,
+                        kind = artwork.kind,
                     )
                 } else {
-                    StillArtworkPlaceholder(kind = artwork.kind)
+                    val engine = GenartCatalog.engineForId(artwork.id)
+                    if (engine != null) {
+                        GenartEffectCanvas(
+                            engine = engine,
+                            isActive = isActive,
+                            quality = quality,
+                        )
+                    } else {
+                        StillArtworkPlaceholder(kind = artwork.kind)
+                    }
                 }
             }
             ArtworkKind.CustomFractal -> {
@@ -83,9 +93,11 @@ fun ArtworkRenderer(
                 )
             }
             else -> {
-                if (!artwork.remoteUrl.isNullOrBlank()) {
+                if (!artwork.localPath.isNullOrBlank() || !artwork.remoteUrl.isNullOrBlank()) {
                     RemoteStillImage(
-                        url = artwork.remoteUrl!!,
+                        artworkId = artwork.id,
+                        localPath = artwork.localPath,
+                        remoteUrl = artwork.remoteUrl,
                         kind = artwork.kind,
                     )
                 } else {
@@ -98,20 +110,41 @@ fun ArtworkRenderer(
 
 @Composable
 private fun RemoteStillImage(
-    url: String,
+    artworkId: String,
+    localPath: String?,
+    remoteUrl: String?,
     kind: ArtworkKind,
     modifier: Modifier = Modifier,
 ) {
-    var bitmapState by remember(url) { mutableStateOf<android.graphics.Bitmap?>(null) }
-    var hasFailed by remember(url) { mutableStateOf(false) }
+    val context = LocalContext.current
+    val imageCache = remember(context) { ArtworkImageCache(context) }
+    var bitmapState by remember(artworkId, localPath, remoteUrl) {
+        mutableStateOf<android.graphics.Bitmap?>(null)
+    }
+    var hasFailed by remember(artworkId, localPath, remoteUrl) { mutableStateOf(false) }
 
-    LaunchedEffect(url) {
+    LaunchedEffect(artworkId, localPath, remoteUrl) {
         withContext(Dispatchers.IO) {
+            val fromDisk = sequenceOf(
+                localPath,
+                imageCache.localPathOrNull(artworkId),
+            ).filterNotNull().firstNotNullOfOrNull { path ->
+                runCatching { BitmapFactory.decodeFile(path) }.getOrNull()
+            }
+            if (fromDisk != null) {
+                bitmapState = fromDisk
+                return@withContext
+            }
+            val url = remoteUrl?.takeIf { it.isNotBlank() }
+            if (url == null) {
+                hasFailed = true
+                return@withContext
+            }
             runCatching {
-                URL(url).openStream().use { stream ->
-                    BitmapFactory.decodeStream(stream)
-                }
-            }.onSuccess { bmp ->
+                URL(url).openStream().use { stream -> stream.readBytes() }
+            }.onSuccess { bytes ->
+                imageCache.putImage(artworkId, bytes)
+                val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
                 if (bmp != null) {
                     bitmapState = bmp
                 } else {

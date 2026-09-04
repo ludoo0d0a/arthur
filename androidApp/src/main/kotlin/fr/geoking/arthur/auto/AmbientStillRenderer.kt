@@ -45,8 +45,8 @@ object AmbientStillRenderer {
             artwork.kind == ArtworkKind.CustomFractal || CustomFractalSource.isCustomId(artwork.id) ->
                 drawCustomFractal(canvas, artwork.id, generation)
             artwork.isGenerative -> drawFractalField(canvas, artwork.id, seed)
-            !artwork.remoteUrl.isNullOrBlank() -> {
-                val drawn = drawRemoteImage(canvas, artwork.remoteUrl!!)
+            !artwork.localPath.isNullOrBlank() || !artwork.remoteUrl.isNullOrBlank() -> {
+                val drawn = drawStillImage(canvas, artwork.localPath, artwork.remoteUrl)
                 if (!drawn) drawStillPlaceholder(canvas, seed)
             }
             else -> drawStillPlaceholder(canvas, seed)
@@ -77,17 +77,30 @@ object AmbientStillRenderer {
         else -> ArtworkKind.Photo
     }
 
-    private fun drawRemoteImage(canvas: Canvas, urlString: String): Boolean {
+    private fun drawStillImage(canvas: Canvas, localPath: String?, remoteUrl: String?): Boolean {
+        val fromFile = localPath?.takeIf { it.isNotBlank() }?.let { path ->
+            runCatching { BitmapFactory.decodeFile(path) }.getOrNull()
+        }
+        if (fromFile != null) {
+            drawBitmapCover(canvas, fromFile)
+            fromFile.recycle()
+            return true
+        }
+        val url = remoteUrl?.takeIf { it.isNotBlank() } ?: return false
         return runCatching {
-            java.net.URL(urlString).openStream().use { stream ->
+            java.net.URL(url).openStream().use { stream ->
                 val bmp = BitmapFactory.decodeStream(stream) ?: return false
-                val srcRect = Rect(0, 0, bmp.width, bmp.height)
-                val dstRect = Rect(0, 0, SIZE, SIZE)
-                canvas.drawBitmap(bmp, srcRect, dstRect, Paint(Paint.FILTER_BITMAP_FLAG))
+                drawBitmapCover(canvas, bmp)
                 bmp.recycle()
                 true
             }
         }.getOrDefault(false)
+    }
+
+    private fun drawBitmapCover(canvas: Canvas, bmp: Bitmap) {
+        val srcRect = Rect(0, 0, bmp.width, bmp.height)
+        val dstRect = Rect(0, 0, SIZE, SIZE)
+        canvas.drawBitmap(bmp, srcRect, dstRect, Paint(Paint.FILTER_BITMAP_FLAG))
     }
 
     private fun drawCustomFractal(canvas: Canvas, artworkId: String, generation: Long) {

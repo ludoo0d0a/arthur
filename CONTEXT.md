@@ -119,7 +119,7 @@ Second museum Remote Source via The Met Collection API (no API key). Open-access
 _Avoid_: Using non–public-domain Met images
 
 **Stock Photo Source**:
-Remote Sources for high-quality ambient photography (nature, landscape) via free legal APIs — **Pexels** and **Unsplash**. Distinct from museum Sources and from Personal Photos. Keys from `local.properties` / CI: `PEXELS_API_KEY`; Unsplash **Access Key** as `UNSPLASH_ACCESS_KEY` (Client-ID header). Unsplash **Secret Key** (`UNSPLASH_SECRET_KEY`) is OAuth-only — keep it out of the APK / BuildConfig. Blank access/API key → empty catalog. Must follow each provider’s ToS (attribution, rate limits, hotlink/cache rules). Not a substitute for famous-art catalogs.
+Remote Sources for high-quality ambient photography (nature, landscape) via free legal APIs — **Pexels** and **Unsplash**. Distinct from museum Sources and from Personal Photos. Keys from `local.properties` / CI: `PEXELS_API_KEY`; Unsplash **Access Key** as `UNSPLASH_ACCESS_KEY` (Client-ID header). Unsplash **Secret Key** (`UNSPLASH_SECRET_KEY`) is OAuth-only — keep it out of the APK / BuildConfig. Control Plane picks a **photo topic** (nature, city, ocean, …) that drives the search query. Ambient rotates a random still every 20s; successful downloads and baked **genart** stills are cached under `cacheDir/artwork` (genart capped at 30, LRU) and reused offline. Blank access/API key → cached catalog for the topic (or empty). Must follow each provider’s ToS (attribution, rate limits, hotlink/cache rules). Not a substitute for famous-art catalogs.
 _Avoid_: Scraping 500px or other closed platforms; shipping without attribution when required; treating stock photos as museum/famous-art
 
 **Generative Source**:

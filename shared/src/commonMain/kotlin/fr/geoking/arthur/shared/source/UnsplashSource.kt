@@ -14,20 +14,23 @@ import kotlinx.serialization.json.Json
  * - **Access Key** (required here): public `Authorization: Client-ID <accessKey>`
  * - **Secret Key**: OAuth only — never sent on catalog search; keep out of the APK
  *
- * Blank [accessKey] skips the network. [httpGet] must send the Client-ID header.
+ * Blank [accessKey] uses [offlineFallback]. [httpGet] must send the Client-ID header.
  */
 class UnsplashSource(
     private val httpGet: suspend (url: String) -> String,
     private val accessKey: String,
+    private val query: () -> String = { StockPhotoCategory.Nature.query },
+    private val offlineFallback: () -> List<Artwork> = { emptyList() },
+    private val onLoaded: (List<Artwork>) -> Unit = {},
     private val limit: Int = DEFAULT_LIMIT,
 ) : Source {
     override val id: String = ID
     override val displayName: String = "Unsplash"
 
     override suspend fun load(): List<Artwork> {
-        if (accessKey.isBlank()) return emptyList()
-        return runCatching {
-            val page = json.decodeFromString<UnsplashSearchPage>(httpGet(searchUrl(limit)))
+        if (accessKey.isBlank()) return offlineFallback()
+        val art = runCatching {
+            val page = json.decodeFromString<UnsplashSearchPage>(httpGet(searchUrl(query(), limit)))
             page.results.mapNotNull { photo ->
                 val imageUrl = photo.urls?.regular?.takeIf { it.isNotBlank() }
                     ?: photo.urls?.full?.takeIf { it.isNotBlank() }
@@ -46,6 +49,11 @@ class UnsplashSource(
                 )
             }
         }.getOrDefault(emptyList())
+        if (art.isNotEmpty()) {
+            onLoaded(art)
+            return art
+        }
+        return offlineFallback()
     }
 
     companion object {
@@ -54,9 +62,12 @@ class UnsplashSource(
 
         private val json = Json { ignoreUnknownKeys = true }
 
-        fun searchUrl(perPage: Int = DEFAULT_LIMIT): String =
+        fun searchUrl(
+            query: String = StockPhotoCategory.Nature.query,
+            perPage: Int = DEFAULT_LIMIT,
+        ): String =
             "https://api.unsplash.com/search/photos" +
-                "?query=nature&orientation=landscape&per_page=$perPage"
+                "?query=$query&orientation=landscape&per_page=$perPage"
     }
 }
 

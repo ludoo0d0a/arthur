@@ -42,17 +42,35 @@ class PexelsSourceTest {
     }
 
     @Test
-    fun blankApiKeySkipsNetwork() = runBlocking {
+    fun blankApiKeyUsesOfflineFallback() = runBlocking {
         var called = false
+        val cached = listOf(
+            fr.geoking.arthur.shared.domain.Artwork(
+                id = "pexels-1",
+                title = "Cached",
+                sourceId = PexelsSource.ID,
+                kind = fr.geoking.arthur.shared.domain.ArtworkKind.Photo,
+                localPath = "/tmp/cached.jpg",
+            ),
+        )
         val source = PexelsSource(
             apiKey = "",
+            offlineFallback = { cached },
             httpGet = {
                 called = true
                 error("should not call")
             },
         )
-        assertEquals(emptyList(), source.load())
+        assertEquals(cached, source.load())
         assertEquals(false, called)
+    }
+
+    @Test
+    fun searchUrlIncludesCategoryQuery() {
+        assertEquals(
+            "https://api.pexels.com/v1/search?query=ocean&orientation=landscape&per_page=8",
+            PexelsSource.searchUrl("ocean"),
+        )
     }
 
     @Test

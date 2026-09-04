@@ -31,7 +31,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dpimport fr.geoking.arthur.R
+import androidx.compose.ui.unit.dp
+import fr.geoking.arthur.R
 import fr.geoking.arthur.phone.theme.ArthurTheme
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
@@ -39,6 +40,8 @@ import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.shared.source.BundledPackSource
+import fr.geoking.arthur.shared.source.StockPhotoCategory
+import fr.geoking.arthur.source.StockPhotoSettings
 import fr.geoking.arthur.ui.components.ArtworkCard
 import fr.geoking.arthur.ui.components.ControlPlaneHeader
 import fr.geoking.arthur.ui.components.GalleryHero
@@ -53,13 +56,19 @@ fun ControlPlaneScreen(
     initialSelected: Artwork? = null,
     showFractalPreview: Boolean = true,
     onCreateCustomFractal: (() -> Unit)? = null,
+    stockPhotoSettings: StockPhotoSettings? = null,
 ) {
     var catalog by remember { mutableStateOf(initialCatalog.orEmpty()) }
     var selected by remember { mutableStateOf(initialSelected) }
+    var stockCategory by remember {
+        mutableStateOf(stockPhotoSettings?.category ?: StockPhotoCategory.Nature)
+    }
 
-    LaunchedEffect(contentEngine, initialCatalog) {
+    LaunchedEffect(contentEngine, initialCatalog, stockCategory) {
+        if (stockPhotoSettings != null) {
+            stockPhotoSettings.category = stockCategory
+        }
         if (initialCatalog == null) {
-            // Empty sourceIds → all registered Sources (bundled, genart, fractal)
             catalog = contentEngine.catalog(
                 PreparedRotation(
                     sourceIds = emptyList(),
@@ -79,6 +88,8 @@ fun ControlPlaneScreen(
         modifier = modifier,
         showFractalPreview = showFractalPreview,
         onCreateCustomFractal = onCreateCustomFractal,
+        stockCategory = stockCategory,
+        onStockCategoryChange = { stockCategory = it },
     )
 }
 
@@ -111,6 +122,8 @@ fun ControlPlaneContent(
     modifier: Modifier = Modifier,
     showFractalPreview: Boolean = true,
     onCreateCustomFractal: (() -> Unit)? = null,
+    stockCategory: StockPhotoCategory = StockPhotoCategory.Nature,
+    onStockCategoryChange: (StockPhotoCategory) -> Unit = {},
 ) {
     val configuration = LocalConfiguration.current
     val isTelevision = remember(configuration) {
@@ -136,6 +149,8 @@ fun ControlPlaneContent(
         modifier = modifier,
         showFractalPreview = showFractalPreview,
         onCreateCustomFractal = onCreateCustomFractal,
+        stockCategory = stockCategory,
+        onStockCategoryChange = onStockCategoryChange,
     )
 }
 
@@ -148,6 +163,8 @@ private fun PhoneControlPlaneContent(
     modifier: Modifier = Modifier,
     showFractalPreview: Boolean = true,
     onCreateCustomFractal: (() -> Unit)? = null,
+    stockCategory: StockPhotoCategory = StockPhotoCategory.Nature,
+    onStockCategoryChange: (StockPhotoCategory) -> Unit = {},
 ) {
     val scheme = MaterialTheme.colorScheme
     var selectedCategory by remember { mutableStateOf(CategoryFilter.ALL) }
@@ -206,7 +223,7 @@ private fun PhoneControlPlaneContent(
             LazyRow(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 8.dp)
+                    .padding(bottom = 4.dp)
                     .testTag("category_filter_row"),
                 contentPadding = PaddingValues(horizontal = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -217,6 +234,29 @@ private fun PhoneControlPlaneContent(
                         onClick = { selectedCategory = category },
                         label = { Text(stringResource(category.labelRes)) },
                         modifier = Modifier.testTag("filter_chip_${category.name.lowercase()}"),
+                    )
+                }
+            }
+            Text(
+                text = stringResource(R.string.stock_topic_section),
+                style = MaterialTheme.typography.titleSmall,
+                color = scheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+            )
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
+                    .testTag("stock_topic_row"),
+                contentPadding = PaddingValues(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(StockPhotoCategory.entries) { topic ->
+                    FilterChip(
+                        selected = stockCategory == topic,
+                        onClick = { onStockCategoryChange(topic) },
+                        label = { Text(stringResource(topic.labelRes())) },
+                        modifier = Modifier.testTag("stock_topic_${topic.query}"),
                     )
                 }
             }
@@ -238,6 +278,17 @@ private fun PhoneControlPlaneContent(
             }
         }
     }
+}
+
+@StringRes
+private fun StockPhotoCategory.labelRes(): Int = when (this) {
+    StockPhotoCategory.Nature -> R.string.stock_topic_nature
+    StockPhotoCategory.City -> R.string.stock_topic_city
+    StockPhotoCategory.Ocean -> R.string.stock_topic_ocean
+    StockPhotoCategory.Mountains -> R.string.stock_topic_mountains
+    StockPhotoCategory.Abstract -> R.string.stock_topic_abstract
+    StockPhotoCategory.Architecture -> R.string.stock_topic_architecture
+    StockPhotoCategory.Sky -> R.string.stock_topic_sky
 }
 
 @Preview(showBackground = true, name = "Control plane")

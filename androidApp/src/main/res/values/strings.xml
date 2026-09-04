@@ -13,6 +13,14 @@
     <string name="gallery_hero_label">Gallery canvas</string>
     <string name="selected_artwork">Selected</string>
     <string name="category_all">All</string>
+    <string name="stock_topic_section">Photo topic</string>
+    <string name="stock_topic_nature">Nature</string>
+    <string name="stock_topic_city">City</string>
+    <string name="stock_topic_ocean">Ocean</string>
+    <string name="stock_topic_mountains">Mountains</string>
+    <string name="stock_topic_abstract">Abstract</string>
+    <string name="stock_topic_architecture">Architecture</string>
+    <string name="stock_topic_sky">Sky</string>
     <string name="kind_painting">Painting</string>
     <string name="kind_sculpture">Sculpture</string>
     <string name="kind_photo">Photo</string>

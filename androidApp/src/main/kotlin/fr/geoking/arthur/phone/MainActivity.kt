@@ -21,6 +21,7 @@ import fr.geoking.arthur.fractal.CustomFractalStore
 import fr.geoking.arthur.phone.theme.ArthurTheme
 import fr.geoking.arthur.shared.domain.PremiumEntitlement
 import fr.geoking.arthur.shared.engine.ContentEngine
+import fr.geoking.arthur.source.StockPhotoSettings
 import fr.geoking.arthur.tv.AmbientActivity
 import fr.geoking.arthur.ui.screens.ControlPlaneScreen
 import fr.geoking.arthur.ui.screens.CustomFractalEditorScreen
@@ -31,6 +32,7 @@ class MainActivity : ComponentActivity() {
     private val premium: PremiumEntitlement by inject()
     private val purchases: PurchasesGateway by inject()
     private val customFractalStore: CustomFractalStore by inject()
+    private val stockPhotoSettings: StockPhotoSettings by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -65,6 +67,7 @@ class MainActivity : ComponentActivity() {
                         key(catalogEpoch) {
                             ControlPlaneScreen(
                                 contentEngine = contentEngine,
+                                stockPhotoSettings = stockPhotoSettings,
                                 onStartAmbient = { artwork ->
                                     startActivity(AmbientActivity.intent(this@MainActivity, artwork?.id))
                                 },

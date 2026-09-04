@@ -8,20 +8,23 @@ import kotlinx.serialization.json.Json
 
 /**
  * Pexels stock-photo Remote Source (API key required).
- * [httpGet] must send `Authorization: <apiKey>`; blank [apiKey] skips the network.
+ * [httpGet] must send `Authorization: <apiKey>`; blank [apiKey] uses [offlineFallback].
  */
 class PexelsSource(
     private val httpGet: suspend (url: String) -> String,
     private val apiKey: String,
+    private val query: () -> String = { StockPhotoCategory.Nature.query },
+    private val offlineFallback: () -> List<Artwork> = { emptyList() },
+    private val onLoaded: (List<Artwork>) -> Unit = {},
     private val limit: Int = DEFAULT_LIMIT,
 ) : Source {
     override val id: String = ID
     override val displayName: String = "Pexels"
 
     override suspend fun load(): List<Artwork> {
-        if (apiKey.isBlank()) return emptyList()
-        return runCatching {
-            val page = json.decodeFromString<PexelsSearchPage>(httpGet(searchUrl(limit)))
+        if (apiKey.isBlank()) return offlineFallback()
+        val art = runCatching {
+            val page = json.decodeFromString<PexelsSearchPage>(httpGet(searchUrl(query(), limit)))
             page.photos.mapNotNull { photo ->
                 val imageUrl = photo.src?.large2x?.takeIf { it.isNotBlank() }
                     ?: photo.src?.large?.takeIf { it.isNotBlank() }
@@ -39,6 +42,11 @@ class PexelsSource(
                 )
             }
         }.getOrDefault(emptyList())
+        if (art.isNotEmpty()) {
+            onLoaded(art)
+            return art
+        }
+        return offlineFallback()
     }
 
     companion object {
@@ -47,9 +55,12 @@ class PexelsSource(
 
         private val json = Json { ignoreUnknownKeys = true }
 
-        fun searchUrl(perPage: Int = DEFAULT_LIMIT): String =
+        fun searchUrl(
+            query: String = StockPhotoCategory.Nature.query,
+            perPage: Int = DEFAULT_LIMIT,
+        ): String =
             "https://api.pexels.com/v1/search" +
-                "?query=nature&orientation=landscape&per_page=$perPage"
+                "?query=$query&orientation=landscape&per_page=$perPage"
     }
 }
 

@@ -15,6 +15,8 @@ import fr.geoking.arthur.shared.source.MetSource
 import fr.geoking.arthur.shared.source.PexelsSource
 import fr.geoking.arthur.shared.source.RijksmuseumSource
 import fr.geoking.arthur.shared.source.UnsplashSource
+import fr.geoking.arthur.source.ArtworkImageCache
+import fr.geoking.arthur.source.StockPhotoSettings
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.request.get
@@ -42,6 +44,8 @@ val appModule = module {
     single<PurchasesGateway> { get<FakePurchasesGateway>() }
     single<PremiumEntitlement> { RevenueCatPremiumEntitlement(get()) }
     single { CustomFractalStore(androidContext()) }
+    single { StockPhotoSettings(androidContext()) }
+    single { ArtworkImageCache(androidContext()) }
     single { HttpClient(OkHttp) }
     single { BundledPackSource() }
     single { GenartSource() }
@@ -66,8 +70,13 @@ val appModule = module {
     single {
         val client = get<HttpClient>()
         val apiKey = BuildConfig.PEXELS_API_KEY
+        val settings = get<StockPhotoSettings>()
+        val cache = get<ArtworkImageCache>()
         PexelsSource(
             apiKey = apiKey,
+            query = { settings.category.query },
+            offlineFallback = { cache.loadCached(settings.category.query, PexelsSource.ID) },
+            onLoaded = { arts -> cache.remember(arts, settings.category.query) },
             httpGet = { url ->
                 client.get(url) {
                     header(HttpHeaders.Authorization, apiKey)
@@ -77,10 +86,14 @@ val appModule = module {
     }
     single {
         val client = get<HttpClient>()
-        // Access Key = Client-ID for public search. Secret Key is OAuth-only (not in BuildConfig).
         val accessKey = BuildConfig.UNSPLASH_ACCESS_KEY
+        val settings = get<StockPhotoSettings>()
+        val cache = get<ArtworkImageCache>()
         UnsplashSource(
             accessKey = accessKey,
+            query = { settings.category.query },
+            offlineFallback = { cache.loadCached(settings.category.query, UnsplashSource.ID) },
+            onLoaded = { arts -> cache.remember(arts, settings.category.query) },
             httpGet = { url ->
                 client.get(url) {
                     header(HttpHeaders.Authorization, "Client-ID $accessKey")

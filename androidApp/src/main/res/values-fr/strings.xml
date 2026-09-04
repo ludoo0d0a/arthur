@@ -13,6 +13,14 @@
     <string name="gallery_hero_label">Canevas galerie</string>
     <string name="selected_artwork">Sélectionné</string>
     <string name="category_all">Tout</string>
+    <string name="stock_topic_section">Thème photo</string>
+    <string name="stock_topic_nature">Nature</string>
+    <string name="stock_topic_city">Ville</string>
+    <string name="stock_topic_ocean">Océan</string>
+    <string name="stock_topic_mountains">Montagnes</string>
+    <string name="stock_topic_abstract">Abstrait</string>
+    <string name="stock_topic_architecture">Architecture</string>
+    <string name="stock_topic_sky">Ciel</string>
     <string name="kind_painting">Peinture</string>
     <string name="kind_sculpture">Sculpture</string>
     <string name="kind_photo">Photo</string>

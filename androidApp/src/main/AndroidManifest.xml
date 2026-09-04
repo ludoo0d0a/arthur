@@ -35,6 +35,10 @@
             </intent-filter>
         </activity>
 
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
+
         <activity
             android:name=".tv.AmbientActivity"
             android:exported="true"

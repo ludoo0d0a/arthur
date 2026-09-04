@@ -144,4 +144,13 @@ class ArthurMediaMappingTest {
         assertEquals(listOf("genart.snow", "genart.aurora"), children.map { it.id })
         assertTrue(ArthurMediaBrowse.usesPreviewGrid(GenartSource.ID))
     }
+
+    @Test
+    fun automotiveAppDesc_existsAndDeclaresMediaSupport() {
+        val file = java.io.File("src/main/res/xml/automotive_app_desc.xml")
+        assertTrue("automotive_app_desc.xml must exist", file.exists())
+        val content = file.readText()
+        assertTrue("Must contain <automotiveApp>", content.contains("<automotiveApp>"))
+        assertTrue("Must contain <uses name=\"media\"", content.contains("<uses name=\"media\""))
+    }
 }

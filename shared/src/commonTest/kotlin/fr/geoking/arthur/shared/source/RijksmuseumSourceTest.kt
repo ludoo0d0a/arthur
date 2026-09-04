@@ -33,7 +33,12 @@ class RijksmuseumSourceTest {
                     "referred_to_by": [
                       { "type": "LinguisticObject", "content": "Jan Toorop" }
                     ]
-                  }
+                  },
+                  "representation": [
+                    {
+                      "id": "https://lh3.googleusercontent.com/test-image.jpg"
+                    }
+                  ]
                 }
             """.trimIndent(),
         )
@@ -43,6 +48,7 @@ class RijksmuseumSourceTest {
         assertEquals("rijks-SK-C-1726", art[0].id)
         assertEquals("Misty Sea", art[0].title)
         assertEquals("Jan Toorop", art[0].attribution)
+        assertEquals("https://lh3.googleusercontent.com/test-image.jpg", art[0].remoteUrl)
     }
 
     @Test

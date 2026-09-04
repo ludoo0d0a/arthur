@@ -36,12 +36,14 @@ class RijksmuseumSource(
             ?: objectId.substringAfterLast('/')
         val title = firstName(root) ?: objectNumber
         val attribution = producerName(root) ?: "Rijksmuseum"
+        val imageUrl = imageUrl(root)
         return Artwork(
             id = "rijks-$objectNumber",
             title = title,
             attribution = attribution,
             sourceId = ID,
             kind = ArtworkKind.Painting,
+            remoteUrl = imageUrl,
         )
     }
 
@@ -90,6 +92,38 @@ class RijksmuseumSource(
                 ?.get("content")
                 ?.jsonPrimitive
                 ?.contentOrNull
+
+        private fun imageUrl(root: JsonObject): String? {
+            root["representation"]?.jsonArray?.forEach { element ->
+                val obj = runCatching { element.jsonObject }.getOrNull() ?: return@forEach
+                val directId = obj["id"]?.jsonPrimitive?.contentOrNull
+                if (directId != null && (directId.startsWith("http://") || directId.startsWith("https://"))) {
+                    return directId
+                }
+                obj["digitally_shown_by"]?.jsonArray?.forEach { digitalObj ->
+                    val dObj = runCatching { digitalObj.jsonObject }.getOrNull() ?: return@forEach
+                    dObj["access_point"]?.jsonArray?.forEach { accessPoint ->
+                        val apId = runCatching { accessPoint.jsonObject["id"]?.jsonPrimitive?.contentOrNull }.getOrNull()
+                        if (apId != null && (apId.startsWith("http://") || apId.startsWith("https://"))) {
+                            return apId
+                        }
+                    }
+                }
+            }
+            root["subject_of"]?.jsonArray?.forEach { element ->
+                val obj = runCatching { element.jsonObject }.getOrNull() ?: return@forEach
+                obj["digitally_shown_by"]?.jsonArray?.forEach { digitalObj ->
+                    val dObj = runCatching { digitalObj.jsonObject }.getOrNull() ?: return@forEach
+                    dObj["access_point"]?.jsonArray?.forEach { accessPoint ->
+                        val apId = runCatching { accessPoint.jsonObject["id"]?.jsonPrimitive?.contentOrNull }.getOrNull()
+                        if (apId != null && (apId.startsWith("http://") || apId.startsWith("https://"))) {
+                            return apId
+                        }
+                    }
+                }
+            }
+            return null
+        }
     }
 }
 

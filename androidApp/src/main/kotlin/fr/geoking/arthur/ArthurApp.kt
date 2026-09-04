@@ -11,6 +11,7 @@ import fr.geoking.arthur.shared.source.BundledPackSource
 import fr.geoking.arthur.shared.source.CustomFractalSource
 import fr.geoking.arthur.shared.source.FractalSource
 import fr.geoking.arthur.shared.source.GenartSource
+import fr.geoking.arthur.shared.source.MetSource
 import fr.geoking.arthur.shared.source.RijksmuseumSource
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
@@ -53,10 +54,17 @@ val appModule = module {
         )
     }
     single {
+        val client = get<HttpClient>()
+        MetSource(
+            httpGet = { url -> client.get(url).bodyAsText() },
+        )
+    }
+    single {
         ContentEngine(
             sources = listOf(
                 get<BundledPackSource>(),
                 get<RijksmuseumSource>(),
+                get<MetSource>(),
                 get<GenartSource>(),
                 get<FractalSource>(),
                 get<CustomFractalSource>(),

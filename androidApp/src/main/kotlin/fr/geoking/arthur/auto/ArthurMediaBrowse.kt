@@ -7,6 +7,7 @@ import fr.geoking.arthur.shared.source.BundledPackSource
 import fr.geoking.arthur.shared.source.CustomFractalSource
 import fr.geoking.arthur.shared.source.FractalSource
 import fr.geoking.arthur.shared.source.GenartSource
+import fr.geoking.arthur.shared.source.MetSource
 import fr.geoking.arthur.shared.source.RijksmuseumSource
 
 /**
@@ -23,6 +24,7 @@ object ArthurMediaBrowse {
         CustomFractalSource.ID,
         BundledPackSource.ID,
         RijksmuseumSource.ID,
+        MetSource.ID,
     )
 
     fun folderId(sourceId: String): String = FOLDER_PREFIX + sourceId
@@ -62,6 +64,7 @@ object ArthurMediaBrowse {
         CustomFractalSource.ID -> "Custom Fractals"
         BundledPackSource.ID -> "Bundled Pack"
         RijksmuseumSource.ID -> "Rijksmuseum"
+        MetSource.ID -> "The Met"
         else -> sourceId
     }
 

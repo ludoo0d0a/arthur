@@ -3,30 +3,432 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Arthur — ambient art</title>
+  <title>Arthur — ambient art for phone, Auto &amp; TV</title>
+  <meta name="description" content="Arthur (ART'hur) turns your phone into a Control Plane for ambient art on Android Auto and Android TV. Museums, fractals, genart — and Premium personal photos." />
   <link rel="icon" href="assets/icon/arthur-icon.svg" type="image/svg+xml" />
   <link rel="icon" href="assets/icon/favicon.ico" sizes="any" />
   <link rel="apple-touch-icon" href="assets/icon/apple-touch-icon.png" />
   <meta property="og:title" content="Arthur — ambient art" />
   <meta property="og:description" content="Ambient art for phone, Auto &amp; TV" />
   <meta property="og:image" content="assets/icon/png/arthur-icon-og-1200x630.png" />
-  <meta name="theme-color" content="#2A1848" />
+  <meta name="theme-color" content="#1a0f2e" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
   <style>
-    :root { color-scheme: dark; }
-    body { font-family: Georgia, serif; margin: 0; background: #0f172a; color: #e2e8f0; }
-    main { max-width: 42rem; margin: 0 auto; padding: 3rem 1.25rem; }
-    h1 { font-size: 2.5rem; letter-spacing: 0.02em; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.75rem; }
-    h1 img { width: 3.25rem; height: 3.25rem; border-radius: 22%; }
-    .tag { color: #94a3b8; margin-bottom: 2rem; }
-    a { color: #22d3ee; }
+    :root {
+      --bg: #0b0614;
+      --bg-2: #140c22;
+      --fg: #f3eef8;
+      --muted: #a89bb8;
+      --faint: #6e6280;
+      --accent: #5eead4;
+      --accent-deep: #2dd4bf;
+      --brand: #7c5cff;
+      --line: rgba(255,255,255,.08);
+      --serif: "Fraunces", Georgia, serif;
+      --sans: "Source Sans 3", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--sans);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; height: auto; }
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+    /* Atmosphere */
+    .sky {
+      position: fixed; inset: 0; z-index: -1; pointer-events: none;
+      background:
+        radial-gradient(ellipse 80% 50% at 70% 10%, rgba(124,92,255,.22), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 10% 80%, rgba(45,212,191,.1), transparent 50%),
+        linear-gradient(180deg, #0b0614 0%, #140c22 50%, #0b0614 100%);
+    }
+
+    nav {
+      position: sticky; top: 0; z-index: 40;
+      backdrop-filter: blur(14px);
+      background: color-mix(in srgb, var(--bg) 78%, transparent);
+      border-bottom: 1px solid var(--line);
+    }
+    nav .wrap {
+      display: flex; align-items: center; justify-content: space-between; height: 64px;
+    }
+    .brand {
+      display: flex; align-items: center; gap: 10px;
+      font-family: var(--serif); font-weight: 700; font-size: 1.35rem; letter-spacing: -0.02em;
+    }
+    .brand img { width: 34px; height: 34px; border-radius: 9px; }
+    .nav-actions { display: flex; align-items: center; gap: 18px; font-size: 0.92rem; font-weight: 600; color: var(--muted); }
+    .nav-actions a:hover { color: var(--fg); }
+    .lang { display: inline-flex; gap: 2px; border: 1px solid var(--line); border-radius: 999px; padding: 2px; }
+    .lang button {
+      border: 0; background: transparent; color: var(--faint); font: inherit; font-weight: 700;
+      font-size: 0.75rem; padding: 4px 10px; border-radius: 999px; cursor: pointer;
+    }
+    .lang button[aria-pressed="true"] { background: rgba(255,255,255,.08); color: var(--fg); }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-weight: 700; font-size: 0.95rem; border-radius: 999px;
+      padding: 12px 20px; border: 1px solid transparent;
+    }
+    .btn-primary { background: var(--accent); color: #042f2e; }
+    .btn-primary:hover { background: var(--accent-deep); }
+    .btn-ghost { border-color: var(--line); color: var(--fg); background: rgba(255,255,255,.03); }
+    .btn-ghost:hover { border-color: rgba(255,255,255,.2); }
+
+    /* Hero — one composition, brand-led */
+    .hero {
+      position: relative;
+      min-height: min(92vh, 900px);
+      display: grid;
+      align-items: end;
+      padding: 48px 0 56px;
+      overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute; inset: 0; z-index: 0;
+      background:
+        linear-gradient(90deg, rgba(11,6,20,.92) 0%, rgba(11,6,20,.55) 42%, rgba(11,6,20,.25) 100%),
+        url("assets/montages/en/03_ambient.png") center / cover no-repeat;
+    }
+    .hero .wrap { position: relative; z-index: 1; max-width: 640px; margin-left: 0; margin-right: auto; }
+    .eyebrow {
+      font-size: 0.78rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 14px;
+    }
+    .hero h1 {
+      font-family: var(--serif);
+      font-size: clamp(2.6rem, 6vw, 4.2rem);
+      line-height: 1.02; letter-spacing: -0.03em; font-weight: 700;
+      margin-bottom: 16px;
+    }
+    .hero .lead {
+      font-size: 1.15rem; color: var(--muted); max-width: 34ch; margin-bottom: 28px;
+    }
+    .hero-cta { display: flex; flex-wrap: wrap; gap: 12px; }
+
+    section { padding: 72px 0; }
+    .section-head { max-width: 36rem; margin-bottom: 36px; }
+    .section-head h2 {
+      font-family: var(--serif); font-size: clamp(1.8rem, 3vw, 2.4rem);
+      letter-spacing: -0.02em; margin: 8px 0 10px; line-height: 1.15;
+    }
+    .section-head p { color: var(--muted); font-size: 1.05rem; }
+
+    .feature {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center;
+      padding: 40px 0;
+    }
+    .feature.rev .txt { order: 2; }
+    .feature .txt h3 {
+      font-family: var(--serif); font-size: 1.75rem; letter-spacing: -0.02em;
+      margin: 8px 0 12px; line-height: 1.15;
+    }
+    .feature .txt p { color: var(--muted); font-size: 1.02rem; max-width: 42ch; }
+    .feature .txt ul { list-style: none; margin-top: 18px; display: flex; flex-direction: column; gap: 10px; }
+    .feature .txt li {
+      display: flex; gap: 10px; align-items: flex-start;
+      font-size: 0.95rem; font-weight: 600;
+    }
+    .feature .txt li::before {
+      content: ""; width: 8px; height: 8px; margin-top: 7px; flex: 0 0 auto;
+      border-radius: 50%; background: var(--accent);
+    }
+    .shot {
+      border-radius: 28px; overflow: hidden;
+      border: 1px solid var(--line);
+      box-shadow: 0 40px 80px -40px rgba(0,0,0,.85);
+      background: #000;
+    }
+    .shot img { width: 100%; }
+
+    .strip {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;
+    }
+    .strip figure {
+      margin: 0; border-radius: 18px; overflow: hidden; border: 1px solid var(--line);
+      background: var(--bg-2);
+    }
+    .strip figcaption {
+      padding: 12px 14px; font-size: 0.85rem; color: var(--muted); font-weight: 600;
+    }
+
+    .cta-band {
+      margin: 24px 0;
+      padding: 48px 40px;
+      border-radius: 28px;
+      border: 1px solid var(--line);
+      background:
+        radial-gradient(ellipse 70% 80% at 90% 20%, rgba(124,92,255,.25), transparent 55%),
+        linear-gradient(160deg, #1a1030, #0f0a1a);
+      text-align: center;
+    }
+    .cta-band h2 {
+      font-family: var(--serif); font-size: clamp(1.8rem, 3vw, 2.3rem);
+      margin-bottom: 10px; letter-spacing: -0.02em;
+    }
+    .cta-band p { color: var(--muted); max-width: 40ch; margin: 0 auto 24px; }
+
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 28px 0 40px;
+      color: var(--faint); font-size: 0.88rem;
+      display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    }
+    footer a:hover { color: var(--accent); }
+
+    @media (max-width: 860px) {
+      .feature, .feature.rev { grid-template-columns: 1fr; gap: 24px; }
+      .feature.rev .txt { order: 0; }
+      .strip { grid-template-columns: 1fr; }
+      .hero-bg { background-position: 70% center; }
+      .nav-actions .hide { display: none; }
+    }
   </style>
 </head>
 <body>
-  <main>
-    <h1><img src="assets/icon/arthur-icon.svg" alt="" width="52" height="52" />Arthur</h1>
-    <p class="tag">ART'hur — ambient art for phone, Auto &amp; TV</p>
-    <p>Configure on your phone. Display on Android Auto and Android TV.</p>
-    <p><a href="privacy.html">Privacy policy</a></p>
-  </main>
+  <div class="sky" aria-hidden="true"></div>
+
+  <nav>
+    <div class="wrap">
+      <a class="brand" href="#">
+        <img src="assets/icon/arthur-icon.svg" width="34" height="34" alt="" />
+        Arthur
+      </a>
+      <div class="nav-actions">
+        <a class="hide" href="#canvases" data-i18n="nav.canvases">Canvases</a>
+        <a class="hide" href="#sources" data-i18n="nav.sources">Sources</a>
+        <a class="btn btn-primary" href="https://play.google.com/store/apps/details?id=fr.geoking.arthur" data-i18n="nav.play">Google Play</a>
+        <div class="lang" role="group" aria-label="Language">
+          <button type="button" data-lang="en" aria-pressed="true">EN</button>
+          <button type="button" data-lang="fr" aria-pressed="false">FR</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="hero-bg" role="img" aria-label="Arthur ambient canvas preview"></div>
+    <div class="wrap">
+      <p class="eyebrow" data-i18n="hero.eyebrow">ART'hur · GeoKing</p>
+      <h1 data-i18n="hero.title">Arthur</h1>
+      <p class="lead" data-i18n="hero.lead">Ambient art for phone, Auto &amp; TV. Configure on your phone. Display on the canvases that matter.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="https://play.google.com/store/apps/details?id=fr.geoking.arthur" data-i18n="hero.cta">Get on Google Play</a>
+        <a class="btn btn-ghost" href="#control" data-i18n="hero.secondary">See the Control Plane</a>
+      </div>
+    </div>
+  </header>
+
+  <section id="control">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow" data-i18n="control.eyebrow">Control Plane</p>
+        <h2 data-i18n="control.title">Phone configures. Canvases display.</h2>
+        <p data-i18n="control.lead">Arthur turns your phone into a Control Plane for ambient Artwork on Android Auto and Android TV — not a gallery you scroll for hours.</p>
+      </div>
+      <div class="feature">
+        <div class="txt">
+          <h3 data-i18n="control.h3">Prepare a rotation</h3>
+          <p data-i18n="control.p">Pick sources, order Artwork, preview on the phone, then start ambient on car or living-room canvases.</p>
+          <ul>
+            <li data-i18n="control.li1">Bundled pack works offline</li>
+            <li data-i18n="control.li2">Museum &amp; stock photo sources</li>
+            <li data-i18n="control.li3">Fractal Presets &amp; on-device Genart</li>
+          </ul>
+        </div>
+        <div class="art">
+          <figure class="shot">
+            <img src="assets/screenshots/en/control_plane.png" alt="Arthur Control Plane on phone" width="439" height="919" id="shot-control" />
+          </figure>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="canvases">
+    <div class="wrap">
+      <div class="feature rev">
+        <div class="txt">
+          <p class="eyebrow" data-i18n="canvas.eyebrow">Canvases</p>
+          <h3 data-i18n="canvas.h3">Auto Media &amp; TV Dream</h3>
+          <p data-i18n="canvas.p">Android Auto shows large now-playing Artwork through Media. Android TV runs ambient as a screensaver Dream, with a minimal launcher to go fullscreen.</p>
+          <ul>
+            <li data-i18n="canvas.li1">Same App Shell APK for phone, Auto, TV</li>
+            <li data-i18n="canvas.li2">TV pairing over LAN / QR — no cloud account</li>
+            <li data-i18n="canvas.li3">Gentle ambient rotation, Muzei-inspired</li>
+          </ul>
+        </div>
+        <div class="art">
+          <figure class="shot">
+            <img src="assets/screenshots/en/ambient.png" alt="Arthur ambient display" width="439" height="919" id="shot-ambient" />
+          </figure>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="sources">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow" data-i18n="sources.eyebrow">Content Engine</p>
+        <h2 data-i18n="sources.title">Museums, photos, fractals, genart</h2>
+        <p data-i18n="sources.lead">Free tier includes a curated pack, Fractal Presets, and Auto/TV with a limited pool. Premium unlocks personal photos, full remote sources, unlimited Genart, and Custom Fractal.</p>
+      </div>
+      <div class="strip">
+        <figure>
+          <img src="assets/montages/en/01_control_plane.png" alt="Control Plane screenshot" width="540" height="960" id="shot-m1" />
+          <figcaption data-i18n="cap.control">Control Plane</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/montages/en/02_control_plane_sources.png" alt="Sources screenshot" width="540" height="960" id="shot-m2" />
+          <figcaption data-i18n="cap.sources">Sources</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/montages/en/03_ambient.png" alt="Ambient screenshot" width="540" height="960" id="shot-m3" />
+          <figcaption data-i18n="cap.ambient">Ambient</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section id="download">
+    <div class="wrap">
+      <div class="cta-band">
+        <h2 data-i18n="cta.title">Start an ambient rotation tonight</h2>
+        <p data-i18n="cta.p">Arthur is available on Google Play. Privacy-first: personal photos stay on-device unless you pair a TV on your LAN.</p>
+        <a class="btn btn-primary" href="https://play.google.com/store/apps/details?id=fr.geoking.arthur" data-i18n="cta.btn">Google Play</a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="wrap">
+    <div data-i18n="footer.copy">© 2026 Arthur — GeoKing</div>
+    <div>
+      <a href="privacy.html" data-i18n="footer.privacy">Privacy</a>
+      ·
+      <a href="https://geoking.fr">geoking.fr</a>
+    </div>
+  </footer>
+
+  <script>
+    const I18N = {
+      en: {
+        "nav.canvases": "Canvases",
+        "nav.sources": "Sources",
+        "nav.play": "Google Play",
+        "hero.eyebrow": "ART'hur · GeoKing",
+        "hero.title": "Arthur",
+        "hero.lead": "Ambient art for phone, Auto & TV. Configure on your phone. Display on the canvases that matter.",
+        "hero.cta": "Get on Google Play",
+        "hero.secondary": "See the Control Plane",
+        "control.eyebrow": "Control Plane",
+        "control.title": "Phone configures. Canvases display.",
+        "control.lead": "Arthur turns your phone into a Control Plane for ambient Artwork on Android Auto and Android TV — not a gallery you scroll for hours.",
+        "control.h3": "Prepare a rotation",
+        "control.p": "Pick sources, order Artwork, preview on the phone, then start ambient on car or living-room canvases.",
+        "control.li1": "Bundled pack works offline",
+        "control.li2": "Museum & stock photo sources",
+        "control.li3": "Fractal Presets & on-device Genart",
+        "canvas.eyebrow": "Canvases",
+        "canvas.h3": "Auto Media & TV Dream",
+        "canvas.p": "Android Auto shows large now-playing Artwork through Media. Android TV runs ambient as a screensaver Dream, with a minimal launcher to go fullscreen.",
+        "canvas.li1": "Same App Shell APK for phone, Auto, TV",
+        "canvas.li2": "TV pairing over LAN / QR — no cloud account",
+        "canvas.li3": "Gentle ambient rotation, Muzei-inspired",
+        "sources.eyebrow": "Content Engine",
+        "sources.title": "Museums, photos, fractals, genart",
+        "sources.lead": "Free tier includes a curated pack, Fractal Presets, and Auto/TV with a limited pool. Premium unlocks personal photos, full remote sources, unlimited Genart, and Custom Fractal.",
+        "cap.control": "Control Plane",
+        "cap.sources": "Sources",
+        "cap.ambient": "Ambient",
+        "cta.title": "Start an ambient rotation tonight",
+        "cta.p": "Arthur is available on Google Play. Privacy-first: personal photos stay on-device unless you pair a TV on your LAN.",
+        "cta.btn": "Google Play",
+        "footer.copy": "© 2026 Arthur — GeoKing",
+        "footer.privacy": "Privacy"
+      },
+      fr: {
+        "nav.canvases": "Canvases",
+        "nav.sources": "Sources",
+        "nav.play": "Google Play",
+        "hero.eyebrow": "ART'hur · GeoKing",
+        "hero.title": "Arthur",
+        "hero.lead": "Art d’ambiance pour téléphone, Auto et TV. Configurez sur le téléphone. Affichez sur les canvases qui comptent.",
+        "hero.cta": "Sur Google Play",
+        "hero.secondary": "Voir le Control Plane",
+        "control.eyebrow": "Control Plane",
+        "control.title": "Le téléphone configure. Les canvases affichent.",
+        "control.lead": "Arthur transforme votre téléphone en plan de contrôle pour de l’art d’ambiance sur Android Auto et Android TV — pas une galerie à faire défiler des heures.",
+        "control.h3": "Préparez une rotation",
+        "control.p": "Choisissez les sources, ordonnez les œuvres, prévisualisez sur le téléphone, puis lancez l’ambiance en voiture ou au salon.",
+        "control.li1": "Pack embarqué hors ligne",
+        "control.li2": "Musées et photos stock",
+        "control.li3": "Fractal Presets et Genart on-device",
+        "canvas.eyebrow": "Canvases",
+        "canvas.h3": "Auto Media et Dream TV",
+        "canvas.p": "Android Auto affiche de grandes œuvres via Media. Android TV diffuse l’ambiance en Dream / screensaver, avec un lanceur minimal pour le plein écran.",
+        "canvas.li1": "Un seul APK App Shell pour téléphone, Auto, TV",
+        "canvas.li2": "Appairage TV en LAN / QR — sans compte cloud",
+        "canvas.li3": "Rotation douce, inspirée de Muzei",
+        "sources.eyebrow": "Content Engine",
+        "sources.title": "Musées, photos, fractales, genart",
+        "sources.lead": "La version gratuite inclut un pack curaté, des Fractal Presets, et Auto/TV avec un pool limité. Premium débloque les photos personnelles, les sources distantes, le Genart illimité et le Custom Fractal.",
+        "cap.control": "Control Plane",
+        "cap.sources": "Sources",
+        "cap.ambient": "Ambiance",
+        "cta.title": "Lancez une rotation ce soir",
+        "cta.p": "Arthur est sur Google Play. Confidentialité d’abord : vos photos restent sur l’appareil, sauf appairage TV sur votre réseau local.",
+        "cta.btn": "Google Play",
+        "footer.copy": "© 2026 Arthur — GeoKing",
+        "footer.privacy": "Confidentialité"
+      }
+    };
+
+    function setLang(lang) {
+      const dict = I18N[lang] || I18N.en;
+      document.documentElement.lang = lang;
+      document.querySelectorAll("[data-i18n]").forEach((el) => {
+        const key = el.getAttribute("data-i18n");
+        if (dict[key]) el.innerHTML = dict[key];
+      });
+      document.querySelectorAll(".lang button").forEach((btn) => {
+        btn.setAttribute("aria-pressed", btn.dataset.lang === lang ? "true" : "false");
+      });
+      // Prefer locale-matched screenshots when present
+      const swap = (id, path) => {
+        const el = document.getElementById(id);
+        if (el) el.src = path;
+      };
+      swap("shot-control", `assets/screenshots/${lang}/control_plane.png`);
+      swap("shot-ambient", `assets/screenshots/${lang}/ambient.png`);
+      swap("shot-m1", `assets/montages/${lang}/01_control_plane.png`);
+      swap("shot-m2", `assets/montages/${lang}/02_control_plane_sources.png`);
+      swap("shot-m3", `assets/montages/${lang}/03_ambient.png`);
+      const hero = document.querySelector(".hero-bg");
+      if (hero) hero.style.backgroundImage =
+        `linear-gradient(90deg, rgba(11,6,20,.92) 0%, rgba(11,6,20,.55) 42%, rgba(11,6,20,.25) 100%), url("assets/montages/${lang}/03_ambient.png")`;
+      try { localStorage.setItem("arthur-lang", lang); } catch (_) {}
+    }
+
+    document.querySelectorAll(".lang button").forEach((btn) => {
+      btn.addEventListener("click", () => setLang(btn.dataset.lang));
+    });
+    let initial = "en";
+    try {
+      const saved = localStorage.getItem("arthur-lang");
+      if (saved === "fr" || saved === "en") initial = saved;
+      else if (navigator.language && navigator.language.toLowerCase().startsWith("fr")) initial = "fr";
+    } catch (_) {}
+    setLang(initial);
+  </script>
 </body>
 </html>

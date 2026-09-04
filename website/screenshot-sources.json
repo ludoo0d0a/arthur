@@ -1,4 +1,16 @@
 {
-  "phoneDir": "screenshots/phone",
-  "phoneMontagesDir": "screenshots/phone/montages"
+  "locales": ["en", "fr"],
+  "copies": [
+    {
+      "from": "screenshots/phone/framed/{locale}",
+      "to": "website/assets/screenshots/{locale}",
+      "glob": "*.png",
+      "required": ["ambient.png", "control_plane.png"]
+    },
+    {
+      "from": "screenshots/phone/montages/{locale}",
+      "to": "website/assets/montages/{locale}",
+      "glob": "*.png"
+    }
+  ]
 }

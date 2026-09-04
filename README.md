@@ -34,13 +34,24 @@ export JAVA_HOME="$HOME/.sdkman/candidates/java/21.0.2-open"
 
 ## Privacy / web
 
-Static site in `website/`, published on Cloudflare (`wrangler.jsonc`, no build step). Pushes to `main` that touch `website/` trigger `.github/workflows/cloudflare-pages.yml`.
+Static site in `website/` (monorepo), published on Cloudflare Workers (`wrangler.jsonc`, no npm build). Pattern: geoking-tools skill **website-sync** (Scora-style sync).
 
 - Hosting: https://arthur.geoking.fr
 - Privacy: https://arthur.geoking.fr/privacy.html
-- Firebase project (Analytics / Crashlytics only): `arthur-geoking`
+- Deploy CI: `.github/workflows/cloudflare-pages.yml` on `website/**`
+- Screenshot sync CI: `.github/workflows/website-screenshots.yml`
 
-Local preview: `npx wrangler dev`. Manual deploy: `npx wrangler deploy`.
+```bash
+# Roborazzi → website/assets (via geoking-tools fill_website_screenshots.py)
+./gradlew generateWebsiteScreenshots -PscreenshotLocales=en,fr
+# or copy-only:
+./scripts/fill_website_screenshots.py
+
+npx wrangler dev      # local preview
+npx wrangler deploy   # manual ship
+```
+
+Firebase project (Analytics / Crashlytics only): `arthur-geoking`.
 
 ## Screenshots (Roborazzi)
 
@@ -52,4 +63,4 @@ export JAVA_HOME="$HOME/.sdkman/candidates/java/21.0.2-open"
 ./gradlew :androidApp:generatePhoneScreenshotsFramed -PscreenshotLocales=en,fr
 ```
 
-Output: `screenshots/phone/{lang}/` and `screenshots/phone/framed/{lang}/`.
+Output: `screenshots/phone/{lang}/` and `screenshots/phone/framed/{lang}/`. Map into the landing via `website/screenshot-sources.json`.

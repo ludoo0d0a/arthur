@@ -4,13 +4,14 @@ on:
   push:
     branches: [main]
     paths:
-      - 'website/**'
-      - 'wrangler.jsonc'
-      - '.github/workflows/cloudflare-pages.yml'
+      - "website/**"
+      - "wrangler.jsonc"
+      - ".github/workflows/cloudflare-pages.yml"
+      - ".github/workflows/website-deploy.yml"
   workflow_dispatch:
 
 concurrency:
-  group: cloudflare-pages
+  group: website-deploy
   cancel-in-progress: true
 
 jobs:
@@ -24,7 +25,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Deploy to Cloudflare
+      - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}

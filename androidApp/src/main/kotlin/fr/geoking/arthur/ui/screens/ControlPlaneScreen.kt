@@ -10,8 +10,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.annotation.StringRes
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -32,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.R
 import fr.geoking.arthur.phone.theme.ArthurTheme
 import fr.geoking.arthur.shared.domain.Artwork
+import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
@@ -39,7 +44,7 @@ import fr.geoking.arthur.shared.source.BundledPackSource
 import fr.geoking.arthur.ui.components.ArtworkCard
 import fr.geoking.arthur.ui.components.ControlPlaneHeader
 import fr.geoking.arthur.ui.components.GalleryHero
-import fr.geoking.arthur.ui.components.StartAmbientBar
+import fr.geoking.arthur.ui.components.StartAmbientFab
 
 @Composable
 fun ControlPlaneScreen(
@@ -79,6 +84,26 @@ fun ControlPlaneScreen(
     )
 }
 
+enum class CategoryFilter(@get:StringRes val labelRes: Int) {
+    ALL(R.string.category_all),
+    PHOTO(R.string.kind_photo),
+    SCULPTURE(R.string.kind_sculpture),
+    GENART(R.string.kind_genart),
+    FRACTAL(R.string.kind_fractal),
+    PAINTING(R.string.kind_painting),
+    PERSONAL(R.string.kind_personal);
+
+    fun matches(kind: ArtworkKind): Boolean = when (this) {
+        ALL -> true
+        PHOTO -> kind == ArtworkKind.Photo
+        SCULPTURE -> kind == ArtworkKind.Sculpture
+        GENART -> kind == ArtworkKind.Genart
+        FRACTAL -> kind == ArtworkKind.FractalPreset || kind == ArtworkKind.CustomFractal
+        PAINTING -> kind == ArtworkKind.Painting
+        PERSONAL -> kind == ArtworkKind.PersonalPhoto
+    }
+}
+
 @Composable
 fun ControlPlaneContent(
     catalog: List<Artwork>,
@@ -95,9 +120,14 @@ fun ControlPlaneContent(
         configuration.uiMode and Configuration.UI_MODE_TYPE_MASK ==
             Configuration.UI_MODE_TYPE_TELEVISION
     }
+    var selectedCategory by remember { mutableStateOf(CategoryFilter.ALL) }
+    val filteredCatalog = remember(catalog, selectedCategory) {
+        catalog.filter { selectedCategory.matches(it.kind) }
+    }
+
     val firstItemFocus = remember { FocusRequester() }
-    LaunchedEffect(isTelevision, catalog.firstOrNull()?.id) {
-        if (isTelevision && catalog.isNotEmpty()) {
+    LaunchedEffect(isTelevision, filteredCatalog.firstOrNull()?.id) {
+        if (isTelevision && filteredCatalog.isNotEmpty()) {
             firstItemFocus.requestFocus()
         }
     }
@@ -107,9 +137,8 @@ fun ControlPlaneContent(
             .testTag("control_plane"),
         containerColor = scheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        bottomBar = {
-            StartAmbientBar(
-                selectedTitle = selected?.title,
+        floatingActionButton = {
+            StartAmbientFab(
                 onStartAmbient = onStartAmbient,
             )
         },
@@ -148,8 +177,25 @@ fun ControlPlaneContent(
                 text = stringResource(R.string.rotation_section),
                 style = MaterialTheme.typography.titleMedium,
                 color = scheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
             )
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
+                    .testTag("category_filter_row"),
+                contentPadding = PaddingValues(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(CategoryFilter.entries) { category ->
+                    FilterChip(
+                        selected = selectedCategory == category,
+                        onClick = { selectedCategory = category },
+                        label = { Text(stringResource(category.labelRes)) },
+                        modifier = Modifier.testTag("filter_chip_${category.name.lowercase()}"),
+                    )
+                }
+            }
             LazyColumn(
                 modifier = Modifier
                     .weight(1f)
@@ -158,7 +204,7 @@ fun ControlPlaneContent(
                 contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(if (isTelevision) 14.dp else 10.dp),
             ) {
-                itemsIndexed(catalog, key = { _, art -> art.id }) { index, art ->
+                itemsIndexed(filteredCatalog, key = { _, art -> art.id }) { index, art ->
                     ArtworkCard(
                         artwork = art,
                         selected = art.id == selected?.id,

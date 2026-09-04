@@ -11,20 +11,30 @@ import androidx.compose.ui.graphics.Color
 import fr.geoking.arthur.genart.engines.AuroraEngine
 import fr.geoking.arthur.genart.engines.BirdFlockEngine
 import fr.geoking.arthur.genart.engines.BreathCirclesEngine
+import fr.geoking.arthur.genart.engines.BubblesEngine
+import fr.geoking.arthur.genart.engines.CherryBlossomsEngine
 import fr.geoking.arthur.genart.engines.CloudsEngine
 import fr.geoking.arthur.genart.engines.ConstellationEngine
 import fr.geoking.arthur.genart.engines.DunesEngine
 import fr.geoking.arthur.genart.engines.FallingLeavesEngine
 import fr.geoking.arthur.genart.engines.FireEmbersEngine
+import fr.geoking.arthur.genart.engines.FirefliesEngine
+import fr.geoking.arthur.genart.engines.FishSchoolEngine
+import fr.geoking.arthur.genart.engines.FogEngine
 import fr.geoking.arthur.genart.engines.GrassEngine
+import fr.geoking.arthur.genart.engines.MeteorsEngine
 import fr.geoking.arthur.genart.engines.MicroEngine
 import fr.geoking.arthur.genart.engines.MountainsEngine
+import fr.geoking.arthur.genart.engines.NebulaEngine
 import fr.geoking.arthur.genart.engines.ParticlesEngine
 import fr.geoking.arthur.genart.engines.PondRipplesEngine
 import fr.geoking.arthur.genart.engines.Pseudo3DEngine
+import fr.geoking.arthur.genart.engines.RainEngine
 import fr.geoking.arthur.genart.engines.SnowEngine
+import fr.geoking.arthur.genart.engines.SoftRibbonsEngine
 import fr.geoking.arthur.genart.engines.SoftShadowsEngine
 import fr.geoking.arthur.genart.engines.SphereEngine
+import fr.geoking.arthur.genart.engines.SunbeamsEngine
 import fr.geoking.arthur.genart.engines.TonalGeometryEngine
 import fr.geoking.arthur.genart.engines.TunnelEngine
 import fr.geoking.arthur.genart.engines.WavesEngine
@@ -206,6 +216,86 @@ fun GenartEffectCanvas(
             modifier = canvasModifier,
         )
         GenartEngineId.Clouds -> CloudsEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.Rain -> RainEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.Fog -> FogEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.FishSchool -> FishSchoolEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.Fireflies -> FirefliesEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.Sunbeams -> SunbeamsEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.Meteors -> MeteorsEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.Bubbles -> BubblesEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.CherryBlossoms -> CherryBlossomsEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.SoftRibbons -> SoftRibbonsEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.Nebula -> NebulaEngine(
             isActive = isActive,
             paletteColors = palette,
             quality = quality,

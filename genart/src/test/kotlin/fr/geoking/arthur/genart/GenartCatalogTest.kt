@@ -32,6 +32,16 @@ class GenartCatalogTest {
         assertEquals(GenartEngineId.Dunes, GenartCatalog.engineForId("genart.dunes"))
         assertEquals(GenartEngineId.Constellation, GenartCatalog.engineForId("genart.constellation"))
         assertEquals(GenartEngineId.Clouds, GenartCatalog.engineForId("genart.clouds"))
+        assertEquals(GenartEngineId.Rain, GenartCatalog.engineForId("genart.rain"))
+        assertEquals(GenartEngineId.Fog, GenartCatalog.engineForId("genart.fog"))
+        assertEquals(GenartEngineId.FishSchool, GenartCatalog.engineForId("genart.fishschool"))
+        assertEquals(GenartEngineId.Fireflies, GenartCatalog.engineForId("genart.fireflies"))
+        assertEquals(GenartEngineId.Sunbeams, GenartCatalog.engineForId("genart.sunbeams"))
+        assertEquals(GenartEngineId.Meteors, GenartCatalog.engineForId("genart.meteors"))
+        assertEquals(GenartEngineId.Bubbles, GenartCatalog.engineForId("genart.bubbles"))
+        assertEquals(GenartEngineId.CherryBlossoms, GenartCatalog.engineForId("genart.cherryblossoms"))
+        assertEquals(GenartEngineId.SoftRibbons, GenartCatalog.engineForId("genart.ribbons"))
+        assertEquals(GenartEngineId.Nebula, GenartCatalog.engineForId("genart.nebula"))
     }
 
     @Test
@@ -55,5 +65,15 @@ class GenartCatalogTest {
         assertEquals("Wind-Blown Dunes", GenartCatalog.entries().first { it.id == "genart.dunes" }.title)
         assertEquals("Constellation Twinkle", GenartCatalog.entries().first { it.id == "genart.constellation" }.title)
         assertEquals("Drifting Clouds", GenartCatalog.entries().first { it.id == "genart.clouds" }.title)
+        assertEquals("Soft Rain", GenartCatalog.entries().first { it.id == "genart.rain" }.title)
+        assertEquals("Soft Fog", GenartCatalog.entries().first { it.id == "genart.fog" }.title)
+        assertEquals("School of Fish", GenartCatalog.entries().first { it.id == "genart.fishschool" }.title)
+        assertEquals("Fireflies", GenartCatalog.entries().first { it.id == "genart.fireflies" }.title)
+        assertEquals("Sunbeams Through Haze", GenartCatalog.entries().first { it.id == "genart.sunbeams" }.title)
+        assertEquals("Sparse Meteors", GenartCatalog.entries().first { it.id == "genart.meteors" }.title)
+        assertEquals("Rising Bubbles", GenartCatalog.entries().first { it.id == "genart.bubbles" }.title)
+        assertEquals("Cherry Blossom Petals", GenartCatalog.entries().first { it.id == "genart.cherryblossoms" }.title)
+        assertEquals("Soft Ribbons", GenartCatalog.entries().first { it.id == "genart.ribbons" }.title)
+        assertEquals("Nebula Drift", GenartCatalog.entries().first { it.id == "genart.nebula" }.title)
     }
 }

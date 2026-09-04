@@ -39,6 +39,16 @@ class GenartSource(
         const val DUNES = "genart.dunes"
         const val CONSTELLATION = "genart.constellation"
         const val CLOUDS = "genart.clouds"
+        const val RAIN = "genart.rain"
+        const val FOG = "genart.fog"
+        const val FISH_SCHOOL = "genart.fishschool"
+        const val FIREFLIES = "genart.fireflies"
+        const val SUNBEAMS = "genart.sunbeams"
+        const val METEORS = "genart.meteors"
+        const val BUBBLES = "genart.bubbles"
+        const val CHERRY_BLOSSOMS = "genart.cherryblossoms"
+        const val RIBBONS = "genart.ribbons"
+        const val NEBULA = "genart.nebula"
 
         fun defaultCatalog(): List<Artwork> = listOf(
             entry(PARTICLES, "Drifting Particles"),
@@ -61,6 +71,16 @@ class GenartSource(
             entry(DUNES, "Wind-Blown Dunes"),
             entry(CONSTELLATION, "Constellation Twinkle"),
             entry(CLOUDS, "Drifting Clouds"),
+            entry(RAIN, "Soft Rain"),
+            entry(FOG, "Soft Fog"),
+            entry(FISH_SCHOOL, "School of Fish"),
+            entry(FIREFLIES, "Fireflies"),
+            entry(SUNBEAMS, "Sunbeams Through Haze"),
+            entry(METEORS, "Sparse Meteors"),
+            entry(BUBBLES, "Rising Bubbles"),
+            entry(CHERRY_BLOSSOMS, "Cherry Blossom Petals"),
+            entry(RIBBONS, "Soft Ribbons"),
+            entry(NEBULA, "Nebula Drift"),
         )
 
         private fun entry(id: String, title: String) = Artwork(

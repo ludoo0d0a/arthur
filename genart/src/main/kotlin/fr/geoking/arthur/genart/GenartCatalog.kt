@@ -21,6 +21,16 @@ enum class GenartEngineId {
     Dunes,
     Constellation,
     Clouds,
+    Rain,
+    Fog,
+    FishSchool,
+    Fireflies,
+    Sunbeams,
+    Meteors,
+    Bubbles,
+    CherryBlossoms,
+    SoftRibbons,
+    Nebula,
 }
 
 enum class GenartQuality { Low, Medium, High }
@@ -54,6 +64,16 @@ object GenartCatalog {
         GenartCatalogEntry(GenartEngineId.Dunes, "genart.dunes", "Wind-Blown Dunes"),
         GenartCatalogEntry(GenartEngineId.Constellation, "genart.constellation", "Constellation Twinkle"),
         GenartCatalogEntry(GenartEngineId.Clouds, "genart.clouds", "Drifting Clouds"),
+        GenartCatalogEntry(GenartEngineId.Rain, "genart.rain", "Soft Rain"),
+        GenartCatalogEntry(GenartEngineId.Fog, "genart.fog", "Soft Fog"),
+        GenartCatalogEntry(GenartEngineId.FishSchool, "genart.fishschool", "School of Fish"),
+        GenartCatalogEntry(GenartEngineId.Fireflies, "genart.fireflies", "Fireflies"),
+        GenartCatalogEntry(GenartEngineId.Sunbeams, "genart.sunbeams", "Sunbeams Through Haze"),
+        GenartCatalogEntry(GenartEngineId.Meteors, "genart.meteors", "Sparse Meteors"),
+        GenartCatalogEntry(GenartEngineId.Bubbles, "genart.bubbles", "Rising Bubbles"),
+        GenartCatalogEntry(GenartEngineId.CherryBlossoms, "genart.cherryblossoms", "Cherry Blossom Petals"),
+        GenartCatalogEntry(GenartEngineId.SoftRibbons, "genart.ribbons", "Soft Ribbons"),
+        GenartCatalogEntry(GenartEngineId.Nebula, "genart.nebula", "Nebula Drift"),
     )
 
     fun engineForId(id: String): GenartEngineId? =

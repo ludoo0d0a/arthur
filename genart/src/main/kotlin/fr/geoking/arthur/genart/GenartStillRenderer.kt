@@ -8,18 +8,28 @@ import android.graphics.Shader
 import fr.geoking.arthur.genart.stills.AuroraStill
 import fr.geoking.arthur.genart.stills.BirdFlockStill
 import fr.geoking.arthur.genart.stills.BreathCirclesStill
+import fr.geoking.arthur.genart.stills.BubblesStill
+import fr.geoking.arthur.genart.stills.CherryBlossomsStill
 import fr.geoking.arthur.genart.stills.CloudsStill
 import fr.geoking.arthur.genart.stills.ConstellationStill
 import fr.geoking.arthur.genart.stills.DunesStill
 import fr.geoking.arthur.genart.stills.FallingLeavesStill
 import fr.geoking.arthur.genart.stills.FireEmbersStill
+import fr.geoking.arthur.genart.stills.FirefliesStill
+import fr.geoking.arthur.genart.stills.FishSchoolStill
+import fr.geoking.arthur.genart.stills.FogStill
 import fr.geoking.arthur.genart.stills.GrassStill
+import fr.geoking.arthur.genart.stills.MeteorsStill
 import fr.geoking.arthur.genart.stills.MicroStill
 import fr.geoking.arthur.genart.stills.MountainsStill
+import fr.geoking.arthur.genart.stills.NebulaStill
 import fr.geoking.arthur.genart.stills.ParticlesStill
 import fr.geoking.arthur.genart.stills.PondRipplesStill
+import fr.geoking.arthur.genart.stills.RainStill
 import fr.geoking.arthur.genart.stills.SnowStill
+import fr.geoking.arthur.genart.stills.SoftRibbonsStill
 import fr.geoking.arthur.genart.stills.SphereStill
+import fr.geoking.arthur.genart.stills.SunbeamsStill
 import fr.geoking.arthur.genart.stills.WavesStill
 import kotlin.math.PI
 import kotlin.math.cos
@@ -105,6 +115,36 @@ object GenartStillRenderer {
                 canvas, size, generation, phase, rotationDeg, pulse, palette,
             )
             GenartEngineId.Clouds -> CloudsStill.draw(
+                canvas, size, generation, phase, rotationDeg, pulse, palette,
+            )
+            GenartEngineId.Rain -> RainStill.draw(
+                canvas, size, generation, phase, rotationDeg, pulse, palette,
+            )
+            GenartEngineId.Fog -> FogStill.draw(
+                canvas, size, generation, phase, rotationDeg, pulse, palette,
+            )
+            GenartEngineId.FishSchool -> FishSchoolStill.draw(
+                canvas, size, generation, phase, rotationDeg, pulse, palette,
+            )
+            GenartEngineId.Fireflies -> FirefliesStill.draw(
+                canvas, size, generation, phase, rotationDeg, pulse, palette,
+            )
+            GenartEngineId.Sunbeams -> SunbeamsStill.draw(
+                canvas, size, generation, phase, rotationDeg, pulse, palette,
+            )
+            GenartEngineId.Meteors -> MeteorsStill.draw(
+                canvas, size, generation, phase, rotationDeg, pulse, palette,
+            )
+            GenartEngineId.Bubbles -> BubblesStill.draw(
+                canvas, size, generation, phase, rotationDeg, pulse, palette,
+            )
+            GenartEngineId.CherryBlossoms -> CherryBlossomsStill.draw(
+                canvas, size, generation, phase, rotationDeg, pulse, palette,
+            )
+            GenartEngineId.SoftRibbons -> SoftRibbonsStill.draw(
+                canvas, size, generation, phase, rotationDeg, pulse, palette,
+            )
+            GenartEngineId.Nebula -> NebulaStill.draw(
                 canvas, size, generation, phase, rotationDeg, pulse, palette,
             )
             GenartEngineId.Pseudo3D,

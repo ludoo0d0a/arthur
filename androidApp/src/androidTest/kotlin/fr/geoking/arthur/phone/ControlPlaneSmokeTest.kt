@@ -16,6 +16,7 @@ class ControlPlaneSmokeTest {
     @Test
     fun controlPlane_showsTitleAndList() {
         composeRule.onNodeWithTag("control_plane_title").assertIsDisplayed()
+        composeRule.onNodeWithTag("category_filter_row").assertIsDisplayed()
         composeRule.onNodeWithTag("artwork_list").assertIsDisplayed()
         composeRule.onNodeWithTag("start_ambient").assertIsDisplayed()
     }

@@ -41,6 +41,9 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "REVENUECAT_API_KEY", "\"${secret("REVENUECAT_API_KEY")}\"")
         buildConfigField("String", "WEB_CLIENT_ID", "\"${secret("WEB_CLIENT_ID")}\"")
+        buildConfigField("String", "PEXELS_API_KEY", "\"${secret("PEXELS_API_KEY")}\"")
+        // Unsplash Access Key = public Client-ID. Secret Key is OAuth-only — do not BuildConfig it into the APK.
+        buildConfigField("String", "UNSPLASH_ACCESS_KEY", "\"${secret("UNSPLASH_ACCESS_KEY")}\"")
     }
 
     buildFeatures {
@@ -115,6 +118,7 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.compose.ui.test.junit4)
+    androidTestImplementation(libs.mockwebserver)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.android)
     testImplementation(libs.ktor.server.cio)
@@ -183,6 +187,13 @@ afterEvaluate {
             filter {
                 excludeTestsMatching("fr.geoking.arthur.preview.*")
             }
+            // Live stock-photo e2e: -Pe2eStockPhotos=true (needs PEXELS_API_KEY / UNSPLASH_ACCESS_KEY)
+            systemProperty(
+                "e2e.stockPhotos",
+                (findProperty("e2eStockPhotos") as String?)
+                    ?: System.getenv("E2E_STOCK_PHOTOS")
+                    ?: "",
+            )
         }
     }
 }

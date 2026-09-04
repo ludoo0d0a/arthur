@@ -1,6 +1,6 @@
 # Arthur
 
-Ambient art and photo display — name is a play on **ART'hur**. Phone is the Control Plane; Auto and TV are Canvases. Single App Shell APK. v1 Content Engine: Bundled Pack, Rijksmuseum + The Met Remote Sources (Pexels/Unsplash photo Source in v1.1), Genart, Fractal Presets, Premium Custom Fractal, Photo Artwork, Premium Personal Photos. RevenueCat lifetime. Apple-Ready Shared only (no Apple UI in v1). Canvas Pairing LAN/QR. **Release Spine**: geoking-tools + geoking-ci (CI/CD Play, listings/i18n, Firebase Analytics/Crashlytics, In-App Updates, arthur.geoking.fr); Scora = reference copy source only.
+Ambient art and photo display — name is a play on **ART'hur**. Phone is the Control Plane; Auto and TV are Canvases. Single App Shell APK. v1 Content Engine: Bundled Pack, Rijksmuseum + The Met Remote Sources, Pexels + Unsplash Stock Photo Sources, Genart, Fractal Presets, Premium Custom Fractal, Photo Artwork, Premium Personal Photos. RevenueCat lifetime. Apple-Ready Shared only (no Apple UI in v1). Canvas Pairing LAN/QR. **Release Spine**: geoking-tools + geoking-ci (CI/CD Play, listings/i18n, Firebase Analytics/Crashlytics, In-App Updates, arthur.geoking.fr); Scora = reference copy source only.
 
 ## Language
 
@@ -107,8 +107,8 @@ A small offline set of Artwork shipped with the app so Auto/TV Canvases work bef
 _Avoid_: Full catalog on device
 
 **Remote Source**:
-An external catalog synced into the Content Engine under explicit license/attribution rules. Museum connectors = **Rijksmuseum** and **The Met**. v1.1 adds a **stock-photo** Source (**Pexels** or **Unsplash**, pick one at implementation). Content Engine stays Source-agnostic behind one interface.
-_Avoid_: Scraping, unrestricted web images; Wikimedia/Unsplash/Pexels as the famous-art connector
+An external catalog synced into the Content Engine under explicit license/attribution rules. Museum connectors = **Rijksmuseum** and **The Met**. Stock-photo Sources = **Pexels** and **Unsplash**. Content Engine stays Source-agnostic behind one interface.
+_Avoid_: Scraping, unrestricted web images; Wikimedia as the famous-art connector
 
 **Rijksmuseum Source**:
 Museum Remote Source via the public Linked Art Search API (no API key) + attribution. Reference learning from existing Rijksmuseum KMP samples is fine; Arthur does not fork that app as the product.
@@ -119,7 +119,7 @@ Second museum Remote Source via The Met Collection API (no API key). Open-access
 _Avoid_: Using non–public-domain Met images
 
 **Stock Photo Source**:
-v1.1 Remote Source for high-quality ambient photography (nature, city, abstract) via a free legal API — **Pexels** or **Unsplash**. Distinct from museum Sources and from Personal Photos. Must follow the chosen provider’s ToS (API key, attribution, rate limits, hotlink/cache rules). Not a substitute for famous-art catalogs.
+Remote Sources for high-quality ambient photography (nature, landscape) via free legal APIs — **Pexels** and **Unsplash**. Distinct from museum Sources and from Personal Photos. Keys from `local.properties` / CI: `PEXELS_API_KEY`; Unsplash **Access Key** as `UNSPLASH_ACCESS_KEY` (Client-ID header). Unsplash **Secret Key** (`UNSPLASH_SECRET_KEY`) is OAuth-only — keep it out of the APK / BuildConfig. Blank access/API key → empty catalog. Must follow each provider’s ToS (attribution, rate limits, hotlink/cache rules). Not a substitute for famous-art catalogs.
 _Avoid_: Scraping 500px or other closed platforms; shipping without attribution when required; treating stock photos as museum/famous-art
 
 **Generative Source**:

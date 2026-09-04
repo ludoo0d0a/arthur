@@ -8,7 +8,9 @@ import fr.geoking.arthur.shared.source.CustomFractalSource
 import fr.geoking.arthur.shared.source.FractalSource
 import fr.geoking.arthur.shared.source.GenartSource
 import fr.geoking.arthur.shared.source.MetSource
+import fr.geoking.arthur.shared.source.PexelsSource
 import fr.geoking.arthur.shared.source.RijksmuseumSource
+import fr.geoking.arthur.shared.source.UnsplashSource
 
 /**
  * Auto Media browse helpers: ≤2 levels (root folders → playable art), content-style
@@ -25,6 +27,8 @@ object ArthurMediaBrowse {
         BundledPackSource.ID,
         RijksmuseumSource.ID,
         MetSource.ID,
+        PexelsSource.ID,
+        UnsplashSource.ID,
     )
 
     fun folderId(sourceId: String): String = FOLDER_PREFIX + sourceId
@@ -65,6 +69,8 @@ object ArthurMediaBrowse {
         BundledPackSource.ID -> "Bundled Pack"
         RijksmuseumSource.ID -> "Rijksmuseum"
         MetSource.ID -> "The Met"
+        PexelsSource.ID -> "Pexels"
+        UnsplashSource.ID -> "Unsplash"
         else -> sourceId
     }
 

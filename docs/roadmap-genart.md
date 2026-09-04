@@ -11,13 +11,14 @@ Ideas backlog for on-device procedural **Genart** (Compose Canvas in `:genart`).
 - **Live creatures** = silhouettes, flocks, schools, tiny agents — not detailed anatomy sims.
 - Status: `idea` until an engine ships (then add a stable `genart.*` id in `GenartCatalog`).
 
-**Shipped today (reference):** drifting particles, wire lattice, soft shadows, vanishing tunnel, tonal geometry, orbiting sphere, layered waves, volumetric rays, falling snow (`genart.snow`), grass in wind (`genart.grass`), bird flock (`genart.birdflock`), layered mountains (`genart.mountains`), aurora ribbons (`genart.aurora`), pond ripples (`genart.pondripples`), falling leaves (`genart.fallingleaves`), breath circles (`genart.breathcircles`), fireplace embers (`genart.fireembers`), wind-blown dunes (`genart.dunes`), constellation twinkle (`genart.constellation`).
+**Shipped today (reference):** drifting particles, wire lattice, soft shadows, vanishing tunnel, tonal geometry, orbiting sphere, layered waves, volumetric rays, falling snow (`genart.snow`), grass in wind (`genart.grass`), bird flock (`genart.birdflock`), layered mountains (`genart.mountains`), aurora ribbons (`genart.aurora`), pond ripples (`genart.pondripples`), falling leaves (`genart.fallingleaves`), breath circles (`genart.breathcircles`), fireplace embers (`genart.fireembers`), wind-blown dunes (`genart.dunes`), constellation twinkle (`genart.constellation`), drifting clouds (`genart.clouds`).
 
 ## Backlog by category
 
 ### Weather
 
 - Snow — shipped as `genart.snow`
+- Clouds — shipped as `genart.clouds`
 - Rain
 - Storm (soft; no strobing lightning)
 - Water drops on window

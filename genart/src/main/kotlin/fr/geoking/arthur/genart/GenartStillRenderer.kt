@@ -8,6 +8,7 @@ import android.graphics.Shader
 import fr.geoking.arthur.genart.stills.AuroraStill
 import fr.geoking.arthur.genart.stills.BirdFlockStill
 import fr.geoking.arthur.genart.stills.BreathCirclesStill
+import fr.geoking.arthur.genart.stills.CloudsStill
 import fr.geoking.arthur.genart.stills.ConstellationStill
 import fr.geoking.arthur.genart.stills.DunesStill
 import fr.geoking.arthur.genart.stills.FallingLeavesStill
@@ -101,6 +102,9 @@ object GenartStillRenderer {
                 canvas, size, generation, phase, rotationDeg, pulse, palette,
             )
             GenartEngineId.Constellation -> ConstellationStill.draw(
+                canvas, size, generation, phase, rotationDeg, pulse, palette,
+            )
+            GenartEngineId.Clouds -> CloudsStill.draw(
                 canvas, size, generation, phase, rotationDeg, pulse, palette,
             )
             GenartEngineId.Pseudo3D,

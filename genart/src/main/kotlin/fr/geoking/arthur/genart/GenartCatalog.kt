@@ -20,6 +20,7 @@ enum class GenartEngineId {
     FireEmbers,
     Dunes,
     Constellation,
+    Clouds,
 }
 
 enum class GenartQuality { Low, Medium, High }
@@ -52,6 +53,7 @@ object GenartCatalog {
         GenartCatalogEntry(GenartEngineId.FireEmbers, "genart.fireembers", "Fireplace Embers"),
         GenartCatalogEntry(GenartEngineId.Dunes, "genart.dunes", "Wind-Blown Dunes"),
         GenartCatalogEntry(GenartEngineId.Constellation, "genart.constellation", "Constellation Twinkle"),
+        GenartCatalogEntry(GenartEngineId.Clouds, "genart.clouds", "Drifting Clouds"),
     )
 
     fun engineForId(id: String): GenartEngineId? =

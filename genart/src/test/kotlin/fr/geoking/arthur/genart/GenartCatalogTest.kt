@@ -31,6 +31,7 @@ class GenartCatalogTest {
         assertEquals(GenartEngineId.FireEmbers, GenartCatalog.engineForId("genart.fireembers"))
         assertEquals(GenartEngineId.Dunes, GenartCatalog.engineForId("genart.dunes"))
         assertEquals(GenartEngineId.Constellation, GenartCatalog.engineForId("genart.constellation"))
+        assertEquals(GenartEngineId.Clouds, GenartCatalog.engineForId("genart.clouds"))
     }
 
     @Test
@@ -53,5 +54,6 @@ class GenartCatalogTest {
         assertEquals("Fireplace Embers", GenartCatalog.entries().first { it.id == "genart.fireembers" }.title)
         assertEquals("Wind-Blown Dunes", GenartCatalog.entries().first { it.id == "genart.dunes" }.title)
         assertEquals("Constellation Twinkle", GenartCatalog.entries().first { it.id == "genart.constellation" }.title)
+        assertEquals("Drifting Clouds", GenartCatalog.entries().first { it.id == "genart.clouds" }.title)
     }
 }

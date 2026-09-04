@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import fr.geoking.arthur.genart.engines.AuroraEngine
 import fr.geoking.arthur.genart.engines.BirdFlockEngine
 import fr.geoking.arthur.genart.engines.BreathCirclesEngine
+import fr.geoking.arthur.genart.engines.CloudsEngine
 import fr.geoking.arthur.genart.engines.ConstellationEngine
 import fr.geoking.arthur.genart.engines.DunesEngine
 import fr.geoking.arthur.genart.engines.FallingLeavesEngine
@@ -197,6 +198,14 @@ fun GenartEffectCanvas(
             modifier = canvasModifier,
         )
         GenartEngineId.Constellation -> ConstellationEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.Clouds -> CloudsEngine(
             isActive = isActive,
             paletteColors = palette,
             quality = quality,

@@ -38,6 +38,7 @@ class GenartSource(
         const val FIRE_EMBERS = "genart.fireembers"
         const val DUNES = "genart.dunes"
         const val CONSTELLATION = "genart.constellation"
+        const val CLOUDS = "genart.clouds"
 
         fun defaultCatalog(): List<Artwork> = listOf(
             entry(PARTICLES, "Drifting Particles"),
@@ -59,6 +60,7 @@ class GenartSource(
             entry(FIRE_EMBERS, "Fireplace Embers"),
             entry(DUNES, "Wind-Blown Dunes"),
             entry(CONSTELLATION, "Constellation Twinkle"),
+            entry(CLOUDS, "Drifting Clouds"),
         )
 
         private fun entry(id: String, title: String) = Artwork(

@@ -1,5 +1,7 @@
 package fr.geoking.arthur.auto
 
+import androidx.car.app.model.Action
+import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarIcon
 import androidx.car.app.model.Header
 import androidx.car.app.model.Pane
@@ -61,21 +63,51 @@ class ArthurCarAppTest {
         assertNotNull(row.image)
         assertEquals(artwork.title, row.title.toString())
 
+        // Host: Pane actions ≤ 2 — keep a single primary play/pause action.
         val pane = Pane.Builder()
             .addRow(row)
+            .addAction(
+                Action.Builder()
+                    .setTitle("Pause")
+                    .setFlags(Action.FLAG_PRIMARY)
+                    .setOnClickListener { }
+                    .build(),
+            )
             .build()
+
+        assertTrue("Pane must not exceed 2 actions", pane.actions.size <= 2)
+
+        // ActionStrip: ≤2 actions, icon-only (no label buttons).
+        val strip = ActionStrip.Builder()
+            .addAction(
+                Action.Builder()
+                    .setIcon(CarIcon.Builder(IconCompat.createWithBitmap(bitmap)).build())
+                    .setOnClickListener { }
+                    .build(),
+            )
+            .addAction(
+                Action.Builder()
+                    .setIcon(CarIcon.Builder(IconCompat.createWithBitmap(bitmap)).build())
+                    .setOnClickListener { }
+                    .build(),
+            )
+            .build()
+        assertEquals(2, strip.actions.size)
 
         val header = Header.Builder()
             .setTitle("Arthur")
+            .setStartHeaderAction(Action.APP_ICON)
             .build()
 
         val paneTemplate = PaneTemplate.Builder(pane)
             .setHeader(header)
+            .setActionStrip(strip)
             .build()
 
         assertNotNull(paneTemplate)
         assertEquals(1, paneTemplate.pane.rows.size)
         assertNotNull(paneTemplate.pane.rows[0].image)
+        assertEquals(1, paneTemplate.pane.actions.size)
     }
 
     @Test

@@ -5,15 +5,21 @@ import androidx.car.app.CarAppService
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.Session
+import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.Action
+import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarIcon
 import androidx.car.app.model.Header
+import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Pane
 import androidx.car.app.model.PaneTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import androidx.car.app.validation.HostValidator
 import androidx.core.graphics.drawable.IconCompat
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import fr.geoking.arthur.R
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
@@ -32,6 +38,13 @@ import org.koin.core.component.inject
 
 /**
  * Car App Library service for Android Auto displaying large artwork images via PaneTemplate.
+ *
+ * Host constraints applied:
+ * - Pane actions ≤ 2 (play/pause primary only here)
+ * - ActionStrip ≤ 2, icon-only for prev/next (no label buttons in strip)
+ * - Pane rows capped via [ConstraintManager.CONTENT_LIMIT_TYPE_PANE]
+ * - Loading vs rows mutually exclusive
+ * - [onGetTemplate] never throws — errors surface as [MessageTemplate]
  */
 class ArthurCarAppService : CarAppService() {
     override fun createHostValidator(): HostValidator {
@@ -58,8 +71,17 @@ class ArtworkPaneScreen(carContext: CarContext) : Screen(carContext), KoinCompon
     private var generation: Long = 0L
     private var isPlaying: Boolean = true
     private var rotationJob: Job? = null
+    private var loaded: Boolean = false
 
     init {
+        lifecycle.addObserver(
+            object : DefaultLifecycleObserver {
+                override fun onDestroy(owner: LifecycleOwner) {
+                    rotationJob?.cancel()
+                    scope.cancel()
+                }
+            },
+        )
         scope.launch {
             catalog = withContext(Dispatchers.IO) {
                 runCatching {
@@ -67,6 +89,7 @@ class ArtworkPaneScreen(carContext: CarContext) : Screen(carContext), KoinCompon
                 }.getOrDefault(emptyList())
             }
             current = resolveAmbientArtwork(catalog, null)
+            loaded = true
             invalidate()
             if (isPlaying) startRotation()
         }
@@ -106,54 +129,102 @@ class ArtworkPaneScreen(carContext: CarContext) : Screen(carContext), KoinCompon
     fun currentArtwork(): Artwork? = current
 
     override fun onGetTemplate(): Template {
-        val art = current
-        val paneBuilder = Pane.Builder()
-
-        if (art != null) {
-            val bitmap = AmbientStillRenderer.render(art, generation)
-            val carIcon = CarIcon.Builder(IconCompat.createWithBitmap(bitmap)).build()
-
-            val row = Row.Builder()
-                .setTitle(art.title)
-                .addText(art.attribution)
-                .setImage(carIcon, Row.IMAGE_TYPE_LARGE)
+        return try {
+            buildPaneTemplate()
+        } catch (e: RuntimeException) {
+            val message = (e.message ?: carContext.getString(R.string.car_error_generic)).take(500)
+            MessageTemplate.Builder(message)
+                .setTitle(carContext.getString(R.string.app_name))
+                .setHeaderAction(Action.APP_ICON)
                 .build()
+        }
+    }
 
-            paneBuilder.addRow(row)
-        } else {
-            val row = Row.Builder()
-                .setTitle("Arthur - Ambient Art")
-                .addText("Chargement de la galerie...")
+    private fun buildPaneTemplate(): Template {
+        val header = Header.Builder()
+            .setTitle(carContext.getString(R.string.app_name))
+            .setStartHeaderAction(Action.APP_ICON)
+            .build()
+
+        if (!loaded) {
+            return PaneTemplate.Builder(
+                Pane.Builder().setLoading(true).build(),
+            )
+                .setHeader(header)
                 .build()
-            paneBuilder.addRow(row)
         }
 
+        val art = current
+        val paneBuilder = Pane.Builder()
+        val rowLimit = paneRowLimit()
+
+        if (art != null && rowLimit > 0) {
+            val bitmap = AmbientStillRenderer.render(art, generation)
+            val carIcon = CarIcon.Builder(IconCompat.createWithBitmap(bitmap)).build()
+            paneBuilder.addRow(
+                Row.Builder()
+                    .setTitle(art.title)
+                    .addText(art.attribution)
+                    .setImage(carIcon, Row.IMAGE_TYPE_LARGE)
+                    .build(),
+            )
+        } else {
+            paneBuilder.addRow(
+                Row.Builder()
+                    .setTitle(carContext.getString(R.string.app_name))
+                    .addText(carContext.getString(R.string.car_gallery_empty))
+                    .build(),
+            )
+        }
+
+        // Pane actions: max 2. Primary play/pause only; prev/next live in ActionStrip.
         paneBuilder.addAction(
             Action.Builder()
-                .setTitle("Précédent")
-                .setOnClickListener { advance(-1) }
-                .build(),
-        )
-        paneBuilder.addAction(
-            Action.Builder()
-                .setTitle(if (isPlaying) "Pause" else "Lecture")
+                .setTitle(
+                    carContext.getString(
+                        if (isPlaying) R.string.car_pause else R.string.car_play,
+                    ),
+                )
+                .setFlags(Action.FLAG_PRIMARY)
                 .setOnClickListener { togglePlay() }
                 .build(),
         )
-        paneBuilder.addAction(
-            Action.Builder()
-                .setTitle("Suivant")
-                .setOnClickListener { advance(+1) }
-                .build(),
-        )
 
-        val header = Header.Builder()
-            .setTitle("Arthur")
-            .setStartHeaderAction(Action.APP_ICON)
+        val strip = ActionStrip.Builder()
+            .addAction(
+                Action.Builder()
+                    .setIcon(
+                        CarIcon.Builder(
+                            IconCompat.createWithResource(carContext, R.drawable.ic_car_previous),
+                        ).build(),
+                    )
+                    .setOnClickListener { advance(-1) }
+                    .build(),
+            )
+            .addAction(
+                Action.Builder()
+                    .setIcon(
+                        CarIcon.Builder(
+                            IconCompat.createWithResource(carContext, R.drawable.ic_car_next),
+                        ).build(),
+                    )
+                    .setOnClickListener { advance(+1) }
+                    .build(),
+            )
             .build()
 
         return PaneTemplate.Builder(paneBuilder.build())
             .setHeader(header)
+            .setActionStrip(strip)
             .build()
+    }
+
+    private fun paneRowLimit(): Int {
+        return try {
+            carContext.getCarService(ConstraintManager::class.java)
+                .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_PANE)
+        } catch (_: Exception) {
+            4
+        }
     }
 }

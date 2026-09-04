@@ -32,4 +32,8 @@
     <string name="custom_fractal_premium_title">Premium Custom Fractal</string>
     <string name="custom_fractal_premium_body">Author unique Bezier fractals from tap points — Realme AOD–style ambient art for Auto and TV.</string>
     <string name="custom_fractal_unlock">Unlock Premium</string>
+    <string name="car_play">Play</string>
+    <string name="car_pause">Pause</string>
+    <string name="car_gallery_empty">No artwork in gallery</string>
+    <string name="car_error_generic">Unable to show ambient art</string>
 </resources>

@@ -27,13 +27,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import fr.geoking.arthur.R
+import androidx.compose.ui.unit.dpimport fr.geoking.arthur.R
 import fr.geoking.arthur.phone.theme.ArthurTheme
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
@@ -114,23 +112,49 @@ fun ControlPlaneContent(
     showFractalPreview: Boolean = true,
     onCreateCustomFractal: (() -> Unit)? = null,
 ) {
-    val scheme = MaterialTheme.colorScheme
     val configuration = LocalConfiguration.current
     val isTelevision = remember(configuration) {
         configuration.uiMode and Configuration.UI_MODE_TYPE_MASK ==
             Configuration.UI_MODE_TYPE_TELEVISION
     }
+    if (isTelevision) {
+        TvControlPlaneContent(
+            catalog = catalog,
+            selected = selected,
+            onSelect = onSelect,
+            onStartAmbient = onStartAmbient,
+            modifier = modifier,
+            showFractalPreview = showFractalPreview,
+        )
+        return
+    }
+    PhoneControlPlaneContent(
+        catalog = catalog,
+        selected = selected,
+        onSelect = onSelect,
+        onStartAmbient = onStartAmbient,
+        modifier = modifier,
+        showFractalPreview = showFractalPreview,
+        onCreateCustomFractal = onCreateCustomFractal,
+    )
+}
+
+@Composable
+private fun PhoneControlPlaneContent(
+    catalog: List<Artwork>,
+    selected: Artwork?,
+    onSelect: (Artwork) -> Unit,
+    onStartAmbient: () -> Unit,
+    modifier: Modifier = Modifier,
+    showFractalPreview: Boolean = true,
+    onCreateCustomFractal: (() -> Unit)? = null,
+) {
+    val scheme = MaterialTheme.colorScheme
     var selectedCategory by remember { mutableStateOf(CategoryFilter.ALL) }
     val filteredCatalog = remember(catalog, selectedCategory) {
         catalog.filter { selectedCategory.matches(it.kind) }
     }
 
-    val firstItemFocus = remember { FocusRequester() }
-    LaunchedEffect(isTelevision, filteredCatalog.firstOrNull()?.id) {
-        if (isTelevision && filteredCatalog.isNotEmpty()) {
-            firstItemFocus.requestFocus()
-        }
-    }
     Scaffold(
         modifier = modifier
             .fillMaxSize()
@@ -170,7 +194,7 @@ fun ControlPlaneContent(
                 modifier = Modifier
                     .padding(horizontal = 20.dp, vertical = 8.dp)
                     .fillMaxWidth()
-                    .height(if (isTelevision) 200.dp else 168.dp)
+                    .height(168.dp)
                     .testTag("fractal_preview"),
             )
             Text(
@@ -202,14 +226,13 @@ fun ControlPlaneContent(
                     .fillMaxWidth()
                     .testTag("artwork_list"),
                 contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(if (isTelevision) 14.dp else 10.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                itemsIndexed(filteredCatalog, key = { _, art -> art.id }) { index, art ->
+                itemsIndexed(filteredCatalog, key = { _, art -> art.id }) { _, art ->
                     ArtworkCard(
                         artwork = art,
                         selected = art.id == selected?.id,
                         onClick = { onSelect(art) },
-                        focusRequester = if (index == 0) firstItemFocus else null,
                     )
                 }
             }
@@ -223,6 +246,26 @@ private fun ControlPlanePreview() {
     val catalog = BundledPackSource.defaultPack()
     ArthurTheme {
         ControlPlaneContent(
+            catalog = catalog,
+            selected = catalog.firstOrNull(),
+            onSelect = {},
+            onStartAmbient = {},
+            showFractalPreview = false,
+        )
+    }
+}
+
+@Preview(
+    showBackground = true,
+    name = "TV control plane",
+    device = "id:tv_1080p",
+    uiMode = Configuration.UI_MODE_TYPE_TELEVISION,
+)
+@Composable
+private fun TvControlPlanePreview() {
+    val catalog = BundledPackSource.defaultPack()
+    ArthurTheme {
+        TvControlPlaneContent(
             catalog = catalog,
             selected = catalog.firstOrNull(),
             onSelect = {},

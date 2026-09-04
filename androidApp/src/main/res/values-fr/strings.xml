@@ -32,4 +32,8 @@
     <string name="custom_fractal_premium_title">Fractale perso Premium</string>
     <string name="custom_fractal_premium_body">Créez des fractales Bezier uniques à partir de points — art ambient façon AOD Realme pour Auto et TV.</string>
     <string name="custom_fractal_unlock">Débloquer Premium</string>
+    <string name="car_play">Lecture</string>
+    <string name="car_pause">Pause</string>
+    <string name="car_gallery_empty">Aucune œuvre dans la galerie</string>
+    <string name="car_error_generic">Impossible d’afficher l’art ambient</string>
 </resources>

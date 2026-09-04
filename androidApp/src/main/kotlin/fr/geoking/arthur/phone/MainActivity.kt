@@ -1,5 +1,6 @@
 package fr.geoking.arthur.phone
 
+import android.content.res.Configuration
 import android.graphics.Color as AndroidColor
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -37,12 +38,15 @@ class MainActivity : ComponentActivity() {
             statusBarStyle = SystemBarStyle.dark(AndroidColor.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(AndroidColor.TRANSPARENT),
         )
+        val isTelevision = resources.configuration.uiMode and Configuration.UI_MODE_TYPE_MASK ==
+            Configuration.UI_MODE_TYPE_TELEVISION
         setContent {
             ArthurTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     var showEditor by remember { mutableStateOf(false) }
                     var catalogEpoch by remember { mutableStateOf(0) }
-                    if (showEditor) {
+                    // Custom fractal authoring needs touch; TV uses remote only.
+                    if (showEditor && !isTelevision) {
                         CustomFractalEditorScreen(
                             isPremium = premium.isPremium,
                             onSave = { params ->
@@ -64,7 +68,11 @@ class MainActivity : ComponentActivity() {
                                 onStartAmbient = { artwork ->
                                     startActivity(AmbientActivity.intent(this@MainActivity, artwork?.id))
                                 },
-                                onCreateCustomFractal = { showEditor = true },
+                                onCreateCustomFractal = if (isTelevision) {
+                                    null
+                                } else {
+                                    { showEditor = true }
+                                },
                             )
                         }
                     }

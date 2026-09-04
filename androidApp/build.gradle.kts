@@ -100,6 +100,7 @@ dependencies {
     implementation(libs.koin.android)
     implementation(libs.androidx.media)
     implementation(libs.androidx.leanback)
+    implementation(libs.androidx.car.app)
     implementation(libs.ktor.client.okhttp)
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.cio)

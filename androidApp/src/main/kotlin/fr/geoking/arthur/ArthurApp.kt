@@ -18,11 +18,13 @@ import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
+import org.koin.core.context.stopKoin
 import org.koin.dsl.module
 
 class ArthurApp : Application() {
     override fun onCreate() {
         super.onCreate()
+        stopKoin()
         startKoin {
             androidContext(this@ArthurApp)
             modules(appModule)

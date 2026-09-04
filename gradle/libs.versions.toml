@@ -16,6 +16,7 @@ coreKtx = "1.18.0"
 robolectric = "4.16.1"
 roborazzi = "1.69.0"
 leanback = "1.2.0"
+car-app = "1.7.0"
 firebase-bom = "33.10.0"
 purchases = "10.20.0"
 play-app-update = "2.1.0"
@@ -46,6 +47,7 @@ ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negoti
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 androidx-media = { module = "androidx.media:media", version.ref = "media" }
 androidx-leanback = { module = "androidx.leanback:leanback", version.ref = "leanback" }
+androidx-car-app = { module = "androidx.car.app:app", version.ref = "car-app" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 roborazzi = { module = "io.github.takahirom.roborazzi:roborazzi", version.ref = "roborazzi" }
 roborazzi-compose = { module = "io.github.takahirom.roborazzi:roborazzi-compose", version.ref = "roborazzi" }

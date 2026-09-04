@@ -18,8 +18,12 @@ class ResolveAmbientArtworkTest {
     }
 
     @Test
-    fun stillOrMissingFallsBackToFirstGenerative() {
-        assertEquals(particles, resolveAmbientArtwork(catalog, still.id))
+    fun requestedStillIsHonored() {
+        assertEquals(still, resolveAmbientArtwork(catalog, still.id))
+    }
+
+    @Test
+    fun missingOrUnrequestedFallsBackToFirstGenerative() {
         assertEquals(particles, resolveAmbientArtwork(catalog, null))
         assertEquals(particles, resolveAmbientArtwork(catalog, "missing"))
     }

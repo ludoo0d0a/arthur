@@ -12,14 +12,14 @@ class ResolveAmbientArtworkTest {
     private val catalog = listOf(still, particles, mandelbrot)
 
     @Test
-    fun prefersRequestedGenerative() {
+    fun prefersRequestedArtwork() {
         assertEquals(mandelbrot, resolveAmbientArtwork(catalog, mandelbrot.id))
         assertEquals(particles, resolveAmbientArtwork(catalog, particles.id))
+        assertEquals(still, resolveAmbientArtwork(catalog, still.id))
     }
 
     @Test
-    fun stillOrMissingFallsBackToFirstGenerative() {
-        assertEquals(particles, resolveAmbientArtwork(catalog, still.id))
+    fun missingOrNullFallsBackToFirstGenerative() {
         assertEquals(particles, resolveAmbientArtwork(catalog, null))
         assertEquals(particles, resolveAmbientArtwork(catalog, "missing"))
     }

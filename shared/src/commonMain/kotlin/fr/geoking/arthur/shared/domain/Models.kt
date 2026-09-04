@@ -39,13 +39,13 @@ val Artwork.isGenerative: Boolean
     get() = kind.isGenerative
 
 /**
- * Prefer the requested generative piece; otherwise first generative in [catalog].
- * Stills are never chosen for Ambient playback when a generative alternative exists.
+ * Return the explicitly requested piece if found in [catalog];
+ * otherwise default to the first generative artwork, or first catalog item.
  */
 fun resolveAmbientArtwork(catalog: List<Artwork>, artworkId: String?): Artwork? {
     val requested = catalog.firstOrNull { it.id == artworkId }
-    if (requested?.isGenerative == true) return requested
-    return catalog.firstOrNull { it.isGenerative } ?: requested ?: catalog.firstOrNull()
+    if (requested != null) return requested
+    return catalog.firstOrNull { it.isGenerative } ?: catalog.firstOrNull()
 }
 
 /** A feed that supplies Artwork. */

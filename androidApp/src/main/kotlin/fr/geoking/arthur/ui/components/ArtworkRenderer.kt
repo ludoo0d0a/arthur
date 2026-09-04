@@ -1,5 +1,7 @@
 package fr.geoking.arthur.ui.components
 
+import android.graphics.BitmapFactory
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -7,11 +9,22 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.InputStream
+import java.net.URL
 import fr.geoking.arthur.fractal.CustomFractalEffectCanvas
 import fr.geoking.arthur.fractal.CustomFractalParams
 import fr.geoking.arthur.fractal.FractalEffectCanvas
@@ -68,8 +81,57 @@ fun ArtworkRenderer(
                     forceType = fractalTypeForArtworkId(artwork.id),
                 )
             }
-            else -> StillArtworkPlaceholder(kind = artwork.kind)
+            else -> {
+                if (!artwork.remoteUrl.isNullOrBlank()) {
+                    RemoteStillImage(
+                        url = artwork.remoteUrl!!,
+                        kind = artwork.kind,
+                    )
+                } else {
+                    StillArtworkPlaceholder(kind = artwork.kind)
+                }
+            }
         }
+    }
+}
+
+@Composable
+private fun RemoteStillImage(
+    url: String,
+    kind: ArtworkKind,
+    modifier: Modifier = Modifier,
+) {
+    var bitmapState by remember(url) { mutableStateOf<android.graphics.Bitmap?>(null) }
+    var hasFailed by remember(url) { mutableStateOf(false) }
+
+    LaunchedEffect(url) {
+        withContext(Dispatchers.IO) {
+            runCatching {
+                URL(url).openStream().use { stream ->
+                    BitmapFactory.decodeStream(stream)
+                }
+            }.onSuccess { bmp ->
+                if (bmp != null) {
+                    bitmapState = bmp
+                } else {
+                    hasFailed = true
+                }
+            }.onFailure {
+                hasFailed = true
+            }
+        }
+    }
+
+    val bmp = bitmapState
+    if (bmp != null && !hasFailed) {
+        Image(
+            bitmap = bmp.asImageBitmap(),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = modifier.fillMaxSize(),
+        )
+    } else {
+        StillArtworkPlaceholder(kind = kind, modifier = modifier)
     }
 }
 

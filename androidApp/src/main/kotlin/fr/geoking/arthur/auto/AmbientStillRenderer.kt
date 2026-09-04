@@ -1,10 +1,12 @@
 package fr.geoking.arthur.auto
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RadialGradient
+import android.graphics.Rect
 import android.graphics.Shader
 import fr.geoking.arthur.fractal.CustomFractalParams
 import fr.geoking.arthur.fractal.CustomFractalQuality
@@ -43,6 +45,10 @@ object AmbientStillRenderer {
             artwork.kind == ArtworkKind.CustomFractal || CustomFractalSource.isCustomId(artwork.id) ->
                 drawCustomFractal(canvas, artwork.id, generation)
             artwork.isGenerative -> drawFractalField(canvas, artwork.id, seed)
+            !artwork.remoteUrl.isNullOrBlank() -> {
+                val drawn = drawRemoteImage(canvas, artwork.remoteUrl!!)
+                if (!drawn) drawStillPlaceholder(canvas, seed)
+            }
             else -> drawStillPlaceholder(canvas, seed)
         }
         return bitmap
@@ -69,6 +75,19 @@ object AmbientStillRenderer {
         artworkId.startsWith("rijks-") -> ArtworkKind.Painting
         artworkId.startsWith("bundled-") -> ArtworkKind.Painting
         else -> ArtworkKind.Photo
+    }
+
+    private fun drawRemoteImage(canvas: Canvas, urlString: String): Boolean {
+        return runCatching {
+            java.net.URL(urlString).openStream().use { stream ->
+                val bmp = BitmapFactory.decodeStream(stream) ?: return false
+                val srcRect = Rect(0, 0, bmp.width, bmp.height)
+                val dstRect = Rect(0, 0, SIZE, SIZE)
+                canvas.drawBitmap(bmp, srcRect, dstRect, Paint(Paint.FILTER_BITMAP_FLAG))
+                bmp.recycle()
+                true
+            }
+        }.getOrDefault(false)
     }
 
     private fun drawCustomFractal(canvas: Canvas, artworkId: String, generation: Long) {

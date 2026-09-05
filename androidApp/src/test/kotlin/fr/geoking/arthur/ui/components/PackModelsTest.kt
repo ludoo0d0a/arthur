@@ -181,4 +181,45 @@ class PackModelsTest {
         )
         assertFalse(PackSelection(PackFamily.Genart).isGenartCustom())
     }
+
+    @Test
+    fun sourceIdsForAmbientLoad_metOnly() {
+        val ids = PackSelection(
+            PackFamily.Museum,
+            MuseumTopic.Met.testTagSuffix,
+        ).sourceIdsForAmbientLoad()
+        assertEquals(listOf(MetSource.ID), ids)
+    }
+
+    @Test
+    fun sourceIdsForAmbientLoad_museumAll_allInstitutions() {
+        val ids = PackSelection(PackFamily.Museum).sourceIdsForAmbientLoad()
+        assertTrue(ids!!.contains(MetSource.ID))
+        assertTrue(ids.contains(RijksmuseumSource.ID))
+        assertFalse(ids.contains(BundledPackSource.ID))
+    }
+
+    @Test
+    fun sourceIdsForAmbientLoad_everyMuseumInstitution() {
+        for (topic in MuseumTopic.entries.filter { it.sourceId != null }) {
+            val ids = PackSelection(
+                PackFamily.Museum,
+                topic.testTagSuffix,
+            ).sourceIdsForAmbientLoad()
+            assertEquals(listOf(topic.sourceId), ids)
+        }
+    }
+
+    @Test
+    fun allowsGenerativeAmbientFallback_onlyGenart() {
+        assertTrue(PackSelection(PackFamily.Genart).allowsGenerativeAmbientFallback())
+        assertFalse(PackSelection(PackFamily.Museum).allowsGenerativeAmbientFallback())
+        assertFalse(
+            PackSelection(PackFamily.Museum, MuseumTopic.Met.testTagSuffix)
+                .allowsGenerativeAmbientFallback(),
+        )
+        assertFalse(PackSelection(PackFamily.Photo).allowsGenerativeAmbientFallback())
+        assertFalse(PackSelection(PackFamily.Painting).allowsGenerativeAmbientFallback())
+        assertFalse(PackSelection(PackFamily.Sculpture).allowsGenerativeAmbientFallback())
+    }
 }

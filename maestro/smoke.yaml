@@ -5,4 +5,6 @@ appId: fr.geoking.arthur
     id: control_plane_title
 - assertVisible: "Arthur Control Plane"
 - tapOn:
-    id: start_ambient
+    id: pack_tile_museum
+- tapOn:
+    id: pack_tile_museum_all

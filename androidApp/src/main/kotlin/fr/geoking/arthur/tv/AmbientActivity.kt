@@ -163,27 +163,28 @@ class ArthurDreamService : DreamService() {
 /**
  * Prefer the Control Plane selection. Refresh from catalog when the id still exists
  * (fresher remote URL); otherwise keep the intent-stashed Artwork so we never swap to
- * an unrelated genart fallback.
+ * an unrelated genart fallback. A null request stays null (placeholder) — do not invent
+ * a generative piece when the Control Plane asked for museum/photo stills.
  */
 internal suspend fun loadPinnedAmbient(
     contentEngine: ContentEngine,
     requested: Artwork?,
 ): Artwork? {
+    if (requested == null) return null
     val catalog = contentEngine.catalog(
         PreparedRotation(
             sourceIds = emptyList(),
             artworkIds = emptyList(),
         ),
     )
-    if (requested == null) {
-        return resolveAmbientArtwork(catalog, artworkId = null)
-    }
     return resolveAmbientArtwork(catalog, requested.id) ?: requested
 }
 
 /**
  * Start ambient with random rotation: prefer the Control Plane pool (live URLs),
  * else fall back to a fresh engine catalog. Seed with the requested piece when present.
+ * Never invent a generative fallback when the requested seed is absent — an empty
+ * museum/photo pool should show the placeholder, not Drifting Particles.
  */
 internal suspend fun loadRotatingAmbient(
     contentEngine: ContentEngine,
@@ -199,7 +200,7 @@ internal suspend fun loadRotatingAmbient(
         )
     }
     val artwork = when {
-        requested == null -> pool.randomOrNull() ?: resolveAmbientArtwork(pool, artworkId = null)
+        requested == null -> pool.randomOrNull()
         pool.any { it.id == requested.id } ->
             pool.first { it.id == requested.id }
         else -> requested

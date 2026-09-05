@@ -50,16 +50,11 @@ import fr.geoking.arthur.ui.components.PackFamily
 import fr.geoking.arthur.ui.components.PackGrid
 import fr.geoking.arthur.ui.components.PackSelection
 import fr.geoking.arthur.ui.components.PackTile
-import fr.geoking.arthur.ui.components.StartAmbientFab
 import fr.geoking.arthur.ui.components.homeTile
 import fr.geoking.arthur.ui.components.isGenartCustom
 import fr.geoking.arthur.ui.components.resolvePackPool
 import fr.geoking.arthur.ui.components.stockCategoryOrNull
 import fr.geoking.arthur.ui.components.subPackTiles
-
-/** Extra lift so the FAB clears gesture/nav bars when window insets are zeroed. */
-private val FabBottomClearance = 50.dp
-private val PackGridFabClearance = 138.dp
 
 private val StockSourceIds = setOf(
     BundledPackSource.ID,
@@ -233,12 +228,6 @@ private fun PhoneControlPlaneContent(
                 )
             }
         },
-        floatingActionButton = {
-            StartAmbientFab(
-                onStartAmbient = onStartAmbient,
-                modifier = Modifier.padding(bottom = FabBottomClearance),
-            )
-        },
     ) { padding ->
         Column(
             modifier = Modifier
@@ -268,7 +257,7 @@ private fun PhoneControlPlaneContent(
                         start = 20.dp,
                         end = 20.dp,
                         top = 8.dp,
-                        bottom = PackGridFabClearance,
+                        bottom = 24.dp,
                     ),
                 )
             } else {
@@ -285,13 +274,19 @@ private fun PhoneControlPlaneContent(
                 PackGrid(
                     tiles = openedFamily.subPackTiles(),
                     selected = selection,
-                    onTileClick = { tile: PackTile -> onSelectSubPack(tile.selection) },
+                    onTileClick = { tile: PackTile ->
+                        if (tile.selection == selection) {
+                            onStartAmbient()
+                        } else {
+                            onSelectSubPack(tile.selection)
+                        }
+                    },
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(
                         start = 20.dp,
                         end = 20.dp,
                         top = 8.dp,
-                        bottom = PackGridFabClearance,
+                        bottom = 24.dp,
                     ),
                 )
             }

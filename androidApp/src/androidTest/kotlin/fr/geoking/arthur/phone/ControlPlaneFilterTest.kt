@@ -10,6 +10,7 @@ import fr.geoking.arthur.phone.theme.ArthurTheme
 import fr.geoking.arthur.ui.components.PackFamily
 import fr.geoking.arthur.ui.components.PackSelection
 import fr.geoking.arthur.ui.screens.ControlPlaneContent
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -74,6 +75,28 @@ class ControlPlaneFilterTest {
         composeRule.onNodeWithTag("pack_tile_sculpture_all").assertIsDisplayed()
         composeRule.onNodeWithTag("pack_tile_sculpture_met").assertIsDisplayed()
         composeRule.onNodeWithTag("pack_tile_sculpture_suggestions").assertIsDisplayed()
+    }
+
+    @Test
+    fun tapAlreadySelectedSubPack_startsAmbient() {
+        var started = false
+        var selection = PackSelection(PackFamily.Genart)
+        composeRule.setContent {
+            ArthurTheme {
+                ControlPlaneContent(
+                    openedFamily = PackFamily.Genart,
+                    selection = selection,
+                    onOpenFamily = {},
+                    onSelectSubPack = { selection = it },
+                    onBackToHome = {},
+                    onStartAmbient = { started = true },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("pack_tile_genart_all").performClick()
+        composeRule.waitForIdle()
+        assertTrue(started)
     }
 
     @Test

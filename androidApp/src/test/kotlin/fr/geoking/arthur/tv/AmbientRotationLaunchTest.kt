@@ -82,4 +82,57 @@ class AmbientRotationLaunchTest {
         assertEquals(listOf(art), pool)
         assertTrue(artwork != null)
     }
+
+    @Test
+    fun loadPinnedAmbient_nullRequest_doesNotInventGenerative() = runBlocking {
+        val particles = Artwork(
+            id = "genart.particles",
+            title = "Drifting Particles",
+            sourceId = "genart",
+            kind = ArtworkKind.Genart,
+        )
+        val engine = ContentEngine(
+            sources = listOf(
+                object : Source {
+                    override val id = "genart"
+                    override val displayName = "Genart"
+                    override suspend fun load(): List<Artwork> = listOf(particles)
+                },
+            ),
+            entitlement = object : PremiumEntitlement {
+                override val isPremium = true
+            },
+        )
+        assertEquals(null, loadPinnedAmbient(engine, requested = null))
+    }
+
+    @Test
+    fun loadRotatingAmbient_nullRequest_picksFromPoolOnly() = runBlocking {
+        val met = Artwork(
+            id = "met-1",
+            title = "Met",
+            sourceId = "met",
+            kind = ArtworkKind.Painting,
+            remoteUrl = "https://example.com/m.jpg",
+        )
+        val engine = ContentEngine(
+            sources = listOf(
+                object : Source {
+                    override val id = "empty"
+                    override val displayName = "Empty"
+                    override suspend fun load(): List<Artwork> = emptyList()
+                },
+            ),
+            entitlement = object : PremiumEntitlement {
+                override val isPremium = true
+            },
+        )
+        val (pool, artwork) = loadRotatingAmbient(
+            engine,
+            requested = null,
+            stashedPool = listOf(met),
+        )
+        assertEquals(listOf(met), pool)
+        assertEquals(met.id, artwork?.id)
+    }
 }

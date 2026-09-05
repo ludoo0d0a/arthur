@@ -5,7 +5,10 @@ import androidx.annotation.StringRes
 import fr.geoking.arthur.R
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
+import fr.geoking.arthur.shared.source.BundledPackSource
+import fr.geoking.arthur.shared.source.PexelsSource
 import fr.geoking.arthur.shared.source.StockPhotoCategory
+import fr.geoking.arthur.shared.source.UnsplashSource
 
 /** Top-level Spotify-style packs on the Control Plane home grid. */
 enum class PackFamily(
@@ -212,8 +215,43 @@ fun PackSelection.museumTopicOrNull(): MuseumTopic? =
         }
     }
 
+/**
+ * Source ids to load for Ambient Start. Still packs (museum / photo) load only the
+ * selected institution or stock providers so free-tier photo slots are not eaten by
+ * unrelated Sources — and so we never fall back to a genart engine like Particles.
+ * Genart uses the in-memory catalog (`null`).
+ */
+fun PackSelection.sourceIdsForAmbientLoad(): List<String>? = when (family) {
+    PackFamily.Museum -> {
+        when (val topic = museumTopicOrNull()) {
+            null -> MuseumSourceIds.toList()
+            else -> listOfNotNull(topic.sourceId)
+        }
+    }
+    PackFamily.Painting, PackFamily.Sculpture -> {
+        when (val topic = museumTopicOrNull()) {
+            null -> MuseumSourceIds.toList() + BundledPackSource.ID
+            MuseumTopic.Suggestions -> listOf(BundledPackSource.ID)
+            else -> listOfNotNull(topic.sourceId)
+        }
+    }
+    PackFamily.Photo -> {
+        when (stockCategoryOrNull()) {
+            null, StockPhotoCategory.Random ->
+                listOf(BundledPackSource.ID, PexelsSource.ID, UnsplashSource.ID)
+            StockPhotoCategory.Suggestions -> listOf(BundledPackSource.ID)
+            else -> listOf(PexelsSource.ID, UnsplashSource.ID)
+        }
+    }
+    PackFamily.Genart -> null
+}
+
 fun PackSelection.isGenartCustom(): Boolean =
     family == PackFamily.Genart && genartTopicOrNull() == GenartTopic.Custom
+
+/** True when an empty pool must not fall back to an unrelated generative Artwork. */
+fun PackSelection.allowsGenerativeAmbientFallback(): Boolean =
+    family == PackFamily.Genart
 
 @StringRes
 private fun StockPhotoCategory.packLabelRes(): Int = when (this) {

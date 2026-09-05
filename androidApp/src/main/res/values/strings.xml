@@ -3,7 +3,6 @@
     <string name="app_name">ART\'hur</string>
     <string name="control_plane_title">ART\'hur</string>
     <string name="control_plane_subtitle">Your art ambient</string>
-    <string name="start_ambient">Start ambient</string>
     <string name="preview_label">Preview: %1$s</string>
     <string name="artwork_unavailable">Artwork unavailable</string>
     <string name="artwork_unavailable_detail">Showing the category placeholder instead</string>

@@ -18,7 +18,7 @@ class ControlPlaneSmokeTest {
         composeRule.onNodeWithTag("control_plane_title").assertIsDisplayed()
         composeRule.onNodeWithTag("pack_grid").assertIsDisplayed()
         composeRule.onNodeWithTag("pack_tile_museum").assertIsDisplayed()
-        composeRule.onNodeWithTag("start_ambient").assertIsDisplayed()
+        composeRule.onNodeWithTag("start_ambient").assertDoesNotExist()
         composeRule.onNodeWithTag("fractal_preview").assertDoesNotExist()
         composeRule.onNodeWithTag("artwork_list").assertDoesNotExist()
     }

@@ -36,7 +36,7 @@ export JAVA_HOME="$HOME/.sdkman/candidates/java/21.0.2-open"
 
 ## Privacy / web
 
-Static site in `website/` (monorepo), published on Cloudflare Workers (`wrangler.jsonc`, no npm build). Pattern: geoking-tools skill **website-sync** (Scora-style sync).
+Static site in `website/` (monorepo), published on Cloudflare Workers (`wrangler.jsonc`, no npm build). Pattern: geoking-tools skill **gk-website-sync** (Scora-style sync).
 
 - Hosting: https://arthur.geoking.fr
 - Privacy: https://arthur.geoking.fr/privacy.html

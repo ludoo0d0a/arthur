@@ -71,7 +71,7 @@ Play Console listing management and listing translations (Scora’s `scripts/pla
 _Avoid_: Maintaining a second listing/translate stack only inside Arthur; refactoring Scora in place as the shared source of truth
 
 **Release Spine**:
-v1 path from repo to Play publication, automated via **geoking-tools** + **geoking-ci**: bootstrap (`project.manifest.json`), CI (`android-ci.yml`), CD (`release-play.yml` → internal on `main`, versioned on `v*` tags), Play Listing Tooling + Translate Tooling, RevenueCat lifetime product, Firebase **Analytics** + **Crashlytics**, Play In-App Updates, privacy/marketing page on **arthur.geoking.fr** (Cloudflare Workers + **website-sync** skill: monorepo `website/` ← Roborazzi screenshots). Growth dashboard / `pull-dashboard-metrics` = **v1.1**. No AI Worker / App Check gate required for v1.
+v1 path from repo to Play publication, automated via **geoking-tools** + **geoking-ci**: bootstrap (`project.manifest.json`), CI (`android-ci.yml`), CD (`release-play.yml` → internal on `main`, versioned on `v*` tags), Play Listing Tooling + Translate Tooling, RevenueCat lifetime product, Firebase **Analytics** + **Crashlytics**, Play In-App Updates, privacy/marketing page on **arthur.geoking.fr** (Cloudflare Workers + **gk-website-sync** skill: monorepo `website/` ← Roborazzi screenshots). Growth dashboard / `pull-dashboard-metrics` = **v1.1**. No AI Worker / App Check gate required for v1.
 _Avoid_: Hand-rolled CI unique to Arthur; shipping without Crashlytics/Analytics; blocking v1 on growth dashboard; separate landing repo for Arthur
 
 **Genart**:

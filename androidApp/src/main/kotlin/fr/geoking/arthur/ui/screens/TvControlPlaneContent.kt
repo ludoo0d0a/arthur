@@ -38,8 +38,9 @@ import fr.geoking.arthur.ui.components.CategoryFilterRow
 import fr.geoking.arthur.ui.components.ContextualSubFilterRow
 import fr.geoking.arthur.ui.components.ControlPlaneHeader
 import fr.geoking.arthur.ui.components.GalleryHero
+import fr.geoking.arthur.ui.components.GenartTopic
+import fr.geoking.arthur.ui.components.MuseumTopic
 import fr.geoking.arthur.ui.components.filterByCategoryAndSources
-import fr.geoking.arthur.ui.components.toggleSource
 
 /**
  * TV Control Plane: single flat z-level (no FAB), D-pad left/right + up/down,
@@ -59,9 +60,14 @@ fun TvControlPlaneContent(
 ) {
     val scheme = MaterialTheme.colorScheme
     var selectedCategory by remember { mutableStateOf(CategoryFilter.ALL) }
-    var selectedSourceIds by remember { mutableStateOf(emptySet<String>()) }
-    val filteredCatalog = remember(catalog, selectedCategory, selectedSourceIds) {
-        catalog.filterByCategoryAndSources(selectedCategory, selectedSourceIds)
+    var museumTopic by remember { mutableStateOf(MuseumTopic.Suggestions) }
+    var genartTopic by remember { mutableStateOf(GenartTopic.Fractal) }
+    val filteredCatalog = remember(catalog, selectedCategory, museumTopic, genartTopic) {
+        catalog.filterByCategoryAndSources(
+            category = selectedCategory,
+            museumTopic = museumTopic,
+            genartTopic = genartTopic,
+        )
     }
 
     val startFocus = remember { FocusRequester() }
@@ -109,8 +115,11 @@ fun TvControlPlaneContent(
                     selectedCategory = selectedCategory,
                     onCategorySelected = { next ->
                         selectedCategory = next
-                        if (!next.showsMuseumSources()) {
-                            selectedSourceIds = emptySet()
+                        if (!next.showsMuseumTopics()) {
+                            museumTopic = MuseumTopic.Suggestions
+                        }
+                        if (!next.showsGenartTopics()) {
+                            genartTopic = GenartTopic.Fractal
                         }
                     },
                     modifier = Modifier.padding(bottom = 4.dp),
@@ -128,8 +137,10 @@ fun TvControlPlaneContent(
                 )
                 ContextualSubFilterRow(
                     selectedCategory = selectedCategory,
-                    selectedSourceIds = selectedSourceIds,
-                    onToggleSource = { selectedSourceIds = selectedSourceIds.toggleSource(it) },
+                    museumTopic = museumTopic,
+                    onMuseumTopicChange = { museumTopic = it },
+                    genartTopic = genartTopic,
+                    onGenartTopicChange = { genartTopic = it },
                     contentPadding = PaddingValues(0.dp),
                     horizontalSpacing = 10.dp,
                 )

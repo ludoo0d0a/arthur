@@ -60,30 +60,51 @@ class ControlPlaneFilterTest {
         setControlPlane()
 
         composeRule.onNodeWithTag("stock_topic_row").assertDoesNotExist()
-        composeRule.onNodeWithTag("source_filter_row").assertDoesNotExist()
+        composeRule.onNodeWithTag("museum_topic_row").assertDoesNotExist()
+        composeRule.onNodeWithTag("genart_topic_row").assertDoesNotExist()
 
         composeRule.onNodeWithTag("filter_chip_photo").performClick()
         composeRule.onNodeWithTag("stock_topic_row").assertIsDisplayed()
-        composeRule.onNodeWithTag("source_filter_row").assertDoesNotExist()
+        composeRule.onNodeWithTag("museum_topic_row").assertDoesNotExist()
+        composeRule.onNodeWithTag("genart_topic_row").assertDoesNotExist()
 
         composeRule.onNodeWithTag("filter_chip_all").performClick()
         composeRule.onNodeWithTag("stock_topic_row").assertDoesNotExist()
     }
 
     @Test
-    fun sculpture_showsSourceChips_toggleOffMeansAll() {
+    fun genart_showsTopics_fractalDefault() {
+        setControlPlane()
+
+        composeRule.onNodeWithTag("filter_chip_genart").performClick()
+        composeRule.onNodeWithTag("genart_topic_row").assertIsDisplayed()
+        composeRule.onNodeWithTag("stock_topic_row").assertDoesNotExist()
+        composeRule.onNodeWithTag("museum_topic_row").assertDoesNotExist()
+
+        composeRule.onNodeWithTag("genart_topic_fractal").assertIsSelected()
+        composeRule.onNodeWithTag("genart_topic_custom").assertIsNotSelected()
+        composeRule.onNodeWithTag("genart_topic_nature").assertIsNotSelected()
+
+        composeRule.onNodeWithTag("genart_topic_custom").performClick()
+        composeRule.onNodeWithTag("genart_topic_custom").assertIsSelected()
+        composeRule.onNodeWithTag("genart_topic_fractal").assertIsNotSelected()
+    }
+
+    @Test
+    fun sculpture_showsMuseumTopics_suggestionsDefault() {
         setControlPlane()
 
         composeRule.onNodeWithTag("filter_chip_sculpture").performClick()
-        composeRule.onNodeWithTag("source_filter_row").assertIsDisplayed()
+        composeRule.onNodeWithTag("museum_topic_row").assertIsDisplayed()
         composeRule.onNodeWithTag("stock_topic_row").assertDoesNotExist()
+        composeRule.onNodeWithTag("genart_topic_row").assertDoesNotExist()
 
-        composeRule.onNodeWithTag("source_chip_met").assertIsNotSelected()
-        composeRule.onNodeWithTag("source_chip_met").performClick()
-        composeRule.onNodeWithTag("source_chip_met").assertIsSelected()
+        composeRule.onNodeWithTag("museum_topic_suggestions").assertIsSelected()
+        composeRule.onNodeWithTag("museum_topic_met").assertIsNotSelected()
 
-        composeRule.onNodeWithTag("source_chip_met").performClick()
-        composeRule.onNodeWithTag("source_chip_met").assertIsNotSelected()
+        composeRule.onNodeWithTag("museum_topic_met").performClick()
+        composeRule.onNodeWithTag("museum_topic_met").assertIsSelected()
+        composeRule.onNodeWithTag("museum_topic_suggestions").assertIsNotSelected()
     }
 
     private fun setControlPlane() {

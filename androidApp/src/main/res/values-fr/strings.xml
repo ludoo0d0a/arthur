@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Arthur</string>
-    <string name="control_plane_title">Arthur — Plan de contrôle</string>
-    <string name="control_plane_subtitle">Configurez les sources et prévisualisez les œuvres pour Auto / TV.</string>
+    <string name="app_name">ART\'hur</string>
+    <string name="control_plane_title">ART\'hur</string>
+    <string name="control_plane_subtitle">Votre art ambient</string>
     <string name="start_ambient">Démarrer l’ambient</string>
     <string name="preview_label">Aperçu : %1$s</string>
     <string name="ambient_title">Ambient</string>
@@ -15,8 +15,11 @@
     <string name="category_all">Tout</string>
     <string name="source_met">The Met</string>
     <string name="source_rijksmuseum">Rijksmuseum</string>
+    <string name="source_artic">Art Institute</string>
+    <string name="source_cleveland">Cleveland</string>
     <string name="source_bundled">Pack</string>
     <string name="stock_topic_section">Thème photo</string>
+    <string name="stock_topic_suggestions">Suggestions</string>
     <string name="stock_topic_nature">Nature</string>
     <string name="stock_topic_city">Ville</string>
     <string name="stock_topic_ocean">Océan</string>
@@ -31,6 +34,11 @@
     <string name="kind_custom_fractal">Fractale personnalisée</string>
     <string name="kind_genart">Genart</string>
     <string name="kind_personal">Photo personnelle</string>
+    <string name="genart_topic_fractal">Fractale</string>
+    <string name="genart_topic_custom">Perso</string>
+    <string name="genart_topic_nature">Nature</string>
+    <string name="genart_topic_geometry">Géométrie</string>
+    <string name="genart_topic_planets">Planètes</string>
     <string name="custom_fractal_create">Créer une fractale perso</string>
     <string name="custom_fractal_title">Fractale perso</string>
     <string name="custom_fractal_hint">%1$d points · besoin de %2$d–%3$d</string>

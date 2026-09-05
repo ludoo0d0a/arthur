@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Arthur</string>
-    <string name="control_plane_title">Arthur Control Plane</string>
-    <string name="control_plane_subtitle">Configure sources and preview Artwork for Auto / TV canvases.</string>
+    <string name="app_name">ART\'hur</string>
+    <string name="control_plane_title">ART\'hur</string>
+    <string name="control_plane_subtitle">Your art ambient</string>
     <string name="start_ambient">Start ambient</string>
     <string name="preview_label">Preview: %1$s</string>
     <string name="ambient_title">Ambient</string>
@@ -15,8 +15,11 @@
     <string name="category_all">All</string>
     <string name="source_met">The Met</string>
     <string name="source_rijksmuseum">Rijksmuseum</string>
+    <string name="source_artic">Art Institute</string>
+    <string name="source_cleveland">Cleveland</string>
     <string name="source_bundled">Bundled</string>
     <string name="stock_topic_section">Photo topic</string>
+    <string name="stock_topic_suggestions">Suggestions</string>
     <string name="stock_topic_nature">Nature</string>
     <string name="stock_topic_city">City</string>
     <string name="stock_topic_ocean">Ocean</string>
@@ -31,6 +34,11 @@
     <string name="kind_custom_fractal">Custom fractal</string>
     <string name="kind_genart">Genart</string>
     <string name="kind_personal">Personal photo</string>
+    <string name="genart_topic_fractal">Fractal</string>
+    <string name="genart_topic_custom">Custom</string>
+    <string name="genart_topic_nature">Nature</string>
+    <string name="genart_topic_geometry">Geometry</string>
+    <string name="genart_topic_planets">Planets</string>
     <string name="custom_fractal_create">Create custom fractal</string>
     <string name="custom_fractal_title">Custom Fractal</string>
     <string name="custom_fractal_hint">%1$d points · need %2$d–%3$d</string>

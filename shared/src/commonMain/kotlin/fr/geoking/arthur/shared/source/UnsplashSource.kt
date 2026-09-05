@@ -29,8 +29,12 @@ class UnsplashSource(
 
     override suspend fun load(): List<Artwork> {
         if (accessKey.isBlank()) return offlineFallback()
+        val q = query().trim()
+        if (q.isEmpty() || q.equals(StockPhotoCategory.Suggestions.query, ignoreCase = true)) {
+            return emptyList()
+        }
         val art = runCatching {
-            val page = json.decodeFromString<UnsplashSearchPage>(httpGet(searchUrl(query(), limit)))
+            val page = json.decodeFromString<UnsplashSearchPage>(httpGet(searchUrl(q, limit)))
             page.results.mapNotNull { photo ->
                 val imageUrl = photo.urls?.regular?.takeIf { it.isNotBlank() }
                     ?: photo.urls?.full?.takeIf { it.isNotBlank() }

@@ -3,8 +3,12 @@ package fr.geoking.arthur.ui.components
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.source.BundledPackSource
+import fr.geoking.arthur.shared.source.GenartSource
 import fr.geoking.arthur.shared.source.MetSource
+import fr.geoking.arthur.shared.source.PexelsSource
 import fr.geoking.arthur.shared.source.RijksmuseumSource
+import fr.geoking.arthur.shared.source.StockPhotoCategory
+import fr.geoking.arthur.shared.source.UnsplashSource
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -27,62 +31,189 @@ class FilterChipRowsTest {
         ),
         Artwork(
             id = "bundled-sculpt",
-            title = "Bundled Sculpture",
+            title = "Marble Light",
             sourceId = BundledPackSource.ID,
             kind = ArtworkKind.Sculpture,
         ),
         Artwork(
-            id = "photo-1",
-            title = "Photo",
+            id = "bundled-paint",
+            title = "Study in Blue",
+            sourceId = BundledPackSource.ID,
+            kind = ArtworkKind.Painting,
+        ),
+        Artwork(
+            id = "bundled-3",
+            title = "Harbor Grain",
             sourceId = BundledPackSource.ID,
             kind = ArtworkKind.Photo,
+        ),
+        Artwork(
+            id = "pexels-1",
+            title = "Nature Stock",
+            sourceId = PexelsSource.ID,
+            kind = ArtworkKind.Photo,
+        ),
+        Artwork(
+            id = "unsplash-1",
+            title = "City Stock",
+            sourceId = UnsplashSource.ID,
+            kind = ArtworkKind.Photo,
+        ),
+        Artwork(
+            id = GenartSource.SNOW,
+            title = "Snow",
+            sourceId = GenartSource.ID,
+            kind = ArtworkKind.Genart,
+        ),
+        Artwork(
+            id = GenartSource.PARTICLES,
+            title = "Particles",
+            sourceId = GenartSource.ID,
+            kind = ArtworkKind.Genart,
+        ),
+        Artwork(
+            id = GenartSource.NEBULA,
+            title = "Nebula",
+            sourceId = GenartSource.ID,
+            kind = ArtworkKind.Genart,
+        ),
+        Artwork(
+            id = "fractal.julia",
+            title = "Julia",
+            sourceId = "fractal",
+            kind = ArtworkKind.FractalPreset,
+        ),
+        Artwork(
+            id = "customfractal-1",
+            title = "My Fractal",
+            sourceId = "customfractal",
+            kind = ArtworkKind.CustomFractal,
         ),
     )
 
     @Test
-    fun emptySourceSelection_meansAllForKind() {
-        val filtered = catalog.filterByCategoryAndSources(
-            CategoryFilter.SCULPTURE,
-            selectedSourceIds = emptySet(),
-        )
+    fun categoryOrder_allGenartPaintingPhotoSculptureThenPersonal() {
         assertEquals(
-            listOf("rijks-sculpt", "bundled-sculpt"),
-            filtered.map { it.id },
+            listOf(
+                CategoryFilter.ALL,
+                CategoryFilter.GENART,
+                CategoryFilter.PAINTING,
+                CategoryFilter.PHOTO,
+                CategoryFilter.SCULPTURE,
+                CategoryFilter.PERSONAL,
+            ),
+            CategoryFilter.entries.toList(),
         )
     }
 
     @Test
-    fun selectedSources_filterWithinKind() {
+    fun genartCategory_includesFractalKinds() {
+        assertTrue(CategoryFilter.GENART.matches(ArtworkKind.Genart))
+        assertTrue(CategoryFilter.GENART.matches(ArtworkKind.FractalPreset))
+        assertTrue(CategoryFilter.GENART.matches(ArtworkKind.CustomFractal))
+        assertFalse(CategoryFilter.GENART.matches(ArtworkKind.Photo))
+    }
+
+    @Test
+    fun genartFractal_showsPresetsOnly() {
+        val filtered = catalog.filterByCategoryAndSources(
+            CategoryFilter.GENART,
+            genartTopic = GenartTopic.Fractal,
+        )
+        assertEquals(listOf("fractal.julia"), filtered.map { it.id })
+    }
+
+    @Test
+    fun genartCustom_showsCustomFractalsOnly() {
+        val filtered = catalog.filterByCategoryAndSources(
+            CategoryFilter.GENART,
+            genartTopic = GenartTopic.Custom,
+        )
+        assertEquals(listOf("customfractal-1"), filtered.map { it.id })
+    }
+
+    @Test
+    fun genartNature_showsNatureEngines() {
+        val filtered = catalog.filterByCategoryAndSources(
+            CategoryFilter.GENART,
+            genartTopic = GenartTopic.Nature,
+        )
+        assertEquals(listOf(GenartSource.SNOW), filtered.map { it.id })
+    }
+
+    @Test
+    fun genartGeometry_showsGeometryEngines() {
+        val filtered = catalog.filterByCategoryAndSources(
+            CategoryFilter.GENART,
+            genartTopic = GenartTopic.Geometry,
+        )
+        assertEquals(listOf(GenartSource.PARTICLES), filtered.map { it.id })
+    }
+
+    @Test
+    fun genartPlanets_showsPlanetEngines() {
+        val filtered = catalog.filterByCategoryAndSources(
+            CategoryFilter.GENART,
+            genartTopic = GenartTopic.Planets,
+        )
+        assertEquals(listOf(GenartSource.NEBULA), filtered.map { it.id })
+    }
+
+    @Test
+    fun sculptureSuggestions_showsOnlyBundled() {
         val filtered = catalog.filterByCategoryAndSources(
             CategoryFilter.SCULPTURE,
-            selectedSourceIds = setOf(RijksmuseumSource.ID),
+            museumTopic = MuseumTopic.Suggestions,
+        )
+        assertEquals(listOf("bundled-sculpt"), filtered.map { it.id })
+    }
+
+    @Test
+    fun sculptureRijks_showsMuseumOnly() {
+        val filtered = catalog.filterByCategoryAndSources(
+            CategoryFilter.SCULPTURE,
+            museumTopic = MuseumTopic.Rijksmuseum,
         )
         assertEquals(listOf("rijks-sculpt"), filtered.map { it.id })
     }
 
     @Test
-    fun metOnSculpture_canYieldEmpty() {
+    fun paintingMet_showsMuseumAndHidesSuggestions() {
         val filtered = catalog.filterByCategoryAndSources(
-            CategoryFilter.SCULPTURE,
-            selectedSourceIds = setOf(MetSource.ID),
+            CategoryFilter.PAINTING,
+            museumTopic = MuseumTopic.Met,
         )
-        assertTrue(filtered.isEmpty())
+        assertEquals(listOf("met-1"), filtered.map { it.id })
+        assertFalse(filtered.any { it.sourceId == BundledPackSource.ID })
     }
 
     @Test
-    fun toggleSource_addsAndRemoves() {
-        val withMet = emptySet<String>().toggleSource(MetSource.ID)
-        assertEquals(setOf(MetSource.ID), withMet)
-        assertEquals(emptySet<String>(), withMet.toggleSource(MetSource.ID))
-    }
-
-    @Test
-    fun categoryFlags_photoAndMuseum() {
+    fun categoryFlags_photoMuseumGenart() {
         assertTrue(CategoryFilter.PHOTO.showsPhotoTopics())
-        assertFalse(CategoryFilter.PHOTO.showsMuseumSources())
-        assertTrue(CategoryFilter.SCULPTURE.showsMuseumSources())
-        assertTrue(CategoryFilter.PAINTING.showsMuseumSources())
-        assertFalse(CategoryFilter.ALL.showsPhotoTopics())
-        assertFalse(CategoryFilter.ALL.showsMuseumSources())
+        assertFalse(CategoryFilter.PHOTO.showsMuseumTopics())
+        assertTrue(CategoryFilter.GENART.showsGenartTopics())
+        assertFalse(CategoryFilter.GENART.showsPhotoTopics())
+        assertTrue(CategoryFilter.SCULPTURE.showsMuseumTopics())
+        assertTrue(CategoryFilter.PAINTING.showsMuseumTopics())
+        assertFalse(CategoryFilter.ALL.showsGenartTopics())
+    }
+
+    @Test
+    fun photoSuggestions_showsOnlyBundledPhotos() {
+        val filtered = catalog.filterByCategoryAndSources(
+            CategoryFilter.PHOTO,
+            stockCategory = StockPhotoCategory.Suggestions,
+        )
+        assertEquals(listOf("bundled-3"), filtered.map { it.id })
+    }
+
+    @Test
+    fun photoNature_showsStockAndHidesHarborGrain() {
+        val filtered = catalog.filterByCategoryAndSources(
+            CategoryFilter.PHOTO,
+            stockCategory = StockPhotoCategory.Nature,
+        )
+        assertEquals(listOf("pexels-1", "unsplash-1"), filtered.map { it.id })
+        assertFalse(filtered.any { it.id == "bundled-3" })
     }
 }

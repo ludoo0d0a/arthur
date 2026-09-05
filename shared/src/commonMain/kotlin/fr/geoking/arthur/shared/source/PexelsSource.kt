@@ -23,8 +23,12 @@ class PexelsSource(
 
     override suspend fun load(): List<Artwork> {
         if (apiKey.isBlank()) return offlineFallback()
+        val q = query().trim()
+        if (q.isEmpty() || q.equals(StockPhotoCategory.Suggestions.query, ignoreCase = true)) {
+            return emptyList()
+        }
         val art = runCatching {
-            val page = json.decodeFromString<PexelsSearchPage>(httpGet(searchUrl(query(), limit)))
+            val page = json.decodeFromString<PexelsSearchPage>(httpGet(searchUrl(q, limit)))
             page.photos.mapNotNull { photo ->
                 val imageUrl = photo.src?.large2x?.takeIf { it.isNotBlank() }
                     ?: photo.src?.large?.takeIf { it.isNotBlank() }

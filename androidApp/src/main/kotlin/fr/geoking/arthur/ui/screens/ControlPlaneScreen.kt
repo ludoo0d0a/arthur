@@ -43,9 +43,10 @@ import fr.geoking.arthur.ui.components.CategoryFilterRow
 import fr.geoking.arthur.ui.components.ContextualSubFilterRow
 import fr.geoking.arthur.ui.components.ControlPlaneHeader
 import fr.geoking.arthur.ui.components.GalleryHero
+import fr.geoking.arthur.ui.components.GenartTopic
+import fr.geoking.arthur.ui.components.MuseumTopic
 import fr.geoking.arthur.ui.components.StartAmbientFab
 import fr.geoking.arthur.ui.components.filterByCategoryAndSources
-import fr.geoking.arthur.ui.components.toggleSource
 
 @Composable
 fun ControlPlaneScreen(
@@ -62,7 +63,7 @@ fun ControlPlaneScreen(
     var catalog by remember { mutableStateOf(initialCatalog.orEmpty()) }
     var selected by remember { mutableStateOf(initialSelected) }
     var stockCategory by remember {
-        mutableStateOf(stockPhotoSettings?.category ?: StockPhotoCategory.Nature)
+        mutableStateOf(stockPhotoSettings?.category ?: StockPhotoCategory.Suggestions)
     }
 
     LaunchedEffect(contentEngine, initialCatalog, stockCategory) {
@@ -104,7 +105,7 @@ fun ControlPlaneContent(
     modifier: Modifier = Modifier,
     showFractalPreview: Boolean = true,
     onCreateCustomFractal: (() -> Unit)? = null,
-    stockCategory: StockPhotoCategory = StockPhotoCategory.Nature,
+    stockCategory: StockPhotoCategory = StockPhotoCategory.Suggestions,
     onStockCategoryChange: (StockPhotoCategory) -> Unit = {},
     onOpenSettings: (() -> Unit)? = null,
 ) {
@@ -148,15 +149,21 @@ private fun PhoneControlPlaneContent(
     modifier: Modifier = Modifier,
     showFractalPreview: Boolean = true,
     onCreateCustomFractal: (() -> Unit)? = null,
-    stockCategory: StockPhotoCategory = StockPhotoCategory.Nature,
+    stockCategory: StockPhotoCategory = StockPhotoCategory.Suggestions,
     onStockCategoryChange: (StockPhotoCategory) -> Unit = {},
     onOpenSettings: (() -> Unit)? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
     var selectedCategory by remember { mutableStateOf(CategoryFilter.ALL) }
-    var selectedSourceIds by remember { mutableStateOf(emptySet<String>()) }
-    val filteredCatalog = remember(catalog, selectedCategory, selectedSourceIds) {
-        catalog.filterByCategoryAndSources(selectedCategory, selectedSourceIds)
+    var museumTopic by remember { mutableStateOf(MuseumTopic.Suggestions) }
+    var genartTopic by remember { mutableStateOf(GenartTopic.Fractal) }
+    val filteredCatalog = remember(catalog, selectedCategory, museumTopic, stockCategory, genartTopic) {
+        catalog.filterByCategoryAndSources(
+            category = selectedCategory,
+            museumTopic = museumTopic,
+            stockCategory = stockCategory,
+            genartTopic = genartTopic,
+        )
     }
 
     Scaffold(
@@ -183,7 +190,11 @@ private fun PhoneControlPlaneContent(
                     .padding(horizontal = 20.dp, vertical = 8.dp),
                 onOpenSettings = onOpenSettings,
             )
-            if (onCreateCustomFractal != null) {
+            if (
+                onCreateCustomFractal != null &&
+                selectedCategory == CategoryFilter.GENART &&
+                genartTopic == GenartTopic.Custom
+            ) {
                 TextButton(
                     onClick = onCreateCustomFractal,
                     modifier = Modifier
@@ -212,18 +223,23 @@ private fun PhoneControlPlaneContent(
                 selectedCategory = selectedCategory,
                 onCategorySelected = { next ->
                     selectedCategory = next
-                    if (!next.showsMuseumSources()) {
-                        selectedSourceIds = emptySet()
+                    if (!next.showsMuseumTopics()) {
+                        museumTopic = MuseumTopic.Suggestions
+                    }
+                    if (!next.showsGenartTopics()) {
+                        genartTopic = GenartTopic.Fractal
                     }
                 },
                 modifier = Modifier.padding(bottom = 4.dp),
             )
             ContextualSubFilterRow(
                 selectedCategory = selectedCategory,
-                selectedSourceIds = selectedSourceIds,
-                onToggleSource = { selectedSourceIds = selectedSourceIds.toggleSource(it) },
+                museumTopic = museumTopic,
+                onMuseumTopicChange = { museumTopic = it },
                 stockCategory = stockCategory,
                 onStockCategoryChange = onStockCategoryChange,
+                genartTopic = genartTopic,
+                onGenartTopicChange = { genartTopic = it },
             )
             LazyColumn(
                 modifier = Modifier

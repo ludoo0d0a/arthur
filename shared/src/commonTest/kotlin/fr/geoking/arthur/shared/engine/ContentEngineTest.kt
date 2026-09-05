@@ -127,6 +127,23 @@ class ContentEngineTest {
     }
 
     @Test
+    fun freeTier_keepsAllBundledSuggestionPhotos() = runBlocking {
+        val engine = ContentEngine(
+            sources = listOf(BundledPackSource()),
+            entitlement = FakePremiumEntitlement(isPremium = false),
+            limits = FreeTierLimits(maxPhotoArtwork = 2),
+        )
+        val catalog = engine.catalog(
+            PreparedRotation(sourceIds = listOf(BundledPackSource.ID), artworkIds = emptyList()),
+        )
+        assertEquals(BundledPackSource.defaultPack().size, catalog.size)
+        assertEquals(6, catalog.count { it.kind == ArtworkKind.Photo })
+        assertEquals(6, catalog.count { it.kind == ArtworkKind.Painting })
+        assertEquals(6, catalog.count { it.kind == ArtworkKind.Sculpture })
+        assertTrue(catalog.any { it.id == "bundled-3" && it.title == "Harbor Grain" })
+    }
+
+    @Test
     fun freeTier_skipsStillsWithoutImages() = runBlocking {
         val source = object : Source {
             override val id = "mixed"

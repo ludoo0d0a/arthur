@@ -13,7 +13,7 @@ class StockPhotoSettings(context: Context) {
 
     var category: StockPhotoCategory
         get() = StockPhotoCategory.fromQuery(
-            prefs.getString(KEY_CATEGORY, StockPhotoCategory.Nature.query).orEmpty(),
+            prefs.getString(KEY_CATEGORY, StockPhotoCategory.Suggestions.query).orEmpty(),
         )
         set(value) {
             prefs.edit().putString(KEY_CATEGORY, value.query).apply()

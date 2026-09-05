@@ -25,54 +25,152 @@ import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.R
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
+import fr.geoking.arthur.shared.source.ArticSource
 import fr.geoking.arthur.shared.source.BundledPackSource
+import fr.geoking.arthur.shared.source.ClevelandSource
+import fr.geoking.arthur.shared.source.GenartSource
 import fr.geoking.arthur.shared.source.MetSource
+import fr.geoking.arthur.shared.source.PexelsSource
 import fr.geoking.arthur.shared.source.RijksmuseumSource
 import fr.geoking.arthur.shared.source.StockPhotoCategory
+import fr.geoking.arthur.shared.source.UnsplashSource
 
+/** Top-level chips: All → Genart → Painting → Photo → Sculpture (Personal last). */
 enum class CategoryFilter(@get:StringRes val labelRes: Int) {
     ALL(R.string.category_all),
+    GENART(R.string.kind_genart),
+    PAINTING(R.string.kind_painting),
     PHOTO(R.string.kind_photo),
     SCULPTURE(R.string.kind_sculpture),
-    GENART(R.string.kind_genart),
-    FRACTAL(R.string.kind_fractal),
-    PAINTING(R.string.kind_painting),
     PERSONAL(R.string.kind_personal);
 
     fun matches(kind: ArtworkKind): Boolean = when (this) {
         ALL -> true
+        GENART ->
+            kind == ArtworkKind.Genart ||
+                kind == ArtworkKind.FractalPreset ||
+                kind == ArtworkKind.CustomFractal
+        PAINTING -> kind == ArtworkKind.Painting
         PHOTO -> kind == ArtworkKind.Photo
         SCULPTURE -> kind == ArtworkKind.Sculpture
-        GENART -> kind == ArtworkKind.Genart
-        FRACTAL -> kind == ArtworkKind.FractalPreset || kind == ArtworkKind.CustomFractal
-        PAINTING -> kind == ArtworkKind.Painting
         PERSONAL -> kind == ArtworkKind.PersonalPhoto
     }
 
+    fun showsGenartTopics(): Boolean = this == GENART
+
     fun showsPhotoTopics(): Boolean = this == PHOTO
 
-    fun showsMuseumSources(): Boolean = this == PAINTING || this == SCULPTURE
+    fun showsMuseumTopics(): Boolean = this == PAINTING || this == SCULPTURE
 }
 
-enum class MuseumSourceFilter(
-    val sourceId: String,
+/**
+ * Genart subcategory: Fractal presets, Custom fractal, Nature, Geometry, Planets.
+ */
+enum class GenartTopic(
     @get:StringRes val labelRes: Int,
+    val testTagSuffix: String,
 ) {
-    MET(MetSource.ID, R.string.source_met),
-    RIJKSMUSEUM(RijksmuseumSource.ID, R.string.source_rijksmuseum),
-    BUNDLED(BundledPackSource.ID, R.string.source_bundled),
+    Fractal(R.string.genart_topic_fractal, "fractal"),
+    Custom(R.string.genart_topic_custom, "custom"),
+    Nature(R.string.genart_topic_nature, "nature"),
+    Geometry(R.string.genart_topic_geometry, "geometry"),
+    Planets(R.string.genart_topic_planets, "planets"),
+}
+
+/**
+ * Painting / Sculpture subcategory: curated Suggestions, or a remote museum Source.
+ */
+enum class MuseumTopic(
+    val sourceId: String?,
+    @get:StringRes val labelRes: Int,
+    val testTagSuffix: String,
+) {
+    Suggestions(null, R.string.stock_topic_suggestions, "suggestions"),
+    Met(MetSource.ID, R.string.source_met, MetSource.ID),
+    Rijksmuseum(RijksmuseumSource.ID, R.string.source_rijksmuseum, RijksmuseumSource.ID),
+    Artic(ArticSource.ID, R.string.source_artic, ArticSource.ID),
+    Cleveland(ClevelandSource.ID, R.string.source_cleveland, ClevelandSource.ID),
 }
 
 fun List<Artwork>.filterByCategoryAndSources(
     category: CategoryFilter,
-    selectedSourceIds: Set<String>,
+    museumTopic: MuseumTopic? = null,
+    stockCategory: StockPhotoCategory? = null,
+    genartTopic: GenartTopic? = null,
 ): List<Artwork> = filter { art ->
-    category.matches(art.kind) &&
-        (selectedSourceIds.isEmpty() || art.sourceId in selectedSourceIds)
+    if (!category.matches(art.kind)) return@filter false
+    when {
+        category.showsGenartTopics() && genartTopic != null ->
+            matchesGenartTopic(art, genartTopic)
+        category == CategoryFilter.PHOTO && stockCategory != null ->
+            matchesPhotoTopic(art, stockCategory)
+        category.showsMuseumTopics() && museumTopic != null ->
+            matchesMuseumTopic(art, museumTopic)
+        else -> true
+    }
 }
 
-fun Set<String>.toggleSource(sourceId: String): Set<String> =
-    if (sourceId in this) this - sourceId else this + sourceId
+fun matchesGenartTopic(art: Artwork, topic: GenartTopic): Boolean = when (topic) {
+    GenartTopic.Fractal -> art.kind == ArtworkKind.FractalPreset
+    GenartTopic.Custom -> art.kind == ArtworkKind.CustomFractal
+    GenartTopic.Nature -> art.id in GENART_NATURE_IDS
+    GenartTopic.Geometry -> art.id in GENART_GEOMETRY_IDS
+    GenartTopic.Planets -> art.id in GENART_PLANETS_IDS
+}
+
+private val GENART_NATURE_IDS = setOf(
+    GenartSource.SNOW,
+    GenartSource.GRASS,
+    GenartSource.BIRD_FLOCK,
+    GenartSource.MOUNTAINS,
+    GenartSource.AURORA,
+    GenartSource.POND_RIPPLES,
+    GenartSource.FALLING_LEAVES,
+    GenartSource.FIRE_EMBERS,
+    GenartSource.DUNES,
+    GenartSource.CLOUDS,
+    GenartSource.RAIN,
+    GenartSource.FOG,
+    GenartSource.FISH_SCHOOL,
+    GenartSource.FIREFLIES,
+    GenartSource.SUNBEAMS,
+    GenartSource.BUBBLES,
+    GenartSource.CHERRY_BLOSSOMS,
+    GenartSource.WAVES,
+)
+
+private val GENART_GEOMETRY_IDS = setOf(
+    GenartSource.PARTICLES,
+    GenartSource.PSEUDO3D,
+    GenartSource.SOFT_SHADOWS,
+    GenartSource.TUNNEL,
+    GenartSource.TONAL_GEOMETRY,
+    GenartSource.MICRO,
+    GenartSource.BREATH_CIRCLES,
+    GenartSource.RIBBONS,
+)
+
+private val GENART_PLANETS_IDS = setOf(
+    GenartSource.SPHERE,
+    GenartSource.CONSTELLATION,
+    GenartSource.METEORS,
+    GenartSource.NEBULA,
+)
+
+/** Suggestions = curated bundled photos; other topics = remote stock (Pexels / Unsplash). */
+fun matchesPhotoTopic(art: Artwork, stockCategory: StockPhotoCategory): Boolean =
+    if (stockCategory == StockPhotoCategory.Suggestions) {
+        art.sourceId == BundledPackSource.ID
+    } else {
+        art.sourceId == PexelsSource.ID || art.sourceId == UnsplashSource.ID
+    }
+
+/** Suggestions = curated bundled; other topics = that museum Source only. */
+fun matchesMuseumTopic(art: Artwork, museumTopic: MuseumTopic): Boolean =
+    when (museumTopic) {
+        MuseumTopic.Suggestions -> art.sourceId == BundledPackSource.ID
+        else -> art.sourceId == museumTopic.sourceId
+    }
 
 @Composable
 fun CategoryFilterRow(
@@ -105,19 +203,34 @@ fun CategoryFilterRow(
 @Composable
 fun ContextualSubFilterRow(
     selectedCategory: CategoryFilter,
-    selectedSourceIds: Set<String>,
-    onToggleSource: (String) -> Unit,
+    museumTopic: MuseumTopic,
+    onMuseumTopicChange: (MuseumTopic) -> Unit,
     modifier: Modifier = Modifier,
     stockCategory: StockPhotoCategory? = null,
     onStockCategoryChange: ((StockPhotoCategory) -> Unit)? = null,
+    genartTopic: GenartTopic = GenartTopic.Fractal,
+    onGenartTopicChange: (GenartTopic) -> Unit = {},
     contentPadding: PaddingValues = PaddingValues(horizontal = 20.dp),
     horizontalSpacing: Dp = 8.dp,
 ) {
+    val showGenart = selectedCategory.showsGenartTopics()
     val showTopics = selectedCategory.showsPhotoTopics() &&
         stockCategory != null &&
         onStockCategoryChange != null
-    val showSources = selectedCategory.showsMuseumSources()
+    val showMuseum = selectedCategory.showsMuseumTopics()
     Column(modifier = modifier) {
+        AnimatedVisibility(
+            visible = showGenart,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut(),
+        ) {
+            GenartTopicFilterRow(
+                genartTopic = genartTopic,
+                onGenartTopicChange = onGenartTopicChange,
+                contentPadding = contentPadding,
+                horizontalSpacing = horizontalSpacing,
+            )
+        }
         AnimatedVisibility(
             visible = showTopics,
             enter = expandVertically() + fadeIn(),
@@ -133,15 +246,41 @@ fun ContextualSubFilterRow(
             }
         }
         AnimatedVisibility(
-            visible = showSources,
+            visible = showMuseum,
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut(),
         ) {
-            MuseumSourceFilterRow(
-                selectedSourceIds = selectedSourceIds,
-                onToggleSource = onToggleSource,
+            MuseumTopicFilterRow(
+                museumTopic = museumTopic,
+                onMuseumTopicChange = onMuseumTopicChange,
                 contentPadding = contentPadding,
                 horizontalSpacing = horizontalSpacing,
+            )
+        }
+    }
+}
+
+@Composable
+private fun GenartTopicFilterRow(
+    genartTopic: GenartTopic,
+    onGenartTopicChange: (GenartTopic) -> Unit,
+    contentPadding: PaddingValues,
+    horizontalSpacing: Dp,
+) {
+    LazyRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 8.dp)
+            .testTag("genart_topic_row"),
+        contentPadding = contentPadding,
+        horizontalArrangement = Arrangement.spacedBy(horizontalSpacing),
+    ) {
+        items(GenartTopic.entries) { topic ->
+            FilterChip(
+                selected = genartTopic == topic,
+                onClick = { onGenartTopicChange(topic) },
+                label = { Text(stringResource(topic.labelRes)) },
+                modifier = Modifier.testTag("genart_topic_${topic.testTagSuffix}"),
             )
         }
     }
@@ -174,9 +313,9 @@ private fun StockTopicFilterRow(
 }
 
 @Composable
-private fun MuseumSourceFilterRow(
-    selectedSourceIds: Set<String>,
-    onToggleSource: (String) -> Unit,
+private fun MuseumTopicFilterRow(
+    museumTopic: MuseumTopic,
+    onMuseumTopicChange: (MuseumTopic) -> Unit,
     contentPadding: PaddingValues,
     horizontalSpacing: Dp,
 ) {
@@ -184,16 +323,16 @@ private fun MuseumSourceFilterRow(
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 8.dp)
-            .testTag("source_filter_row"),
+            .testTag("museum_topic_row"),
         contentPadding = contentPadding,
         horizontalArrangement = Arrangement.spacedBy(horizontalSpacing),
     ) {
-        items(MuseumSourceFilter.entries) { source ->
+        items(MuseumTopic.entries) { topic ->
             FilterChip(
-                selected = source.sourceId in selectedSourceIds,
-                onClick = { onToggleSource(source.sourceId) },
-                label = { Text(stringResource(source.labelRes)) },
-                modifier = Modifier.testTag("source_chip_${source.sourceId}"),
+                selected = museumTopic == topic,
+                onClick = { onMuseumTopicChange(topic) },
+                label = { Text(stringResource(topic.labelRes)) },
+                modifier = Modifier.testTag("museum_topic_${topic.testTagSuffix}"),
             )
         }
     }
@@ -201,6 +340,7 @@ private fun MuseumSourceFilterRow(
 
 @StringRes
 private fun StockPhotoCategory.labelRes(): Int = when (this) {
+    StockPhotoCategory.Suggestions -> R.string.stock_topic_suggestions
     StockPhotoCategory.Nature -> R.string.stock_topic_nature
     StockPhotoCategory.City -> R.string.stock_topic_city
     StockPhotoCategory.Ocean -> R.string.stock_topic_ocean

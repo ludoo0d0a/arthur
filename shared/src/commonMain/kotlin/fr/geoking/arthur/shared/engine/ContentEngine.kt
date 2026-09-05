@@ -8,6 +8,7 @@ import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.PremiumEntitlement
 import fr.geoking.arthur.shared.domain.Source
 import fr.geoking.arthur.shared.domain.isGenerative
+import fr.geoking.arthur.shared.source.BundledPackSource
 
 /**
  * Aggregates Sources into an Ambient Rotation, applying free-tier caps and Premium gates.
@@ -47,6 +48,8 @@ class ContentEngine(
             when (art.kind) {
                 ArtworkKind.PersonalPhoto, ArtworkKind.CustomFractal -> false
                 ArtworkKind.Photo, ArtworkKind.Painting, ArtworkKind.Sculpture -> {
+                    // Bundled pack (incl. Photo suggestions) always available on free tier.
+                    if (art.sourceId == BundledPackSource.ID) return@filter true
                     photos++
                     photos <= limits.maxPhotoArtwork
                 }

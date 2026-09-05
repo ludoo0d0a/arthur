@@ -10,11 +10,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -35,8 +33,13 @@ import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.R
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.ui.components.ArtworkCard
+import fr.geoking.arthur.ui.components.CategoryFilter
+import fr.geoking.arthur.ui.components.CategoryFilterRow
+import fr.geoking.arthur.ui.components.ContextualSubFilterRow
 import fr.geoking.arthur.ui.components.ControlPlaneHeader
 import fr.geoking.arthur.ui.components.GalleryHero
+import fr.geoking.arthur.ui.components.filterByCategoryAndSources
+import fr.geoking.arthur.ui.components.toggleSource
 
 /**
  * TV Control Plane: single flat z-level (no FAB), D-pad left/right + up/down,
@@ -55,8 +58,9 @@ fun TvControlPlaneContent(
 ) {
     val scheme = MaterialTheme.colorScheme
     var selectedCategory by remember { mutableStateOf(CategoryFilter.ALL) }
-    val filteredCatalog = remember(catalog, selectedCategory) {
-        catalog.filter { selectedCategory.matches(it.kind) }
+    var selectedSourceIds by remember { mutableStateOf(emptySet<String>()) }
+    val filteredCatalog = remember(catalog, selectedCategory, selectedSourceIds) {
+        catalog.filterByCategoryAndSources(selectedCategory, selectedSourceIds)
     }
 
     val startFocus = remember { FocusRequester() }
@@ -99,32 +103,34 @@ fun TvControlPlaneContent(
                     color = scheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
-                LazyRow(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 12.dp)
-                        .testTag("category_filter_row"),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    itemsIndexed(CategoryFilter.entries) { index, category ->
-                        FilterChip(
-                            selected = selectedCategory == category,
-                            onClick = { selectedCategory = category },
-                            label = { Text(stringResource(category.labelRes)) },
-                            modifier = Modifier
-                                .then(
-                                    if (index == 0) {
-                                        Modifier
-                                            .focusRequester(firstChipFocus)
-                                            .focusProperties { down = firstCardFocus }
-                                    } else {
-                                        Modifier
-                                    },
-                                )
-                                .testTag("filter_chip_${category.name.lowercase()}"),
-                        )
-                    }
-                }
+                CategoryFilterRow(
+                    selectedCategory = selectedCategory,
+                    onCategorySelected = { next ->
+                        selectedCategory = next
+                        if (!next.showsMuseumSources()) {
+                            selectedSourceIds = emptySet()
+                        }
+                    },
+                    modifier = Modifier.padding(bottom = 4.dp),
+                    contentPadding = PaddingValues(0.dp),
+                    horizontalSpacing = 10.dp,
+                    chipModifier = { _, index ->
+                        if (index == 0) {
+                            Modifier
+                                .focusRequester(firstChipFocus)
+                                .focusProperties { down = firstCardFocus }
+                        } else {
+                            Modifier
+                        }
+                    },
+                )
+                ContextualSubFilterRow(
+                    selectedCategory = selectedCategory,
+                    selectedSourceIds = selectedSourceIds,
+                    onToggleSource = { selectedSourceIds = selectedSourceIds.toggleSource(it) },
+                    contentPadding = PaddingValues(0.dp),
+                    horizontalSpacing = 10.dp,
+                )
                 LazyColumn(
                     modifier = Modifier
                         .weight(1f)

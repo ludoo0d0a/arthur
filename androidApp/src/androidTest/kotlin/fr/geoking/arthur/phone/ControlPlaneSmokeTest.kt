@@ -19,5 +19,8 @@ class ControlPlaneSmokeTest {
         composeRule.onNodeWithTag("category_filter_row").assertIsDisplayed()
         composeRule.onNodeWithTag("artwork_list").assertIsDisplayed()
         composeRule.onNodeWithTag("start_ambient").assertIsDisplayed()
+        // Sublevel rows are context-dependent; hidden on default All.
+        composeRule.onNodeWithTag("stock_topic_row").assertDoesNotExist()
+        composeRule.onNodeWithTag("source_filter_row").assertDoesNotExist()
     }
 }

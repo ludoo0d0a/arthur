@@ -13,6 +13,9 @@
     <string name="gallery_hero_label">Gallery canvas</string>
     <string name="selected_artwork">Selected</string>
     <string name="category_all">All</string>
+    <string name="source_met">The Met</string>
+    <string name="source_rijksmuseum">Rijksmuseum</string>
+    <string name="source_bundled">Bundled</string>
     <string name="stock_topic_section">Photo topic</string>
     <string name="stock_topic_nature">Nature</string>
     <string name="stock_topic_city">City</string>

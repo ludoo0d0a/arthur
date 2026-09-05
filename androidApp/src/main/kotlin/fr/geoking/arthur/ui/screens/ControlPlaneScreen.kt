@@ -10,12 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.annotation.StringRes
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -35,7 +31,6 @@ import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.R
 import fr.geoking.arthur.phone.theme.ArthurTheme
 import fr.geoking.arthur.shared.domain.Artwork
-import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
@@ -43,9 +38,14 @@ import fr.geoking.arthur.shared.source.BundledPackSource
 import fr.geoking.arthur.shared.source.StockPhotoCategory
 import fr.geoking.arthur.source.StockPhotoSettings
 import fr.geoking.arthur.ui.components.ArtworkCard
+import fr.geoking.arthur.ui.components.CategoryFilter
+import fr.geoking.arthur.ui.components.CategoryFilterRow
+import fr.geoking.arthur.ui.components.ContextualSubFilterRow
 import fr.geoking.arthur.ui.components.ControlPlaneHeader
 import fr.geoking.arthur.ui.components.GalleryHero
 import fr.geoking.arthur.ui.components.StartAmbientFab
+import fr.geoking.arthur.ui.components.filterByCategoryAndSources
+import fr.geoking.arthur.ui.components.toggleSource
 
 @Composable
 fun ControlPlaneScreen(
@@ -91,26 +91,6 @@ fun ControlPlaneScreen(
         stockCategory = stockCategory,
         onStockCategoryChange = { stockCategory = it },
     )
-}
-
-enum class CategoryFilter(@get:StringRes val labelRes: Int) {
-    ALL(R.string.category_all),
-    PHOTO(R.string.kind_photo),
-    SCULPTURE(R.string.kind_sculpture),
-    GENART(R.string.kind_genart),
-    FRACTAL(R.string.kind_fractal),
-    PAINTING(R.string.kind_painting),
-    PERSONAL(R.string.kind_personal);
-
-    fun matches(kind: ArtworkKind): Boolean = when (this) {
-        ALL -> true
-        PHOTO -> kind == ArtworkKind.Photo
-        SCULPTURE -> kind == ArtworkKind.Sculpture
-        GENART -> kind == ArtworkKind.Genart
-        FRACTAL -> kind == ArtworkKind.FractalPreset || kind == ArtworkKind.CustomFractal
-        PAINTING -> kind == ArtworkKind.Painting
-        PERSONAL -> kind == ArtworkKind.PersonalPhoto
-    }
 }
 
 @Composable
@@ -168,8 +148,9 @@ private fun PhoneControlPlaneContent(
 ) {
     val scheme = MaterialTheme.colorScheme
     var selectedCategory by remember { mutableStateOf(CategoryFilter.ALL) }
-    val filteredCatalog = remember(catalog, selectedCategory) {
-        catalog.filter { selectedCategory.matches(it.kind) }
+    var selectedSourceIds by remember { mutableStateOf(emptySet<String>()) }
+    val filteredCatalog = remember(catalog, selectedCategory, selectedSourceIds) {
+        catalog.filterByCategoryAndSources(selectedCategory, selectedSourceIds)
     }
 
     Scaffold(
@@ -220,46 +201,23 @@ private fun PhoneControlPlaneContent(
                 color = scheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
             )
-            LazyRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 4.dp)
-                    .testTag("category_filter_row"),
-                contentPadding = PaddingValues(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(CategoryFilter.entries) { category ->
-                    FilterChip(
-                        selected = selectedCategory == category,
-                        onClick = { selectedCategory = category },
-                        label = { Text(stringResource(category.labelRes)) },
-                        modifier = Modifier.testTag("filter_chip_${category.name.lowercase()}"),
-                    )
-                }
-            }
-            Text(
-                text = stringResource(R.string.stock_topic_section),
-                style = MaterialTheme.typography.titleSmall,
-                color = scheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+            CategoryFilterRow(
+                selectedCategory = selectedCategory,
+                onCategorySelected = { next ->
+                    selectedCategory = next
+                    if (!next.showsMuseumSources()) {
+                        selectedSourceIds = emptySet()
+                    }
+                },
+                modifier = Modifier.padding(bottom = 4.dp),
             )
-            LazyRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 8.dp)
-                    .testTag("stock_topic_row"),
-                contentPadding = PaddingValues(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(StockPhotoCategory.entries) { topic ->
-                    FilterChip(
-                        selected = stockCategory == topic,
-                        onClick = { onStockCategoryChange(topic) },
-                        label = { Text(stringResource(topic.labelRes())) },
-                        modifier = Modifier.testTag("stock_topic_${topic.query}"),
-                    )
-                }
-            }
+            ContextualSubFilterRow(
+                selectedCategory = selectedCategory,
+                selectedSourceIds = selectedSourceIds,
+                onToggleSource = { selectedSourceIds = selectedSourceIds.toggleSource(it) },
+                stockCategory = stockCategory,
+                onStockCategoryChange = onStockCategoryChange,
+            )
             LazyColumn(
                 modifier = Modifier
                     .weight(1f)
@@ -278,17 +236,6 @@ private fun PhoneControlPlaneContent(
             }
         }
     }
-}
-
-@StringRes
-private fun StockPhotoCategory.labelRes(): Int = when (this) {
-    StockPhotoCategory.Nature -> R.string.stock_topic_nature
-    StockPhotoCategory.City -> R.string.stock_topic_city
-    StockPhotoCategory.Ocean -> R.string.stock_topic_ocean
-    StockPhotoCategory.Mountains -> R.string.stock_topic_mountains
-    StockPhotoCategory.Abstract -> R.string.stock_topic_abstract
-    StockPhotoCategory.Architecture -> R.string.stock_topic_architecture
-    StockPhotoCategory.Sky -> R.string.stock_topic_sky
 }
 
 @Preview(showBackground = true, name = "Control plane")

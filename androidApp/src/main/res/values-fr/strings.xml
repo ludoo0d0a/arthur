@@ -13,6 +13,9 @@
     <string name="gallery_hero_label">Canevas galerie</string>
     <string name="selected_artwork">Sélectionné</string>
     <string name="category_all">Tout</string>
+    <string name="source_met">The Met</string>
+    <string name="source_rijksmuseum">Rijksmuseum</string>
+    <string name="source_bundled">Pack</string>
     <string name="stock_topic_section">Thème photo</string>
     <string name="stock_topic_nature">Nature</string>
     <string name="stock_topic_city">Ville</string>

@@ -5,6 +5,8 @@
     <string name="control_plane_subtitle">Votre art ambient</string>
     <string name="start_ambient">Démarrer l’ambient</string>
     <string name="preview_label">Aperçu : %1$s</string>
+    <string name="artwork_unavailable">Œuvre indisponible</string>
+    <string name="artwork_unavailable_detail">Affichage du placeholder de catégorie</string>
     <string name="ambient_title">Ambient</string>
     <string name="dream_description">Art ambient Arthur</string>
     <string name="rotation_section">Rotation préparée</string>

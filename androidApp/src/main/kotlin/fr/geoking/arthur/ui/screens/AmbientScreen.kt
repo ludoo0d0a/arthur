@@ -23,15 +23,25 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.R
 import fr.geoking.arthur.auto.AmbientAlbumArt
-import fr.geoking.arthur.fractal.FractalEffectCanvas
-import fr.geoking.arthur.fractal.FractalQuality
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.shared.domain.Artwork
+import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.isGenerative
 import fr.geoking.arthur.ui.components.ArtworkRenderer
+import fr.geoking.arthur.ui.components.StillArtworkPlaceholder
 import kotlin.random.Random
 import kotlinx.coroutines.delay
 
+/**
+ * Fullscreen ambient surface.
+ *
+ * - Control Plane Start: pass the selected [artwork] and an empty [rotationPool] to pin it.
+ * - Dream / screensaver: pass a multi-item [rotationPool] to rotate every
+ *   [AmbientAlbumArt.ROTATION_INTERVAL_MS].
+ *
+ * Missing or unloadable assets render the category placeholder + warning — never a
+ * silent swap to an unrelated genart engine (e.g. pond ripples).
+ */
 @Composable
 fun AmbientScreenContent(
     title: String,
@@ -40,36 +50,32 @@ fun AmbientScreenContent(
     rotationPool: List<Artwork> = emptyList(),
     isActive: Boolean = true,
 ) {
-    // Rotate live generative + displayable stills (no baked genart stills required).
-    val picturePool = remember(rotationPool, artwork) {
-        val displayable = rotationPool.filter { it.isAmbientDisplayable() }
-        when {
-            displayable.isNotEmpty() -> displayable
-            artwork != null && artwork.isAmbientDisplayable() -> listOf(artwork)
-            else -> emptyList()
-        }
+    val rotatePool = remember(rotationPool) {
+        rotationPool.filter { it.isAmbientDisplayable() }
     }
-    var current by remember(artwork?.id, picturePool.map { it.id }) {
+    val shouldRotate = rotatePool.size >= 2
+
+    var current by remember(artwork?.id, rotatePool.map { it.id }, shouldRotate) {
         mutableStateOf(
             when {
-                artwork != null && picturePool.any { it.id == artwork.id } -> artwork
-                picturePool.isNotEmpty() -> picturePool.random(Random.Default)
+                shouldRotate && artwork != null && rotatePool.any { it.id == artwork.id } -> artwork
+                shouldRotate -> rotatePool.first()
                 else -> artwork
             },
         )
     }
 
-    LaunchedEffect(picturePool.map { it.id }, isActive) {
-        if (!isActive || picturePool.size < 2) return@LaunchedEffect
+    LaunchedEffect(rotatePool.map { it.id }, isActive, shouldRotate) {
+        if (!isActive || !shouldRotate) return@LaunchedEffect
         while (isActive) {
             delay(AmbientAlbumArt.ROTATION_INTERVAL_MS)
-            val next = picturePool.filter { it.id != current?.id }.randomOrNull(Random.Default)
-                ?: picturePool.random(Random.Default)
+            val next = rotatePool.filter { it.id != current?.id }.randomOrNull(Random.Default)
+                ?: rotatePool.random(Random.Default)
             current = next
         }
     }
 
-    val shown = current ?: artwork
+    val shown = if (shouldRotate) current else artwork
     val shownTitle = shown?.title ?: title
 
     Box(
@@ -88,9 +94,10 @@ fun AmbientScreenContent(
                 )
             }
             else -> {
-                FractalEffectCanvas(
-                    isActive = isActive,
-                    quality = FractalQuality.High,
+                StillArtworkPlaceholder(
+                    kind = ArtworkKind.Genart,
+                    showWarning = true,
+                    modifier = Modifier.fillMaxSize(),
                 )
             }
         }

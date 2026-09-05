@@ -3,13 +3,17 @@ package fr.geoking.arthur.ui.components
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -21,7 +25,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import fr.geoking.arthur.R
 import fr.geoking.arthur.fractal.CustomFractalEffectCanvas
 import fr.geoking.arthur.fractal.CustomFractalParams
 import fr.geoking.arthur.fractal.FractalEffectCanvas
@@ -42,6 +49,7 @@ import kotlinx.coroutines.withContext
 /**
  * Renders Artwork for Control Plane hero and phone Ambient.
  * Generative kinds use live Canvas engines; stills prefer local cache then remote URL.
+ * Failures show the category icon on a gradient with a warning — never another engine.
  */
 @Composable
 fun ArtworkRenderer(
@@ -50,57 +58,63 @@ fun ArtworkRenderer(
     modifier: Modifier = Modifier,
     quality: GenartQuality = GenartQuality.Medium,
 ) {
-    Box(modifier = modifier.fillMaxSize()) {
-        when (artwork.kind) {
-            ArtworkKind.Genart -> {
-                // Prefer live engines for Ambient / hero — baked stills are Auto album-art only.
-                val engine = GenartCatalog.engineForId(artwork.id)
-                if (engine != null) {
-                    GenartEffectCanvas(
-                        engine = engine,
-                        isActive = isActive,
-                        quality = quality,
-                    )
-                } else if (!artwork.localPath.isNullOrBlank()) {
-                    RemoteStillImage(
-                        artworkId = artwork.id,
-                        localPath = artwork.localPath,
-                        remoteUrl = null,
-                        kind = artwork.kind,
-                    )
-                } else {
-                    StillArtworkPlaceholder(kind = artwork.kind)
+    key(artwork.id) {
+        Box(modifier = modifier.fillMaxSize()) {
+            when (artwork.kind) {
+                ArtworkKind.Genart -> {
+                    val engine = GenartCatalog.engineForId(artwork.id)
+                    if (engine != null) {
+                        GenartEffectCanvas(
+                            engine = engine,
+                            isActive = isActive,
+                            quality = quality,
+                        )
+                    } else if (!artwork.localPath.isNullOrBlank()) {
+                        RemoteStillImage(
+                            artworkId = artwork.id,
+                            localPath = artwork.localPath,
+                            remoteUrl = null,
+                            kind = artwork.kind,
+                        )
+                    } else {
+                        StillArtworkPlaceholder(kind = artwork.kind, showWarning = true)
+                    }
                 }
-            }
-            ArtworkKind.CustomFractal -> {
-                val params = CustomFractalParams.fromArtworkId(artwork.id)
-                if (params != null) {
-                    CustomFractalEffectCanvas(
-                        params = params,
-                        isActive = isActive,
-                        quality = quality.toFractalQuality(),
-                    )
-                } else {
-                    StillArtworkPlaceholder(kind = artwork.kind)
+                ArtworkKind.CustomFractal -> {
+                    val params = CustomFractalParams.fromArtworkId(artwork.id)
+                    if (params != null) {
+                        CustomFractalEffectCanvas(
+                            params = params,
+                            isActive = isActive,
+                            quality = quality.toFractalQuality(),
+                        )
+                    } else {
+                        StillArtworkPlaceholder(kind = artwork.kind, showWarning = true)
+                    }
                 }
-            }
-            ArtworkKind.FractalPreset -> {
-                FractalEffectCanvas(
-                    isActive = isActive,
-                    quality = quality.toFractalQuality(),
-                    forceType = fractalTypeForArtworkId(artwork.id),
-                )
-            }
-            else -> {
-                if (!artwork.localPath.isNullOrBlank() || !artwork.remoteUrl.isNullOrBlank()) {
-                    RemoteStillImage(
-                        artworkId = artwork.id,
-                        localPath = artwork.localPath,
-                        remoteUrl = artwork.remoteUrl,
-                        kind = artwork.kind,
-                    )
-                } else {
-                    StillArtworkPlaceholder(kind = artwork.kind)
+                ArtworkKind.FractalPreset -> {
+                    val type = fractalTypeForArtworkId(artwork.id)
+                    if (type != null) {
+                        FractalEffectCanvas(
+                            isActive = isActive,
+                            quality = quality.toFractalQuality(),
+                            forceType = type,
+                        )
+                    } else {
+                        StillArtworkPlaceholder(kind = artwork.kind, showWarning = true)
+                    }
+                }
+                else -> {
+                    if (!artwork.localPath.isNullOrBlank() || !artwork.remoteUrl.isNullOrBlank()) {
+                        RemoteStillImage(
+                            artworkId = artwork.id,
+                            localPath = artwork.localPath,
+                            remoteUrl = artwork.remoteUrl,
+                            kind = artwork.kind,
+                        )
+                    } else {
+                        StillArtworkPlaceholder(kind = artwork.kind, showWarning = true)
+                    }
                 }
             }
         }
@@ -123,6 +137,8 @@ private fun RemoteStillImage(
     var hasFailed by remember(artworkId, localPath, remoteUrl) { mutableStateOf(false) }
 
     LaunchedEffect(artworkId, localPath, remoteUrl) {
+        hasFailed = false
+        bitmapState = null
         val result = withContext(Dispatchers.IO) {
             val fromDisk = sequenceOf(
                 localPath,
@@ -146,23 +162,31 @@ private fun RemoteStillImage(
     }
 
     val bmp = bitmapState
-    if (bmp != null && !hasFailed) {
-        Image(
-            bitmap = bmp.asImageBitmap(),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = modifier.fillMaxSize().testTag("artwork_remote_image"),
-        )
-    } else {
-        StillArtworkPlaceholder(kind = kind, modifier = modifier)
+    when {
+        bmp != null && !hasFailed -> {
+            Image(
+                bitmap = bmp.asImageBitmap(),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = modifier.fillMaxSize().testTag("artwork_remote_image"),
+            )
+        }
+        hasFailed -> {
+            StillArtworkPlaceholder(kind = kind, showWarning = true, modifier = modifier)
+        }
+        else -> {
+            // Loading: soft category field without warning yet.
+            StillArtworkPlaceholder(kind = kind, showWarning = false, modifier = modifier)
+        }
     }
 }
 
-/** Gradient field with the artwork-kind glyph — used for bundled / museum stills. */
+/** Gradient field with the artwork-kind glyph — used when stills / engines are unavailable. */
 @Composable
-private fun StillArtworkPlaceholder(
+fun StillArtworkPlaceholder(
     kind: ArtworkKind,
     modifier: Modifier = Modifier,
+    showWarning: Boolean = false,
 ) {
     val scheme = MaterialTheme.colorScheme
     val visual = kind.visual()
@@ -172,17 +196,40 @@ private fun StillArtworkPlaceholder(
             .testTag("artwork_placeholder")
             .background(
                 Brush.radialGradient(
-                    colors = listOf(scheme.surfaceVariant, scheme.background),
+                    colors = listOf(visual.container, scheme.background),
                 ),
             ),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(
-            painter = painterResource(visual.iconRes),
-            contentDescription = null,
-            tint = visual.onContainer.copy(alpha = 0.42f),
-            modifier = Modifier.size(88.dp),
-        )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(24.dp),
+        ) {
+            Icon(
+                painter = painterResource(visual.iconRes),
+                contentDescription = null,
+                tint = visual.onContainer.copy(alpha = 0.55f),
+                modifier = Modifier.size(88.dp),
+            )
+            if (showWarning) {
+                Text(
+                    text = stringResource(R.string.artwork_unavailable),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = scheme.onSurface.copy(alpha = 0.85f),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .padding(top = 16.dp)
+                        .testTag("artwork_unavailable_message"),
+                )
+                Text(
+                    text = stringResource(R.string.artwork_unavailable_detail),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = scheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+        }
     }
 }
 

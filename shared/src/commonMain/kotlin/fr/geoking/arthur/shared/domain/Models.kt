@@ -39,12 +39,16 @@ val Artwork.isGenerative: Boolean
     get() = kind.isGenerative
 
 /**
- * Honor the requested artwork (still or generative) when it exists in [catalog];
- * otherwise fall back to the first generative piece, or the first artwork available.
+ * Honor the requested artwork (still or generative) when it exists in [catalog].
+ * When [artworkId] is null (no user selection), fall back to the first generative
+ * piece, or the first artwork available. A non-null id that is missing from the
+ * catalog returns null so callers can keep a stashed selection instead of swapping
+ * to an unrelated animation.
  */
 fun resolveAmbientArtwork(catalog: List<Artwork>, artworkId: String?): Artwork? {
-    val requested = catalog.firstOrNull { it.id == artworkId }
-    if (requested != null) return requested
+    if (artworkId != null) {
+        return catalog.firstOrNull { it.id == artworkId }
+    }
     return catalog.firstOrNull { it.isGenerative } ?: catalog.firstOrNull()
 }
 

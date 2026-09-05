@@ -23,9 +23,14 @@ class ResolveAmbientArtworkTest {
     }
 
     @Test
-    fun missingOrUnrequestedFallsBackToFirstGenerative() {
+    fun unrequestedFallsBackToFirstGenerative() {
         assertEquals(particles, resolveAmbientArtwork(catalog, null))
-        assertEquals(particles, resolveAmbientArtwork(catalog, "missing"))
+    }
+
+    @Test
+    fun missingRequestedIdReturnsNull() {
+        // Callers keep a stashed selection instead of swapping to an unrelated engine.
+        assertNull(resolveAmbientArtwork(catalog, "missing"))
     }
 
     @Test

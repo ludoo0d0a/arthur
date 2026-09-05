@@ -75,6 +75,7 @@ class MuseumPictureAvailabilityTest {
             composeRule.onAllNodesWithTag("artwork_placeholder").fetchSemanticsNodes().isNotEmpty()
         }
         composeRule.onNodeWithTag("artwork_placeholder").assertIsDisplayed()
+        composeRule.onNodeWithTag("artwork_unavailable_message").assertIsDisplayed()
         composeRule.onNodeWithTag("artwork_remote_image").assertDoesNotExist()
     }
 

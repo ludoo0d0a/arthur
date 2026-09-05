@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import fr.geoking.arthur.R
 import fr.geoking.arthur.phone.theme.ArthurTheme
 import fr.geoking.arthur.shared.domain.Artwork
+import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
@@ -38,34 +39,62 @@ class AmbientActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
         )
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        val artworkId = intent.getStringExtra(EXTRA_ARTWORK_ID)
+        val requested = intentArtwork()
         val fallbackTitle = getString(R.string.app_name)
         setContent {
             ArthurTheme {
-                var catalog by remember { mutableStateOf<List<Artwork>>(emptyList()) }
-                var artwork by remember { mutableStateOf<Artwork?>(null) }
-                LaunchedEffect(artworkId) {
-                    val loaded = withContext(Dispatchers.IO) {
-                        loadAmbient(contentEngine, artworkId)
+                var artwork by remember { mutableStateOf(requested) }
+                LaunchedEffect(requested?.id) {
+                    artwork = withContext(Dispatchers.IO) {
+                        loadPinnedAmbient(contentEngine, requested)
                     }
-                    catalog = loaded.first
-                    artwork = loaded.second
                 }
                 AmbientScreenContent(
                     title = artwork?.title ?: fallbackTitle,
                     artwork = artwork,
-                    rotationPool = catalog,
+                    // Pin to the selected piece — do not rotate the full catalog.
+                    rotationPool = emptyList(),
                 )
             }
         }
     }
 
+    private fun intentArtwork(): Artwork? {
+        val id = intent.getStringExtra(EXTRA_ARTWORK_ID) ?: return null
+        val kind = intent.getStringExtra(EXTRA_ARTWORK_KIND)
+            ?.let { runCatching { ArtworkKind.valueOf(it) }.getOrNull() }
+            ?: ArtworkKind.Genart
+        return Artwork(
+            id = id,
+            title = intent.getStringExtra(EXTRA_ARTWORK_TITLE) ?: id,
+            attribution = intent.getStringExtra(EXTRA_ATTRIBUTION).orEmpty(),
+            sourceId = intent.getStringExtra(EXTRA_SOURCE_ID).orEmpty(),
+            kind = kind,
+            remoteUrl = intent.getStringExtra(EXTRA_REMOTE_URL),
+            localPath = intent.getStringExtra(EXTRA_LOCAL_PATH),
+        )
+    }
+
     companion object {
         const val EXTRA_ARTWORK_ID = "artwork_id"
+        const val EXTRA_ARTWORK_TITLE = "artwork_title"
+        const val EXTRA_ARTWORK_KIND = "artwork_kind"
+        const val EXTRA_SOURCE_ID = "source_id"
+        const val EXTRA_ATTRIBUTION = "attribution"
+        const val EXTRA_REMOTE_URL = "remote_url"
+        const val EXTRA_LOCAL_PATH = "local_path"
 
-        fun intent(context: Context, artworkId: String? = null): Intent =
+        fun intent(context: Context, artwork: Artwork? = null): Intent =
             Intent(context, AmbientActivity::class.java).apply {
-                if (artworkId != null) putExtra(EXTRA_ARTWORK_ID, artworkId)
+                if (artwork != null) {
+                    putExtra(EXTRA_ARTWORK_ID, artwork.id)
+                    putExtra(EXTRA_ARTWORK_TITLE, artwork.title)
+                    putExtra(EXTRA_ARTWORK_KIND, artwork.kind.name)
+                    putExtra(EXTRA_SOURCE_ID, artwork.sourceId)
+                    putExtra(EXTRA_ATTRIBUTION, artwork.attribution)
+                    putExtra(EXTRA_REMOTE_URL, artwork.remoteUrl)
+                    putExtra(EXTRA_LOCAL_PATH, artwork.localPath)
+                }
             }
     }
 }
@@ -89,7 +118,7 @@ class ArthurDreamService : DreamService() {
                         var artwork by remember { mutableStateOf<Artwork?>(null) }
                         LaunchedEffect(Unit) {
                             val loaded = withContext(Dispatchers.IO) {
-                                loadAmbient(contentEngine, artworkId = null)
+                                loadDreamAmbient(contentEngine)
                             }
                             catalog = loaded.first
                             artwork = loaded.second
@@ -107,12 +136,29 @@ class ArthurDreamService : DreamService() {
 }
 
 /**
- * Loads the ambient catalog off the main thread.
- * Does **not** bake genart stills — phone/TV Ambient uses live engines; Auto bakes on demand.
+ * Prefer the Control Plane selection. Refresh from catalog when the id still exists
+ * (fresher remote URL); otherwise keep the intent-stashed Artwork so we never swap to
+ * an unrelated genart fallback.
  */
-internal suspend fun loadAmbient(
+internal suspend fun loadPinnedAmbient(
     contentEngine: ContentEngine,
-    artworkId: String?,
+    requested: Artwork?,
+): Artwork? {
+    val catalog = contentEngine.catalog(
+        PreparedRotation(
+            sourceIds = emptyList(),
+            artworkIds = emptyList(),
+        ),
+    )
+    if (requested == null) {
+        return resolveAmbientArtwork(catalog, artworkId = null)
+    }
+    return resolveAmbientArtwork(catalog, requested.id) ?: requested
+}
+
+/** Dream: rotate the full displayable catalog. */
+internal suspend fun loadDreamAmbient(
+    contentEngine: ContentEngine,
 ): Pair<List<Artwork>, Artwork?> {
     val catalog = contentEngine.catalog(
         PreparedRotation(
@@ -120,6 +166,6 @@ internal suspend fun loadAmbient(
             artworkIds = emptyList(),
         ),
     )
-    val artwork = resolveAmbientArtwork(catalog, artworkId)
+    val artwork = resolveAmbientArtwork(catalog, artworkId = null)
     return catalog to artwork
 }

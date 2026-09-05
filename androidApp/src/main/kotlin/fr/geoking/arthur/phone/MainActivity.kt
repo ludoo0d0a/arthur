@@ -107,7 +107,7 @@ class MainActivity : ComponentActivity() {
                                             startActivity(
                                                 AmbientActivity.intent(
                                                     this@MainActivity,
-                                                    artwork?.id,
+                                                    artwork,
                                                 ),
                                             )
                                         },

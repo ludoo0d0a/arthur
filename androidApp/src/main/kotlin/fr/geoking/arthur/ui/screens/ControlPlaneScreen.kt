@@ -85,7 +85,12 @@ fun ControlPlaneScreen(
         selected = selected,
         onSelect = { selected = it },
         onStartAmbient = {
-            onStartAmbient(resolveAmbientArtwork(catalog, selected?.id))
+            // Prefer the live selection (keeps remote URL / kind) over a catalog re-resolve
+            // that can miss ephemeral stock ids and silently swap to another engine.
+            val chosen = selected?.let { sel ->
+                catalog.firstOrNull { it.id == sel.id } ?: sel
+            }
+            onStartAmbient(chosen ?: resolveAmbientArtwork(catalog, artworkId = null))
         },
         modifier = modifier,
         showFractalPreview = showFractalPreview,
@@ -164,6 +169,13 @@ private fun PhoneControlPlaneContent(
             stockCategory = stockCategory,
             genartTopic = genartTopic,
         )
+    }
+    // Keep preview in sync with the visible list; each click still updates via onSelect.
+    LaunchedEffect(filteredCatalog.map { it.id }) {
+        val stillVisible = selected != null && filteredCatalog.any { it.id == selected.id }
+        if (!stillVisible) {
+            filteredCatalog.firstOrNull()?.let(onSelect)
+        }
     }
 
     Scaffold(

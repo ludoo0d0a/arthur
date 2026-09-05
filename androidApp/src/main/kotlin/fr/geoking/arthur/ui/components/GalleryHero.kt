@@ -14,11 +14,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -27,7 +29,6 @@ import fr.geoking.arthur.fractal.FractalEffectCanvas
 import fr.geoking.arthur.fractal.FractalQuality
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.shared.domain.Artwork
-import fr.geoking.arthur.shared.domain.ArtworkKind
 
 @Composable
 internal fun GalleryHero(
@@ -44,12 +45,16 @@ internal fun GalleryHero(
         Box {
             when {
                 artwork != null -> {
-                    ArtworkRenderer(
-                        artwork = artwork,
-                        isActive = true,
-                        quality = GenartQuality.Low,
-                        modifier = Modifier.fillMaxSize(),
-                    )
+                    key(artwork.id) {
+                        ArtworkRenderer(
+                            artwork = artwork,
+                            isActive = true,
+                            quality = GenartQuality.Low,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .testTag("gallery_hero_artwork"),
+                        )
+                    }
                 }
                 livePreview -> {
                     FractalEffectCanvas(isActive = true, quality = FractalQuality.Low)
@@ -86,21 +91,22 @@ internal fun GalleryHero(
                     modifier = Modifier.size(18.dp),
                 )
                 Text(
-                    text = stringResource(heroLabelRes(livePreview, artwork?.kind)),
+                    text = heroLabel(livePreview, artwork),
                     style = MaterialTheme.typography.labelLarge,
                     color = scheme.onSurface,
+                    modifier = Modifier.testTag("gallery_hero_label"),
                 )
             }
         }
     }
 }
 
-private fun heroLabelRes(livePreview: Boolean, kind: ArtworkKind?): Int = when (kind) {
-    ArtworkKind.Genart -> R.string.genart_hero_label
-    ArtworkKind.FractalPreset, ArtworkKind.CustomFractal -> R.string.fractal_hero_label
-    ArtworkKind.Painting -> R.string.kind_painting
-    ArtworkKind.Sculpture -> R.string.kind_sculpture
-    ArtworkKind.Photo -> R.string.kind_photo
-    ArtworkKind.PersonalPhoto -> R.string.kind_personal
-    null -> if (livePreview) R.string.fractal_hero_label else R.string.gallery_hero_label
+@Composable
+private fun heroLabel(livePreview: Boolean, artwork: Artwork?): String {
+    if (artwork != null) {
+        return stringResource(R.string.preview_label, artwork.title)
+    }
+    return stringResource(
+        if (livePreview) R.string.fractal_hero_label else R.string.gallery_hero_label,
+    )
 }

@@ -74,7 +74,11 @@ fun TvControlPlaneContent(
     val firstCardFocus = remember { FocusRequester() }
     val firstChipFocus = remember { FocusRequester() }
 
-    LaunchedEffect(filteredCatalog.firstOrNull()?.id) {
+    LaunchedEffect(filteredCatalog.map { it.id }) {
+        val stillVisible = selected != null && filteredCatalog.any { it.id == selected.id }
+        if (!stillVisible) {
+            filteredCatalog.firstOrNull()?.let(onSelect)
+        }
         if (filteredCatalog.isNotEmpty()) {
             firstCardFocus.requestFocus()
         } else {

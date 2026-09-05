@@ -30,6 +30,7 @@ import fr.geoking.arthur.shared.domain.PremiumEntitlement
 import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.source.DeveloperSettings
 import fr.geoking.arthur.source.MuseumSearchSettings
+import fr.geoking.arthur.source.RotationSettings
 import fr.geoking.arthur.source.StockPhotoSettings
 import fr.geoking.arthur.tv.AmbientActivity
 import fr.geoking.arthur.tv.AmbientRotationLaunch
@@ -49,6 +50,7 @@ class MainActivity : ComponentActivity() {
     private val stockPhotoSettings: StockPhotoSettings by inject()
     private val museumSearchSettings: MuseumSearchSettings by inject()
     private val developerSettings: DeveloperSettings by inject()
+    private val rotationSettings: RotationSettings by inject()
 
     private val inAppUpdateHelper by lazy { InAppUpdateHelper(applicationContext) }
 
@@ -81,6 +83,7 @@ class MainActivity : ComponentActivity() {
                         var showSettings by remember { mutableStateOf(false) }
                         var catalogEpoch by remember { mutableStateOf(0) }
                         val simulatePremium by developerSettings.simulatePremium.collectAsState()
+                        val rotationIntervalMs by rotationSettings.intervalMs.collectAsState()
                         val isPremium = premium.isPremium
                         // Custom fractal authoring needs touch; TV uses remote only.
                         when {
@@ -91,6 +94,8 @@ class MainActivity : ComponentActivity() {
                                     showDeveloper = BuildConfig.DEBUG,
                                     simulatePremium = simulatePremium,
                                     onSimulatePremiumChange = developerSettings::setSimulatePremium,
+                                    rotationIntervalMs = rotationIntervalMs,
+                                    onRotationIntervalChange = rotationSettings::setIntervalMs,
                                 )
                             }
                             showEditor && !isTelevision -> {

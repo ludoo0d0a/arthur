@@ -79,6 +79,10 @@
     <string name="screen_settings">Paramètres</string>
     <string name="screen_about">À propos</string>
     <string name="screen_licenses">Licences open source</string>
+    <string name="screen_rotation_interval">Intervalle de rotation</string>
+    <string name="settings_rotation_interval_subtitle">Durée d’affichage de chaque œuvre</string>
+    <string name="rotation_interval_seconds">%1$d s</string>
+    <string name="rotation_interval_minutes">%1$d min</string>
     <string name="cd_settings">Paramètres</string>
     <string name="settings_about_subtitle">Version et attributions</string>
     <string name="about_version_name">Nom de version</string>

@@ -10,6 +10,7 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -23,6 +24,7 @@ import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
+import fr.geoking.arthur.source.RotationSettings
 import fr.geoking.arthur.ui.screens.AmbientScreenContent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -31,6 +33,7 @@ import org.koin.android.ext.android.inject
 /** Minimal leanback launcher — starts ambient fullscreen (no browse). */
 class AmbientActivity : ComponentActivity() {
     private val contentEngine: ContentEngine by inject()
+    private val rotationSettings: RotationSettings by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,6 +50,7 @@ class AmbientActivity : ComponentActivity() {
             ArthurTheme {
                 var artwork by remember { mutableStateOf(requested) }
                 var rotationPool by remember { mutableStateOf(stashedPool) }
+                val intervalMs by rotationSettings.intervalMs.collectAsState()
                 LaunchedEffect(requested?.id, rotate) {
                     val loaded = withContext(Dispatchers.IO) {
                         if (rotate) {
@@ -65,6 +69,7 @@ class AmbientActivity : ComponentActivity() {
                     title = artwork?.title ?: fallbackTitle,
                     artwork = artwork,
                     rotationPool = if (rotate) rotationPool else emptyList(),
+                    intervalMs = intervalMs,
                 )
             }
         }
@@ -119,6 +124,7 @@ class AmbientActivity : ComponentActivity() {
 /** TV Canvas screensaver / Dream — live generative Ambient via Compose. */
 class ArthurDreamService : DreamService() {
     private val contentEngine: ContentEngine by inject()
+    private val rotationSettings: RotationSettings by inject()
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
@@ -133,6 +139,7 @@ class ArthurDreamService : DreamService() {
                     ArthurTheme {
                         var catalog by remember { mutableStateOf<List<Artwork>>(emptyList()) }
                         var artwork by remember { mutableStateOf<Artwork?>(null) }
+                        val intervalMs by rotationSettings.intervalMs.collectAsState()
                         LaunchedEffect(Unit) {
                             val loaded = withContext(Dispatchers.IO) {
                                 loadDreamAmbient(contentEngine)
@@ -144,6 +151,7 @@ class ArthurDreamService : DreamService() {
                             title = artwork?.title ?: fallbackTitle,
                             artwork = artwork,
                             rotationPool = catalog,
+                            intervalMs = intervalMs,
                         )
                     }
                 }

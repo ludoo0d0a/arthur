@@ -61,7 +61,7 @@ import kotlin.random.Random
  * Fullscreen ambient surface.
  *
  * - Control Plane Start: pass the selected [artwork] and the filtered catalog as
- *   [rotationPool] (≥2 items) for random rotation every [AmbientAlbumArt.ROTATION_INTERVAL_MS].
+ *   [rotationPool] (≥2 items) for random rotation every [intervalMs].
  * - Pin only: empty [rotationPool].
  * - Dream / screensaver: pass a multi-item [rotationPool] to rotate the same way.
  *
@@ -79,6 +79,7 @@ fun AmbientScreenContent(
     artwork: Artwork? = null,
     rotationPool: List<Artwork> = emptyList(),
     isActive: Boolean = true,
+    intervalMs: Long = AmbientAlbumArt.ROTATION_INTERVAL_MS,
 ) {
     val rotatePool = remember(rotationPool) {
         rotationPool.filter { it.isAmbientDisplayable() }
@@ -122,7 +123,7 @@ fun AmbientScreenContent(
 
     val advanceLatest by rememberUpdatedState(::advance)
 
-    LaunchedEffect(rotationEpoch, isActive, shouldRotate, poolIds) {
+    LaunchedEffect(rotationEpoch, isActive, shouldRotate, poolIds, intervalMs) {
         if (!isActive || !shouldRotate) {
             progress.snapTo(0f)
             return@LaunchedEffect
@@ -131,7 +132,7 @@ fun AmbientScreenContent(
         progress.animateTo(
             targetValue = 1f,
             animationSpec = tween(
-                durationMillis = AmbientAlbumArt.ROTATION_INTERVAL_MS.toInt(),
+                durationMillis = intervalMs.toInt().coerceAtLeast(1),
                 easing = LinearEasing,
             ),
         )

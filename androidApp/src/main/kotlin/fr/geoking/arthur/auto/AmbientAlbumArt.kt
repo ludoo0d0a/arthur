@@ -6,10 +6,11 @@ import android.net.Uri
 import java.io.File
 
 /**
- * Auto Canvas album-art helpers: content:// URIs, cache files, Ambient Rotation interval.
+ * Auto Canvas album-art helpers: content:// URIs, cache files, Ambient Rotation default interval.
  * AA shows a single static image (IU-1 / SA-1); refresh by publishing a new URI.
  */
 object AmbientAlbumArt {
+    /** Default rotation interval (20s). User preference lives in [fr.geoking.arthur.source.RotationSettings]. */
     const val ROTATION_INTERVAL_MS = 20_000L
     const val PATH_ART = "art"
     const val AUTHORITY_SUFFIX = ".albumart"

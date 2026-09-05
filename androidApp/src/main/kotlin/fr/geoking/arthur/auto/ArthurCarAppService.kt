@@ -24,6 +24,7 @@ import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
+import fr.geoking.arthur.source.RotationSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -64,6 +65,7 @@ class ArthurCarSession : Session() {
 
 class ArtworkPaneScreen(carContext: CarContext) : Screen(carContext), KoinComponent {
     private val contentEngine: ContentEngine by inject()
+    private val rotationSettings: RotationSettings by inject()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     private var catalog: List<Artwork> = emptyList()
@@ -99,7 +101,7 @@ class ArtworkPaneScreen(carContext: CarContext) : Screen(carContext), KoinCompon
         rotationJob?.cancel()
         rotationJob = scope.launch {
             while (isActive) {
-                delay(AmbientAlbumArt.ROTATION_INTERVAL_MS)
+                delay(rotationSettings.intervalMs.value)
                 if (isPlaying) advance(+1)
             }
         }

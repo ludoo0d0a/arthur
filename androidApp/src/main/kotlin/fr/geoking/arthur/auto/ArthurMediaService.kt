@@ -13,6 +13,7 @@ import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.isGenerative
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
+import fr.geoking.arthur.source.RotationSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -27,13 +28,14 @@ import org.koin.android.ext.android.inject
 /**
  * Auto Canvas (Media): Ambient Rotation as browse tree + now-playing **static** album art.
  * AA forbids animated graphics (SA-1 / IU-1); generative pieces are baked to stills and
- * refreshed every [AmbientAlbumArt.ROTATION_INTERVAL_MS].
+ * refreshed on the user-configured rotation interval.
  *
  * Browse: root → source folders → playable art (≤2 levels). Genart/fractal folders use a
  * grid content style so still previews are the primary affordance.
  */
 class ArthurMediaService : MediaBrowserServiceCompat() {
     private val contentEngine: ContentEngine by inject()
+    private val rotationSettings: RotationSettings by inject()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private lateinit var session: MediaSessionCompat
     private var catalog: List<Artwork> = emptyList()
@@ -109,7 +111,7 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
         rotationJob?.cancel()
         rotationJob = scope.launch {
             while (isActive) {
-                delay(AmbientAlbumArt.ROTATION_INTERVAL_MS)
+                delay(rotationSettings.intervalMs.value)
                 if (playing) advance(+1, userInitiated = false)
             }
         }
@@ -161,7 +163,7 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
                 .putString(MediaMetadataCompat.METADATA_KEY_ART_URI, uri)
                 .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, uri)
                 .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON_URI, uri)
-                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, AmbientAlbumArt.ROTATION_INTERVAL_MS)
+                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, rotationSettings.intervalMs.value)
                 .build(),
         )
         val pool = rotationPool()

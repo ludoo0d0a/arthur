@@ -56,7 +56,9 @@ import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
 import fr.geoking.arthur.BuildConfig
 import fr.geoking.arthur.R
 import fr.geoking.arthur.UsedApisList
+import fr.geoking.arthur.auto.AmbientAlbumArt
 import fr.geoking.arthur.phone.theme.ArthurTheme
+import fr.geoking.arthur.source.RotationSettings
 
 private const val WebsiteUrl = "https://arthur.geoking.fr"
 private const val PrivacyUrl = "https://arthur.geoking.fr/privacy.html"
@@ -64,6 +66,7 @@ private const val TermsUrl = "https://arthur.geoking.fr/terms.html"
 
 enum class SettingsScreenPage {
     Main,
+    RotationInterval,
     About,
     Licenses,
     Developer,
@@ -77,6 +80,8 @@ fun SettingsScreen(
     showDeveloper: Boolean = BuildConfig.DEBUG,
     simulatePremium: Boolean = true,
     onSimulatePremiumChange: (Boolean) -> Unit = {},
+    rotationIntervalMs: Long = AmbientAlbumArt.ROTATION_INTERVAL_MS,
+    onRotationIntervalChange: (Long) -> Unit = {},
     initialScreenStack: List<SettingsScreenPage>? = null,
     onInitialRouteConsumed: () -> Unit = {},
 ) {
@@ -107,6 +112,8 @@ fun SettingsScreen(
                     Text(
                         text = when (currentScreen) {
                             SettingsScreenPage.Main -> stringResource(R.string.screen_settings)
+                            SettingsScreenPage.RotationInterval ->
+                                stringResource(R.string.screen_rotation_interval)
                             SettingsScreenPage.About -> stringResource(R.string.screen_about)
                             SettingsScreenPage.Licenses -> stringResource(R.string.screen_licenses)
                             SettingsScreenPage.Developer -> stringResource(R.string.screen_developer)
@@ -147,7 +154,12 @@ fun SettingsScreen(
                 SettingsScreenPage.Main -> MainMenu(
                     isPremium = isPremium,
                     showDeveloper = showDeveloper,
+                    rotationIntervalMs = rotationIntervalMs,
                     onNavigate = { screenStack = screenStack + it },
+                )
+                SettingsScreenPage.RotationInterval -> RotationIntervalContent(
+                    selectedMs = rotationIntervalMs,
+                    onSelect = onRotationIntervalChange,
                 )
                 SettingsScreenPage.About -> AboutContent(
                     onOpenLicenses = { screenStack = screenStack + SettingsScreenPage.Licenses },
@@ -166,6 +178,7 @@ fun SettingsScreen(
 private fun MainMenu(
     isPremium: Boolean,
     showDeveloper: Boolean,
+    rotationIntervalMs: Long,
     onNavigate: (SettingsScreenPage) -> Unit,
 ) {
     Column(
@@ -219,6 +232,11 @@ private fun MainMenu(
             elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         ) {
             SettingsItem(
+                label = stringResource(R.string.screen_rotation_interval),
+                value = rotationIntervalLabel(rotationIntervalMs),
+                onClick = { onNavigate(SettingsScreenPage.RotationInterval) },
+            )
+            SettingsItem(
                 label = stringResource(R.string.screen_about),
                 value = stringResource(R.string.settings_about_subtitle),
                 onClick = { onNavigate(SettingsScreenPage.About) },
@@ -231,6 +249,65 @@ private fun MainMenu(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun RotationIntervalContent(
+    selectedMs: Long,
+    onSelect: (Long) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp)
+            .testTag("settings_rotation_interval"),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.settings_rotation_interval_subtitle),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        ) {
+            RotationSettings.OPTIONS_MS.forEach { ms ->
+                val selected = ms == selectedMs
+                ListItem(
+                    modifier = Modifier
+                        .clickable { onSelect(ms) }
+                        .testTag("rotation_interval_$ms"),
+                    headlineContent = {
+                        Text(
+                            rotationIntervalLabel(ms),
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                    },
+                    trailingContent = {
+                        if (selected) {
+                            Icon(
+                                Icons.Filled.Check,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun rotationIntervalLabel(ms: Long): String {
+    return if (ms < 60_000L) {
+        stringResource(R.string.rotation_interval_seconds, (ms / 1_000L).toInt())
+    } else {
+        stringResource(R.string.rotation_interval_minutes, (ms / 60_000L).toInt())
     }
 }
 

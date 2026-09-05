@@ -170,7 +170,7 @@ object RemoteCategoryMapping {
             query = "online_media_type:Images AND unit_code:SAAM AND object_type:Paintings",
         )
         MuseumSearchKind.Sculpture -> MuseumApiParams(
-            query = "online_media_type:Images AND object_type:Sculptures",
+            query = "online_media_type:Images AND unit_code:SAAM AND sculpture",
         )
     }
 }

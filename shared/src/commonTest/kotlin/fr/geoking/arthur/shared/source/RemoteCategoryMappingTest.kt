@@ -119,7 +119,7 @@ class RemoteCategoryMappingTest {
         )
         assertEquals(
             MuseumApiParams(
-                query = "online_media_type:Images AND object_type:Sculptures",
+                query = "online_media_type:Images AND unit_code:SAAM AND sculpture",
             ),
             RemoteCategoryMapping.museumParams(
                 MuseumSearchKind.Sculpture,
@@ -159,7 +159,7 @@ class RemoteCategoryMappingTest {
         assertEquals(
             "https://api.europeana.eu/record/v2/search.json" +
                 "?query=sculpture&reusability=open&media=true&qf=TYPE:IMAGE" +
-                "&rows=20&profile=standard",
+                "&rows=20&start=1&profile=standard",
             EuropeanaSource.searchUrl(kind = MuseumSearchKind.Sculpture),
         )
         assertEquals(

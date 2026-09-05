@@ -94,6 +94,8 @@ class SmithsonianSource(
             apiKey: String,
             limit: Int = DEFAULT_LIMIT,
             kind: MuseumSearchKind = MuseumSearchKind.Painting,
+            /** Smithsonian result offset; first item is 0. */
+            start: Int = 0,
         ): String {
             val q = RemoteCategoryMapping.museumParams(kind, RemoteProvider.Smithsonian).query
                 .orEmpty()
@@ -102,6 +104,7 @@ class SmithsonianSource(
             return "https://api.si.edu/openaccess/api/v1.0/search" +
                 "?q=$encoded" +
                 "&rows=$limit" +
+                "&start=$start" +
                 "&api_key=$apiKey"
         }
     }

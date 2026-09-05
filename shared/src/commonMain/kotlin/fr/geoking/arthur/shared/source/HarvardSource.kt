@@ -70,6 +70,8 @@ class HarvardSource(
             apiKey: String,
             limit: Int = DEFAULT_LIMIT,
             kind: MuseumSearchKind = MuseumSearchKind.Painting,
+            /** Harvard page index; first page is 1. */
+            page: Int = 1,
         ): String {
             val classification = RemoteCategoryMapping.museumParams(kind, RemoteProvider.Harvard)
                 .type
@@ -79,6 +81,7 @@ class HarvardSource(
                 "&classification=$classification" +
                 "&hasimage=1" +
                 "&size=$limit" +
+                "&page=$page" +
                 "&fields=id,title,primaryimageurl,people,classification"
         }
     }

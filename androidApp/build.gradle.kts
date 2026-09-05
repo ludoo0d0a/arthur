@@ -205,6 +205,13 @@ afterEvaluate {
                     ?: System.getenv("E2E_STOCK_PHOTOS")
                     ?: "",
             )
+            // Live museum e2e: -Pe2eMuseumSources=true (needs EUROPEANA / HARVARD / SMITHSONIAN keys)
+            systemProperty(
+                "e2e.museumSources",
+                (findProperty("e2eMuseumSources") as String?)
+                    ?: System.getenv("E2E_MUSEUM_SOURCES")
+                    ?: "",
+            )
         }
     }
 }

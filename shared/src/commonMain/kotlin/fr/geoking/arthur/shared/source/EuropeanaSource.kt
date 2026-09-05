@@ -72,12 +72,14 @@ class EuropeanaSource(
         fun searchUrl(
             limit: Int = DEFAULT_LIMIT,
             kind: MuseumSearchKind = MuseumSearchKind.Painting,
+            /** Europeana result offset; first item is 1. */
+            start: Int = 1,
         ): String {
             val query = RemoteCategoryMapping.museumParams(kind, RemoteProvider.Europeana).query
                 .orEmpty()
             return "https://api.europeana.eu/record/v2/search.json" +
                 "?query=$query&reusability=open&media=true&qf=TYPE:IMAGE" +
-                "&rows=$limit&profile=standard"
+                "&rows=$limit&start=$start&profile=standard"
         }
     }
 }

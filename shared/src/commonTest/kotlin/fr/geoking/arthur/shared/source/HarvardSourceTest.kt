@@ -54,7 +54,7 @@ class HarvardSourceTest {
         assertEquals(
             "https://api.harvardartmuseums.org/object" +
                 "?apikey=k&classification=Sculpture&hasimage=1&size=20" +
-                "&fields=id,title,primaryimageurl,people,classification",
+                "&page=1&fields=id,title,primaryimageurl,people,classification",
             HarvardSource.searchUrl(apiKey = "k", kind = MuseumSearchKind.Sculpture),
         )
     }

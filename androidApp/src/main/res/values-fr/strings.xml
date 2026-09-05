@@ -26,6 +26,7 @@
     <string name="source_harvard">Harvard</string>
     <string name="source_smithsonian">Smithsonian</string>
     <string name="source_louvre">Louvre</string>
+    <string name="source_wikimedia_streetart">Street art</string>
     <string name="source_bundled">Pack</string>
     <string name="stock_topic_section">Thème photo</string>
     <string name="stock_topic_suggestions">Suggestions</string>
@@ -37,6 +38,7 @@
     <string name="stock_topic_abstract">Abstrait</string>
     <string name="stock_topic_architecture">Architecture</string>
     <string name="stock_topic_sky">Ciel</string>
+    <string name="stock_topic_streetart">Street art</string>
     <string name="kind_painting">Peinture</string>
     <string name="kind_sculpture">Sculpture</string>
     <string name="kind_photo">Photo</string>

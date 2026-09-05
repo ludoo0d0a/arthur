@@ -38,6 +38,7 @@ import fr.geoking.arthur.shared.source.RijksmuseumSource
 import fr.geoking.arthur.shared.source.SmithsonianSource
 import fr.geoking.arthur.shared.source.StockPhotoCategory
 import fr.geoking.arthur.shared.source.UnsplashSource
+import fr.geoking.arthur.shared.source.WikimediaStreetArtSource
 
 /** Top-level chips: All → Genart → Painting → Photo → Sculpture (Personal last). */
 enum class CategoryFilter(@get:StringRes val labelRes: Int) {
@@ -101,6 +102,11 @@ enum class MuseumTopic(
     Harvard(HarvardSource.ID, R.string.source_harvard, HarvardSource.ID),
     Smithsonian(SmithsonianSource.ID, R.string.source_smithsonian, SmithsonianSource.ID),
     Louvre(LouvreSource.ID, R.string.source_louvre, LouvreSource.ID),
+    WikimediaStreetArt(
+        WikimediaStreetArtSource.ID,
+        R.string.source_wikimedia_streetart,
+        WikimediaStreetArtSource.ID,
+    ),
 }
 
 fun List<Artwork>.filterByCategoryAndSources(
@@ -246,6 +252,7 @@ fun matchesPhotoTopic(art: Artwork, stockCategory: StockPhotoCategory): Boolean 
         StockPhotoCategory.Abstract,
         StockPhotoCategory.Architecture,
         StockPhotoCategory.Sky,
+        StockPhotoCategory.StreetArt,
         -> art.sourceId == PexelsSource.ID || art.sourceId == UnsplashSource.ID
     }
 
@@ -433,4 +440,5 @@ private fun StockPhotoCategory.labelRes(): Int = when (this) {
     StockPhotoCategory.Abstract -> R.string.stock_topic_abstract
     StockPhotoCategory.Architecture -> R.string.stock_topic_architecture
     StockPhotoCategory.Sky -> R.string.stock_topic_sky
+    StockPhotoCategory.StreetArt -> R.string.stock_topic_streetart
 }

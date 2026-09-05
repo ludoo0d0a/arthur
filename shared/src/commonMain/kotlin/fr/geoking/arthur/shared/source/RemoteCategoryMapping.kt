@@ -98,6 +98,7 @@ object RemoteCategoryMapping {
         StockPhotoCategory.Abstract -> "abstract"
         StockPhotoCategory.Architecture -> "architecture"
         StockPhotoCategory.Sky -> "sky"
+        StockPhotoCategory.StreetArt -> "street art mural"
     }
 
     // --- Stock: Unsplash free-text (slightly more descriptive for relevance) ---
@@ -113,6 +114,7 @@ object RemoteCategoryMapping {
         StockPhotoCategory.Abstract -> "abstract texture"
         StockPhotoCategory.Architecture -> "architecture building"
         StockPhotoCategory.Sky -> "sky clouds"
+        StockPhotoCategory.StreetArt -> "street art mural graffiti"
     }
 
     // --- Museum: Met Collection API (`q` + `medium`) ---

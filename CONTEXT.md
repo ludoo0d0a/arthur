@@ -1,6 +1,6 @@
 # Arthur
 
-Ambient art and photo display — name is a play on **ART'hur**. Phone is the Control Plane; Auto and TV are Canvases. Single App Shell APK. v1 Content Engine: Bundled Pack, Rijksmuseum + The Met + Art Institute of Chicago + Cleveland Museum + Europeana + Harvard Art Museums + Smithsonian + Louvre Remote Sources, Pexels + Unsplash Stock Photo Sources, Genart, Fractal Presets, Premium Custom Fractal, Photo Artwork, Premium Personal Photos. RevenueCat lifetime. Apple-Ready Shared only (no Apple UI in v1). Canvas Pairing LAN/QR. **Release Spine**: geoking-tools + geoking-ci (CI/CD Play, listings/i18n, Firebase Analytics/Crashlytics, In-App Updates, arthur.geoking.fr); Scora = reference copy source only.
+Ambient art and photo display — name is a play on **ART'hur**. Phone is the Control Plane; Auto and TV are Canvases. Single App Shell APK. v1 Content Engine: Bundled Pack, Rijksmuseum + The Met + Art Institute of Chicago + Cleveland Museum + Europeana + Harvard Art Museums + Smithsonian + Louvre Remote Sources, Wikimedia Street Art, Pexels + Unsplash Stock Photo Sources, Genart, Fractal Presets, Premium Custom Fractal, Photo Artwork, Premium Personal Photos. RevenueCat lifetime. Apple-Ready Shared only (no Apple UI in v1). Canvas Pairing LAN/QR. **Release Spine**: geoking-tools + geoking-ci (CI/CD Play, listings/i18n, Firebase Analytics/Crashlytics, In-App Updates, arthur.geoking.fr); Scora = reference copy source only.
 
 ## Language
 
@@ -107,7 +107,7 @@ A small offline set of Artwork shipped with the app so Auto/TV Canvases work bef
 _Avoid_: Full catalog on device
 
 **Remote Source**:
-An external catalog synced into the Content Engine under explicit license/attribution rules. Museum connectors = **Rijksmuseum**, **The Met**, **Art Institute of Chicago**, **Cleveland Museum of Art**, **Europeana**, **Harvard Art Museums**, **Smithsonian**, and **Musée du Louvre**. Stock-photo Sources = **Pexels** and **Unsplash**. Content Engine stays Source-agnostic behind one interface. Further museum ideas: [`docs/roadmap-museum-sources.md`](docs/roadmap-museum-sources.md).
+An external catalog synced into the Content Engine under explicit license/attribution rules. Museum connectors = **Rijksmuseum**, **The Met**, **Art Institute of Chicago**, **Cleveland Museum of Art**, **Europeana**, **Harvard Art Museums**, **Smithsonian**, and **Musée du Louvre**. Street-art Source = **Wikimedia Commons Street Art** (open-license files from `Category:Street_art` only — not a famous-art connector). Stock-photo Sources = **Pexels** and **Unsplash**. Content Engine stays Source-agnostic behind one interface. Further museum ideas: [`docs/roadmap-museum-sources.md`](docs/roadmap-museum-sources.md). Street art backlog: [`docs/roadmap-streetart-sources.md`](docs/roadmap-streetart-sources.md).
 _Avoid_: Scraping, unrestricted web images; Wikimedia as the famous-art connector
 
 **Rijksmuseum Source**:
@@ -142,8 +142,12 @@ _Avoid_: Non-CC0 media when a CC0 alternative exists on the same record
 Musée du Louvre Collections notices via per-object JSON (`…/ark:/53355/{id}.json`). No search API and no key — Arthur ships a curated ARK list and hydrates titles/images. Follow Louvre Collections ToS for image reuse.
 _Avoid_: Scraping the Louvre HTML search UI; inventing ARK ids without verifying JSON
 
+**Wikimedia Street Art Source**:
+Street-art Remote Source via the Wikimedia Commons MediaWiki API (`Category:Street_art`). No API key. Keeps open licenses only (Public domain / CC0 / CC BY / CC BY-SA — no NC/ND) and raster thumbs. Descriptive User-Agent required. Not a museum / famous-art connector (ADR 0008).
+_Avoid_: Using Wikimedia as a general famous-art catalog; non-open Commons licenses
+
 **Stock Photo Source**:
-Remote Sources for high-quality ambient photography (nature, landscape) via free legal APIs — **Pexels** and **Unsplash**. Distinct from museum Sources and from Personal Photos. Keys from `local.properties` / CI: `PEXELS_API_KEY`; Unsplash **Access Key** as `UNSPLASH_ACCESS_KEY` (Client-ID header). Unsplash **Secret Key** (`UNSPLASH_SECRET_KEY`) is OAuth-only — keep it out of the APK / BuildConfig. Control Plane picks a **photo topic** (random, nature, city, ocean, …) that drives the search query. **Random** resolves to a different remote topic on each catalog load for an easy start. Ambient rotates a random piece every 20s across the prepared pool (API stock, genart, museums, cached/local stills); successful downloads and baked **genart** stills are cached under `cacheDir/artwork` (genart capped at 30, LRU) and reused offline. Blank access/API key → cached catalog for the topic (or empty). Must follow each provider’s ToS (attribution, rate limits, hotlink/cache rules). Not a substitute for famous-art catalogs.
+Remote Sources for high-quality ambient photography (nature, landscape) via free legal APIs — **Pexels** and **Unsplash**. Distinct from museum Sources and from Personal Photos. Keys from `local.properties` / CI: `PEXELS_API_KEY`; Unsplash **Access Key** as `UNSPLASH_ACCESS_KEY` (Client-ID header). Unsplash **Secret Key** (`UNSPLASH_SECRET_KEY`) is OAuth-only — keep it out of the APK / BuildConfig. Control Plane picks a **photo topic** (random, nature, city, ocean, street art, …) that drives the search query. **Random** resolves to a different remote topic on each catalog load for an easy start. Ambient rotates a random piece every 20s across the prepared pool (API stock, genart, museums, cached/local stills); successful downloads and baked **genart** stills are cached under `cacheDir/artwork` (genart capped at 30, LRU) and reused offline. Blank access/API key → cached catalog for the topic (or empty). Must follow each provider’s ToS (attribution, rate limits, hotlink/cache rules). Not a substitute for famous-art catalogs.
 _Avoid_: Scraping 500px or other closed platforms; shipping without attribution when required; treating stock photos as museum/famous-art
 
 **Generative Source**:

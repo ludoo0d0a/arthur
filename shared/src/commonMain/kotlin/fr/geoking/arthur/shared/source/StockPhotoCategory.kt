@@ -16,7 +16,8 @@ enum class StockPhotoCategory(val query: String) {
     Mountains("mountains"),
     Abstract("abstract"),
     Architecture("architecture"),
-    Sky("sky");
+    Sky("sky"),
+    StreetArt("streetart");
 
     /** False for curated topics that must not hit Pexels / Unsplash. */
     val isRemoteSearch: Boolean

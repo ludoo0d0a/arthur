@@ -226,4 +226,5 @@ private fun StockPhotoCategory.packLabelRes(): Int = when (this) {
     StockPhotoCategory.Abstract -> R.string.stock_topic_abstract
     StockPhotoCategory.Architecture -> R.string.stock_topic_architecture
     StockPhotoCategory.Sky -> R.string.stock_topic_sky
+    StockPhotoCategory.StreetArt -> R.string.stock_topic_streetart
 }

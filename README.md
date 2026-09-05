@@ -4,7 +4,7 @@ Arthur is ambient art for Android: configure rotations on your phone, then enjoy
 
 Phone is the Control Plane; Auto and TV are the Canvases. One App Shell APK.
 
-Domain language: [`CONTEXT.md`](CONTEXT.md) · Decisions: [`docs/adr/`](docs/adr/) · Genart ideas: [`docs/roadmap-genart.md`](docs/roadmap-genart.md) · Museum Sources: [`docs/roadmap-museum-sources.md`](docs/roadmap-museum-sources.md) · Roadmap: [`docs/roadmap.md`](docs/roadmap.md)
+Domain language: [`CONTEXT.md`](CONTEXT.md) · Decisions: [`docs/adr/`](docs/adr/) · Genart ideas: [`docs/roadmap-genart.md`](docs/roadmap-genart.md) · Museum Sources: [`docs/roadmap-museum-sources.md`](docs/roadmap-museum-sources.md) · Street art: [`docs/roadmap-streetart-sources.md`](docs/roadmap-streetart-sources.md) · Roadmap: [`docs/roadmap.md`](docs/roadmap.md)
 
 ## Modules
 

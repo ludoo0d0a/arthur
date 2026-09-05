@@ -22,6 +22,7 @@ import fr.geoking.arthur.shared.source.PexelsSource
 import fr.geoking.arthur.shared.source.RijksmuseumSource
 import fr.geoking.arthur.shared.source.SmithsonianSource
 import fr.geoking.arthur.shared.source.UnsplashSource
+import fr.geoking.arthur.shared.source.WikimediaStreetArtSource
 import fr.geoking.arthur.source.ArtworkImageCache
 import fr.geoking.arthur.source.MuseumSearchSettings
 import fr.geoking.arthur.source.StockPhotoSettings
@@ -142,6 +143,16 @@ val appModule = module {
     }
     single {
         val client = get<HttpClient>()
+        WikimediaStreetArtSource(
+            httpGet = { url ->
+                client.get(url) {
+                    header(HttpHeaders.UserAgent, "Arthur/1.0 (Android; fr.geoking.arthur)")
+                }.bodyAsText()
+            },
+        )
+    }
+    single {
+        val client = get<HttpClient>()
         val apiKey = BuildConfig.PEXELS_API_KEY
         val settings = get<StockPhotoSettings>()
         val cache = get<ArtworkImageCache>()
@@ -194,6 +205,7 @@ val appModule = module {
                 get<HarvardSource>(),
                 get<SmithsonianSource>(),
                 get<LouvreSource>(),
+                get<WikimediaStreetArtSource>(),
                 get<GenartSource>(),
                 get<FractalSource>(),
                 get<CustomFractalSource>(),

@@ -122,6 +122,7 @@ class PackModelsTest {
         assertTrue(tiles.any { it.testTagSuffix == "museum_harvard" })
         assertTrue(tiles.any { it.testTagSuffix == "museum_smithsonian" })
         assertTrue(tiles.any { it.testTagSuffix == "museum_louvre" })
+        assertTrue(tiles.any { it.testTagSuffix == "museum_wikimedia-streetart" })
         assertFalse(tiles.any { it.testTagSuffix.contains("suggestions") })
     }
 

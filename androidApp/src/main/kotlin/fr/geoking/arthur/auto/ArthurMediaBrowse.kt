@@ -17,6 +17,7 @@ import fr.geoking.arthur.shared.source.PexelsSource
 import fr.geoking.arthur.shared.source.RijksmuseumSource
 import fr.geoking.arthur.shared.source.SmithsonianSource
 import fr.geoking.arthur.shared.source.UnsplashSource
+import fr.geoking.arthur.shared.source.WikimediaStreetArtSource
 
 /**
  * Auto Media browse helpers: ≤2 levels (root folders → playable art), content-style
@@ -39,6 +40,7 @@ object ArthurMediaBrowse {
         HarvardSource.ID,
         SmithsonianSource.ID,
         LouvreSource.ID,
+        WikimediaStreetArtSource.ID,
         PexelsSource.ID,
         UnsplashSource.ID,
     )
@@ -87,6 +89,7 @@ object ArthurMediaBrowse {
         HarvardSource.ID -> "Harvard Art Museums"
         SmithsonianSource.ID -> "Smithsonian"
         LouvreSource.ID -> "Musée du Louvre"
+        WikimediaStreetArtSource.ID -> "Wikimedia Street Art"
         PexelsSource.ID -> "Pexels"
         UnsplashSource.ID -> "Unsplash"
         else -> sourceId

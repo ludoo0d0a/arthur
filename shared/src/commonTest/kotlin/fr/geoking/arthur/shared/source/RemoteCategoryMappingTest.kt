@@ -64,6 +64,18 @@ class RemoteCategoryMappingTest {
     }
 
     @Test
+    fun stockStreetArtUsesProviderSpecificQueries() {
+        assertEquals(
+            "street art mural",
+            RemoteCategoryMapping.stockQuery(StockPhotoCategory.StreetArt, RemoteProvider.Pexels),
+        )
+        assertEquals(
+            "street art mural graffiti",
+            RemoteCategoryMapping.stockQuery(StockPhotoCategory.StreetArt, RemoteProvider.Unsplash),
+        )
+    }
+
+    @Test
     fun museumPaintingMapsToDistinctProviderCodes() {
         assertEquals(
             MuseumApiParams(query = "painting", medium = "Paintings"),

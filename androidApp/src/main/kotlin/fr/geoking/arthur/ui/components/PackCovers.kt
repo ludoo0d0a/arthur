@@ -17,6 +17,7 @@ object PackCovers {
         MuseumTopic.Harvard -> R.drawable.pack_harvard
         MuseumTopic.Smithsonian -> R.drawable.pack_smithsonian
         MuseumTopic.Louvre -> R.drawable.pack_louvre
+        MuseumTopic.WikimediaStreetArt -> R.drawable.pack_painting
     }
 
     @DrawableRes

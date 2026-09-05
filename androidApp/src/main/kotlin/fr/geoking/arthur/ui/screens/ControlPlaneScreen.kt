@@ -9,10 +9,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -43,12 +50,17 @@ import fr.geoking.arthur.ui.components.PackFamily
 import fr.geoking.arthur.ui.components.PackGrid
 import fr.geoking.arthur.ui.components.PackSelection
 import fr.geoking.arthur.ui.components.PackTile
+import fr.geoking.arthur.ui.components.SettingsButton
 import fr.geoking.arthur.ui.components.StartAmbientFab
 import fr.geoking.arthur.ui.components.homeTile
 import fr.geoking.arthur.ui.components.isGenartCustom
 import fr.geoking.arthur.ui.components.resolvePackPool
 import fr.geoking.arthur.ui.components.stockCategoryOrNull
 import fr.geoking.arthur.ui.components.subPackTiles
+
+/** Extra lift so the FAB clears gesture/nav bars when window insets are zeroed. */
+private val FabBottomClearance = 50.dp
+private val PackGridFabClearance = 138.dp
 
 private val StockSourceIds = setOf(
     BundledPackSource.ID,
@@ -173,6 +185,7 @@ fun ControlPlaneContent(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PhoneControlPlaneContent(
     openedFamily: PackFamily?,
@@ -196,9 +209,40 @@ private fun PhoneControlPlaneContent(
             .testTag("control_plane"),
         containerColor = scheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        topBar = {
+            if (openedFamily != null) {
+                TopAppBar(
+                    title = {
+                        Text(stringResource(openedFamily.titleRes))
+                    },
+                    navigationIcon = {
+                        IconButton(
+                            onClick = onBackToHome,
+                            modifier = Modifier.testTag("pack_back"),
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.action_back),
+                            )
+                        }
+                    },
+                    actions = {
+                        if (onOpenSettings != null) {
+                            SettingsButton(onClick = onOpenSettings)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = scheme.surface,
+                        titleContentColor = scheme.onSurface,
+                        navigationIconContentColor = scheme.onSurface,
+                    ),
+                )
+            }
+        },
         floatingActionButton = {
             StartAmbientFab(
                 onStartAmbient = onStartAmbient,
+                modifier = Modifier.padding(bottom = FabBottomClearance),
             )
         },
     ) { padding ->
@@ -206,15 +250,15 @@ private fun PhoneControlPlaneContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .statusBarsPadding(),
+                .then(if (openedFamily == null) Modifier.statusBarsPadding() else Modifier),
         ) {
-            ControlPlaneHeader(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 8.dp),
-                onOpenSettings = onOpenSettings,
-            )
             if (openedFamily == null) {
+                ControlPlaneHeader(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 8.dp),
+                    onOpenSettings = onOpenSettings,
+                )
                 Text(
                     text = stringResource(R.string.packs_section),
                     style = MaterialTheme.typography.titleMedium,
@@ -226,12 +270,14 @@ private fun PhoneControlPlaneContent(
                     selected = null,
                     onTileClick = { onOpenFamily(it.selection.family) },
                     modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(
+                        start = 20.dp,
+                        end = 20.dp,
+                        top = 8.dp,
+                        bottom = PackGridFabClearance,
+                    ),
                 )
             } else {
-                PackSubPackHeader(
-                    family = openedFamily,
-                    onBack = onBackToHome,
-                )
                 if (onCreateCustomFractal != null && selection.isGenartCustom()) {
                     TextButton(
                         onClick = onCreateCustomFractal,
@@ -251,7 +297,7 @@ private fun PhoneControlPlaneContent(
                         start = 20.dp,
                         end = 20.dp,
                         top = 8.dp,
-                        bottom = 88.dp,
+                        bottom = PackGridFabClearance,
                     ),
                 )
             }
@@ -266,13 +312,16 @@ internal fun PackSubPackHeader(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
-        TextButton(
+        IconButton(
             onClick = onBack,
             modifier = Modifier
-                .padding(horizontal = 8.dp)
+                .padding(horizontal = 4.dp)
                 .testTag("pack_back"),
         ) {
-            Text(stringResource(R.string.action_back))
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = stringResource(R.string.action_back),
+            )
         }
         Text(
             text = stringResource(family.titleRes),

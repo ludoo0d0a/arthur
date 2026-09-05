@@ -11,7 +11,6 @@ import fr.geoking.arthur.fractal.CustomFractalParams
 import fr.geoking.arthur.fractal.CustomFractalQuality
 import fr.geoking.arthur.fractal.CustomFractalStillRenderer
 import fr.geoking.arthur.genart.GenartCatalog
-import fr.geoking.arthur.genart.GenartEngineId
 import fr.geoking.arthur.genart.GenartStillRenderer
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
@@ -145,7 +144,10 @@ object AmbientStillRenderer {
 
     private fun drawGenart(canvas: Canvas, artworkId: String, generation: Long) {
         val engine = GenartCatalog.engineForId(artworkId)
-            ?: GenartEngineId.Particles
+        if (engine == null) {
+            drawStillPlaceholder(canvas, artworkId.hashCode().toLong() xor generation)
+            return
+        }
         GenartStillRenderer.draw(
             canvas = canvas,
             engineId = engine,

@@ -7,6 +7,7 @@ import fr.geoking.arthur.shared.domain.FreeTierLimits
 import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.PremiumEntitlement
 import fr.geoking.arthur.shared.domain.Source
+import fr.geoking.arthur.shared.domain.isGenerative
 
 /**
  * Aggregates Sources into an Ambient Rotation, applying free-tier caps and Premium gates.
@@ -32,13 +33,17 @@ class ContentEngine(
     }
 
     private fun applyGates(artworks: List<Artwork>): List<Artwork> {
+        // Drop stills with no image — they only fill free-tier slots with placeholders.
+        val candidates = artworks.filter { art ->
+            art.isGenerative || hasDisplayableStill(art)
+        }
         if (entitlement.isPremium) {
-            return artworks
+            return candidates
         }
         var photos = 0
         var fractals = 0
         var genart = 0
-        return artworks.filter { art ->
+        return candidates.filter { art ->
             when (art.kind) {
                 ArtworkKind.PersonalPhoto, ArtworkKind.CustomFractal -> false
                 ArtworkKind.Photo, ArtworkKind.Painting, ArtworkKind.Sculpture -> {
@@ -56,4 +61,7 @@ class ContentEngine(
             }
         }
     }
+
+    private fun hasDisplayableStill(artwork: Artwork): Boolean =
+        !artwork.remoteUrl.isNullOrBlank() || !artwork.localPath.isNullOrBlank()
 }

@@ -18,6 +18,7 @@ import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.isGenerative
 import fr.geoking.arthur.shared.source.CustomFractalSource
+import fr.geoking.arthur.source.StillImageDownloader
 import java.io.File
 import kotlin.random.Random
 
@@ -88,12 +89,11 @@ object AmbientStillRenderer {
         }
         val url = remoteUrl?.takeIf { it.isNotBlank() } ?: return false
         return runCatching {
-            java.net.URL(url).openStream().use { stream ->
-                val bmp = BitmapFactory.decodeStream(stream) ?: return false
-                drawBitmapCover(canvas, bmp)
-                bmp.recycle()
-                true
-            }
+            val bytes = StillImageDownloader.downloadBytes(url)
+            val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return false
+            drawBitmapCover(canvas, bmp)
+            bmp.recycle()
+            true
         }.getOrDefault(false)
     }
 

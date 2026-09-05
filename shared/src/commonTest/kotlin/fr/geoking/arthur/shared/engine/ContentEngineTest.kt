@@ -21,13 +21,13 @@ class ContentEngineTest {
         override val id = "rich"
         override val displayName = "Rich"
         override suspend fun load() = listOf(
-            Artwork("p1", "Photo 1", sourceId = id, kind = ArtworkKind.Photo),
-            Artwork("p2", "Photo 2", sourceId = id, kind = ArtworkKind.Photo),
-            Artwork("p3", "Photo 3", sourceId = id, kind = ArtworkKind.Photo),
-            Artwork("p4", "Photo 4", sourceId = id, kind = ArtworkKind.Photo),
-            Artwork("p5", "Photo 5", sourceId = id, kind = ArtworkKind.Photo),
-            Artwork("p6", "Photo 6", sourceId = id, kind = ArtworkKind.Photo),
-            Artwork("perso", "Mine", sourceId = id, kind = ArtworkKind.PersonalPhoto),
+            Artwork("p1", "Photo 1", sourceId = id, kind = ArtworkKind.Photo, remoteUrl = "https://example.com/1.jpg"),
+            Artwork("p2", "Photo 2", sourceId = id, kind = ArtworkKind.Photo, remoteUrl = "https://example.com/2.jpg"),
+            Artwork("p3", "Photo 3", sourceId = id, kind = ArtworkKind.Photo, remoteUrl = "https://example.com/3.jpg"),
+            Artwork("p4", "Photo 4", sourceId = id, kind = ArtworkKind.Photo, remoteUrl = "https://example.com/4.jpg"),
+            Artwork("p5", "Photo 5", sourceId = id, kind = ArtworkKind.Photo, remoteUrl = "https://example.com/5.jpg"),
+            Artwork("p6", "Photo 6", sourceId = id, kind = ArtworkKind.Photo, remoteUrl = "https://example.com/6.jpg"),
+            Artwork("perso", "Mine", sourceId = id, kind = ArtworkKind.PersonalPhoto, localPath = "/tmp/mine.jpg"),
             Artwork("custom", "Tap fractal", sourceId = id, kind = ArtworkKind.CustomFractal),
             Artwork("fp1", "Preset 1", sourceId = id, kind = ArtworkKind.FractalPreset),
             Artwork("fp2", "Preset 2", sourceId = id, kind = ArtworkKind.FractalPreset),
@@ -124,5 +124,31 @@ class ContentEngineTest {
         )
         assertEquals(3, catalog.size)
         assertTrue(catalog.all { it.kind == ArtworkKind.FractalPreset })
+    }
+
+    @Test
+    fun freeTier_skipsStillsWithoutImages() = runBlocking {
+        val source = object : Source {
+            override val id = "mixed"
+            override val displayName = "Mixed"
+            override suspend fun load() = listOf(
+                Artwork("empty", "Empty", sourceId = id, kind = ArtworkKind.Photo),
+                Artwork(
+                    "ok",
+                    "OK",
+                    sourceId = id,
+                    kind = ArtworkKind.Photo,
+                    remoteUrl = "https://example.com/a.jpg",
+                ),
+                Artwork("g1", "Genart", sourceId = id, kind = ArtworkKind.Genart),
+            )
+        }
+        val engine = ContentEngine(
+            sources = listOf(source),
+            entitlement = FakePremiumEntitlement(isPremium = false),
+            limits = FreeTierLimits(maxPhotoArtwork = 5, maxGenart = 2),
+        )
+        val catalog = engine.catalog(PreparedRotation(sourceIds = listOf("mixed"), artworkIds = emptyList()))
+        assertEquals(listOf("ok", "g1"), catalog.map { it.id })
     }
 }

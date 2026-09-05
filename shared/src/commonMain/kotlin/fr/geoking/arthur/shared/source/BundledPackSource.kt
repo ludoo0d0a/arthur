@@ -23,6 +23,7 @@ class BundledPackSource(
                 attribution = "Arthur Bundled Pack",
                 sourceId = ID,
                 kind = ArtworkKind.Painting,
+                remoteUrl = "https://iiif.micr.io/mPymb/full/max/0/default.jpg",
             ),
             Artwork(
                 id = "bundled-2",
@@ -30,6 +31,7 @@ class BundledPackSource(
                 attribution = "Arthur Bundled Pack",
                 sourceId = ID,
                 kind = ArtworkKind.Sculpture,
+                remoteUrl = "https://iiif.micr.io/tqMQL/full/max/0/default.jpg",
             ),
             Artwork(
                 id = "bundled-3",
@@ -37,6 +39,7 @@ class BundledPackSource(
                 attribution = "Arthur Bundled Pack",
                 sourceId = ID,
                 kind = ArtworkKind.Photo,
+                remoteUrl = "https://iiif.micr.io/NYkLJ/full/max/0/default.jpg",
             ),
         )
     }

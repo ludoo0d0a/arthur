@@ -105,11 +105,12 @@ val appModule = module {
     single {
         ContentEngine(
             sources = listOf(
+                // Bundled + stock first so free-tier still slots are displayable photos.
                 get<BundledPackSource>(),
-                get<RijksmuseumSource>(),
-                get<MetSource>(),
                 get<PexelsSource>(),
                 get<UnsplashSource>(),
+                get<RijksmuseumSource>(),
+                get<MetSource>(),
                 get<GenartSource>(),
                 get<FractalSource>(),
                 get<CustomFractalSource>(),

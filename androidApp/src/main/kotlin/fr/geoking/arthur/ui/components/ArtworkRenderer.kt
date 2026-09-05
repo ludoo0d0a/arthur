@@ -35,7 +35,7 @@ import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.source.FractalSource
 import fr.geoking.arthur.source.ArtworkImageCache
-import java.net.URL
+import fr.geoking.arthur.source.StillImageDownloader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -141,7 +141,7 @@ private fun RemoteStillImage(
                 return@withContext
             }
             runCatching {
-                URL(url).openStream().use { stream -> stream.readBytes() }
+                StillImageDownloader.downloadBytes(url)
             }.onSuccess { bytes ->
                 imageCache.putImage(artworkId, bytes)
                 val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)

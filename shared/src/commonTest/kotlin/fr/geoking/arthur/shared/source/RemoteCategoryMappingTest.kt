@@ -141,6 +141,18 @@ class RemoteCategoryMappingTest {
     }
 
     @Test
+    fun museumPhotoMapsToRijksAndClevelandTokens() {
+        assertEquals(
+            MuseumApiParams(type = "photograph"),
+            RemoteCategoryMapping.museumParams(MuseumSearchKind.Photo, RemoteProvider.Rijksmuseum),
+        )
+        assertEquals(
+            MuseumApiParams(type = "Photograph"),
+            RemoteCategoryMapping.museumParams(MuseumSearchKind.Photo, RemoteProvider.Cleveland),
+        )
+    }
+
+    @Test
     fun museumAllExpandsToPaintingAndSculptureTargets() {
         assertEquals(
             listOf(MuseumSearchKind.Painting, MuseumSearchKind.Sculpture),
@@ -149,6 +161,10 @@ class RemoteCategoryMappingTest {
         assertEquals(
             listOf(MuseumSearchKind.Sculpture),
             RemoteCategoryMapping.museumTargets(MuseumSearchKind.Sculpture),
+        )
+        assertEquals(
+            listOf(MuseumSearchKind.Photo),
+            RemoteCategoryMapping.museumTargets(MuseumSearchKind.Photo),
         )
     }
 
@@ -165,8 +181,17 @@ class RemoteCategoryMappingTest {
             ClevelandSource.searchUrl(kind = MuseumSearchKind.Sculpture),
         )
         assertEquals(
+            "https://openaccess-api.clevelandart.org/api/artworks/" +
+                "?cc0=1&has_image=1&limit=20&type=Photograph",
+            ClevelandSource.searchUrl(kind = MuseumSearchKind.Photo),
+        )
+        assertEquals(
             "https://data.rijksmuseum.nl/search/collection?type=sculpture&imageAvailable=true",
             RijksmuseumSource.searchUrl(MuseumSearchKind.Sculpture),
+        )
+        assertEquals(
+            "https://data.rijksmuseum.nl/search/collection?type=photograph&imageAvailable=true",
+            RijksmuseumSource.searchUrl(MuseumSearchKind.Photo),
         )
         assertEquals(
             "https://api.europeana.eu/record/v2/search.json" +

@@ -128,6 +128,8 @@ object RemoteCategoryMapping {
             query = "sculpture",
             medium = "Sculpture",
         )
+        // Not tagged for Photo remote search — placeholder for exhaustiveness.
+        MuseumSearchKind.Photo -> MuseumApiParams(query = "photograph", medium = "Photographs")
     }
 
     // --- Museum: Art Institute (`q` full-text) ---
@@ -135,6 +137,7 @@ object RemoteCategoryMapping {
     private fun articParams(kind: MuseumSearchKind): MuseumApiParams = when (kind) {
         MuseumSearchKind.All, MuseumSearchKind.Painting -> MuseumApiParams(query = "painting")
         MuseumSearchKind.Sculpture -> MuseumApiParams(query = "sculpture")
+        MuseumSearchKind.Photo -> MuseumApiParams(query = "photograph")
     }
 
     // --- Museum: Cleveland Open Access (`type` title-case codes) ---
@@ -142,6 +145,7 @@ object RemoteCategoryMapping {
     private fun clevelandParams(kind: MuseumSearchKind): MuseumApiParams = when (kind) {
         MuseumSearchKind.All, MuseumSearchKind.Painting -> MuseumApiParams(type = "Painting")
         MuseumSearchKind.Sculpture -> MuseumApiParams(type = "Sculpture")
+        MuseumSearchKind.Photo -> MuseumApiParams(type = "Photograph")
     }
 
     // --- Museum: Rijksmuseum Linked Art (`type` lowercase codes) ---
@@ -149,6 +153,7 @@ object RemoteCategoryMapping {
     private fun rijksParams(kind: MuseumSearchKind): MuseumApiParams = when (kind) {
         MuseumSearchKind.All, MuseumSearchKind.Painting -> MuseumApiParams(type = "painting")
         MuseumSearchKind.Sculpture -> MuseumApiParams(type = "sculpture")
+        MuseumSearchKind.Photo -> MuseumApiParams(type = "photograph")
     }
 
     // --- Museum: Europeana Search (`query` free-text + open reusability) ---
@@ -156,6 +161,7 @@ object RemoteCategoryMapping {
     private fun europeanaParams(kind: MuseumSearchKind): MuseumApiParams = when (kind) {
         MuseumSearchKind.All, MuseumSearchKind.Painting -> MuseumApiParams(query = "painting")
         MuseumSearchKind.Sculpture -> MuseumApiParams(query = "sculpture")
+        MuseumSearchKind.Photo -> MuseumApiParams(query = "photograph")
     }
 
     // --- Museum: Harvard Art Museums (`classification` title-case) ---
@@ -163,6 +169,7 @@ object RemoteCategoryMapping {
     private fun harvardParams(kind: MuseumSearchKind): MuseumApiParams = when (kind) {
         MuseumSearchKind.All, MuseumSearchKind.Painting -> MuseumApiParams(type = "Paintings")
         MuseumSearchKind.Sculpture -> MuseumApiParams(type = "Sculpture")
+        MuseumSearchKind.Photo -> MuseumApiParams(type = "Photographs")
     }
 
     // --- Museum: Smithsonian Open Access (Solr query) ---
@@ -173,6 +180,9 @@ object RemoteCategoryMapping {
         )
         MuseumSearchKind.Sculpture -> MuseumApiParams(
             query = "online_media_type:Images AND unit_code:SAAM AND sculpture",
+        )
+        MuseumSearchKind.Photo -> MuseumApiParams(
+            query = "online_media_type:Images AND unit_code:SAAM AND photograph",
         )
     }
 }

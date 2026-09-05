@@ -101,6 +101,7 @@ class LouvreSource(
         fun defaultArks(kind: MuseumSearchKind): List<String> = when (kind) {
             MuseumSearchKind.Sculpture -> SCULPTURE_ARKS
             MuseumSearchKind.All, MuseumSearchKind.Painting -> PAINTING_ARKS
+            MuseumSearchKind.Photo -> emptyList()
         }
     }
 }

@@ -3,10 +3,14 @@ package fr.geoking.arthur.ui.components
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.source.BundledPackSource
+import fr.geoking.arthur.shared.source.ClevelandSource
 import fr.geoking.arthur.shared.source.GenartSource
 import fr.geoking.arthur.shared.source.MetSource
 import fr.geoking.arthur.shared.source.PexelsSource
 import fr.geoking.arthur.shared.source.RijksmuseumSource
+import fr.geoking.arthur.shared.source.StockPhotoCategory
+import fr.geoking.arthur.shared.source.UnsplashSource
+import fr.geoking.arthur.shared.source.WikimediaStreetArtSource
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -208,6 +212,67 @@ class PackModelsTest {
             ).sourceIdsForAmbientLoad()
             assertEquals(listOf(topic.sourceId), ids)
         }
+    }
+
+    @Test
+    fun sourceIdsForAmbientLoad_photoAll_includesStockAndMuseumPhotoSearch() {
+        val ids = PackSelection(PackFamily.Photo).sourceIdsForAmbientLoad()!!
+        assertTrue(BundledPackSource.ID in ids)
+        assertTrue(PexelsSource.ID in ids)
+        assertTrue(UnsplashSource.ID in ids)
+        assertTrue(RijksmuseumSource.ID in ids)
+        assertTrue(ClevelandSource.ID in ids)
+        assertFalse(MetSource.ID in ids)
+    }
+
+    @Test
+    fun sourceIdsForAmbientLoad_photoNature_remotePhotoSearchOnly() {
+        val ids = PackSelection(
+            PackFamily.Photo,
+            StockPhotoCategory.Nature.query,
+        ).sourceIdsForAmbientLoad()!!
+        assertFalse(BundledPackSource.ID in ids)
+        assertTrue(PexelsSource.ID in ids)
+        assertTrue(UnsplashSource.ID in ids)
+        assertTrue(RijksmuseumSource.ID in ids)
+        assertTrue(ClevelandSource.ID in ids)
+    }
+
+    @Test
+    fun sourceIdsForAmbientLoad_paintingAll_capabilityTaggedSources() {
+        val ids = PackSelection(PackFamily.Painting).sourceIdsForAmbientLoad()!!
+        assertTrue(BundledPackSource.ID in ids)
+        assertTrue(MetSource.ID in ids)
+        assertTrue(RijksmuseumSource.ID in ids)
+        assertFalse(PexelsSource.ID in ids)
+    }
+
+    @Test
+    fun sourceIdsForAmbientLoad_sculptureAll_excludesPhotoOnlyAndStreetArt() {
+        val ids = PackSelection(PackFamily.Sculpture).sourceIdsForAmbientLoad()!!
+        assertTrue(BundledPackSource.ID in ids)
+        assertTrue(MetSource.ID in ids)
+        assertFalse(PexelsSource.ID in ids)
+        assertFalse(WikimediaStreetArtSource.ID in ids)
+    }
+
+    @Test
+    fun sourceIdsForAmbientLoad_genart_usesInMemoryCatalog() {
+        assertEquals(null, PackSelection(PackFamily.Genart).sourceIdsForAmbientLoad())
+        assertEquals(
+            null,
+            PackSelection(
+                PackFamily.Genart,
+                GenartTopic.Fractal.testTagSuffix,
+            ).sourceIdsForAmbientLoad(),
+        )
+        assertEquals(
+            null,
+            PackSelection(
+                PackFamily.Genart,
+                GenartTopic.Abstract.testTagSuffix,
+            ).sourceIdsForAmbientLoad(),
+        )
     }
 
     @Test

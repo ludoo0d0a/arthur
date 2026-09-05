@@ -85,6 +85,7 @@ fun ControlPlaneScreen(
         PackFamily.Painting -> MuseumSearchKind.Painting
         PackFamily.Sculpture -> MuseumSearchKind.Sculpture
         PackFamily.Museum -> MuseumSearchKind.All
+        PackFamily.Photo -> MuseumSearchKind.Photo
         else -> MuseumSearchKind.All
     }
 

@@ -153,8 +153,15 @@ class RijksmuseumSource(
                 SEARCH_SCULPTURE_URL to ArtworkKind.Sculpture,
                 SEARCH_PHOTO_URL to ArtworkKind.Photo,
             )
-            MuseumSearchKind.Painting -> listOf(searchUrl(MuseumSearchKind.Painting) to ArtworkKind.Painting)
-            MuseumSearchKind.Sculpture -> listOf(searchUrl(MuseumSearchKind.Sculpture) to ArtworkKind.Sculpture)
+            MuseumSearchKind.Painting -> listOf(
+                searchUrl(MuseumSearchKind.Painting) to ArtworkKind.Painting,
+            )
+            MuseumSearchKind.Sculpture -> listOf(
+                searchUrl(MuseumSearchKind.Sculpture) to ArtworkKind.Sculpture,
+            )
+            MuseumSearchKind.Photo -> listOf(
+                searchUrl(MuseumSearchKind.Photo) to ArtworkKind.Photo,
+            )
         }
 
         internal fun parseSearchIds(payload: String): List<String> {

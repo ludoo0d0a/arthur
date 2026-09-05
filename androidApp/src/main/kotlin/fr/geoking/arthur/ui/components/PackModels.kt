@@ -6,9 +6,8 @@ import fr.geoking.arthur.R
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.source.BundledPackSource
-import fr.geoking.arthur.shared.source.PexelsSource
+import fr.geoking.arthur.shared.source.SourceCapabilities
 import fr.geoking.arthur.shared.source.StockPhotoCategory
-import fr.geoking.arthur.shared.source.UnsplashSource
 
 /** Top-level Spotify-style packs on the Control Plane home grid. */
 enum class PackFamily(
@@ -217,9 +216,9 @@ fun PackSelection.museumTopicOrNull(): MuseumTopic? =
 
 /**
  * Source ids to load for Ambient Start. Still packs (museum / photo) load only the
- * selected institution or stock providers so free-tier photo slots are not eaten by
- * unrelated Sources — and so we never fall back to a genart engine like Particles.
- * Genart uses the in-memory catalog (`null`).
+ * selected institution or capability-matched providers so free-tier photo slots are
+ * not eaten by unrelated Sources — and so we never fall back to a genart engine
+ * like Particles. Genart uses the in-memory catalog (`null`).
  */
 fun PackSelection.sourceIdsForAmbientLoad(): List<String>? = when (family) {
     PackFamily.Museum -> {
@@ -228,19 +227,27 @@ fun PackSelection.sourceIdsForAmbientLoad(): List<String>? = when (family) {
             else -> listOfNotNull(topic.sourceId)
         }
     }
-    PackFamily.Painting, PackFamily.Sculpture -> {
+    PackFamily.Painting -> {
         when (val topic = museumTopicOrNull()) {
-            null -> MuseumSourceIds.toList() + BundledPackSource.ID
+            null -> SourceCapabilities.sourceIdsSupporting(ArtworkKind.Painting)
+            MuseumTopic.Suggestions -> listOf(BundledPackSource.ID)
+            else -> listOfNotNull(topic.sourceId)
+        }
+    }
+    PackFamily.Sculpture -> {
+        when (val topic = museumTopicOrNull()) {
+            null -> SourceCapabilities.sourceIdsSupporting(ArtworkKind.Sculpture)
             MuseumTopic.Suggestions -> listOf(BundledPackSource.ID)
             else -> listOfNotNull(topic.sourceId)
         }
     }
     PackFamily.Photo -> {
         when (stockCategoryOrNull()) {
-            null, StockPhotoCategory.Random ->
-                listOf(BundledPackSource.ID, PexelsSource.ID, UnsplashSource.ID)
             StockPhotoCategory.Suggestions -> listOf(BundledPackSource.ID)
-            else -> listOf(PexelsSource.ID, UnsplashSource.ID)
+            null, StockPhotoCategory.Random ->
+                listOf(BundledPackSource.ID) +
+                    SourceCapabilities.sourceIdsWithRemoteSearch(ArtworkKind.Photo)
+            else -> SourceCapabilities.sourceIdsWithRemoteSearch(ArtworkKind.Photo)
         }
     }
     PackFamily.Genart -> null

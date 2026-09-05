@@ -33,11 +33,10 @@ import fr.geoking.arthur.shared.source.GenartSource
 import fr.geoking.arthur.shared.source.HarvardSource
 import fr.geoking.arthur.shared.source.LouvreSource
 import fr.geoking.arthur.shared.source.MetSource
-import fr.geoking.arthur.shared.source.PexelsSource
 import fr.geoking.arthur.shared.source.RijksmuseumSource
 import fr.geoking.arthur.shared.source.SmithsonianSource
+import fr.geoking.arthur.shared.source.SourceCapabilities
 import fr.geoking.arthur.shared.source.StockPhotoCategory
-import fr.geoking.arthur.shared.source.UnsplashSource
 import fr.geoking.arthur.shared.source.WikimediaStreetArtSource
 
 /** Top-level chips: All → Genart → Painting → Photo → Sculpture (Personal last). */
@@ -240,7 +239,7 @@ private val GENART_PLANETS_IDS = setOf(
     GenartSource.NEBULA,
 )
 
-/** Suggestions = curated bundled photos; Random / other topics = remote stock (Pexels / Unsplash). */
+/** Suggestions = curated bundled photos; Random / other topics = remote photo search. */
 fun matchesPhotoTopic(art: Artwork, stockCategory: StockPhotoCategory): Boolean =
     when (stockCategory) {
         StockPhotoCategory.Suggestions -> art.sourceId == BundledPackSource.ID
@@ -253,7 +252,7 @@ fun matchesPhotoTopic(art: Artwork, stockCategory: StockPhotoCategory): Boolean 
         StockPhotoCategory.Architecture,
         StockPhotoCategory.Sky,
         StockPhotoCategory.StreetArt,
-        -> art.sourceId == PexelsSource.ID || art.sourceId == UnsplashSource.ID
+        -> art.sourceId in SourceCapabilities.sourceIdsWithRemoteSearch(ArtworkKind.Photo)
     }
 
 /** Suggestions = curated bundled; other topics = that museum Source only. */

@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RadialGradient
 import android.graphics.Shader
+import fr.geoking.arthur.genart.stills.ArcMosaicStill
 import fr.geoking.arthur.genart.stills.AuroraStill
 import fr.geoking.arthur.genart.stills.BirdFlockStill
 import fr.geoking.arthur.genart.stills.BreathCirclesStill
@@ -18,18 +19,23 @@ import fr.geoking.arthur.genart.stills.FireEmbersStill
 import fr.geoking.arthur.genart.stills.FirefliesStill
 import fr.geoking.arthur.genart.stills.FishSchoolStill
 import fr.geoking.arthur.genart.stills.FogStill
+import fr.geoking.arthur.genart.stills.GradientMeshStill
 import fr.geoking.arthur.genart.stills.GrassStill
 import fr.geoking.arthur.genart.stills.MeteorsStill
 import fr.geoking.arthur.genart.stills.MicroStill
+import fr.geoking.arthur.genart.stills.MorphingBlobsStill
 import fr.geoking.arthur.genart.stills.MountainsStill
 import fr.geoking.arthur.genart.stills.NebulaStill
 import fr.geoking.arthur.genart.stills.ParticlesStill
 import fr.geoking.arthur.genart.stills.PondRipplesStill
 import fr.geoking.arthur.genart.stills.RainStill
+import fr.geoking.arthur.genart.stills.SilkFoldsStill
 import fr.geoking.arthur.genart.stills.SnowStill
+import fr.geoking.arthur.genart.stills.SoftNoiseFieldStill
 import fr.geoking.arthur.genart.stills.SoftRibbonsStill
 import fr.geoking.arthur.genart.stills.SphereStill
 import fr.geoking.arthur.genart.stills.SunbeamsStill
+import fr.geoking.arthur.genart.stills.VoronoiWashStill
 import fr.geoking.arthur.genart.stills.WavesStill
 import kotlin.math.PI
 import kotlin.math.cos
@@ -145,6 +151,24 @@ object GenartStillRenderer {
                 canvas, size, generation, phase, rotationDeg, pulse, palette,
             )
             GenartEngineId.Nebula -> NebulaStill.draw(
+                canvas, size, generation, phase, rotationDeg, pulse, palette,
+            )
+            GenartEngineId.MorphingBlobs -> MorphingBlobsStill.draw(
+                canvas, size, generation, phase, rotationDeg, pulse, palette,
+            )
+            GenartEngineId.SoftNoiseField -> SoftNoiseFieldStill.draw(
+                canvas, size, generation, phase, rotationDeg, pulse, palette,
+            )
+            GenartEngineId.VoronoiWash -> VoronoiWashStill.draw(
+                canvas, size, generation, phase, rotationDeg, pulse, palette,
+            )
+            GenartEngineId.SilkFolds -> SilkFoldsStill.draw(
+                canvas, size, generation, phase, rotationDeg, pulse, palette,
+            )
+            GenartEngineId.GradientMesh -> GradientMeshStill.draw(
+                canvas, size, generation, phase, rotationDeg, pulse, palette,
+            )
+            GenartEngineId.ArcMosaic -> ArcMosaicStill.draw(
                 canvas, size, generation, phase, rotationDeg, pulse, palette,
             )
             GenartEngineId.Pseudo3D,

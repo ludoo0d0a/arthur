@@ -64,7 +64,7 @@ enum class CategoryFilter(@get:StringRes val labelRes: Int) {
 }
 
 /**
- * Genart subcategory: Fractal presets, Custom fractal, Nature, Geometry, Planets.
+ * Genart subcategory: Fractal presets, Custom fractal, Abstract, Nature, Geometry, Planets.
  */
 enum class GenartTopic(
     @get:StringRes val labelRes: Int,
@@ -72,6 +72,7 @@ enum class GenartTopic(
 ) {
     Fractal(R.string.genart_topic_fractal, "fractal"),
     Custom(R.string.genart_topic_custom, "custom"),
+    Abstract(R.string.genart_topic_abstract, "abstract"),
     Nature(R.string.genart_topic_nature, "nature"),
     Geometry(R.string.genart_topic_geometry, "geometry"),
     Planets(R.string.genart_topic_planets, "planets"),
@@ -165,6 +166,7 @@ fun List<Artwork>.canLoadMoreCatalog(visibleCount: Int): Boolean =
 fun matchesGenartTopic(art: Artwork, topic: GenartTopic): Boolean = when (topic) {
     GenartTopic.Fractal -> art.kind == ArtworkKind.FractalPreset
     GenartTopic.Custom -> art.kind == ArtworkKind.CustomFractal
+    GenartTopic.Abstract -> art.id in GENART_ABSTRACT_IDS
     GenartTopic.Nature -> art.id in GENART_NATURE_IDS
     GenartTopic.Geometry -> art.id in GENART_GEOMETRY_IDS
     GenartTopic.Planets -> art.id in GENART_PLANETS_IDS
@@ -191,6 +193,17 @@ private val GENART_NATURE_IDS = setOf(
     GenartSource.WAVES,
 )
 
+private val GENART_ABSTRACT_IDS = setOf(
+    GenartSource.BREATH_CIRCLES,
+    GenartSource.RIBBONS,
+    GenartSource.BLOBS,
+    GenartSource.NOISE_FIELD,
+    GenartSource.VORONOI,
+    GenartSource.SILK,
+    GenartSource.GRADIENT_MESH,
+    GenartSource.ARC_MOSAIC,
+)
+
 private val GENART_GEOMETRY_IDS = setOf(
     GenartSource.PARTICLES,
     GenartSource.PSEUDO3D,
@@ -198,8 +211,6 @@ private val GENART_GEOMETRY_IDS = setOf(
     GenartSource.TUNNEL,
     GenartSource.TONAL_GEOMETRY,
     GenartSource.MICRO,
-    GenartSource.BREATH_CIRCLES,
-    GenartSource.RIBBONS,
 )
 
 private val GENART_PLANETS_IDS = setOf(

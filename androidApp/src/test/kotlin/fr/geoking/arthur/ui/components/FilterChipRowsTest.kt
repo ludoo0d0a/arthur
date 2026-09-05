@@ -78,6 +78,18 @@ class FilterChipRowsTest {
             kind = ArtworkKind.Genart,
         ),
         Artwork(
+            id = GenartSource.BLOBS,
+            title = "Morphing Blobs",
+            sourceId = GenartSource.ID,
+            kind = ArtworkKind.Genart,
+        ),
+        Artwork(
+            id = GenartSource.BREATH_CIRCLES,
+            title = "Breath Circles",
+            sourceId = GenartSource.ID,
+            kind = ArtworkKind.Genart,
+        ),
+        Artwork(
             id = "fractal.julia",
             title = "Julia",
             sourceId = "fractal",
@@ -148,6 +160,18 @@ class FilterChipRowsTest {
             genartTopic = GenartTopic.Geometry,
         )
         assertEquals(listOf(GenartSource.PARTICLES), filtered.map { it.id })
+    }
+
+    @Test
+    fun genartAbstract_showsAbstractEngines() {
+        val filtered = catalog.filterByCategoryAndSources(
+            CategoryFilter.GENART,
+            genartTopic = GenartTopic.Abstract,
+        )
+        assertEquals(
+            listOf(GenartSource.BLOBS, GenartSource.BREATH_CIRCLES),
+            filtered.map { it.id },
+        )
     }
 
     @Test

@@ -31,6 +31,12 @@ enum class GenartEngineId {
     CherryBlossoms,
     SoftRibbons,
     Nebula,
+    MorphingBlobs,
+    SoftNoiseField,
+    VoronoiWash,
+    SilkFolds,
+    GradientMesh,
+    ArcMosaic,
 }
 
 enum class GenartQuality { Low, Medium, High }
@@ -74,6 +80,12 @@ object GenartCatalog {
         GenartCatalogEntry(GenartEngineId.CherryBlossoms, "genart.cherryblossoms", "Cherry Blossom Petals"),
         GenartCatalogEntry(GenartEngineId.SoftRibbons, "genart.ribbons", "Soft Ribbons"),
         GenartCatalogEntry(GenartEngineId.Nebula, "genart.nebula", "Nebula Drift"),
+        GenartCatalogEntry(GenartEngineId.MorphingBlobs, "genart.blobs", "Morphing Blobs"),
+        GenartCatalogEntry(GenartEngineId.SoftNoiseField, "genart.noisefield", "Soft Noise Field"),
+        GenartCatalogEntry(GenartEngineId.VoronoiWash, "genart.voronoi", "Voronoi Wash"),
+        GenartCatalogEntry(GenartEngineId.SilkFolds, "genart.silk", "Silk Folds"),
+        GenartCatalogEntry(GenartEngineId.GradientMesh, "genart.gradientmesh", "Gradient Mesh"),
+        GenartCatalogEntry(GenartEngineId.ArcMosaic, "genart.arcmosaic", "Arc Mosaic"),
     )
 
     fun engineForId(id: String): GenartEngineId? =

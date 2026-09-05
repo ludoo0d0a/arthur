@@ -11,7 +11,7 @@ Ideas backlog for on-device procedural **Genart** (Compose Canvas in `:genart`).
 - **Live creatures** = silhouettes, flocks, schools, tiny agents — not detailed anatomy sims.
 - Status: `idea` until an engine ships (then add a stable `genart.*` id in `GenartCatalog`).
 
-**Shipped today (reference):** drifting particles, wire lattice, soft shadows, vanishing tunnel, tonal geometry, orbiting sphere, layered waves, volumetric rays, falling snow (`genart.snow`), grass in wind (`genart.grass`), bird flock (`genart.birdflock`), layered mountains (`genart.mountains`), aurora ribbons (`genart.aurora`), pond ripples (`genart.pondripples`), falling leaves (`genart.fallingleaves`), breath circles (`genart.breathcircles`), fireplace embers (`genart.fireembers`), wind-blown dunes (`genart.dunes`), constellation twinkle (`genart.constellation`), drifting clouds (`genart.clouds`), soft rain (`genart.rain`), soft fog (`genart.fog`), school of fish (`genart.fishschool`), fireflies (`genart.fireflies`), sunbeams through haze (`genart.sunbeams`), sparse meteors (`genart.meteors`), rising bubbles (`genart.bubbles`), cherry blossom petals (`genart.cherryblossoms`), soft ribbons (`genart.ribbons`), nebula drift (`genart.nebula`).
+**Shipped today (reference):** drifting particles, wire lattice, soft shadows, vanishing tunnel, tonal geometry, orbiting sphere, layered waves, volumetric rays, falling snow (`genart.snow`), grass in wind (`genart.grass`), bird flock (`genart.birdflock`), layered mountains (`genart.mountains`), aurora ribbons (`genart.aurora`), pond ripples (`genart.pondripples`), falling leaves (`genart.fallingleaves`), breath circles (`genart.breathcircles`), fireplace embers (`genart.fireembers`), wind-blown dunes (`genart.dunes`), constellation twinkle (`genart.constellation`), drifting clouds (`genart.clouds`), soft rain (`genart.rain`), soft fog (`genart.fog`), school of fish (`genart.fishschool`), fireflies (`genart.fireflies`), sunbeams through haze (`genart.sunbeams`), sparse meteors (`genart.meteors`), rising bubbles (`genart.bubbles`), cherry blossom petals (`genart.cherryblossoms`), soft ribbons (`genart.ribbons`), nebula drift (`genart.nebula`), morphing blobs (`genart.blobs`), soft noise field (`genart.noisefield`), voronoi wash (`genart.voronoi`), silk folds (`genart.silk`), gradient mesh (`genart.gradientmesh`), arc mosaic (`genart.arcmosaic`).
 
 ## Backlog by category
 
@@ -82,7 +82,7 @@ Prefer distant / abstract maps and slow orbits — not busy traffic:
 - Pond ripples — shipped as `genart.pondripples`
 - Ink in water
 - Rising bubbles — shipped as `genart.bubbles`
-- Lava-lamp blobs
+- Lava-lamp blobs — shipped as `genart.blobs`
 - Soft caustics
 
 ### Seasons & time
@@ -98,9 +98,13 @@ Extends the current genart family:
 
 - Breath circles — shipped as `genart.breathcircles`
 - Soft ribbons — shipped as `genart.ribbons`
-- Morphing blobs
-- Silk folds
-- Low-frequency noise field
+- Morphing blobs — shipped as `genart.blobs`
+- Soft noise field — shipped as `genart.noisefield`
+- Voronoi wash — shipped as `genart.voronoi`
+- Silk folds — shipped as `genart.silk`
+- Gradient mesh — shipped as `genart.gradientmesh`
+- Arc mosaic — shipped as `genart.arcmosaic`
+- Low-frequency noise field (variant of soft noise field)
 
 ### Cozy micro
 

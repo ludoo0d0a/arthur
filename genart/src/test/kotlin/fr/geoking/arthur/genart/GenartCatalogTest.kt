@@ -42,6 +42,12 @@ class GenartCatalogTest {
         assertEquals(GenartEngineId.CherryBlossoms, GenartCatalog.engineForId("genart.cherryblossoms"))
         assertEquals(GenartEngineId.SoftRibbons, GenartCatalog.engineForId("genart.ribbons"))
         assertEquals(GenartEngineId.Nebula, GenartCatalog.engineForId("genart.nebula"))
+        assertEquals(GenartEngineId.MorphingBlobs, GenartCatalog.engineForId("genart.blobs"))
+        assertEquals(GenartEngineId.SoftNoiseField, GenartCatalog.engineForId("genart.noisefield"))
+        assertEquals(GenartEngineId.VoronoiWash, GenartCatalog.engineForId("genart.voronoi"))
+        assertEquals(GenartEngineId.SilkFolds, GenartCatalog.engineForId("genart.silk"))
+        assertEquals(GenartEngineId.GradientMesh, GenartCatalog.engineForId("genart.gradientmesh"))
+        assertEquals(GenartEngineId.ArcMosaic, GenartCatalog.engineForId("genart.arcmosaic"))
     }
 
     @Test
@@ -75,5 +81,11 @@ class GenartCatalogTest {
         assertEquals("Cherry Blossom Petals", GenartCatalog.entries().first { it.id == "genart.cherryblossoms" }.title)
         assertEquals("Soft Ribbons", GenartCatalog.entries().first { it.id == "genart.ribbons" }.title)
         assertEquals("Nebula Drift", GenartCatalog.entries().first { it.id == "genart.nebula" }.title)
+        assertEquals("Morphing Blobs", GenartCatalog.entries().first { it.id == "genart.blobs" }.title)
+        assertEquals("Soft Noise Field", GenartCatalog.entries().first { it.id == "genart.noisefield" }.title)
+        assertEquals("Voronoi Wash", GenartCatalog.entries().first { it.id == "genart.voronoi" }.title)
+        assertEquals("Silk Folds", GenartCatalog.entries().first { it.id == "genart.silk" }.title)
+        assertEquals("Gradient Mesh", GenartCatalog.entries().first { it.id == "genart.gradientmesh" }.title)
+        assertEquals("Arc Mosaic", GenartCatalog.entries().first { it.id == "genart.arcmosaic" }.title)
     }
 }

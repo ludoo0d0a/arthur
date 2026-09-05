@@ -40,6 +40,7 @@
     <string name="kind_personal">Photo personnelle</string>
     <string name="genart_topic_fractal">Fractale</string>
     <string name="genart_topic_custom">Perso</string>
+    <string name="genart_topic_abstract">Abstrait</string>
     <string name="genart_topic_nature">Nature</string>
     <string name="genart_topic_geometry">Géométrie</string>
     <string name="genart_topic_planets">Planètes</string>

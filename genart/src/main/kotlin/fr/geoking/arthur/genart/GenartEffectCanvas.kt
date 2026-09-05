@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import fr.geoking.arthur.genart.engines.AuroraEngine
+import fr.geoking.arthur.genart.engines.ArcMosaicEngine
 import fr.geoking.arthur.genart.engines.BirdFlockEngine
 import fr.geoking.arthur.genart.engines.BreathCirclesEngine
 import fr.geoking.arthur.genart.engines.BubblesEngine
@@ -21,22 +22,27 @@ import fr.geoking.arthur.genart.engines.FireEmbersEngine
 import fr.geoking.arthur.genart.engines.FirefliesEngine
 import fr.geoking.arthur.genart.engines.FishSchoolEngine
 import fr.geoking.arthur.genart.engines.FogEngine
+import fr.geoking.arthur.genart.engines.GradientMeshEngine
 import fr.geoking.arthur.genart.engines.GrassEngine
 import fr.geoking.arthur.genart.engines.MeteorsEngine
 import fr.geoking.arthur.genart.engines.MicroEngine
+import fr.geoking.arthur.genart.engines.MorphingBlobsEngine
 import fr.geoking.arthur.genart.engines.MountainsEngine
 import fr.geoking.arthur.genart.engines.NebulaEngine
 import fr.geoking.arthur.genart.engines.ParticlesEngine
 import fr.geoking.arthur.genart.engines.PondRipplesEngine
 import fr.geoking.arthur.genart.engines.Pseudo3DEngine
 import fr.geoking.arthur.genart.engines.RainEngine
+import fr.geoking.arthur.genart.engines.SilkFoldsEngine
 import fr.geoking.arthur.genart.engines.SnowEngine
+import fr.geoking.arthur.genart.engines.SoftNoiseFieldEngine
 import fr.geoking.arthur.genart.engines.SoftRibbonsEngine
 import fr.geoking.arthur.genart.engines.SoftShadowsEngine
 import fr.geoking.arthur.genart.engines.SphereEngine
 import fr.geoking.arthur.genart.engines.SunbeamsEngine
 import fr.geoking.arthur.genart.engines.TonalGeometryEngine
 import fr.geoking.arthur.genart.engines.TunnelEngine
+import fr.geoking.arthur.genart.engines.VoronoiWashEngine
 import fr.geoking.arthur.genart.engines.WavesEngine
 
 /**
@@ -296,6 +302,54 @@ fun GenartEffectCanvas(
             modifier = canvasModifier,
         )
         GenartEngineId.Nebula -> NebulaEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.MorphingBlobs -> MorphingBlobsEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.SoftNoiseField -> SoftNoiseFieldEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.VoronoiWash -> VoronoiWashEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.SilkFolds -> SilkFoldsEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.GradientMesh -> GradientMeshEngine(
+            isActive = isActive,
+            paletteColors = palette,
+            quality = quality,
+            brightness = brightness,
+            speed = speed,
+            modifier = canvasModifier,
+        )
+        GenartEngineId.ArcMosaic -> ArcMosaicEngine(
             isActive = isActive,
             paletteColors = palette,
             quality = quality,

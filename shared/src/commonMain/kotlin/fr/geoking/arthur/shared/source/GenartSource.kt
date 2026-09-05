@@ -49,6 +49,12 @@ class GenartSource(
         const val CHERRY_BLOSSOMS = "genart.cherryblossoms"
         const val RIBBONS = "genart.ribbons"
         const val NEBULA = "genart.nebula"
+        const val BLOBS = "genart.blobs"
+        const val NOISE_FIELD = "genart.noisefield"
+        const val VORONOI = "genart.voronoi"
+        const val SILK = "genart.silk"
+        const val GRADIENT_MESH = "genart.gradientmesh"
+        const val ARC_MOSAIC = "genart.arcmosaic"
 
         fun defaultCatalog(): List<Artwork> = listOf(
             entry(PARTICLES, "Drifting Particles"),
@@ -81,6 +87,12 @@ class GenartSource(
             entry(CHERRY_BLOSSOMS, "Cherry Blossom Petals"),
             entry(RIBBONS, "Soft Ribbons"),
             entry(NEBULA, "Nebula Drift"),
+            entry(BLOBS, "Morphing Blobs"),
+            entry(NOISE_FIELD, "Soft Noise Field"),
+            entry(VORONOI, "Voronoi Wash"),
+            entry(SILK, "Silk Folds"),
+            entry(GRADIENT_MESH, "Gradient Mesh"),
+            entry(ARC_MOSAIC, "Arc Mosaic"),
         )
 
         private fun entry(id: String, title: String) = Artwork(

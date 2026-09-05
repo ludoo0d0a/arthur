@@ -7,7 +7,8 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,7 +39,9 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -66,7 +69,8 @@ import kotlin.random.Random
  * - Dream / screensaver: pass a multi-item [rotationPool] to rotate the same way.
  *
  * Navigation while rotating:
- * - Phone: horizontal swipe (left = next, right = previous)
+ * - Phone: tap left half = previous, tap right half = next; swipe left = next,
+ *   swipe right = previous
  * - TV: D-pad / arrow left & right
  *
  * Missing or unloadable assets render the category placeholder + warning — never a
@@ -230,25 +234,37 @@ fun AmbientScreenContent(
                     .padding(28.dp),
             )
         }
-        // Topmost layer so swipes aren't eaten by artwork / overlays.
+        // Topmost layer so taps/swipes aren't eaten by artwork / overlays.
         if (shouldRotate && !isTelevision) {
             Box(
                 modifier = Modifier
                     .matchParentSize()
                     .pointerInput(rotationEpoch, poolIds, swipeThresholdPx) {
-                        var totalDrag = 0f
-                        detectHorizontalDragGestures(
-                            onDragStart = { totalDrag = 0f },
-                            onHorizontalDrag = { _, dragAmount -> totalDrag += dragAmount },
-                            onDragEnd = {
-                                if (abs(totalDrag) < swipeThresholdPx) return@detectHorizontalDragGestures
-                                if (totalDrag < 0f) {
-                                    advanceLatest(+1, false)
-                                } else {
-                                    advanceLatest(-1, false)
+                        awaitEachGesture {
+                            val down = awaitFirstDown(requireUnconsumed = false)
+                            val startX = down.position.x
+                            var totalDragX = 0f
+                            val pointerId = down.id
+                            while (true) {
+                                val event = awaitPointerEvent()
+                                val change = event.changes.firstOrNull { it.id == pointerId }
+                                    ?: break
+                                if (change.changedToUp()) break
+                                totalDragX += change.positionChange().x
+                                change.consume()
+                            }
+                            when {
+                                abs(totalDragX) >= swipeThresholdPx -> {
+                                    if (totalDragX < 0f) {
+                                        advanceLatest(+1, false)
+                                    } else {
+                                        advanceLatest(-1, false)
+                                    }
                                 }
-                            },
-                        )
+                                startX < size.width / 2f -> advanceLatest(-1, false)
+                                else -> advanceLatest(+1, false)
+                            }
+                        }
                     },
             )
         }

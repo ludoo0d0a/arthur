@@ -1,21 +1,18 @@
 package fr.geoking.arthur.ui.screens
 
 import android.content.res.Configuration
-import androidx.compose.foundation.layout.Arrangement
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,19 +38,17 @@ import fr.geoking.arthur.shared.source.StockPhotoCategory
 import fr.geoking.arthur.shared.source.UnsplashSource
 import fr.geoking.arthur.source.MuseumSearchSettings
 import fr.geoking.arthur.source.StockPhotoSettings
-import fr.geoking.arthur.ui.components.ArtworkCard
-import fr.geoking.arthur.ui.components.CatalogPageSize
-import fr.geoking.arthur.ui.components.CategoryFilter
-import fr.geoking.arthur.ui.components.CategoryFilterRow
-import fr.geoking.arthur.ui.components.ContextualSubFilterRow
 import fr.geoking.arthur.ui.components.ControlPlaneHeader
-import fr.geoking.arthur.ui.components.GalleryHero
-import fr.geoking.arthur.ui.components.GenartTopic
-import fr.geoking.arthur.ui.components.MuseumTopic
+import fr.geoking.arthur.ui.components.PackFamily
+import fr.geoking.arthur.ui.components.PackGrid
+import fr.geoking.arthur.ui.components.PackSelection
+import fr.geoking.arthur.ui.components.PackTile
 import fr.geoking.arthur.ui.components.StartAmbientFab
-import fr.geoking.arthur.ui.components.canLoadMoreCatalog
-import fr.geoking.arthur.ui.components.resolveCategoryCatalog
-import fr.geoking.arthur.ui.components.takeCatalogPage
+import fr.geoking.arthur.ui.components.homeTile
+import fr.geoking.arthur.ui.components.isGenartCustom
+import fr.geoking.arthur.ui.components.resolvePackPool
+import fr.geoking.arthur.ui.components.stockCategoryOrNull
+import fr.geoking.arthur.ui.components.subPackTiles
 
 private val StockSourceIds = setOf(
     BundledPackSource.ID,
@@ -67,39 +62,37 @@ fun ControlPlaneScreen(
     onStartAmbient: (Artwork?, List<Artwork>) -> Unit,
     modifier: Modifier = Modifier,
     initialCatalog: List<Artwork>? = null,
-    initialSelected: Artwork? = null,
-    showFractalPreview: Boolean = true,
     onCreateCustomFractal: (() -> Unit)? = null,
     stockPhotoSettings: StockPhotoSettings? = null,
     museumSearchSettings: MuseumSearchSettings? = null,
     onOpenSettings: (() -> Unit)? = null,
 ) {
     var catalog by remember { mutableStateOf(initialCatalog.orEmpty()) }
-    var selected by remember { mutableStateOf(initialSelected) }
-    var stockCategory by remember {
-        mutableStateOf(stockPhotoSettings?.category ?: StockPhotoCategory.Random)
-    }
-    var selectedCategory by remember { mutableStateOf(CategoryFilter.ALL) }
-    var museumTopic by remember { mutableStateOf(MuseumTopic.Suggestions) }
-    var genartTopic by remember { mutableStateOf(GenartTopic.Fractal) }
+    var openedFamily by remember { mutableStateOf<PackFamily?>(null) }
+    var selection by remember { mutableStateOf(PackSelection(PackFamily.Museum)) }
 
-    val museumKind = when (selectedCategory) {
-        CategoryFilter.PAINTING -> MuseumSearchKind.Painting
-        CategoryFilter.SCULPTURE -> MuseumSearchKind.Sculpture
+    val stockCategory = selection.stockCategoryOrNull()
+        ?: stockPhotoSettings?.category
+        ?: StockPhotoCategory.Random
+
+    val museumKind = when (selection.family) {
+        PackFamily.Painting -> MuseumSearchKind.Painting
+        PackFamily.Sculpture -> MuseumSearchKind.Sculpture
+        PackFamily.Museum -> MuseumSearchKind.All
         else -> MuseumSearchKind.All
     }
 
     LaunchedEffect(contentEngine, initialCatalog, stockCategory, museumKind) {
-        if (stockPhotoSettings != null) {
-            stockPhotoSettings.category = stockCategory
+        selection.stockCategoryOrNull()?.let { topic ->
+            if (stockPhotoSettings != null) {
+                stockPhotoSettings.category = topic
+            }
         }
         if (museumSearchSettings != null) {
             museumSearchSettings.kind = museumKind
         }
         if (initialCatalog != null) return@LaunchedEffect
 
-        // Fast path: refresh stock Sources first so Photo → Nature/City/… fill immediately
-        // without waiting on slow museum N+1 fetches.
         val stockOnly = contentEngine.catalog(
             PreparedRotation(
                 sourceIds = StockSourceIds.toList(),
@@ -117,67 +110,36 @@ fun ControlPlaneScreen(
     }
 
     ControlPlaneContent(
-        catalog = catalog,
-        selected = selected,
-        onSelect = { selected = it },
+        openedFamily = openedFamily,
+        selection = selection,
+        onOpenFamily = { family ->
+            openedFamily = family
+            selection = PackSelection(family)
+        },
+        onSelectSubPack = { selection = it },
+        onBackToHome = { openedFamily = null },
         onStartAmbient = {
-            val pool = resolveCategoryCatalog(
-                catalog = catalog,
-                category = selectedCategory,
-                museumTopic = museumTopic,
-                stockCategory = stockCategory,
-                genartTopic = genartTopic,
-            ).items
-            // Prefer the live selection (keeps remote URL / kind) over a catalog re-resolve
-            // that can miss ephemeral stock ids and silently swap to another engine.
-            val chosen = selected?.let { sel ->
-                pool.firstOrNull { it.id == sel.id }
-                    ?: catalog.firstOrNull { it.id == sel.id }
-                    ?: sel
-            } ?: pool.randomOrNull()
+            val pool = resolvePackPool(catalog, selection)
+            val chosen = pool.randomOrNull()
                 ?: resolveAmbientArtwork(catalog, artworkId = null)
             onStartAmbient(chosen, pool)
         },
         modifier = modifier,
-        showFractalPreview = showFractalPreview,
         onCreateCustomFractal = onCreateCustomFractal,
-        selectedCategory = selectedCategory,
-        onCategorySelected = { next ->
-            selectedCategory = next
-            if (!next.showsMuseumTopics()) {
-                museumTopic = MuseumTopic.Suggestions
-            }
-            if (!next.showsGenartTopics()) {
-                genartTopic = GenartTopic.Fractal
-            }
-        },
-        museumTopic = museumTopic,
-        onMuseumTopicChange = { museumTopic = it },
-        stockCategory = stockCategory,
-        onStockCategoryChange = { stockCategory = it },
-        genartTopic = genartTopic,
-        onGenartTopicChange = { genartTopic = it },
         onOpenSettings = onOpenSettings,
     )
 }
 
 @Composable
 fun ControlPlaneContent(
-    catalog: List<Artwork>,
-    selected: Artwork?,
-    onSelect: (Artwork) -> Unit,
+    openedFamily: PackFamily?,
+    selection: PackSelection,
+    onOpenFamily: (PackFamily) -> Unit,
+    onSelectSubPack: (PackSelection) -> Unit,
+    onBackToHome: () -> Unit,
     onStartAmbient: () -> Unit,
     modifier: Modifier = Modifier,
-    showFractalPreview: Boolean = true,
     onCreateCustomFractal: (() -> Unit)? = null,
-    selectedCategory: CategoryFilter = CategoryFilter.ALL,
-    onCategorySelected: (CategoryFilter) -> Unit = {},
-    museumTopic: MuseumTopic = MuseumTopic.Suggestions,
-    onMuseumTopicChange: (MuseumTopic) -> Unit = {},
-    stockCategory: StockPhotoCategory = StockPhotoCategory.Random,
-    onStockCategoryChange: (StockPhotoCategory) -> Unit = {},
-    genartTopic: GenartTopic = GenartTopic.Fractal,
-    onGenartTopicChange: (GenartTopic) -> Unit = {},
     onOpenSettings: (() -> Unit)? = null,
 ) {
     val configuration = LocalConfiguration.current
@@ -187,85 +149,45 @@ fun ControlPlaneContent(
     }
     if (isTelevision) {
         TvControlPlaneContent(
-            catalog = catalog,
-            selected = selected,
-            onSelect = onSelect,
+            openedFamily = openedFamily,
+            selection = selection,
+            onOpenFamily = onOpenFamily,
+            onSelectSubPack = onSelectSubPack,
+            onBackToHome = onBackToHome,
             onStartAmbient = onStartAmbient,
             modifier = modifier,
-            showFractalPreview = showFractalPreview,
-            selectedCategory = selectedCategory,
-            onCategorySelected = onCategorySelected,
-            museumTopic = museumTopic,
-            onMuseumTopicChange = onMuseumTopicChange,
-            genartTopic = genartTopic,
-            onGenartTopicChange = onGenartTopicChange,
             onOpenSettings = onOpenSettings,
         )
         return
     }
     PhoneControlPlaneContent(
-        catalog = catalog,
-        selected = selected,
-        onSelect = onSelect,
+        openedFamily = openedFamily,
+        selection = selection,
+        onOpenFamily = onOpenFamily,
+        onSelectSubPack = onSelectSubPack,
+        onBackToHome = onBackToHome,
         onStartAmbient = onStartAmbient,
         modifier = modifier,
-        showFractalPreview = showFractalPreview,
         onCreateCustomFractal = onCreateCustomFractal,
-        selectedCategory = selectedCategory,
-        onCategorySelected = onCategorySelected,
-        museumTopic = museumTopic,
-        onMuseumTopicChange = onMuseumTopicChange,
-        stockCategory = stockCategory,
-        onStockCategoryChange = onStockCategoryChange,
-        genartTopic = genartTopic,
-        onGenartTopicChange = onGenartTopicChange,
         onOpenSettings = onOpenSettings,
     )
 }
 
 @Composable
 private fun PhoneControlPlaneContent(
-    catalog: List<Artwork>,
-    selected: Artwork?,
-    onSelect: (Artwork) -> Unit,
+    openedFamily: PackFamily?,
+    selection: PackSelection,
+    onOpenFamily: (PackFamily) -> Unit,
+    onSelectSubPack: (PackSelection) -> Unit,
+    onBackToHome: () -> Unit,
     onStartAmbient: () -> Unit,
     modifier: Modifier = Modifier,
-    showFractalPreview: Boolean = true,
     onCreateCustomFractal: (() -> Unit)? = null,
-    selectedCategory: CategoryFilter = CategoryFilter.ALL,
-    onCategorySelected: (CategoryFilter) -> Unit = {},
-    museumTopic: MuseumTopic = MuseumTopic.Suggestions,
-    onMuseumTopicChange: (MuseumTopic) -> Unit = {},
-    stockCategory: StockPhotoCategory = StockPhotoCategory.Random,
-    onStockCategoryChange: (StockPhotoCategory) -> Unit = {},
-    genartTopic: GenartTopic = GenartTopic.Fractal,
-    onGenartTopicChange: (GenartTopic) -> Unit = {},
     onOpenSettings: (() -> Unit)? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
-    val resolved = remember(catalog, selectedCategory, museumTopic, stockCategory, genartTopic) {
-        resolveCategoryCatalog(
-            catalog = catalog,
-            category = selectedCategory,
-            museumTopic = museumTopic,
-            stockCategory = stockCategory,
-            genartTopic = genartTopic,
-        )
-    }
-    val filteredCatalog = resolved.items
-    var visibleCount by remember { mutableStateOf(CatalogPageSize) }
-    LaunchedEffect(filteredCatalog.map { it.id }) {
-        visibleCount = CatalogPageSize
-    }
-    val visibleCatalog = remember(filteredCatalog, visibleCount) {
-        filteredCatalog.takeCatalogPage(visibleCount)
-    }
-    // Keep preview in sync with the visible list; each click still updates via onSelect.
-    LaunchedEffect(visibleCatalog.map { it.id }) {
-        val stillVisible = selected != null && visibleCatalog.any { it.id == selected.id }
-        if (!stillVisible) {
-            visibleCatalog.firstOrNull()?.let(onSelect)
-        }
+    BackHandler(enabled = openedFamily != null) {
+        onBackToHome()
     }
 
     Scaffold(
@@ -292,115 +214,106 @@ private fun PhoneControlPlaneContent(
                     .padding(horizontal = 20.dp, vertical = 8.dp),
                 onOpenSettings = onOpenSettings,
             )
-            if (
-                onCreateCustomFractal != null &&
-                selectedCategory == CategoryFilter.GENART &&
-                genartTopic == GenartTopic.Custom &&
-                resolved.showSubfilters
-            ) {
-                TextButton(
-                    onClick = onCreateCustomFractal,
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .testTag("create_custom_fractal"),
-                ) {
-                    Text(stringResource(R.string.custom_fractal_create))
-                }
-            }
-            GalleryHero(
-                livePreview = showFractalPreview,
-                artwork = selected,
-                modifier = Modifier
-                    .padding(horizontal = 20.dp, vertical = 8.dp)
-                    .fillMaxWidth()
-                    .height(168.dp)
-                    .testTag("fractal_preview"),
-            )
-            Text(
-                text = stringResource(R.string.rotation_section),
-                style = MaterialTheme.typography.titleMedium,
-                color = scheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
-            )
-            CategoryFilterRow(
-                selectedCategory = selectedCategory,
-                onCategorySelected = onCategorySelected,
-                modifier = Modifier.padding(bottom = 4.dp),
-            )
-            if (resolved.showSubfilters) {
-                ContextualSubFilterRow(
-                    selectedCategory = selectedCategory,
-                    museumTopic = museumTopic,
-                    onMuseumTopicChange = onMuseumTopicChange,
-                    stockCategory = stockCategory,
-                    onStockCategoryChange = onStockCategoryChange,
-                    genartTopic = genartTopic,
-                    onGenartTopicChange = onGenartTopicChange,
+            if (openedFamily == null) {
+                Text(
+                    text = stringResource(R.string.packs_section),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = scheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
                 )
-            }
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .testTag("artwork_list"),
-                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                itemsIndexed(visibleCatalog, key = { _, art -> art.id }) { _, art ->
-                    ArtworkCard(
-                        artwork = art,
-                        selected = art.id == selected?.id,
-                        onClick = { onSelect(art) },
-                    )
-                }
-                if (filteredCatalog.canLoadMoreCatalog(visibleCount)) {
-                    item(key = "load_more") {
-                        TextButton(
-                            onClick = { visibleCount += CatalogPageSize },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .testTag("load_more"),
-                        ) {
-                            Text(stringResource(R.string.load_more))
-                        }
+                PackGrid(
+                    tiles = PackFamily.entries.map { it.homeTile() },
+                    selected = null,
+                    onTileClick = { onOpenFamily(it.selection.family) },
+                    modifier = Modifier.weight(1f),
+                )
+            } else {
+                PackSubPackHeader(
+                    family = openedFamily,
+                    onBack = onBackToHome,
+                )
+                if (onCreateCustomFractal != null && selection.isGenartCustom()) {
+                    TextButton(
+                        onClick = onCreateCustomFractal,
+                        modifier = Modifier
+                            .padding(horizontal = 12.dp)
+                            .testTag("create_custom_fractal"),
+                    ) {
+                        Text(stringResource(R.string.custom_fractal_create))
                     }
                 }
+                PackGrid(
+                    tiles = openedFamily.subPackTiles(),
+                    selected = selection,
+                    onTileClick = { tile: PackTile -> onSelectSubPack(tile.selection) },
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(
+                        start = 20.dp,
+                        end = 20.dp,
+                        top = 8.dp,
+                        bottom = 88.dp,
+                    ),
+                )
             }
         }
     }
 }
 
-@Preview(showBackground = true, name = "Control plane")
+@Composable
+internal fun PackSubPackHeader(
+    family: PackFamily,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        TextButton(
+            onClick = onBack,
+            modifier = Modifier
+                .padding(horizontal = 8.dp)
+                .testTag("pack_back"),
+        ) {
+            Text(stringResource(R.string.action_back))
+        }
+        Text(
+            text = stringResource(family.titleRes),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Control plane packs")
 @Composable
 private fun ControlPlanePreview() {
-    val catalog = BundledPackSource.defaultPack()
     ArthurTheme {
         ControlPlaneContent(
-            catalog = catalog,
-            selected = catalog.firstOrNull(),
-            onSelect = {},
+            openedFamily = null,
+            selection = PackSelection(PackFamily.Museum),
+            onOpenFamily = {},
+            onSelectSubPack = {},
+            onBackToHome = {},
             onStartAmbient = {},
-            showFractalPreview = false,
         )
     }
 }
 
 @Preview(
     showBackground = true,
-    name = "TV control plane",
+    name = "TV control plane packs",
     device = "id:tv_1080p",
     uiMode = Configuration.UI_MODE_TYPE_TELEVISION,
 )
 @Composable
 private fun TvControlPlanePreview() {
-    val catalog = BundledPackSource.defaultPack()
     ArthurTheme {
         TvControlPlaneContent(
-            catalog = catalog,
-            selected = catalog.firstOrNull(),
-            onSelect = {},
+            openedFamily = null,
+            selection = PackSelection(PackFamily.Museum),
+            onOpenFamily = {},
+            onSelectSubPack = {},
+            onBackToHome = {},
             onStartAmbient = {},
-            showFractalPreview = false,
         )
     }
 }

@@ -7,11 +7,15 @@ import fr.geoking.arthur.shared.source.ArticSource
 import fr.geoking.arthur.shared.source.BundledPackSource
 import fr.geoking.arthur.shared.source.ClevelandSource
 import fr.geoking.arthur.shared.source.CustomFractalSource
+import fr.geoking.arthur.shared.source.EuropeanaSource
 import fr.geoking.arthur.shared.source.FractalSource
 import fr.geoking.arthur.shared.source.GenartSource
+import fr.geoking.arthur.shared.source.HarvardSource
+import fr.geoking.arthur.shared.source.LouvreSource
 import fr.geoking.arthur.shared.source.MetSource
 import fr.geoking.arthur.shared.source.PexelsSource
 import fr.geoking.arthur.shared.source.RijksmuseumSource
+import fr.geoking.arthur.shared.source.SmithsonianSource
 import fr.geoking.arthur.shared.source.UnsplashSource
 
 /**
@@ -31,6 +35,10 @@ object ArthurMediaBrowse {
         MetSource.ID,
         ArticSource.ID,
         ClevelandSource.ID,
+        EuropeanaSource.ID,
+        HarvardSource.ID,
+        SmithsonianSource.ID,
+        LouvreSource.ID,
         PexelsSource.ID,
         UnsplashSource.ID,
     )
@@ -75,6 +83,10 @@ object ArthurMediaBrowse {
         MetSource.ID -> "The Met"
         ArticSource.ID -> "Art Institute of Chicago"
         ClevelandSource.ID -> "Cleveland Museum of Art"
+        EuropeanaSource.ID -> "Europeana"
+        HarvardSource.ID -> "Harvard Art Museums"
+        SmithsonianSource.ID -> "Smithsonian"
+        LouvreSource.ID -> "Musée du Louvre"
         PexelsSource.ID -> "Pexels"
         UnsplashSource.ID -> "Unsplash"
         else -> sourceId

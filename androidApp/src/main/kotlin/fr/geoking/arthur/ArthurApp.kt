@@ -12,11 +12,15 @@ import fr.geoking.arthur.shared.source.ArticSource
 import fr.geoking.arthur.shared.source.BundledPackSource
 import fr.geoking.arthur.shared.source.ClevelandSource
 import fr.geoking.arthur.shared.source.CustomFractalSource
+import fr.geoking.arthur.shared.source.EuropeanaSource
 import fr.geoking.arthur.shared.source.FractalSource
 import fr.geoking.arthur.shared.source.GenartSource
+import fr.geoking.arthur.shared.source.HarvardSource
+import fr.geoking.arthur.shared.source.LouvreSource
 import fr.geoking.arthur.shared.source.MetSource
 import fr.geoking.arthur.shared.source.PexelsSource
 import fr.geoking.arthur.shared.source.RijksmuseumSource
+import fr.geoking.arthur.shared.source.SmithsonianSource
 import fr.geoking.arthur.shared.source.UnsplashSource
 import fr.geoking.arthur.source.ArtworkImageCache
 import fr.geoking.arthur.source.MuseumSearchSettings
@@ -96,6 +100,48 @@ val appModule = module {
     }
     single {
         val client = get<HttpClient>()
+        val museum = get<MuseumSearchSettings>()
+        val apiKey = BuildConfig.EUROPEANA_API_KEY
+        EuropeanaSource(
+            apiKey = apiKey,
+            httpGet = { url ->
+                client.get(url) {
+                    header("X-Api-Key", apiKey)
+                }.bodyAsText()
+            },
+            kind = { museum.kind },
+        )
+    }
+    single {
+        val client = get<HttpClient>()
+        val museum = get<MuseumSearchSettings>()
+        val apiKey = BuildConfig.HARVARD_API_KEY
+        HarvardSource(
+            apiKey = apiKey,
+            httpGet = { url -> client.get(url).bodyAsText() },
+            kind = { museum.kind },
+        )
+    }
+    single {
+        val client = get<HttpClient>()
+        val museum = get<MuseumSearchSettings>()
+        val apiKey = BuildConfig.SMITHSONIAN_API_KEY
+        SmithsonianSource(
+            apiKey = apiKey,
+            httpGet = { url -> client.get(url).bodyAsText() },
+            kind = { museum.kind },
+        )
+    }
+    single {
+        val client = get<HttpClient>()
+        val museum = get<MuseumSearchSettings>()
+        LouvreSource(
+            httpGet = { url -> client.get(url).bodyAsText() },
+            kind = { museum.kind },
+        )
+    }
+    single {
+        val client = get<HttpClient>()
         val apiKey = BuildConfig.PEXELS_API_KEY
         val settings = get<StockPhotoSettings>()
         val cache = get<ArtworkImageCache>()
@@ -144,6 +190,10 @@ val appModule = module {
                 get<MetSource>(),
                 get<ArticSource>(),
                 get<ClevelandSource>(),
+                get<EuropeanaSource>(),
+                get<HarvardSource>(),
+                get<SmithsonianSource>(),
+                get<LouvreSource>(),
                 get<GenartSource>(),
                 get<FractalSource>(),
                 get<CustomFractalSource>(),

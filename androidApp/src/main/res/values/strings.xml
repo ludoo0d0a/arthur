@@ -10,6 +10,8 @@
     <string name="ambient_title">Ambient</string>
     <string name="dream_description">Arthur ambient art</string>
     <string name="rotation_section">Prepared rotation</string>
+    <string name="packs_section">Packs</string>
+    <string name="pack_museum">Museum</string>
     <string name="load_more">Load more</string>
     <string name="fractal_hero_label">Live fractal canvas</string>
     <string name="genart_hero_label">Live genart canvas</string>
@@ -20,6 +22,10 @@
     <string name="source_rijksmuseum">Rijksmuseum</string>
     <string name="source_artic">Art Institute</string>
     <string name="source_cleveland">Cleveland</string>
+    <string name="source_europeana">Europeana</string>
+    <string name="source_harvard">Harvard</string>
+    <string name="source_smithsonian">Smithsonian</string>
+    <string name="source_louvre">Louvre</string>
     <string name="source_bundled">Bundled</string>
     <string name="stock_topic_section">Photo topic</string>
     <string name="stock_topic_suggestions">Suggestions</string>
@@ -42,6 +48,7 @@
     <string name="genart_topic_custom">Custom</string>
     <string name="genart_topic_abstract">Abstract</string>
     <string name="genart_topic_nature">Nature</string>
+    <string name="genart_topic_weather">Weather</string>
     <string name="genart_topic_geometry">Geometry</string>
     <string name="genart_topic_planets">Planets</string>
     <string name="custom_fractal_create">Create custom fractal</string>

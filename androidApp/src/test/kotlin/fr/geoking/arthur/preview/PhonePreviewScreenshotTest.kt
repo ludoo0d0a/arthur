@@ -2,10 +2,10 @@ package fr.geoking.arthur.preview
 
 import android.app.Application
 import fr.geoking.arthur.phone.theme.ArthurTheme
+import fr.geoking.arthur.ui.components.PackFamily
+import fr.geoking.arthur.ui.components.PackSelection
 import fr.geoking.arthur.ui.screens.AmbientScreenContent
 import fr.geoking.arthur.ui.screens.ControlPlaneContent
-import fr.geoking.arthur.shared.domain.Artwork
-import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.source.BundledPackSource
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -26,18 +26,19 @@ import org.robolectric.annotation.GraphicsMode
     qualifiers = "w411dp-h891dp-xxhdpi",
 )
 class PhonePreviewScreenshotTest {
-    private val catalog: List<Artwork> = BundledPackSource.defaultPack()
+    private val catalog = BundledPackSource.defaultPack()
 
     @Test
     fun control_plane() {
         PhonePreviewScreenshotCapture.capture("control_plane.png") {
             ArthurTheme {
                 ControlPlaneContent(
-                    catalog = catalog,
-                    selected = catalog.first(),
-                    onSelect = {},
+                    openedFamily = null,
+                    selection = PackSelection(PackFamily.Museum),
+                    onOpenFamily = {},
+                    onSelectSubPack = {},
+                    onBackToHome = {},
                     onStartAmbient = {},
-                    showFractalPreview = false,
                 )
             }
         }
@@ -48,17 +49,12 @@ class PhonePreviewScreenshotTest {
         PhonePreviewScreenshotCapture.capture("control_plane_sources.png") {
             ArthurTheme {
                 ControlPlaneContent(
-                    catalog = catalog + Artwork(
-                        id = "demo-fractal",
-                        title = "Mandelbrot preset",
-                        attribution = "Arthur",
-                        sourceId = BundledPackSource.ID,
-                        kind = ArtworkKind.FractalPreset,
-                    ),
-                    selected = null,
-                    onSelect = {},
+                    openedFamily = PackFamily.Genart,
+                    selection = PackSelection(PackFamily.Genart),
+                    onOpenFamily = {},
+                    onSelectSubPack = {},
+                    onBackToHome = {},
                     onStartAmbient = {},
-                    showFractalPreview = false,
                 )
             }
         }

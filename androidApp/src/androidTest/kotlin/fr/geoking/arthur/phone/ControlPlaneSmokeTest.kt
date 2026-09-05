@@ -14,14 +14,12 @@ class ControlPlaneSmokeTest {
     val composeRule = createAndroidComposeRule<MainActivity>()
 
     @Test
-    fun controlPlane_showsTitleAndList() {
+    fun controlPlane_showsTitleAndPackGrid() {
         composeRule.onNodeWithTag("control_plane_title").assertIsDisplayed()
-        composeRule.onNodeWithTag("category_filter_row").assertIsDisplayed()
-        composeRule.onNodeWithTag("artwork_list").assertIsDisplayed()
+        composeRule.onNodeWithTag("pack_grid").assertIsDisplayed()
+        composeRule.onNodeWithTag("pack_tile_museum").assertIsDisplayed()
         composeRule.onNodeWithTag("start_ambient").assertIsDisplayed()
-        // Sublevel rows are context-dependent; hidden on default All.
-        composeRule.onNodeWithTag("stock_topic_row").assertDoesNotExist()
-        composeRule.onNodeWithTag("museum_topic_row").assertDoesNotExist()
-        composeRule.onNodeWithTag("genart_topic_row").assertDoesNotExist()
+        composeRule.onNodeWithTag("fractal_preview").assertDoesNotExist()
+        composeRule.onNodeWithTag("artwork_list").assertDoesNotExist()
     }
 }

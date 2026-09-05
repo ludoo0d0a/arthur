@@ -2,6 +2,8 @@ package fr.geoking.arthur.preview
 
 import android.app.Application
 import fr.geoking.arthur.phone.theme.ArthurTheme
+import fr.geoking.arthur.ui.components.PackFamily
+import fr.geoking.arthur.ui.components.PackSelection
 import fr.geoking.arthur.ui.screens.AmbientScreenContent
 import fr.geoking.arthur.ui.screens.ControlPlaneContent
 import fr.geoking.arthur.shared.source.BundledPackSource
@@ -34,11 +36,12 @@ class PhonePreviewFramedScreenshotTest {
         ) {
             ArthurTheme {
                 ControlPlaneContent(
-                    catalog = catalog,
-                    selected = catalog.first(),
-                    onSelect = {},
+                    openedFamily = null,
+                    selection = PackSelection(PackFamily.Museum),
+                    onOpenFamily = {},
+                    onSelectSubPack = {},
+                    onBackToHome = {},
                     onStartAmbient = {},
-                    showFractalPreview = false,
                 )
             }
         }

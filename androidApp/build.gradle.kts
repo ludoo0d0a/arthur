@@ -48,6 +48,9 @@ android {
         buildConfigField("String", "PEXELS_API_KEY", "\"${secret("PEXELS_API_KEY")}\"")
         // Unsplash Access Key = public Client-ID. Secret Key is OAuth-only — do not BuildConfig it into the APK.
         buildConfigField("String", "UNSPLASH_ACCESS_KEY", "\"${secret("UNSPLASH_ACCESS_KEY")}\"")
+        buildConfigField("String", "EUROPEANA_API_KEY", "\"${secret("EUROPEANA_API_KEY")}\"")
+        buildConfigField("String", "HARVARD_API_KEY", "\"${secret("HARVARD_API_KEY")}\"")
+        buildConfigField("String", "SMITHSONIAN_API_KEY", "\"${secret("SMITHSONIAN_API_KEY")}\"")
         val buildDate = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
         buildConfigField("String", "BUILD_DATE", "\"$buildDate\"")
     }

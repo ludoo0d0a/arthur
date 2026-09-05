@@ -10,6 +10,8 @@
     <string name="ambient_title">Ambient</string>
     <string name="dream_description">Art ambient Arthur</string>
     <string name="rotation_section">Rotation préparée</string>
+    <string name="packs_section">Packs</string>
+    <string name="pack_museum">Musée</string>
     <string name="load_more">Charger plus</string>
     <string name="fractal_hero_label">Canevas fractal live</string>
     <string name="genart_hero_label">Canevas genart live</string>
@@ -20,6 +22,10 @@
     <string name="source_rijksmuseum">Rijksmuseum</string>
     <string name="source_artic">Art Institute</string>
     <string name="source_cleveland">Cleveland</string>
+    <string name="source_europeana">Europeana</string>
+    <string name="source_harvard">Harvard</string>
+    <string name="source_smithsonian">Smithsonian</string>
+    <string name="source_louvre">Louvre</string>
     <string name="source_bundled">Pack</string>
     <string name="stock_topic_section">Thème photo</string>
     <string name="stock_topic_suggestions">Suggestions</string>
@@ -42,6 +48,7 @@
     <string name="genart_topic_custom">Perso</string>
     <string name="genart_topic_abstract">Abstrait</string>
     <string name="genart_topic_nature">Nature</string>
+    <string name="genart_topic_weather">Météo</string>
     <string name="genart_topic_geometry">Géométrie</string>
     <string name="genart_topic_planets">Planètes</string>
     <string name="custom_fractal_create">Créer une fractale perso</string>

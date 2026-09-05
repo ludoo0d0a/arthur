@@ -66,6 +66,12 @@ class FilterChipRowsTest {
             kind = ArtworkKind.Genart,
         ),
         Artwork(
+            id = GenartSource.GRASS,
+            title = "Grass",
+            sourceId = GenartSource.ID,
+            kind = ArtworkKind.Genart,
+        ),
+        Artwork(
             id = GenartSource.PARTICLES,
             title = "Particles",
             sourceId = GenartSource.ID,
@@ -149,6 +155,15 @@ class FilterChipRowsTest {
         val filtered = catalog.filterByCategoryAndSources(
             CategoryFilter.GENART,
             genartTopic = GenartTopic.Nature,
+        )
+        assertEquals(listOf(GenartSource.GRASS), filtered.map { it.id })
+    }
+
+    @Test
+    fun genartWeather_showsWeatherEngines() {
+        val filtered = catalog.filterByCategoryAndSources(
+            CategoryFilter.GENART,
+            genartTopic = GenartTopic.Weather,
         )
         assertEquals(listOf(GenartSource.SNOW), filtered.map { it.id })
     }
@@ -266,7 +281,7 @@ class FilterChipRowsTest {
         val resolved = resolveCategoryCatalog(
             catalog = catalog,
             category = CategoryFilter.GENART,
-            genartTopic = GenartTopic.Nature,
+            genartTopic = GenartTopic.Weather,
         )
         assertTrue(resolved.showSubfilters)
         assertEquals(listOf(GenartSource.SNOW), resolved.items.map { it.id })

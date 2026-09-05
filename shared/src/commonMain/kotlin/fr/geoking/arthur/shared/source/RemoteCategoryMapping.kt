@@ -11,6 +11,10 @@ enum class RemoteProvider {
     Artic,
     Cleveland,
     Rijksmuseum,
+    Europeana,
+    Harvard,
+    Smithsonian,
+    Louvre,
 }
 
 /**
@@ -22,6 +26,10 @@ enum class RemoteProvider {
  * | Artic        | [query] (`q`)                                    |
  * | Cleveland    | [type] (`Painting`, `Sculpture`, …)              |
  * | Rijksmuseum  | [type] (`painting`, `sculpture`, `photograph`)   |
+ * | Europeana    | [query] (`painting`, `sculpture`)                |
+ * | Harvard      | [type] classification (`Paintings`, `Sculpture`) |
+ * | Smithsonian  | [query] Solr clause with images                  |
+ * | Louvre       | curated ARK lists (no live search tokens)        |
  */
 data class MuseumApiParams(
     val query: String? = null,
@@ -64,6 +72,10 @@ object RemoteCategoryMapping {
             RemoteProvider.Artic -> articParams(kind)
             RemoteProvider.Cleveland -> clevelandParams(kind)
             RemoteProvider.Rijksmuseum -> rijksParams(kind)
+            RemoteProvider.Europeana -> europeanaParams(kind)
+            RemoteProvider.Harvard -> harvardParams(kind)
+            RemoteProvider.Smithsonian -> smithsonianParams(kind)
+            RemoteProvider.Louvre -> MuseumApiParams()
             else -> MuseumApiParams(query = kind.name.lowercase())
         }
 
@@ -135,5 +147,30 @@ object RemoteCategoryMapping {
     private fun rijksParams(kind: MuseumSearchKind): MuseumApiParams = when (kind) {
         MuseumSearchKind.All, MuseumSearchKind.Painting -> MuseumApiParams(type = "painting")
         MuseumSearchKind.Sculpture -> MuseumApiParams(type = "sculpture")
+    }
+
+    // --- Museum: Europeana Search (`query` free-text + open reusability) ---
+
+    private fun europeanaParams(kind: MuseumSearchKind): MuseumApiParams = when (kind) {
+        MuseumSearchKind.All, MuseumSearchKind.Painting -> MuseumApiParams(query = "painting")
+        MuseumSearchKind.Sculpture -> MuseumApiParams(query = "sculpture")
+    }
+
+    // --- Museum: Harvard Art Museums (`classification` title-case) ---
+
+    private fun harvardParams(kind: MuseumSearchKind): MuseumApiParams = when (kind) {
+        MuseumSearchKind.All, MuseumSearchKind.Painting -> MuseumApiParams(type = "Paintings")
+        MuseumSearchKind.Sculpture -> MuseumApiParams(type = "Sculpture")
+    }
+
+    // --- Museum: Smithsonian Open Access (Solr query) ---
+
+    private fun smithsonianParams(kind: MuseumSearchKind): MuseumApiParams = when (kind) {
+        MuseumSearchKind.All, MuseumSearchKind.Painting -> MuseumApiParams(
+            query = "online_media_type:Images AND unit_code:SAAM AND object_type:Paintings",
+        )
+        MuseumSearchKind.Sculpture -> MuseumApiParams(
+            query = "online_media_type:Images AND object_type:Sculptures",
+        )
     }
 }

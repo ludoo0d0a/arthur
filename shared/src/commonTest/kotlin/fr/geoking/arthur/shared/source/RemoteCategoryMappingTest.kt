@@ -81,6 +81,14 @@ class RemoteCategoryMappingTest {
             MuseumApiParams(type = "painting"),
             RemoteCategoryMapping.museumParams(MuseumSearchKind.Painting, RemoteProvider.Rijksmuseum),
         )
+        assertEquals(
+            MuseumApiParams(query = "painting"),
+            RemoteCategoryMapping.museumParams(MuseumSearchKind.Painting, RemoteProvider.Europeana),
+        )
+        assertEquals(
+            MuseumApiParams(type = "Paintings"),
+            RemoteCategoryMapping.museumParams(MuseumSearchKind.Painting, RemoteProvider.Harvard),
+        )
     }
 
     @Test
@@ -100,6 +108,23 @@ class RemoteCategoryMappingTest {
         assertEquals(
             MuseumApiParams(type = "sculpture"),
             RemoteCategoryMapping.museumParams(MuseumSearchKind.Sculpture, RemoteProvider.Rijksmuseum),
+        )
+        assertEquals(
+            MuseumApiParams(query = "sculpture"),
+            RemoteCategoryMapping.museumParams(MuseumSearchKind.Sculpture, RemoteProvider.Europeana),
+        )
+        assertEquals(
+            MuseumApiParams(type = "Sculpture"),
+            RemoteCategoryMapping.museumParams(MuseumSearchKind.Sculpture, RemoteProvider.Harvard),
+        )
+        assertEquals(
+            MuseumApiParams(
+                query = "online_media_type:Images AND object_type:Sculptures",
+            ),
+            RemoteCategoryMapping.museumParams(
+                MuseumSearchKind.Sculpture,
+                RemoteProvider.Smithsonian,
+            ),
         )
     }
 
@@ -130,6 +155,12 @@ class RemoteCategoryMappingTest {
         assertEquals(
             "https://data.rijksmuseum.nl/search/collection?type=sculpture&imageAvailable=true",
             RijksmuseumSource.searchUrl(MuseumSearchKind.Sculpture),
+        )
+        assertEquals(
+            "https://api.europeana.eu/record/v2/search.json" +
+                "?query=sculpture&reusability=open&media=true&qf=TYPE:IMAGE" +
+                "&rows=20&profile=standard",
+            EuropeanaSource.searchUrl(kind = MuseumSearchKind.Sculpture),
         )
         assertEquals(
             "https://api.unsplash.com/search/photos" +

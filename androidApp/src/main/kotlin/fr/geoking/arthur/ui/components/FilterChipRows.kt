@@ -28,10 +28,14 @@ import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.source.ArticSource
 import fr.geoking.arthur.shared.source.BundledPackSource
 import fr.geoking.arthur.shared.source.ClevelandSource
+import fr.geoking.arthur.shared.source.EuropeanaSource
 import fr.geoking.arthur.shared.source.GenartSource
+import fr.geoking.arthur.shared.source.HarvardSource
+import fr.geoking.arthur.shared.source.LouvreSource
 import fr.geoking.arthur.shared.source.MetSource
 import fr.geoking.arthur.shared.source.PexelsSource
 import fr.geoking.arthur.shared.source.RijksmuseumSource
+import fr.geoking.arthur.shared.source.SmithsonianSource
 import fr.geoking.arthur.shared.source.StockPhotoCategory
 import fr.geoking.arthur.shared.source.UnsplashSource
 
@@ -64,7 +68,8 @@ enum class CategoryFilter(@get:StringRes val labelRes: Int) {
 }
 
 /**
- * Genart subcategory: Fractal presets, Custom fractal, Abstract, Nature, Geometry, Planets.
+ * Genart subcategory: Fractal presets, Custom fractal, Abstract, Nature, Weather,
+ * Geometry, Planets.
  */
 enum class GenartTopic(
     @get:StringRes val labelRes: Int,
@@ -74,6 +79,7 @@ enum class GenartTopic(
     Custom(R.string.genart_topic_custom, "custom"),
     Abstract(R.string.genart_topic_abstract, "abstract"),
     Nature(R.string.genart_topic_nature, "nature"),
+    Weather(R.string.genart_topic_weather, "weather"),
     Geometry(R.string.genart_topic_geometry, "geometry"),
     Planets(R.string.genart_topic_planets, "planets"),
 }
@@ -91,6 +97,10 @@ enum class MuseumTopic(
     Rijksmuseum(RijksmuseumSource.ID, R.string.source_rijksmuseum, RijksmuseumSource.ID),
     Artic(ArticSource.ID, R.string.source_artic, ArticSource.ID),
     Cleveland(ClevelandSource.ID, R.string.source_cleveland, ClevelandSource.ID),
+    Europeana(EuropeanaSource.ID, R.string.source_europeana, EuropeanaSource.ID),
+    Harvard(HarvardSource.ID, R.string.source_harvard, HarvardSource.ID),
+    Smithsonian(SmithsonianSource.ID, R.string.source_smithsonian, SmithsonianSource.ID),
+    Louvre(LouvreSource.ID, R.string.source_louvre, LouvreSource.ID),
 }
 
 fun List<Artwork>.filterByCategoryAndSources(
@@ -168,26 +178,30 @@ fun matchesGenartTopic(art: Artwork, topic: GenartTopic): Boolean = when (topic)
     GenartTopic.Custom -> art.kind == ArtworkKind.CustomFractal
     GenartTopic.Abstract -> art.id in GENART_ABSTRACT_IDS
     GenartTopic.Nature -> art.id in GENART_NATURE_IDS
+    GenartTopic.Weather -> art.id in GENART_WEATHER_IDS
     GenartTopic.Geometry -> art.id in GENART_GEOMETRY_IDS
     GenartTopic.Planets -> art.id in GENART_PLANETS_IDS
 }
 
-private val GENART_NATURE_IDS = setOf(
+private val GENART_WEATHER_IDS = setOf(
     GenartSource.SNOW,
+    GenartSource.AURORA,
+    GenartSource.CLOUDS,
+    GenartSource.RAIN,
+    GenartSource.FOG,
+    GenartSource.SUNBEAMS,
+)
+
+private val GENART_NATURE_IDS = setOf(
     GenartSource.GRASS,
     GenartSource.BIRD_FLOCK,
     GenartSource.MOUNTAINS,
-    GenartSource.AURORA,
     GenartSource.POND_RIPPLES,
     GenartSource.FALLING_LEAVES,
     GenartSource.FIRE_EMBERS,
     GenartSource.DUNES,
-    GenartSource.CLOUDS,
-    GenartSource.RAIN,
-    GenartSource.FOG,
     GenartSource.FISH_SCHOOL,
     GenartSource.FIREFLIES,
-    GenartSource.SUNBEAMS,
     GenartSource.BUBBLES,
     GenartSource.CHERRY_BLOSSOMS,
     GenartSource.WAVES,

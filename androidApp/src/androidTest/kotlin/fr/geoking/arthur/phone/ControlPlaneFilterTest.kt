@@ -2,17 +2,13 @@ package fr.geoking.arthur.phone
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
-import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import fr.geoking.arthur.phone.theme.ArthurTheme
-import fr.geoking.arthur.shared.domain.Artwork
-import fr.geoking.arthur.shared.domain.ArtworkKind
-import fr.geoking.arthur.shared.source.BundledPackSource
-import fr.geoking.arthur.shared.source.MetSource
-import fr.geoking.arthur.shared.source.RijksmuseumSource
+import fr.geoking.arthur.ui.components.PackFamily
+import fr.geoking.arthur.ui.components.PackSelection
 import fr.geoking.arthur.ui.screens.ControlPlaneContent
 import org.junit.Rule
 import org.junit.Test
@@ -24,98 +20,111 @@ class ControlPlaneFilterTest {
     @get:Rule
     val composeRule = createComposeRule()
 
-    private val catalog = listOf(
-        Artwork(
-            id = "met-1",
-            title = "Met Painting",
-            sourceId = MetSource.ID,
-            kind = ArtworkKind.Painting,
-            remoteUrl = "https://example.com/met.jpg",
-        ),
-        Artwork(
-            id = "rijks-sculpt",
-            title = "Rijks Sculpture",
-            sourceId = RijksmuseumSource.ID,
-            kind = ArtworkKind.Sculpture,
-            remoteUrl = "https://example.com/rijks.jpg",
-        ),
-        Artwork(
-            id = "bundled-sculpt",
-            title = "Bundled Sculpture",
-            sourceId = BundledPackSource.ID,
-            kind = ArtworkKind.Sculpture,
-            remoteUrl = "https://example.com/bundled.jpg",
-        ),
-        Artwork(
-            id = "photo-1",
-            title = "Harbor",
-            sourceId = BundledPackSource.ID,
-            kind = ArtworkKind.Photo,
-            remoteUrl = "https://example.com/photo.jpg",
-        ),
-    )
-
     @Test
-    fun photoTopics_visibleOnlyWhenPhotoSelected() {
-        setControlPlane()
+    fun home_showsPackGrid() {
+        setControlPlane(openedFamily = null)
 
-        composeRule.onNodeWithTag("stock_topic_row").assertDoesNotExist()
-        composeRule.onNodeWithTag("museum_topic_row").assertDoesNotExist()
-        composeRule.onNodeWithTag("genart_topic_row").assertDoesNotExist()
-
-        composeRule.onNodeWithTag("filter_chip_photo").performClick()
-        composeRule.onNodeWithTag("stock_topic_row").assertIsDisplayed()
-        composeRule.onNodeWithTag("museum_topic_row").assertDoesNotExist()
-        composeRule.onNodeWithTag("genart_topic_row").assertDoesNotExist()
-
-        composeRule.onNodeWithTag("filter_chip_all").performClick()
-        composeRule.onNodeWithTag("stock_topic_row").assertDoesNotExist()
+        composeRule.onNodeWithTag("pack_grid").assertIsDisplayed()
+        composeRule.onNodeWithTag("pack_tile_museum").assertIsDisplayed()
+        composeRule.onNodeWithTag("pack_tile_genart").assertIsDisplayed()
+        composeRule.onNodeWithTag("pack_tile_photo").assertIsDisplayed()
+        composeRule.onNodeWithTag("fractal_preview").assertDoesNotExist()
+        composeRule.onNodeWithTag("artwork_list").assertDoesNotExist()
     }
 
     @Test
-    fun genart_showsTopics_fractalDefault() {
-        setControlPlane()
-
-        composeRule.onNodeWithTag("filter_chip_genart").performClick()
-        composeRule.onNodeWithTag("genart_topic_row").assertIsDisplayed()
-        composeRule.onNodeWithTag("stock_topic_row").assertDoesNotExist()
-        composeRule.onNodeWithTag("museum_topic_row").assertDoesNotExist()
-
-        composeRule.onNodeWithTag("genart_topic_fractal").assertIsSelected()
-        composeRule.onNodeWithTag("genart_topic_custom").assertIsNotSelected()
-        composeRule.onNodeWithTag("genart_topic_nature").assertIsNotSelected()
-
-        composeRule.onNodeWithTag("genart_topic_custom").performClick()
-        composeRule.onNodeWithTag("genart_topic_custom").assertIsSelected()
-        composeRule.onNodeWithTag("genart_topic_fractal").assertIsNotSelected()
-    }
-
-    @Test
-    fun sculpture_showsMuseumTopics_suggestionsDefault() {
-        setControlPlane()
-
-        composeRule.onNodeWithTag("filter_chip_sculpture").performClick()
-        composeRule.onNodeWithTag("museum_topic_row").assertIsDisplayed()
-        composeRule.onNodeWithTag("stock_topic_row").assertDoesNotExist()
-        composeRule.onNodeWithTag("genart_topic_row").assertDoesNotExist()
-
-        composeRule.onNodeWithTag("museum_topic_suggestions").assertIsSelected()
-        composeRule.onNodeWithTag("museum_topic_met").assertIsNotSelected()
-
-        composeRule.onNodeWithTag("museum_topic_met").performClick()
-        composeRule.onNodeWithTag("museum_topic_met").assertIsSelected()
-        composeRule.onNodeWithTag("museum_topic_suggestions").assertIsNotSelected()
-    }
-
-    private fun setControlPlane() {
+    fun genartPack_opensSubPacks_allSelected() {
+        var selection = PackSelection(PackFamily.Genart)
         composeRule.setContent {
             ArthurTheme {
                 ControlPlaneContent(
-                    catalog = catalog,
-                    selected = catalog.first(),
-                    onSelect = {},
+                    openedFamily = PackFamily.Genart,
+                    selection = selection,
+                    onOpenFamily = {},
+                    onSelectSubPack = { selection = it },
+                    onBackToHome = {},
                     onStartAmbient = {},
-                    showFractalPreview = false,
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("pack_tile_genart_all").assertIsDisplayed()
+        composeRule.onNodeWithTag("pack_tile_genart_nature").assertIsDisplayed()
+        composeRule.onNodeWithTag("pack_tile_genart_weather").assertIsDisplayed()
+        composeRule.onNodeWithTag("pack_tile_genart_all").assertIsSelected()
+    }
+
+    @Test
+    fun photoPack_showsTopicSubPacks() {
+        setControlPlane(openedFamily = PackFamily.Photo, selection = PackSelection(PackFamily.Photo))
+
+        composeRule.onNodeWithTag("pack_tile_photo_all").assertIsDisplayed()
+        composeRule.onNodeWithTag("pack_tile_photo_nature").assertIsDisplayed()
+        composeRule.onNodeWithTag("pack_tile_photo_suggestions").assertIsDisplayed()
+    }
+
+    @Test
+    fun sculpturePack_showsMuseumSubPacks() {
+        setControlPlane(
+            openedFamily = PackFamily.Sculpture,
+            selection = PackSelection(PackFamily.Sculpture),
+        )
+
+        composeRule.onNodeWithTag("pack_tile_sculpture_all").assertIsDisplayed()
+        composeRule.onNodeWithTag("pack_tile_sculpture_met").assertIsDisplayed()
+        composeRule.onNodeWithTag("pack_tile_sculpture_suggestions").assertIsDisplayed()
+    }
+
+    @Test
+    fun tapMuseum_opensSubPacks() {
+        var opened: PackFamily? = null
+        composeRule.setContent {
+            ArthurTheme {
+                ControlPlaneContent(
+                    openedFamily = opened,
+                    selection = PackSelection(PackFamily.Museum),
+                    onOpenFamily = { opened = it },
+                    onSelectSubPack = {},
+                    onBackToHome = { opened = null },
+                    onStartAmbient = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("pack_tile_museum").performClick()
+        composeRule.waitForIdle()
+        // State is local to test host — re-set with opened family to assert navigation contract.
+        composeRule.setContent {
+            ArthurTheme {
+                ControlPlaneContent(
+                    openedFamily = PackFamily.Museum,
+                    selection = PackSelection(PackFamily.Museum),
+                    onOpenFamily = {},
+                    onSelectSubPack = {},
+                    onBackToHome = {},
+                    onStartAmbient = {},
+                )
+            }
+        }
+        composeRule.onNodeWithTag("pack_tile_museum_all").assertIsDisplayed()
+        composeRule.onNodeWithTag("pack_tile_museum_met").assertIsDisplayed()
+        composeRule.onNodeWithTag("pack_tile_museum_europeana").assertIsDisplayed()
+        composeRule.onNodeWithTag("pack_back").assertIsDisplayed()
+    }
+
+    private fun setControlPlane(
+        openedFamily: PackFamily?,
+        selection: PackSelection = PackSelection(PackFamily.Museum),
+    ) {
+        composeRule.setContent {
+            ArthurTheme {
+                ControlPlaneContent(
+                    openedFamily = openedFamily,
+                    selection = selection,
+                    onOpenFamily = {},
+                    onSelectSubPack = {},
+                    onBackToHome = {},
+                    onStartAmbient = {},
                 )
             }
         }

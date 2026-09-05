@@ -7,6 +7,7 @@ import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import androidx.media.MediaBrowserServiceCompat
+import fr.geoking.arthur.R
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.isGenerative
@@ -127,7 +128,9 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
         current = next
         generation += 1
         publishArtwork(next)
-        if (userInitiated && !playing) setPlaying(true)
+        if (userInitiated) {
+            if (playing) startRotation() else setPlaying(true)
+        }
     }
 
     private fun rotationPool(): List<Artwork> {
@@ -161,6 +164,20 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
                 .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, AmbientAlbumArt.ROTATION_INTERVAL_MS)
                 .build(),
         )
+        val pool = rotationPool()
+        session.setQueue(
+            pool.mapIndexed { index, item ->
+                val icon = AmbientAlbumArt.contentUri(packageName, item.id, 0L)
+                val desc = MediaDescriptionCompat.Builder()
+                    .setMediaId(item.id)
+                    .setTitle(item.title)
+                    .setSubtitle(item.attribution)
+                    .setIconUri(icon)
+                    .build()
+                MediaSessionCompat.QueueItem(desc, index.toLong())
+            },
+        )
+        session.setQueueTitle(getString(R.string.ambient_title))
     }
 
     private fun publishPlayback(state: Int) {

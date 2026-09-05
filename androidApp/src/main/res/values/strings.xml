@@ -8,6 +8,7 @@
     <string name="artwork_unavailable">Artwork unavailable</string>
     <string name="artwork_unavailable_detail">Showing the category placeholder instead</string>
     <string name="ambient_title">Ambient</string>
+    <string name="ambient_rotation_progress">Time until next artwork</string>
     <string name="dream_description">Arthur ambient art</string>
     <string name="rotation_section">Prepared rotation</string>
     <string name="packs_section">Packs</string>

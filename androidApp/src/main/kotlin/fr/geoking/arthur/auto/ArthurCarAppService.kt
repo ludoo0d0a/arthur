@@ -115,6 +115,8 @@ class ArtworkPaneScreen(carContext: CarContext) : Screen(carContext), KoinCompon
         }
         current = catalog[nextIndex]
         generation += 1
+        // Restart the interval so a manual skip doesn't get auto-advanced immediately.
+        if (isPlaying) startRotation()
         invalidate()
     }
 

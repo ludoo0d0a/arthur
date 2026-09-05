@@ -1,25 +1,50 @@
 package fr.geoking.arthur.ui.screens
 
+import android.content.res.Configuration
+import android.os.Build
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.R
 import fr.geoking.arthur.auto.AmbientAlbumArt
@@ -29,8 +54,8 @@ import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.isGenerative
 import fr.geoking.arthur.ui.components.ArtworkRenderer
 import fr.geoking.arthur.ui.components.StillArtworkPlaceholder
+import kotlin.math.abs
 import kotlin.random.Random
-import kotlinx.coroutines.delay
 
 /**
  * Fullscreen ambient surface.
@@ -39,6 +64,10 @@ import kotlinx.coroutines.delay
  *   [rotationPool] (≥2 items) for random rotation every [AmbientAlbumArt.ROTATION_INTERVAL_MS].
  * - Pin only: empty [rotationPool].
  * - Dream / screensaver: pass a multi-item [rotationPool] to rotate the same way.
+ *
+ * Navigation while rotating:
+ * - Phone: horizontal swipe (left = next, right = previous)
+ * - TV: D-pad / arrow left & right
  *
  * Missing or unloadable assets render the category placeholder + warning — never a
  * silent swap to an unrelated genart engine (e.g. pond ripples).
@@ -55,6 +84,9 @@ fun AmbientScreenContent(
         rotationPool.filter { it.isAmbientDisplayable() }
     }
     val shouldRotate = rotatePool.size >= 2
+    val configuration = LocalConfiguration.current
+    val isTelevision =
+        configuration.uiMode and Configuration.UI_MODE_TYPE_MASK == Configuration.UI_MODE_TYPE_TELEVISION
 
     var current by remember(artwork?.id, rotatePool.map { it.id }, shouldRotate) {
         mutableStateOf(
@@ -65,24 +97,84 @@ fun AmbientScreenContent(
             },
         )
     }
+    var rotationEpoch by remember { mutableIntStateOf(0) }
+    val progress = remember { Animatable(0f) }
+    val focusRequester = remember { FocusRequester() }
+    val poolIds = remember(rotatePool) { rotatePool.map { it.id } }
+    val latestCurrent by rememberUpdatedState(current)
+    val latestPool by rememberUpdatedState(rotatePool)
 
-    LaunchedEffect(rotatePool.map { it.id }, isActive, shouldRotate) {
-        if (!isActive || !shouldRotate) return@LaunchedEffect
-        while (isActive) {
-            delay(AmbientAlbumArt.ROTATION_INTERVAL_MS)
-            val next = rotatePool.filter { it.id != current?.id }.randomOrNull(Random.Default)
-                ?: rotatePool.random(Random.Default)
-            current = next
+    fun advance(delta: Int, random: Boolean) {
+        if (!shouldRotate) return
+        val pool = latestPool
+        val shownId = latestCurrent?.id
+        val index = pool.indexOfFirst { it.id == shownId }.let { if (it < 0) 0 else it }
+        current = if (random) {
+            pool.filter { it.id != shownId }.randomOrNull(Random.Default)
+                ?: pool.random(Random.Default)
+        } else if (delta >= 0) {
+            pool[AmbientAlbumArt.advanceIndex(index, pool.size)]
+        } else {
+            pool[Math.floorMod(index - 1, pool.size)]
+        }
+        rotationEpoch++
+    }
+
+    val advanceLatest by rememberUpdatedState(::advance)
+
+    LaunchedEffect(rotationEpoch, isActive, shouldRotate, poolIds) {
+        if (!isActive || !shouldRotate) {
+            progress.snapTo(0f)
+            return@LaunchedEffect
+        }
+        progress.snapTo(0f)
+        progress.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(
+                durationMillis = AmbientAlbumArt.ROTATION_INTERVAL_MS.toInt(),
+                easing = LinearEasing,
+            ),
+        )
+        advanceLatest(+1, true)
+    }
+
+    LaunchedEffect(isTelevision, shouldRotate) {
+        if (isTelevision && shouldRotate) {
+            focusRequester.requestFocus()
         }
     }
 
     val shown = if (shouldRotate) current else artwork
     val shownTitle = shown?.title ?: title
+    val swipeThresholdPx = with(LocalDensity.current) { 56.dp.toPx() }
 
     Box(
         modifier = modifier
             .fillMaxSize()
-            .testTag("ambient_screen"),
+            .testTag("ambient_screen")
+            .then(
+                if (shouldRotate && isTelevision) {
+                    Modifier
+                        .focusRequester(focusRequester)
+                        .focusable()
+                        .onKeyEvent { event ->
+                            if (event.type != KeyEventType.KeyUp) return@onKeyEvent false
+                            when (event.key) {
+                                Key.DirectionRight, Key.MediaSkipForward -> {
+                                    advanceLatest(+1, false)
+                                    true
+                                }
+                                Key.DirectionLeft, Key.MediaSkipBackward -> {
+                                    advanceLatest(-1, false)
+                                    true
+                                }
+                                else -> false
+                            }
+                        }
+                } else {
+                    Modifier
+                },
+            ),
         contentAlignment = Alignment.Center,
     ) {
         when {
@@ -129,6 +221,72 @@ fun AmbientScreenContent(
                 modifier = Modifier.testTag("ambient_title"),
             )
         }
+        if (shouldRotate && isActive) {
+            AmbientRotationProgress(
+                progress = { progress.value },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(28.dp),
+            )
+        }
+        // Topmost layer so swipes aren't eaten by artwork / overlays.
+        if (shouldRotate && !isTelevision) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .pointerInput(rotationEpoch, poolIds, swipeThresholdPx) {
+                        var totalDrag = 0f
+                        detectHorizontalDragGestures(
+                            onDragStart = { totalDrag = 0f },
+                            onHorizontalDrag = { _, dragAmount -> totalDrag += dragAmount },
+                            onDragEnd = {
+                                if (abs(totalDrag) < swipeThresholdPx) return@detectHorizontalDragGestures
+                                if (totalDrag < 0f) {
+                                    advanceLatest(+1, false)
+                                } else {
+                                    advanceLatest(-1, false)
+                                }
+                            },
+                        )
+                    },
+            )
+        }
+    }
+}
+
+@Composable
+private fun AmbientRotationProgress(
+    progress: () -> Float,
+    modifier: Modifier = Modifier,
+) {
+    val description = stringResource(R.string.ambient_rotation_progress)
+    Box(
+        modifier = modifier
+            .size(52.dp)
+            .semantics { contentDescription = description }
+            .testTag("ambient_rotation_progress"),
+        contentAlignment = Alignment.Center,
+    ) {
+        val frosted = Modifier
+            .matchParentSize()
+            .then(
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    Modifier.blur(12.dp)
+                } else {
+                    Modifier
+                },
+            )
+            .background(Color.White.copy(alpha = 0.18f), CircleShape)
+        Box(modifier = frosted)
+        CircularProgressIndicator(
+            progress = progress,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(5.dp),
+            color = Color.White,
+            trackColor = Color.White.copy(alpha = 0.28f),
+            strokeWidth = 2.5.dp,
+        )
     }
 }
 

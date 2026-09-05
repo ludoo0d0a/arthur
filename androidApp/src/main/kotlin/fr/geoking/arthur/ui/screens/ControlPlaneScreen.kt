@@ -50,7 +50,6 @@ import fr.geoking.arthur.ui.components.PackFamily
 import fr.geoking.arthur.ui.components.PackGrid
 import fr.geoking.arthur.ui.components.PackSelection
 import fr.geoking.arthur.ui.components.PackTile
-import fr.geoking.arthur.ui.components.SettingsButton
 import fr.geoking.arthur.ui.components.StartAmbientFab
 import fr.geoking.arthur.ui.components.homeTile
 import fr.geoking.arthur.ui.components.isGenartCustom
@@ -224,11 +223,6 @@ private fun PhoneControlPlaneContent(
                                 Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = stringResource(R.string.action_back),
                             )
-                        }
-                    },
-                    actions = {
-                        if (onOpenSettings != null) {
-                            SettingsButton(onClick = onOpenSettings)
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(

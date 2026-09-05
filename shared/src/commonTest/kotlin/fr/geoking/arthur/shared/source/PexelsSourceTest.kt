@@ -68,7 +68,7 @@ class PexelsSourceTest {
     @Test
     fun searchUrlIncludesCategoryQuery() {
         assertEquals(
-            "https://api.pexels.com/v1/search?query=ocean&orientation=landscape&per_page=8",
+            "https://api.pexels.com/v1/search?query=ocean&orientation=landscape&per_page=20",
             PexelsSource.searchUrl("ocean"),
         )
     }
@@ -78,7 +78,7 @@ class PexelsSourceTest {
         var called = false
         val source = PexelsSource(
             apiKey = "test-key",
-            query = { StockPhotoCategory.Suggestions.query },
+            category = { StockPhotoCategory.Suggestions },
             httpGet = {
                 called = true
                 error("should not call")

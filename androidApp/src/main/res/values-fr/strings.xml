@@ -10,6 +10,7 @@
     <string name="ambient_title">Ambient</string>
     <string name="dream_description">Art ambient Arthur</string>
     <string name="rotation_section">Rotation préparée</string>
+    <string name="load_more">Charger plus</string>
     <string name="fractal_hero_label">Canevas fractal live</string>
     <string name="genart_hero_label">Canevas genart live</string>
     <string name="gallery_hero_label">Canevas galerie</string>

@@ -9,23 +9,33 @@ import kotlinx.serialization.json.Json
 /**
  * The Met Collection API Remote Source (no API key).
  * Open-access works with images only; [httpGet] is injected so unit tests use fixtures.
+ *
+ * Search contract: `GET /public/collection/v1/search`
+ * (`q`, `medium`, `hasImages`, `isPublicDomain`) — tokens from [RemoteCategoryMapping].
  */
 class MetSource(
     private val httpGet: suspend (url: String) -> String,
+    private val kind: () -> MuseumSearchKind = { MuseumSearchKind.Painting },
     private val limit: Int = DEFAULT_LIMIT,
 ) : Source {
     override val id: String = ID
     override val displayName: String = "The Met"
 
     override suspend fun load(): List<Artwork> = runCatching {
-        val searchJson = httpGet(SEARCH_URL)
-        val ids = parseSearchIds(searchJson).take(limit)
-        ids.mapNotNull { objectId ->
-            runCatching { loadArtwork(objectId) }.getOrNull()
+        val targets = RemoteCategoryMapping.museumTargets(kind())
+        val perKind = (limit / targets.size).coerceAtLeast(1)
+        val results = mutableListOf<Artwork>()
+        for (target in targets) {
+            val searchJson = httpGet(searchUrl(target))
+            val ids = parseSearchIds(searchJson).take(perKind)
+            for (objectId in ids) {
+                runCatching { loadArtwork(objectId, target) }.getOrNull()?.let { results.add(it) }
+            }
         }
+        results.take(limit)
     }.getOrDefault(emptyList())
 
-    private suspend fun loadArtwork(objectId: Int): Artwork? {
+    private suspend fun loadArtwork(objectId: Int, searchKind: MuseumSearchKind): Artwork? {
         val obj = json.decodeFromString<MetObject>(httpGet(objectUrl(objectId)))
         val imageUrl = obj.primaryImage?.takeIf { it.isNotBlank() }
             ?: obj.primaryImageSmall?.takeIf { it.isNotBlank() }
@@ -38,19 +48,27 @@ class MetSource(
             title = title,
             attribution = attribution,
             sourceId = ID,
-            kind = ArtworkKind.Painting,
+            kind = searchKind.artworkKind ?: ArtworkKind.Painting,
             remoteUrl = imageUrl,
         )
     }
 
     companion object {
         const val ID = "met"
-        const val DEFAULT_LIMIT = 8
-        const val SEARCH_URL =
-            "https://collectionapi.metmuseum.org/public/collection/v1/search" +
-                "?q=painting&hasImages=true&isPublicDomain=true"
+        const val DEFAULT_LIMIT = 20
+
+        /** @deprecated Prefer [searchUrl] with [MuseumSearchKind]. */
+        val SEARCH_URL: String = searchUrl(MuseumSearchKind.Painting)
 
         private val json = Json { ignoreUnknownKeys = true }
+
+        fun searchUrl(kind: MuseumSearchKind = MuseumSearchKind.Painting): String {
+            val params = RemoteCategoryMapping.museumParams(kind, RemoteProvider.Met)
+            val q = params.query.orEmpty()
+            val medium = params.medium.orEmpty()
+            return "https://collectionapi.metmuseum.org/public/collection/v1/search" +
+                "?q=$q&medium=$medium&hasImages=true&isPublicDomain=true"
+        }
 
         fun objectUrl(objectId: Int): String =
             "https://collectionapi.metmuseum.org/public/collection/v1/objects/$objectId"

@@ -110,6 +110,58 @@ fun List<Artwork>.filterByCategoryAndSources(
     }
 }
 
+/**
+ * Applies subcategory filters when they match; otherwise hides the subcategory row
+ * and falls back to the parent category matches.
+ */
+data class ResolvedCategoryCatalog(
+    val items: List<Artwork>,
+    val showSubfilters: Boolean,
+)
+
+fun resolveCategoryCatalog(
+    catalog: List<Artwork>,
+    category: CategoryFilter,
+    museumTopic: MuseumTopic? = null,
+    stockCategory: StockPhotoCategory? = null,
+    genartTopic: GenartTopic? = null,
+): ResolvedCategoryCatalog {
+    val categoryMatches = catalog.filter { category.matches(it.kind) }
+    val usesSubfilter = category.showsGenartTopics() ||
+        category.showsPhotoTopics() ||
+        category.showsMuseumTopics()
+    if (!usesSubfilter) {
+        return ResolvedCategoryCatalog(items = categoryMatches, showSubfilters = false)
+    }
+    val subMatches = catalog.filterByCategoryAndSources(
+        category = category,
+        museumTopic = museumTopic,
+        stockCategory = stockCategory,
+        genartTopic = genartTopic,
+    )
+    // Photo topics drive remote search — keep chips visible even while results load.
+    if (category.showsPhotoTopics()) {
+        return ResolvedCategoryCatalog(
+            items = subMatches.ifEmpty { categoryMatches },
+            showSubfilters = true,
+        )
+    }
+    return if (subMatches.isNotEmpty()) {
+        ResolvedCategoryCatalog(items = subMatches, showSubfilters = true)
+    } else {
+        // Genart / museum subcategory has no hits — hide chips, show category matches.
+        ResolvedCategoryCatalog(items = categoryMatches, showSubfilters = false)
+    }
+}
+
+const val CatalogPageSize = 20
+
+fun List<Artwork>.takeCatalogPage(visibleCount: Int): List<Artwork> =
+    take(visibleCount.coerceAtLeast(0))
+
+fun List<Artwork>.canLoadMoreCatalog(visibleCount: Int): Boolean =
+    visibleCount < size
+
 fun matchesGenartTopic(art: Artwork, topic: GenartTopic): Boolean = when (topic) {
     GenartTopic.Fractal -> art.kind == ArtworkKind.FractalPreset
     GenartTopic.Custom -> art.kind == ArtworkKind.CustomFractal

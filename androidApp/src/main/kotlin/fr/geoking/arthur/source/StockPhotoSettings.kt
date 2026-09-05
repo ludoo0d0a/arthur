@@ -4,6 +4,7 @@ import android.content.Context
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.source.GenartSource
+import fr.geoking.arthur.shared.source.MuseumSearchKind
 import fr.geoking.arthur.shared.source.StockPhotoCategory
 import java.io.File
 
@@ -23,6 +24,15 @@ class StockPhotoSettings(context: Context) {
         private const val PREFS = "arthur_stock_photo"
         private const val KEY_CATEGORY = "category"
     }
+}
+
+/**
+ * In-memory Painting / Sculpture facet for museum Remote Sources.
+ * Driven by Control Plane category chips; not persisted (defaults to All).
+ */
+class MuseumSearchSettings {
+    @Volatile
+    var kind: MuseumSearchKind = MuseumSearchKind.All
 }
 
 /**

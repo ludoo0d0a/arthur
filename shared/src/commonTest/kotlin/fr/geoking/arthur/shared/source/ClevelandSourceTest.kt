@@ -88,4 +88,13 @@ class ClevelandSourceTest {
         assertEquals(ArtworkKind.Sculpture, art[0].kind)
         assertEquals("Unknown", art[0].attribution)
     }
+
+    @Test
+    fun searchUrlIncludesCategoryType() {
+        assertEquals(
+            "https://openaccess-api.clevelandart.org/api/artworks/" +
+                "?cc0=1&has_image=1&limit=20&type=Sculpture",
+            ClevelandSource.searchUrl(kind = MuseumSearchKind.Sculpture),
+        )
+    }
 }

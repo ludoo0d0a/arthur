@@ -9,11 +9,13 @@ import kotlinx.serialization.json.Json
 /**
  * Pexels stock-photo Remote Source (API key required).
  * [httpGet] must send `Authorization: <apiKey>`; blank [apiKey] uses [offlineFallback].
+ *
+ * Search: `GET /v1/search?query=…` — query mapped via [RemoteCategoryMapping].
  */
 class PexelsSource(
     private val httpGet: suspend (url: String) -> String,
     private val apiKey: String,
-    private val query: () -> String = { StockPhotoCategory.Nature.query },
+    private val category: () -> StockPhotoCategory = { StockPhotoCategory.Nature },
     private val offlineFallback: () -> List<Artwork> = { emptyList() },
     private val onLoaded: (List<Artwork>) -> Unit = {},
     private val limit: Int = DEFAULT_LIMIT,
@@ -23,10 +25,7 @@ class PexelsSource(
 
     override suspend fun load(): List<Artwork> {
         if (apiKey.isBlank()) return offlineFallback()
-        val q = query().trim()
-        if (q.isEmpty() || q.equals(StockPhotoCategory.Suggestions.query, ignoreCase = true)) {
-            return emptyList()
-        }
+        val q = RemoteCategoryMapping.stockQuery(category(), RemoteProvider.Pexels) ?: return emptyList()
         val art = runCatching {
             val page = json.decodeFromString<PexelsSearchPage>(httpGet(searchUrl(q, limit)))
             page.photos.mapNotNull { photo ->
@@ -55,12 +54,15 @@ class PexelsSource(
 
     companion object {
         const val ID = "pexels"
-        const val DEFAULT_LIMIT = 8
+        const val DEFAULT_LIMIT = 20
 
         private val json = Json { ignoreUnknownKeys = true }
 
         fun searchUrl(
-            query: String = StockPhotoCategory.Nature.query,
+            query: String = RemoteCategoryMapping.stockQuery(
+                StockPhotoCategory.Nature,
+                RemoteProvider.Pexels,
+            )!!,
             perPage: Int = DEFAULT_LIMIT,
         ): String =
             "https://api.pexels.com/v1/search" +

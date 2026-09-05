@@ -19,6 +19,7 @@ import fr.geoking.arthur.shared.source.PexelsSource
 import fr.geoking.arthur.shared.source.RijksmuseumSource
 import fr.geoking.arthur.shared.source.UnsplashSource
 import fr.geoking.arthur.source.ArtworkImageCache
+import fr.geoking.arthur.source.MuseumSearchSettings
 import fr.geoking.arthur.source.StockPhotoSettings
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
@@ -50,6 +51,7 @@ val appModule = module {
     single<PremiumEntitlement> { RevenueCatPremiumEntitlement(get()) }
     single { CustomFractalStore(androidContext()) }
     single { StockPhotoSettings(androidContext()) }
+    single { MuseumSearchSettings() }
     single { ArtworkImageCache(androidContext()) }
     single { HttpClient(OkHttp) }
     single { BundledPackSource() }
@@ -62,26 +64,34 @@ val appModule = module {
     }
     single {
         val client = get<HttpClient>()
+        val museum = get<MuseumSearchSettings>()
         RijksmuseumSource(
             httpGet = { url -> client.get(url).bodyAsText() },
+            kind = { museum.kind },
         )
     }
     single {
         val client = get<HttpClient>()
+        val museum = get<MuseumSearchSettings>()
         MetSource(
             httpGet = { url -> client.get(url).bodyAsText() },
+            kind = { museum.kind },
         )
     }
     single {
         val client = get<HttpClient>()
+        val museum = get<MuseumSearchSettings>()
         ArticSource(
             httpGet = { url -> client.get(url).bodyAsText() },
+            kind = { museum.kind },
         )
     }
     single {
         val client = get<HttpClient>()
+        val museum = get<MuseumSearchSettings>()
         ClevelandSource(
             httpGet = { url -> client.get(url).bodyAsText() },
+            kind = { museum.kind },
         )
     }
     single {
@@ -91,7 +101,7 @@ val appModule = module {
         val cache = get<ArtworkImageCache>()
         PexelsSource(
             apiKey = apiKey,
-            query = { settings.category.query },
+            category = { settings.category },
             offlineFallback = { cache.loadCached(settings.category.query, PexelsSource.ID) },
             onLoaded = { arts -> cache.remember(arts, settings.category.query) },
             httpGet = { url ->
@@ -108,7 +118,7 @@ val appModule = module {
         val cache = get<ArtworkImageCache>()
         UnsplashSource(
             accessKey = accessKey,
-            query = { settings.category.query },
+            category = { settings.category },
             offlineFallback = { cache.loadCached(settings.category.query, UnsplashSource.ID) },
             onLoaded = { arts -> cache.remember(arts, settings.category.query) },
             httpGet = { url ->

@@ -67,7 +67,8 @@ interface PremiumEntitlement {
 data class FreeTierLimits(
     val maxPhotoArtwork: Int = 5,
     val maxFractalPresets: Int = 3,
-    val maxGenart: Int = 2,
+    /** Enough for Genart Nature / Geometry / Planets subcategories to show results. */
+    val maxGenart: Int = 12,
 )
 
 /** Scheduled sequence shown on a Canvas. */

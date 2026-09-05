@@ -20,17 +20,14 @@ import kotlinx.serialization.json.jsonPrimitive
  */
 class RijksmuseumSource(
     private val httpGet: suspend (url: String) -> String,
+    private val kind: () -> MuseumSearchKind = { MuseumSearchKind.All },
     private val limit: Int = DEFAULT_LIMIT,
 ) : Source {
     override val id: String = ID
     override val displayName: String = "Rijksmuseum"
 
     override suspend fun load(): List<Artwork> = runCatching {
-        val searchTargets = listOf(
-            SEARCH_URL to ArtworkKind.Painting,
-            SEARCH_SCULPTURE_URL to ArtworkKind.Sculpture,
-            SEARCH_PHOTO_URL to ArtworkKind.Photo,
-        )
+        val searchTargets = searchTargetsFor(kind())
         val perTypeLimit = (limit / searchTargets.size).coerceAtLeast(2)
         val results = mutableListOf<Artwork>()
 
@@ -130,7 +127,7 @@ class RijksmuseumSource(
 
     companion object {
         const val ID = "rijksmuseum"
-        const val DEFAULT_LIMIT = 8
+        const val DEFAULT_LIMIT = 20
         const val SEARCH_URL =
             "https://data.rijksmuseum.nl/search/collection?type=painting&imageAvailable=true"
         const val SEARCH_SCULPTURE_URL =
@@ -140,6 +137,25 @@ class RijksmuseumSource(
 
         private const val OBJECT_NUMBER_TYPE = "https://id.rijksmuseum.nl/22015218"
         private val json = Json { ignoreUnknownKeys = true }
+
+        /** Linked Art Search: `type=painting|sculpture|photograph&imageAvailable=true`. */
+        fun searchUrl(kind: MuseumSearchKind): String {
+            val type = RemoteCategoryMapping.museumParams(kind, RemoteProvider.Rijksmuseum).type
+                ?: "painting"
+            return "https://data.rijksmuseum.nl/search/collection?type=$type&imageAvailable=true"
+        }
+
+        private fun searchTargetsFor(
+            kind: MuseumSearchKind,
+        ): List<Pair<String, ArtworkKind>> = when (kind) {
+            MuseumSearchKind.All -> listOf(
+                SEARCH_URL to ArtworkKind.Painting,
+                SEARCH_SCULPTURE_URL to ArtworkKind.Sculpture,
+                SEARCH_PHOTO_URL to ArtworkKind.Photo,
+            )
+            MuseumSearchKind.Painting -> listOf(searchUrl(MuseumSearchKind.Painting) to ArtworkKind.Painting)
+            MuseumSearchKind.Sculpture -> listOf(searchUrl(MuseumSearchKind.Sculpture) to ArtworkKind.Sculpture)
+        }
 
         internal fun parseSearchIds(payload: String): List<String> {
             val page = json.decodeFromString<LinkedArtSearchPage>(payload)

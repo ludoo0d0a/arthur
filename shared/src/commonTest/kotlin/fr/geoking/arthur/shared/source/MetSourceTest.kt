@@ -1,5 +1,6 @@
 package fr.geoking.arthur.shared.source
 
+import fr.geoking.arthur.shared.domain.ArtworkKind
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlinx.coroutines.runBlocking
@@ -71,5 +72,40 @@ class MetSourceTest {
     fun parseSearchIdsReadsObjectIDs() {
         val ids = MetSource.parseSearchIds("""{"total":2,"objectIDs":[10,20]}""")
         assertEquals(listOf(10, 20), ids)
+    }
+
+    @Test
+    fun searchUrlIncludesCategoryMedium() {
+        assertEquals(
+            "https://collectionapi.metmuseum.org/public/collection/v1/search" +
+                "?q=sculpture&medium=Sculpture&hasImages=true&isPublicDomain=true",
+            MetSource.searchUrl(MuseumSearchKind.Sculpture),
+        )
+    }
+
+    @Test
+    fun loadsSculptureKindFromCategoryQuery() = runBlocking {
+        val objectId = 200668
+        val fixtures = mapOf(
+            MetSource.searchUrl(MuseumSearchKind.Sculpture) to """
+                {"total":1,"objectIDs":[$objectId]}
+            """.trimIndent(),
+            MetSource.objectUrl(objectId) to """
+                {
+                  "objectID": $objectId,
+                  "isPublicDomain": true,
+                  "title": "Marble Head",
+                  "artistDisplayName": "Unknown",
+                  "primaryImage": "https://images.metmuseum.org/sculpt.jpg"
+                }
+            """.trimIndent(),
+        )
+        val source = MetSource(
+            httpGet = { url -> fixtures.getValue(url) },
+            kind = { MuseumSearchKind.Sculpture },
+        )
+        val art = source.load()
+        assertEquals(1, art.size)
+        assertEquals(ArtworkKind.Sculpture, art[0].kind)
     }
 }

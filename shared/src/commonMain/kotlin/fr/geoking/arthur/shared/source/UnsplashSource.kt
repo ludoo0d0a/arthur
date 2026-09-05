@@ -15,11 +15,12 @@ import kotlinx.serialization.json.Json
  * - **Secret Key**: OAuth only — never sent on catalog search; keep out of the APK
  *
  * Blank [accessKey] uses [offlineFallback]. [httpGet] must send the Client-ID header.
+ * Search query mapped via [RemoteCategoryMapping].
  */
 class UnsplashSource(
     private val httpGet: suspend (url: String) -> String,
     private val accessKey: String,
-    private val query: () -> String = { StockPhotoCategory.Nature.query },
+    private val category: () -> StockPhotoCategory = { StockPhotoCategory.Nature },
     private val offlineFallback: () -> List<Artwork> = { emptyList() },
     private val onLoaded: (List<Artwork>) -> Unit = {},
     private val limit: Int = DEFAULT_LIMIT,
@@ -29,10 +30,7 @@ class UnsplashSource(
 
     override suspend fun load(): List<Artwork> {
         if (accessKey.isBlank()) return offlineFallback()
-        val q = query().trim()
-        if (q.isEmpty() || q.equals(StockPhotoCategory.Suggestions.query, ignoreCase = true)) {
-            return emptyList()
-        }
+        val q = RemoteCategoryMapping.stockQuery(category(), RemoteProvider.Unsplash) ?: return emptyList()
         val art = runCatching {
             val page = json.decodeFromString<UnsplashSearchPage>(httpGet(searchUrl(q, limit)))
             page.results.mapNotNull { photo ->
@@ -62,16 +60,19 @@ class UnsplashSource(
 
     companion object {
         const val ID = "unsplash"
-        const val DEFAULT_LIMIT = 8
+        const val DEFAULT_LIMIT = 20
 
         private val json = Json { ignoreUnknownKeys = true }
 
         fun searchUrl(
-            query: String = StockPhotoCategory.Nature.query,
+            query: String = RemoteCategoryMapping.stockQuery(
+                StockPhotoCategory.Nature,
+                RemoteProvider.Unsplash,
+            )!!,
             perPage: Int = DEFAULT_LIMIT,
         ): String =
             "https://api.unsplash.com/search/photos" +
-                "?query=$query&orientation=landscape&per_page=$perPage"
+                "?query=${query.replace(" ", "%20")}&orientation=landscape&per_page=$perPage"
     }
 }
 

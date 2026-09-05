@@ -72,4 +72,16 @@ class ArticSourceTest {
             ArticSource.iiifImageUrl("https://www.artic.edu/iiif/2", "abc"),
         )
     }
+
+    @Test
+    fun searchUrlIncludesCategoryQuery() {
+        assertEquals(
+            "https://api.artic.edu/api/v1/artworks/search" +
+                "?q=sculpture" +
+                "&query[term][is_public_domain]=true" +
+                "&limit=20" +
+                "&fields=id,title,artist_display,image_id,is_public_domain",
+            ArticSource.searchUrl(kind = MuseumSearchKind.Sculpture),
+        )
+    }
 }

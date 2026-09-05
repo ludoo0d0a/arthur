@@ -1,8 +1,10 @@
 package fr.geoking.arthur.shared.source
 
 /**
- * Stock-photo search topics for Pexels / Unsplash (ASCII query tokens).
- * [Suggestions] is curated offline photos — not a remote search query.
+ * Unified Control Plane stock-photo topics (Photo subcategory chips).
+ *
+ * [query] is the stable UX / persistence id — not necessarily the string sent to an API.
+ * Provider search tokens come from [RemoteCategoryMapping.stockQuery].
  */
 enum class StockPhotoCategory(val query: String) {
     Suggestions("suggestions"),

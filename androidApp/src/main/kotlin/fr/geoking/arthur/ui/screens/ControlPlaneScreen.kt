@@ -35,9 +35,14 @@ import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.shared.source.BundledPackSource
+import fr.geoking.arthur.shared.source.MuseumSearchKind
+import fr.geoking.arthur.shared.source.PexelsSource
 import fr.geoking.arthur.shared.source.StockPhotoCategory
+import fr.geoking.arthur.shared.source.UnsplashSource
+import fr.geoking.arthur.source.MuseumSearchSettings
 import fr.geoking.arthur.source.StockPhotoSettings
 import fr.geoking.arthur.ui.components.ArtworkCard
+import fr.geoking.arthur.ui.components.CatalogPageSize
 import fr.geoking.arthur.ui.components.CategoryFilter
 import fr.geoking.arthur.ui.components.CategoryFilterRow
 import fr.geoking.arthur.ui.components.ContextualSubFilterRow
@@ -46,7 +51,15 @@ import fr.geoking.arthur.ui.components.GalleryHero
 import fr.geoking.arthur.ui.components.GenartTopic
 import fr.geoking.arthur.ui.components.MuseumTopic
 import fr.geoking.arthur.ui.components.StartAmbientFab
-import fr.geoking.arthur.ui.components.filterByCategoryAndSources
+import fr.geoking.arthur.ui.components.canLoadMoreCatalog
+import fr.geoking.arthur.ui.components.resolveCategoryCatalog
+import fr.geoking.arthur.ui.components.takeCatalogPage
+
+private val StockSourceIds = setOf(
+    BundledPackSource.ID,
+    PexelsSource.ID,
+    UnsplashSource.ID,
+)
 
 @Composable
 fun ControlPlaneScreen(
@@ -58,6 +71,7 @@ fun ControlPlaneScreen(
     showFractalPreview: Boolean = true,
     onCreateCustomFractal: (() -> Unit)? = null,
     stockPhotoSettings: StockPhotoSettings? = null,
+    museumSearchSettings: MuseumSearchSettings? = null,
     onOpenSettings: (() -> Unit)? = null,
 ) {
     var catalog by remember { mutableStateOf(initialCatalog.orEmpty()) }
@@ -65,19 +79,41 @@ fun ControlPlaneScreen(
     var stockCategory by remember {
         mutableStateOf(stockPhotoSettings?.category ?: StockPhotoCategory.Suggestions)
     }
+    var selectedCategory by remember { mutableStateOf(CategoryFilter.ALL) }
+    var museumTopic by remember { mutableStateOf(MuseumTopic.Suggestions) }
+    var genartTopic by remember { mutableStateOf(GenartTopic.Fractal) }
 
-    LaunchedEffect(contentEngine, initialCatalog, stockCategory) {
+    val museumKind = when (selectedCategory) {
+        CategoryFilter.PAINTING -> MuseumSearchKind.Painting
+        CategoryFilter.SCULPTURE -> MuseumSearchKind.Sculpture
+        else -> MuseumSearchKind.All
+    }
+
+    LaunchedEffect(contentEngine, initialCatalog, stockCategory, museumKind) {
         if (stockPhotoSettings != null) {
             stockPhotoSettings.category = stockCategory
         }
-        if (initialCatalog == null) {
-            catalog = contentEngine.catalog(
-                PreparedRotation(
-                    sourceIds = emptyList(),
-                    artworkIds = emptyList(),
-                ),
-            )
+        if (museumSearchSettings != null) {
+            museumSearchSettings.kind = museumKind
         }
+        if (initialCatalog != null) return@LaunchedEffect
+
+        // Fast path: refresh stock Sources first so Photo → Nature/City/… fill immediately
+        // without waiting on slow museum N+1 fetches.
+        val stockOnly = contentEngine.catalog(
+            PreparedRotation(
+                sourceIds = StockSourceIds.toList(),
+                artworkIds = emptyList(),
+            ),
+        )
+        catalog = catalog.filterNot { it.sourceId in StockSourceIds } + stockOnly
+
+        catalog = contentEngine.catalog(
+            PreparedRotation(
+                sourceIds = emptyList(),
+                artworkIds = emptyList(),
+            ),
+        )
     }
 
     ControlPlaneContent(
@@ -95,8 +131,22 @@ fun ControlPlaneScreen(
         modifier = modifier,
         showFractalPreview = showFractalPreview,
         onCreateCustomFractal = onCreateCustomFractal,
+        selectedCategory = selectedCategory,
+        onCategorySelected = { next ->
+            selectedCategory = next
+            if (!next.showsMuseumTopics()) {
+                museumTopic = MuseumTopic.Suggestions
+            }
+            if (!next.showsGenartTopics()) {
+                genartTopic = GenartTopic.Fractal
+            }
+        },
+        museumTopic = museumTopic,
+        onMuseumTopicChange = { museumTopic = it },
         stockCategory = stockCategory,
         onStockCategoryChange = { stockCategory = it },
+        genartTopic = genartTopic,
+        onGenartTopicChange = { genartTopic = it },
         onOpenSettings = onOpenSettings,
     )
 }
@@ -110,8 +160,14 @@ fun ControlPlaneContent(
     modifier: Modifier = Modifier,
     showFractalPreview: Boolean = true,
     onCreateCustomFractal: (() -> Unit)? = null,
+    selectedCategory: CategoryFilter = CategoryFilter.ALL,
+    onCategorySelected: (CategoryFilter) -> Unit = {},
+    museumTopic: MuseumTopic = MuseumTopic.Suggestions,
+    onMuseumTopicChange: (MuseumTopic) -> Unit = {},
     stockCategory: StockPhotoCategory = StockPhotoCategory.Suggestions,
     onStockCategoryChange: (StockPhotoCategory) -> Unit = {},
+    genartTopic: GenartTopic = GenartTopic.Fractal,
+    onGenartTopicChange: (GenartTopic) -> Unit = {},
     onOpenSettings: (() -> Unit)? = null,
 ) {
     val configuration = LocalConfiguration.current
@@ -127,6 +183,12 @@ fun ControlPlaneContent(
             onStartAmbient = onStartAmbient,
             modifier = modifier,
             showFractalPreview = showFractalPreview,
+            selectedCategory = selectedCategory,
+            onCategorySelected = onCategorySelected,
+            museumTopic = museumTopic,
+            onMuseumTopicChange = onMuseumTopicChange,
+            genartTopic = genartTopic,
+            onGenartTopicChange = onGenartTopicChange,
             onOpenSettings = onOpenSettings,
         )
         return
@@ -139,8 +201,14 @@ fun ControlPlaneContent(
         modifier = modifier,
         showFractalPreview = showFractalPreview,
         onCreateCustomFractal = onCreateCustomFractal,
+        selectedCategory = selectedCategory,
+        onCategorySelected = onCategorySelected,
+        museumTopic = museumTopic,
+        onMuseumTopicChange = onMuseumTopicChange,
         stockCategory = stockCategory,
         onStockCategoryChange = onStockCategoryChange,
+        genartTopic = genartTopic,
+        onGenartTopicChange = onGenartTopicChange,
         onOpenSettings = onOpenSettings,
     )
 }
@@ -154,27 +222,39 @@ private fun PhoneControlPlaneContent(
     modifier: Modifier = Modifier,
     showFractalPreview: Boolean = true,
     onCreateCustomFractal: (() -> Unit)? = null,
+    selectedCategory: CategoryFilter = CategoryFilter.ALL,
+    onCategorySelected: (CategoryFilter) -> Unit = {},
+    museumTopic: MuseumTopic = MuseumTopic.Suggestions,
+    onMuseumTopicChange: (MuseumTopic) -> Unit = {},
     stockCategory: StockPhotoCategory = StockPhotoCategory.Suggestions,
     onStockCategoryChange: (StockPhotoCategory) -> Unit = {},
+    genartTopic: GenartTopic = GenartTopic.Fractal,
+    onGenartTopicChange: (GenartTopic) -> Unit = {},
     onOpenSettings: (() -> Unit)? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
-    var selectedCategory by remember { mutableStateOf(CategoryFilter.ALL) }
-    var museumTopic by remember { mutableStateOf(MuseumTopic.Suggestions) }
-    var genartTopic by remember { mutableStateOf(GenartTopic.Fractal) }
-    val filteredCatalog = remember(catalog, selectedCategory, museumTopic, stockCategory, genartTopic) {
-        catalog.filterByCategoryAndSources(
+    val resolved = remember(catalog, selectedCategory, museumTopic, stockCategory, genartTopic) {
+        resolveCategoryCatalog(
+            catalog = catalog,
             category = selectedCategory,
             museumTopic = museumTopic,
             stockCategory = stockCategory,
             genartTopic = genartTopic,
         )
     }
-    // Keep preview in sync with the visible list; each click still updates via onSelect.
+    val filteredCatalog = resolved.items
+    var visibleCount by remember { mutableStateOf(CatalogPageSize) }
     LaunchedEffect(filteredCatalog.map { it.id }) {
-        val stillVisible = selected != null && filteredCatalog.any { it.id == selected.id }
+        visibleCount = CatalogPageSize
+    }
+    val visibleCatalog = remember(filteredCatalog, visibleCount) {
+        filteredCatalog.takeCatalogPage(visibleCount)
+    }
+    // Keep preview in sync with the visible list; each click still updates via onSelect.
+    LaunchedEffect(visibleCatalog.map { it.id }) {
+        val stillVisible = selected != null && visibleCatalog.any { it.id == selected.id }
         if (!stillVisible) {
-            filteredCatalog.firstOrNull()?.let(onSelect)
+            visibleCatalog.firstOrNull()?.let(onSelect)
         }
     }
 
@@ -205,7 +285,8 @@ private fun PhoneControlPlaneContent(
             if (
                 onCreateCustomFractal != null &&
                 selectedCategory == CategoryFilter.GENART &&
-                genartTopic == GenartTopic.Custom
+                genartTopic == GenartTopic.Custom &&
+                resolved.showSubfilters
             ) {
                 TextButton(
                     onClick = onCreateCustomFractal,
@@ -233,26 +314,20 @@ private fun PhoneControlPlaneContent(
             )
             CategoryFilterRow(
                 selectedCategory = selectedCategory,
-                onCategorySelected = { next ->
-                    selectedCategory = next
-                    if (!next.showsMuseumTopics()) {
-                        museumTopic = MuseumTopic.Suggestions
-                    }
-                    if (!next.showsGenartTopics()) {
-                        genartTopic = GenartTopic.Fractal
-                    }
-                },
+                onCategorySelected = onCategorySelected,
                 modifier = Modifier.padding(bottom = 4.dp),
             )
-            ContextualSubFilterRow(
-                selectedCategory = selectedCategory,
-                museumTopic = museumTopic,
-                onMuseumTopicChange = { museumTopic = it },
-                stockCategory = stockCategory,
-                onStockCategoryChange = onStockCategoryChange,
-                genartTopic = genartTopic,
-                onGenartTopicChange = { genartTopic = it },
-            )
+            if (resolved.showSubfilters) {
+                ContextualSubFilterRow(
+                    selectedCategory = selectedCategory,
+                    museumTopic = museumTopic,
+                    onMuseumTopicChange = onMuseumTopicChange,
+                    stockCategory = stockCategory,
+                    onStockCategoryChange = onStockCategoryChange,
+                    genartTopic = genartTopic,
+                    onGenartTopicChange = onGenartTopicChange,
+                )
+            }
             LazyColumn(
                 modifier = Modifier
                     .weight(1f)
@@ -261,12 +336,24 @@ private fun PhoneControlPlaneContent(
                 contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                itemsIndexed(filteredCatalog, key = { _, art -> art.id }) { _, art ->
+                itemsIndexed(visibleCatalog, key = { _, art -> art.id }) { _, art ->
                     ArtworkCard(
                         artwork = art,
                         selected = art.id == selected?.id,
                         onClick = { onSelect(art) },
                     )
+                }
+                if (filteredCatalog.canLoadMoreCatalog(visibleCount)) {
+                    item(key = "load_more") {
+                        TextButton(
+                            onClick = { visibleCount += CatalogPageSize },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("load_more"),
+                        ) {
+                            Text(stringResource(R.string.load_more))
+                        }
+                    }
                 }
             }
         }

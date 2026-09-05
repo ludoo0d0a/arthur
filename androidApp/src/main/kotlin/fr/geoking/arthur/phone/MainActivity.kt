@@ -27,6 +27,7 @@ import fr.geoking.arthur.fractal.CustomFractalStore
 import fr.geoking.arthur.phone.theme.ArthurTheme
 import fr.geoking.arthur.shared.domain.PremiumEntitlement
 import fr.geoking.arthur.shared.engine.ContentEngine
+import fr.geoking.arthur.source.MuseumSearchSettings
 import fr.geoking.arthur.source.StockPhotoSettings
 import fr.geoking.arthur.tv.AmbientActivity
 import fr.geoking.arthur.ui.UpdateAvailableDialog
@@ -43,6 +44,7 @@ class MainActivity : ComponentActivity() {
     private val purchases: PurchasesGateway by inject()
     private val customFractalStore: CustomFractalStore by inject()
     private val stockPhotoSettings: StockPhotoSettings by inject()
+    private val museumSearchSettings: MuseumSearchSettings by inject()
 
     private val inAppUpdateHelper by lazy { InAppUpdateHelper(applicationContext) }
 
@@ -103,6 +105,7 @@ class MainActivity : ComponentActivity() {
                                     ControlPlaneScreen(
                                         contentEngine = contentEngine,
                                         stockPhotoSettings = stockPhotoSettings,
+                                        museumSearchSettings = museumSearchSettings,
                                         onStartAmbient = { artwork ->
                                             startActivity(
                                                 AmbientActivity.intent(

@@ -10,25 +10,34 @@ import kotlinx.serialization.json.Json
 /**
  * Cleveland Museum of Art Open Access Remote Source (no API key).
  * CC0 works with JPEG images only; [httpGet] is injected for fixtures.
+ *
+ * Search: `GET /api/artworks/?type=…` — `type` codes from [RemoteCategoryMapping].
  */
 class ClevelandSource(
     private val httpGet: suspend (url: String) -> String,
+    private val kind: () -> MuseumSearchKind = { MuseumSearchKind.Painting },
     private val limit: Int = DEFAULT_LIMIT,
 ) : Source {
     override val id: String = ID
     override val displayName: String = "Cleveland Museum of Art"
 
     override suspend fun load(): List<Artwork> = runCatching {
-        val payload = httpGet(searchUrl(limit))
-        val page = json.decodeFromString<ClevelandSearchPage>(payload)
-        page.data
-            .asSequence()
-            .mapNotNull { toArtwork(it) }
-            .take(limit)
-            .toList()
+        val targets = RemoteCategoryMapping.museumTargets(kind())
+        val perKind = (limit / targets.size).coerceAtLeast(1)
+        val results = mutableListOf<Artwork>()
+        for (target in targets) {
+            val payload = httpGet(searchUrl(perKind, target))
+            val page = json.decodeFromString<ClevelandSearchPage>(payload)
+            page.data
+                .asSequence()
+                .mapNotNull { toArtwork(it, target) }
+                .take(perKind)
+                .forEach { results.add(it) }
+        }
+        results.take(limit)
     }.getOrDefault(emptyList())
 
-    private fun toArtwork(item: ClevelandArtwork): Artwork? {
+    private fun toArtwork(item: ClevelandArtwork, searchKind: MuseumSearchKind): Artwork? {
         val objectId = item.id ?: return null
         val imageUrl = item.images?.preferredJpegUrl()?.takeIf { it.isNotBlank() } ?: return null
         val title = item.title?.takeIf { it.isNotBlank() } ?: "Object $objectId"
@@ -42,7 +51,9 @@ class ClevelandSource(
             title = title,
             attribution = attribution,
             sourceId = ID,
-            kind = parseKind(item.type),
+            kind = item.type?.let { parseKind(it) }
+                ?: searchKind.artworkKind
+                ?: ArtworkKind.Painting,
             remoteUrl = imageUrl,
         )
     }
@@ -55,13 +66,19 @@ class ClevelandSource(
 
     companion object {
         const val ID = "cleveland"
-        const val DEFAULT_LIMIT = 8
+        const val DEFAULT_LIMIT = 20
 
         private val json = Json { ignoreUnknownKeys = true }
 
-        fun searchUrl(limit: Int = DEFAULT_LIMIT): String =
-            "https://openaccess-api.clevelandart.org/api/artworks/" +
-                "?cc0=1&has_image=1&limit=$limit&type=Painting"
+        fun searchUrl(
+            limit: Int = DEFAULT_LIMIT,
+            kind: MuseumSearchKind = MuseumSearchKind.Painting,
+        ): String {
+            val type = RemoteCategoryMapping.museumParams(kind, RemoteProvider.Cleveland).type
+                .orEmpty()
+            return "https://openaccess-api.clevelandart.org/api/artworks/" +
+                "?cc0=1&has_image=1&limit=$limit&type=$type"
+        }
     }
 }
 

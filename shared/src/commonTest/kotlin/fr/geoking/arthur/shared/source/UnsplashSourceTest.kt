@@ -68,7 +68,7 @@ class UnsplashSourceTest {
     @Test
     fun searchUrlIncludesCategoryQuery() {
         assertEquals(
-            "https://api.unsplash.com/search/photos?query=city&orientation=landscape&per_page=8",
+            "https://api.unsplash.com/search/photos?query=city&orientation=landscape&per_page=20",
             UnsplashSource.searchUrl("city"),
         )
     }

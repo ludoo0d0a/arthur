@@ -216,4 +216,56 @@ class FilterChipRowsTest {
         assertEquals(listOf("pexels-1", "unsplash-1"), filtered.map { it.id })
         assertFalse(filtered.any { it.id == "bundled-3" })
     }
+
+    @Test
+    fun resolve_emptyMuseumSubcategory_hidesSubfiltersAndShowsCategoryMatches() {
+        val resolved = resolveCategoryCatalog(
+            catalog = catalog,
+            category = CategoryFilter.SCULPTURE,
+            museumTopic = MuseumTopic.Met, // no Met sculptures in fixture
+        )
+        assertFalse(resolved.showSubfilters)
+        assertEquals(listOf("rijks-sculpt", "bundled-sculpt"), resolved.items.map { it.id })
+    }
+
+    @Test
+    fun resolve_matchingGenartSubcategory_keepsSubfilters() {
+        val resolved = resolveCategoryCatalog(
+            catalog = catalog,
+            category = CategoryFilter.GENART,
+            genartTopic = GenartTopic.Nature,
+        )
+        assertTrue(resolved.showSubfilters)
+        assertEquals(listOf(GenartSource.SNOW), resolved.items.map { it.id })
+    }
+
+    @Test
+    fun resolve_emptyPhotoSubcategory_keepsTopicsAndFallsBackToCategory() {
+        val noStock = catalog.filterNot {
+            it.sourceId == PexelsSource.ID || it.sourceId == UnsplashSource.ID
+        }
+        val resolved = resolveCategoryCatalog(
+            catalog = noStock,
+            category = CategoryFilter.PHOTO,
+            stockCategory = StockPhotoCategory.Nature,
+        )
+        assertTrue(resolved.showSubfilters)
+        assertEquals(listOf("bundled-3"), resolved.items.map { it.id })
+    }
+
+    @Test
+    fun catalogPage_showsFirstTwentyThenLoadMore() {
+        val items = (1..25).map { i ->
+            Artwork(
+                id = "a-$i",
+                title = "A$i",
+                sourceId = BundledPackSource.ID,
+                kind = ArtworkKind.Photo,
+            )
+        }
+        assertEquals(20, items.takeCatalogPage(CatalogPageSize).size)
+        assertTrue(items.canLoadMoreCatalog(CatalogPageSize))
+        assertFalse(items.canLoadMoreCatalog(25))
+        assertEquals(25, items.takeCatalogPage(40).size)
+    }
 }

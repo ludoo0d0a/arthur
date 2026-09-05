@@ -18,10 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
@@ -33,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.R
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.ui.components.ArtworkCard
+import fr.geoking.arthur.ui.components.CatalogPageSize
 import fr.geoking.arthur.ui.components.CategoryFilter
 import fr.geoking.arthur.ui.components.CategoryFilterRow
 import fr.geoking.arthur.ui.components.ContextualSubFilterRow
@@ -40,7 +38,13 @@ import fr.geoking.arthur.ui.components.ControlPlaneHeader
 import fr.geoking.arthur.ui.components.GalleryHero
 import fr.geoking.arthur.ui.components.GenartTopic
 import fr.geoking.arthur.ui.components.MuseumTopic
-import fr.geoking.arthur.ui.components.filterByCategoryAndSources
+import fr.geoking.arthur.ui.components.canLoadMoreCatalog
+import fr.geoking.arthur.ui.components.resolveCategoryCatalog
+import fr.geoking.arthur.ui.components.takeCatalogPage
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 
 /**
  * TV Control Plane: single flat z-level (no FAB), D-pad left/right + up/down,
@@ -56,30 +60,42 @@ fun TvControlPlaneContent(
     onStartAmbient: () -> Unit,
     modifier: Modifier = Modifier,
     showFractalPreview: Boolean = true,
+    selectedCategory: CategoryFilter = CategoryFilter.ALL,
+    onCategorySelected: (CategoryFilter) -> Unit = {},
+    museumTopic: MuseumTopic = MuseumTopic.Suggestions,
+    onMuseumTopicChange: (MuseumTopic) -> Unit = {},
+    genartTopic: GenartTopic = GenartTopic.Fractal,
+    onGenartTopicChange: (GenartTopic) -> Unit = {},
     onOpenSettings: (() -> Unit)? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
-    var selectedCategory by remember { mutableStateOf(CategoryFilter.ALL) }
-    var museumTopic by remember { mutableStateOf(MuseumTopic.Suggestions) }
-    var genartTopic by remember { mutableStateOf(GenartTopic.Fractal) }
-    val filteredCatalog = remember(catalog, selectedCategory, museumTopic, genartTopic) {
-        catalog.filterByCategoryAndSources(
+    val resolved = remember(catalog, selectedCategory, museumTopic, genartTopic) {
+        resolveCategoryCatalog(
+            catalog = catalog,
             category = selectedCategory,
             museumTopic = museumTopic,
             genartTopic = genartTopic,
         )
+    }
+    val filteredCatalog = resolved.items
+    var visibleCount by remember { mutableStateOf(CatalogPageSize) }
+    LaunchedEffect(filteredCatalog.map { it.id }) {
+        visibleCount = CatalogPageSize
+    }
+    val visibleCatalog = remember(filteredCatalog, visibleCount) {
+        filteredCatalog.takeCatalogPage(visibleCount)
     }
 
     val startFocus = remember { FocusRequester() }
     val firstCardFocus = remember { FocusRequester() }
     val firstChipFocus = remember { FocusRequester() }
 
-    LaunchedEffect(filteredCatalog.map { it.id }) {
-        val stillVisible = selected != null && filteredCatalog.any { it.id == selected.id }
+    LaunchedEffect(visibleCatalog.map { it.id }) {
+        val stillVisible = selected != null && visibleCatalog.any { it.id == selected.id }
         if (!stillVisible) {
-            filteredCatalog.firstOrNull()?.let(onSelect)
+            visibleCatalog.firstOrNull()?.let(onSelect)
         }
-        if (filteredCatalog.isNotEmpty()) {
+        if (visibleCatalog.isNotEmpty()) {
             firstCardFocus.requestFocus()
         } else {
             startFocus.requestFocus()
@@ -117,15 +133,7 @@ fun TvControlPlaneContent(
                 )
                 CategoryFilterRow(
                     selectedCategory = selectedCategory,
-                    onCategorySelected = { next ->
-                        selectedCategory = next
-                        if (!next.showsMuseumTopics()) {
-                            museumTopic = MuseumTopic.Suggestions
-                        }
-                        if (!next.showsGenartTopics()) {
-                            genartTopic = GenartTopic.Fractal
-                        }
-                    },
+                    onCategorySelected = onCategorySelected,
                     modifier = Modifier.padding(bottom = 4.dp),
                     contentPadding = PaddingValues(0.dp),
                     horizontalSpacing = 10.dp,
@@ -139,15 +147,17 @@ fun TvControlPlaneContent(
                         }
                     },
                 )
-                ContextualSubFilterRow(
-                    selectedCategory = selectedCategory,
-                    museumTopic = museumTopic,
-                    onMuseumTopicChange = { museumTopic = it },
-                    genartTopic = genartTopic,
-                    onGenartTopicChange = { genartTopic = it },
-                    contentPadding = PaddingValues(0.dp),
-                    horizontalSpacing = 10.dp,
-                )
+                if (resolved.showSubfilters) {
+                    ContextualSubFilterRow(
+                        selectedCategory = selectedCategory,
+                        museumTopic = museumTopic,
+                        onMuseumTopicChange = onMuseumTopicChange,
+                        genartTopic = genartTopic,
+                        onGenartTopicChange = onGenartTopicChange,
+                        contentPadding = PaddingValues(0.dp),
+                        horizontalSpacing = 10.dp,
+                    )
+                }
                 LazyColumn(
                     modifier = Modifier
                         .weight(1f)
@@ -156,7 +166,7 @@ fun TvControlPlaneContent(
                     contentPadding = PaddingValues(bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
-                    itemsIndexed(filteredCatalog, key = { _, art -> art.id }) { index, art ->
+                    itemsIndexed(visibleCatalog, key = { _, art -> art.id }) { index, art ->
                         ArtworkCard(
                             artwork = art,
                             selected = art.id == selected?.id,
@@ -171,6 +181,18 @@ fun TvControlPlaneContent(
                                 Modifier.focusProperties { right = startFocus }
                             },
                         )
+                    }
+                    if (filteredCatalog.canLoadMoreCatalog(visibleCount)) {
+                        item(key = "load_more") {
+                            TextButton(
+                                onClick = { visibleCount += CatalogPageSize },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("load_more"),
+                            ) {
+                                Text(stringResource(R.string.load_more))
+                            }
+                        }
                     }
                 }
             }

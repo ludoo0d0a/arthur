@@ -67,8 +67,12 @@ interface PremiumEntitlement {
 data class FreeTierLimits(
     val maxPhotoArtwork: Int = 5,
     val maxFractalPresets: Int = 3,
-    /** Enough for Genart Nature / Geometry / Planets subcategories to show results. */
-    val maxGenart: Int = 12,
+    /**
+     * Cap on free-tier Genart engines. Must cover the full shipped catalog so
+     * late topics (Abstract Tapet engines, Weather, Planets) are not empty —
+     * Genart is on-device procedural, so a tight prefix cap only hides packs.
+     */
+    val maxGenart: Int = 64,
 )
 
 /** Scheduled sequence shown on a Canvas. */

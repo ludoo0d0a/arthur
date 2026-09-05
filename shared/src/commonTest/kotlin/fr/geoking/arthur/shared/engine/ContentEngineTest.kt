@@ -113,6 +113,27 @@ class ContentEngineTest {
     }
 
     @Test
+    fun genartSource_defaultFreeTier_includesAbstractTapetEngines() = runBlocking {
+        val engine = ContentEngine(
+            sources = listOf(GenartSource()),
+            entitlement = FakePremiumEntitlement(isPremium = false),
+        )
+        val catalog = engine.catalog(
+            PreparedRotation(sourceIds = listOf(GenartSource.ID), artworkIds = emptyList()),
+        )
+        val ids = catalog.map { it.id }.toSet()
+        assertEquals(GenartSource.defaultCatalog().size, catalog.size)
+        assertTrue(ids.contains(GenartSource.BLOBS))
+        assertTrue(ids.contains(GenartSource.NOISE_FIELD))
+        assertTrue(ids.contains(GenartSource.VORONOI))
+        assertTrue(ids.contains(GenartSource.SILK))
+        assertTrue(ids.contains(GenartSource.GRADIENT_MESH))
+        assertTrue(ids.contains(GenartSource.ARC_MOSAIC))
+        assertTrue(ids.contains(GenartSource.BREATH_CIRCLES))
+        assertTrue(ids.contains(GenartSource.RIBBONS))
+    }
+
+    @Test
     fun fractalSource_freeTier_capsPresets() = runBlocking {
         val engine = ContentEngine(
             sources = listOf(FractalSource()),

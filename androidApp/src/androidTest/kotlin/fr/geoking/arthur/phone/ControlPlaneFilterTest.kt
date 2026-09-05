@@ -51,6 +51,7 @@ class ControlPlaneFilterTest {
         composeRule.onNodeWithTag("pack_tile_genart_all").assertIsDisplayed()
         composeRule.onNodeWithTag("pack_tile_genart_nature").assertIsDisplayed()
         composeRule.onNodeWithTag("pack_tile_genart_weather").assertIsDisplayed()
+        composeRule.onNodeWithTag("pack_tile_genart_abstract").assertIsDisplayed()
         composeRule.onNodeWithTag("pack_tile_genart_all").assertIsSelected()
     }
 

@@ -190,6 +190,20 @@ class FilterChipRowsTest {
     }
 
     @Test
+    fun resolve_abstractWithHits_keepsSubfilters() {
+        val resolved = resolveCategoryCatalog(
+            catalog = catalog,
+            category = CategoryFilter.GENART,
+            genartTopic = GenartTopic.Abstract,
+        )
+        assertTrue(resolved.showSubfilters)
+        assertEquals(
+            listOf(GenartSource.BLOBS, GenartSource.BREATH_CIRCLES),
+            resolved.items.map { it.id },
+        )
+    }
+
+    @Test
     fun genartPlanets_showsPlanetEngines() {
         val filtered = catalog.filterByCategoryAndSources(
             CategoryFilter.GENART,

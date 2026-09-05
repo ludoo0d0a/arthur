@@ -57,6 +57,18 @@ class PackModelsTest {
             sourceId = GenartSource.ID,
             kind = ArtworkKind.Genart,
         ),
+        Artwork(
+            id = GenartSource.BLOBS,
+            title = "Morphing Blobs",
+            sourceId = GenartSource.ID,
+            kind = ArtworkKind.Genart,
+        ),
+        Artwork(
+            id = GenartSource.GRADIENT_MESH,
+            title = "Gradient Mesh",
+            sourceId = GenartSource.ID,
+            kind = ArtworkKind.Genart,
+        ),
     )
 
     @Test
@@ -99,9 +111,33 @@ class PackModelsTest {
     fun genartAll_includesAllGenartKinds() {
         val pool = resolvePackPool(catalog, PackSelection(PackFamily.Genart))
         assertEquals(
-            listOf(GenartSource.SNOW, GenartSource.GRASS, GenartSource.NEBULA),
+            listOf(
+                GenartSource.SNOW,
+                GenartSource.GRASS,
+                GenartSource.NEBULA,
+                GenartSource.BLOBS,
+                GenartSource.GRADIENT_MESH,
+            ),
             pool.map { it.id },
         )
+    }
+
+    @Test
+    fun genartAbstract_includesTapetEngines() {
+        val pool = resolvePackPool(
+            catalog,
+            PackSelection(PackFamily.Genart, GenartTopic.Abstract.testTagSuffix),
+        )
+        assertEquals(
+            listOf(GenartSource.BLOBS, GenartSource.GRADIENT_MESH),
+            pool.map { it.id },
+        )
+    }
+
+    @Test
+    fun genartSubPacks_includeAbstract() {
+        val suffixes = PackFamily.Genart.subPackTiles().map { it.testTagSuffix }
+        assertTrue(suffixes.contains("genart_abstract"))
     }
 
     @Test

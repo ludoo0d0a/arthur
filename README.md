@@ -1,8 +1,10 @@
 # Arthur (ART'hur)
 
-Ambient art for **phone** (Control Plane), **Android Auto** (Media), and **Android TV** (screensaver).
+Arthur is ambient art for Android: configure rotations on your phone, then enjoy museum works, photos, genart, and fractals on **Android Auto** and **Android TV**.
 
-Domain language: [`CONTEXT.md`](CONTEXT.md) · Decisions: [`docs/adr/`](docs/adr/) · Genart ideas: [`docs/roadmap-genart.md`](docs/roadmap-genart.md)
+Phone is the Control Plane; Auto and TV are the Canvases. One App Shell APK.
+
+Domain language: [`CONTEXT.md`](CONTEXT.md) · Decisions: [`docs/adr/`](docs/adr/) · Genart ideas: [`docs/roadmap-genart.md`](docs/roadmap-genart.md) · Museum Sources: [`docs/roadmap-museum-sources.md`](docs/roadmap-museum-sources.md)
 
 ## Modules
 

@@ -47,4 +47,9 @@
     <string name="car_pause">Pause</string>
     <string name="car_gallery_empty">Aucune œuvre dans la galerie</string>
     <string name="car_error_generic">Impossible d’afficher l’art ambient</string>
+    <string name="update_available_title">Mise à jour disponible</string>
+    <string name="update_available_message">Une nouvelle version d’Arthur est disponible. Mettez à jour pour profiter des dernières fonctionnalités.</string>
+    <string name="update_in_progress">Mise à jour en cours</string>
+    <string name="action_update">Mettre à jour</string>
+    <string name="action_cancel">Annuler</string>
 </resources>

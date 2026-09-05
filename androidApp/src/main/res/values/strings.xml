@@ -47,4 +47,9 @@
     <string name="car_pause">Pause</string>
     <string name="car_gallery_empty">No artwork in gallery</string>
     <string name="car_error_generic">Unable to show ambient art</string>
+    <string name="update_available_title">Update available</string>
+    <string name="update_available_message">A new version of Arthur is available. Update now to get the latest features and improvements.</string>
+    <string name="update_in_progress">Update in progress</string>
+    <string name="action_update">Update</string>
+    <string name="action_cancel">Cancel</string>
 </resources>

@@ -1,6 +1,7 @@
 package fr.geoking.arthur
 
 import android.app.Application
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import fr.geoking.arthur.billing.FakePurchasesGateway
 import fr.geoking.arthur.billing.PurchasesGateway
 import fr.geoking.arthur.billing.RevenueCatPremiumEntitlement
@@ -33,6 +34,8 @@ import org.koin.dsl.module
 class ArthurApp : Application() {
     override fun onCreate() {
         super.onCreate()
+        // Avoid debug noise / timeouts; release builds still report.
+        FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(!BuildConfig.DEBUG)
         stopKoin()
         startKoin {
             androidContext(this@ArthurApp)

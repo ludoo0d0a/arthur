@@ -1,6 +1,6 @@
 # Arthur
 
-Ambient art and photo display — name is a play on **ART'hur**. Phone is the Control Plane; Auto and TV are Canvases. Single App Shell APK. v1 Content Engine: Bundled Pack, Rijksmuseum + The Met Remote Sources, Pexels + Unsplash Stock Photo Sources, Genart, Fractal Presets, Premium Custom Fractal, Photo Artwork, Premium Personal Photos. RevenueCat lifetime. Apple-Ready Shared only (no Apple UI in v1). Canvas Pairing LAN/QR. **Release Spine**: geoking-tools + geoking-ci (CI/CD Play, listings/i18n, Firebase Analytics/Crashlytics, In-App Updates, arthur.geoking.fr); Scora = reference copy source only.
+Ambient art and photo display — name is a play on **ART'hur**. Phone is the Control Plane; Auto and TV are Canvases. Single App Shell APK. v1 Content Engine: Bundled Pack, Rijksmuseum + The Met + Art Institute of Chicago + Cleveland Museum Remote Sources, Pexels + Unsplash Stock Photo Sources, Genart, Fractal Presets, Premium Custom Fractal, Photo Artwork, Premium Personal Photos. RevenueCat lifetime. Apple-Ready Shared only (no Apple UI in v1). Canvas Pairing LAN/QR. **Release Spine**: geoking-tools + geoking-ci (CI/CD Play, listings/i18n, Firebase Analytics/Crashlytics, In-App Updates, arthur.geoking.fr); Scora = reference copy source only.
 
 ## Language
 
@@ -107,7 +107,7 @@ A small offline set of Artwork shipped with the app so Auto/TV Canvases work bef
 _Avoid_: Full catalog on device
 
 **Remote Source**:
-An external catalog synced into the Content Engine under explicit license/attribution rules. Museum connectors = **Rijksmuseum** and **The Met**. Stock-photo Sources = **Pexels** and **Unsplash**. Content Engine stays Source-agnostic behind one interface.
+An external catalog synced into the Content Engine under explicit license/attribution rules. Museum connectors = **Rijksmuseum**, **The Met**, **Art Institute of Chicago**, and **Cleveland Museum of Art**. Stock-photo Sources = **Pexels** and **Unsplash**. Content Engine stays Source-agnostic behind one interface. Further museum ideas: [`docs/roadmap-museum-sources.md`](docs/roadmap-museum-sources.md).
 _Avoid_: Scraping, unrestricted web images; Wikimedia as the famous-art connector
 
 **Rijksmuseum Source**:
@@ -115,8 +115,16 @@ Museum Remote Source via the public Linked Art Search API (no API key) + attribu
 _Avoid_: Shipping the third-party Rijksmuseum sample app as Arthur
 
 **The Met Source**:
-Second museum Remote Source via The Met Collection API (no API key). Open-access works with images only; attribution from artist display name when present.
+Museum Remote Source via The Met Collection API (no API key). Open-access works with images only; attribution from artist display name when present.
 _Avoid_: Using non–public-domain Met images
+
+**Art Institute of Chicago Source**:
+Museum Remote Source via api.artic.edu (no API key). Public-domain works with IIIF images only.
+_Avoid_: Non–public-domain Artic images; inventing image URLs outside the documented IIIF size pattern
+
+**Cleveland Museum Source**:
+Museum Remote Source via the Cleveland Open Access API (no API key). CC0 works with JPEG web/print images only.
+_Avoid_: Using full TIFF assets; works without images
 
 **Stock Photo Source**:
 Remote Sources for high-quality ambient photography (nature, landscape) via free legal APIs — **Pexels** and **Unsplash**. Distinct from museum Sources and from Personal Photos. Keys from `local.properties` / CI: `PEXELS_API_KEY`; Unsplash **Access Key** as `UNSPLASH_ACCESS_KEY` (Client-ID header). Unsplash **Secret Key** (`UNSPLASH_SECRET_KEY`) is OAuth-only — keep it out of the APK / BuildConfig. Control Plane picks a **photo topic** (nature, city, ocean, …) that drives the search query. Ambient rotates a random still every 20s; successful downloads and baked **genart** stills are cached under `cacheDir/artwork` (genart capped at 30, LRU) and reused offline. Blank access/API key → cached catalog for the topic (or empty). Must follow each provider’s ToS (attribution, rate limits, hotlink/cache rules). Not a substitute for famous-art catalogs.

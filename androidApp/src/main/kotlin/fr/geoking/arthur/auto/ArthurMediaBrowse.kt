@@ -3,7 +3,9 @@ package fr.geoking.arthur.auto
 import android.os.Bundle
 import androidx.media.utils.MediaConstants
 import fr.geoking.arthur.shared.domain.Artwork
+import fr.geoking.arthur.shared.source.ArticSource
 import fr.geoking.arthur.shared.source.BundledPackSource
+import fr.geoking.arthur.shared.source.ClevelandSource
 import fr.geoking.arthur.shared.source.CustomFractalSource
 import fr.geoking.arthur.shared.source.FractalSource
 import fr.geoking.arthur.shared.source.GenartSource
@@ -27,6 +29,8 @@ object ArthurMediaBrowse {
         BundledPackSource.ID,
         RijksmuseumSource.ID,
         MetSource.ID,
+        ArticSource.ID,
+        ClevelandSource.ID,
         PexelsSource.ID,
         UnsplashSource.ID,
     )
@@ -69,6 +73,8 @@ object ArthurMediaBrowse {
         BundledPackSource.ID -> "Bundled Pack"
         RijksmuseumSource.ID -> "Rijksmuseum"
         MetSource.ID -> "The Met"
+        ArticSource.ID -> "Art Institute of Chicago"
+        ClevelandSource.ID -> "Cleveland Museum of Art"
         PexelsSource.ID -> "Pexels"
         UnsplashSource.ID -> "Unsplash"
         else -> sourceId

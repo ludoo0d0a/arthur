@@ -7,7 +7,9 @@ import fr.geoking.arthur.billing.RevenueCatPremiumEntitlement
 import fr.geoking.arthur.fractal.CustomFractalStore
 import fr.geoking.arthur.shared.domain.PremiumEntitlement
 import fr.geoking.arthur.shared.engine.ContentEngine
+import fr.geoking.arthur.shared.source.ArticSource
 import fr.geoking.arthur.shared.source.BundledPackSource
+import fr.geoking.arthur.shared.source.ClevelandSource
 import fr.geoking.arthur.shared.source.CustomFractalSource
 import fr.geoking.arthur.shared.source.FractalSource
 import fr.geoking.arthur.shared.source.GenartSource
@@ -69,6 +71,18 @@ val appModule = module {
     }
     single {
         val client = get<HttpClient>()
+        ArticSource(
+            httpGet = { url -> client.get(url).bodyAsText() },
+        )
+    }
+    single {
+        val client = get<HttpClient>()
+        ClevelandSource(
+            httpGet = { url -> client.get(url).bodyAsText() },
+        )
+    }
+    single {
+        val client = get<HttpClient>()
         val apiKey = BuildConfig.PEXELS_API_KEY
         val settings = get<StockPhotoSettings>()
         val cache = get<ArtworkImageCache>()
@@ -111,6 +125,8 @@ val appModule = module {
                 get<UnsplashSource>(),
                 get<RijksmuseumSource>(),
                 get<MetSource>(),
+                get<ArticSource>(),
+                get<ClevelandSource>(),
                 get<GenartSource>(),
                 get<FractalSource>(),
                 get<CustomFractalSource>(),

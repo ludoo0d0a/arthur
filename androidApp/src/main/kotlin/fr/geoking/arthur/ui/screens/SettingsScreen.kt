@@ -82,6 +82,7 @@ fun SettingsScreen(
     onSimulatePremiumChange: (Boolean) -> Unit = {},
     rotationIntervalMs: Long = AmbientAlbumArt.ROTATION_INTERVAL_MS,
     onRotationIntervalChange: (Long) -> Unit = {},
+    onCheckForUpdate: (() -> Unit)? = null,
     initialScreenStack: List<SettingsScreenPage>? = null,
     onInitialRouteConsumed: () -> Unit = {},
 ) {
@@ -155,6 +156,7 @@ fun SettingsScreen(
                     isPremium = isPremium,
                     showDeveloper = showDeveloper,
                     rotationIntervalMs = rotationIntervalMs,
+                    onCheckForUpdate = onCheckForUpdate,
                     onNavigate = { screenStack = screenStack + it },
                 )
                 SettingsScreenPage.RotationInterval -> RotationIntervalContent(
@@ -179,6 +181,7 @@ private fun MainMenu(
     isPremium: Boolean,
     showDeveloper: Boolean,
     rotationIntervalMs: Long,
+    onCheckForUpdate: (() -> Unit)?,
     onNavigate: (SettingsScreenPage) -> Unit,
 ) {
     Column(
@@ -236,6 +239,12 @@ private fun MainMenu(
                 value = rotationIntervalLabel(rotationIntervalMs),
                 onClick = { onNavigate(SettingsScreenPage.RotationInterval) },
             )
+            if (onCheckForUpdate != null) {
+                SettingsItem(
+                    label = stringResource(R.string.settings_check_update),
+                    onClick = onCheckForUpdate,
+                )
+            }
             SettingsItem(
                 label = stringResource(R.string.screen_about),
                 value = stringResource(R.string.settings_about_subtitle),

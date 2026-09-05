@@ -35,10 +35,12 @@ import fr.geoking.arthur.source.StockPhotoSettings
 import fr.geoking.arthur.tv.AmbientActivity
 import fr.geoking.arthur.tv.AmbientRotationLaunch
 import fr.geoking.arthur.ui.UpdateAvailableDialog
+import fr.geoking.arthur.ui.UpdateCheckFeedbackDialog
 import fr.geoking.arthur.ui.UpdateInProgressBanner
 import fr.geoking.arthur.ui.screens.ControlPlaneScreen
 import fr.geoking.arthur.ui.screens.CustomFractalEditorScreen
 import fr.geoking.arthur.ui.screens.SettingsScreen
+import fr.geoking.arthur.update.CheckFeedback
 import fr.geoking.arthur.update.InAppUpdateHelper
 import org.koin.android.ext.android.inject
 
@@ -74,6 +76,7 @@ class MainActivity : ComponentActivity() {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val updateAvailable by inAppUpdateHelper.updateAvailable.collectAsState()
                     val installStatus by inAppUpdateHelper.installStatus.collectAsState()
+                    val checkFeedback by inAppUpdateHelper.checkFeedback.collectAsState()
                     val isUpdateInProgress = installStatus == InstallStatus.PENDING ||
                         installStatus == InstallStatus.DOWNLOADING ||
                         installStatus == InstallStatus.INSTALLING
@@ -96,6 +99,9 @@ class MainActivity : ComponentActivity() {
                                     onSimulatePremiumChange = developerSettings::setSimulatePremium,
                                     rotationIntervalMs = rotationIntervalMs,
                                     onRotationIntervalChange = rotationSettings::setIntervalMs,
+                                    onCheckForUpdate = {
+                                        inAppUpdateHelper.checkForUpdate(manual = true)
+                                    },
                                 )
                             }
                             showEditor && !isTelevision -> {
@@ -161,6 +167,23 @@ class MainActivity : ComponentActivity() {
                                 inAppUpdateHelper.startUpdate(info, updateResultLauncher)
                             },
                         )
+                    }
+
+                    when (val feedback = checkFeedback) {
+                        is CheckFeedback.UpToDate -> {
+                            UpdateCheckFeedbackDialog(
+                                isError = false,
+                                onDismiss = { inAppUpdateHelper.resetCheckFeedback() },
+                            )
+                        }
+                        is CheckFeedback.Error -> {
+                            UpdateCheckFeedbackDialog(
+                                isError = true,
+                                errorMessage = feedback.message,
+                                onDismiss = { inAppUpdateHelper.resetCheckFeedback() },
+                            )
+                        }
+                        CheckFeedback.None -> Unit
                     }
                 }
             }

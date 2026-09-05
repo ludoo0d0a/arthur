@@ -72,6 +72,10 @@
     <string name="update_available_title">Mise à jour disponible</string>
     <string name="update_available_message">Une nouvelle version d’Arthur est disponible. Mettez à jour pour profiter des dernières fonctionnalités.</string>
     <string name="update_in_progress">Mise à jour en cours</string>
+    <string name="settings_check_update">Vérifier les mises à jour</string>
+    <string name="update_check_up_to_date">Vous êtes à jour</string>
+    <string name="update_check_error_title">Vérification des mises à jour</string>
+    <string name="update_check_ok">OK</string>
     <string name="action_update">Mettre à jour</string>
     <string name="action_cancel">Annuler</string>
     <string name="action_back">Retour</string>

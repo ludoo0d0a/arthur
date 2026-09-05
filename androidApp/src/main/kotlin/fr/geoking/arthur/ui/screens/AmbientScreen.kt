@@ -27,6 +27,7 @@ import fr.geoking.arthur.fractal.FractalEffectCanvas
 import fr.geoking.arthur.fractal.FractalQuality
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.shared.domain.Artwork
+import fr.geoking.arthur.shared.domain.isGenerative
 import fr.geoking.arthur.ui.components.ArtworkRenderer
 import kotlin.random.Random
 import kotlinx.coroutines.delay
@@ -39,11 +40,12 @@ fun AmbientScreenContent(
     rotationPool: List<Artwork> = emptyList(),
     isActive: Boolean = true,
 ) {
+    // Rotate live generative + displayable stills (no baked genart stills required).
     val picturePool = remember(rotationPool, artwork) {
-        val stills = rotationPool.filter { hasDisplayableStill(it) }
+        val displayable = rotationPool.filter { it.isAmbientDisplayable() }
         when {
-            stills.isNotEmpty() -> stills
-            artwork != null && hasDisplayableStill(artwork) -> listOf(artwork)
+            displayable.isNotEmpty() -> displayable
+            artwork != null && artwork.isAmbientDisplayable() -> listOf(artwork)
             else -> emptyList()
         }
     }
@@ -122,5 +124,5 @@ fun AmbientScreenContent(
     }
 }
 
-private fun hasDisplayableStill(artwork: Artwork): Boolean =
-    !artwork.remoteUrl.isNullOrBlank() || !artwork.localPath.isNullOrBlank()
+private fun Artwork.isAmbientDisplayable(): Boolean =
+    isGenerative || !remoteUrl.isNullOrBlank() || !localPath.isNullOrBlank()

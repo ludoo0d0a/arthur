@@ -1,7 +1,6 @@
 package fr.geoking.arthur.auto
 
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -18,6 +17,7 @@ import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.isGenerative
 import fr.geoking.arthur.shared.source.CustomFractalSource
+import fr.geoking.arthur.source.SafeBitmapDecoder
 import fr.geoking.arthur.source.StillImageDownloader
 import java.io.File
 import kotlin.random.Random
@@ -80,7 +80,7 @@ object AmbientStillRenderer {
 
     private fun drawStillImage(canvas: Canvas, localPath: String?, remoteUrl: String?): Boolean {
         val fromFile = localPath?.takeIf { it.isNotBlank() }?.let { path ->
-            runCatching { BitmapFactory.decodeFile(path) }.getOrNull()
+            SafeBitmapDecoder.decodeFile(path, SafeBitmapDecoder.AMBIENT_STILL_MAX_SIDE)
         }
         if (fromFile != null) {
             drawBitmapCover(canvas, fromFile)
@@ -90,7 +90,10 @@ object AmbientStillRenderer {
         val url = remoteUrl?.takeIf { it.isNotBlank() } ?: return false
         return runCatching {
             val bytes = StillImageDownloader.downloadBytes(url)
-            val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return false
+            val bmp = SafeBitmapDecoder.decodeByteArray(
+                bytes,
+                SafeBitmapDecoder.AMBIENT_STILL_MAX_SIDE,
+            ) ?: return false
             drawBitmapCover(canvas, bmp)
             bmp.recycle()
             true

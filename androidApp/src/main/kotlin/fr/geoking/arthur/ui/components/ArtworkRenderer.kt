@@ -1,6 +1,5 @@
 package fr.geoking.arthur.ui.components
 
-import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -35,6 +34,7 @@ import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.source.FractalSource
 import fr.geoking.arthur.source.ArtworkImageCache
+import fr.geoking.arthur.source.SafeBitmapDecoder
 import fr.geoking.arthur.source.StillImageDownloader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -53,7 +53,15 @@ fun ArtworkRenderer(
     Box(modifier = modifier.fillMaxSize()) {
         when (artwork.kind) {
             ArtworkKind.Genart -> {
-                if (!artwork.localPath.isNullOrBlank()) {
+                // Prefer live engines for Ambient / hero — baked stills are Auto album-art only.
+                val engine = GenartCatalog.engineForId(artwork.id)
+                if (engine != null) {
+                    GenartEffectCanvas(
+                        engine = engine,
+                        isActive = isActive,
+                        quality = quality,
+                    )
+                } else if (!artwork.localPath.isNullOrBlank()) {
                     RemoteStillImage(
                         artworkId = artwork.id,
                         localPath = artwork.localPath,
@@ -61,16 +69,7 @@ fun ArtworkRenderer(
                         kind = artwork.kind,
                     )
                 } else {
-                    val engine = GenartCatalog.engineForId(artwork.id)
-                    if (engine != null) {
-                        GenartEffectCanvas(
-                            engine = engine,
-                            isActive = isActive,
-                            quality = quality,
-                        )
-                    } else {
-                        StillArtworkPlaceholder(kind = artwork.kind)
-                    }
+                    StillArtworkPlaceholder(kind = artwork.kind)
                 }
             }
             ArtworkKind.CustomFractal -> {
@@ -124,36 +123,26 @@ private fun RemoteStillImage(
     var hasFailed by remember(artworkId, localPath, remoteUrl) { mutableStateOf(false) }
 
     LaunchedEffect(artworkId, localPath, remoteUrl) {
-        withContext(Dispatchers.IO) {
+        val result = withContext(Dispatchers.IO) {
             val fromDisk = sequenceOf(
                 localPath,
                 imageCache.localPathOrNull(artworkId),
             ).filterNotNull().firstNotNullOfOrNull { path ->
-                runCatching { BitmapFactory.decodeFile(path) }.getOrNull()
+                SafeBitmapDecoder.decodeFile(path)
             }
-            if (fromDisk != null) {
-                bitmapState = fromDisk
-                return@withContext
-            }
+            if (fromDisk != null) return@withContext Result.success(fromDisk)
             val url = remoteUrl?.takeIf { it.isNotBlank() }
-            if (url == null) {
-                hasFailed = true
-                return@withContext
-            }
+                ?: return@withContext Result.failure(IllegalStateException("no image"))
             runCatching {
-                StillImageDownloader.downloadBytes(url)
-            }.onSuccess { bytes ->
+                val bytes = StillImageDownloader.downloadBytes(url)
                 imageCache.putImage(artworkId, bytes)
-                val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                if (bmp != null) {
-                    bitmapState = bmp
-                } else {
-                    hasFailed = true
-                }
-            }.onFailure {
-                hasFailed = true
+                SafeBitmapDecoder.decodeByteArray(bytes)
+                    ?: error("decode failed")
             }
         }
+        result
+            .onSuccess { bmp -> bitmapState = bmp }
+            .onFailure { hasFailed = true }
     }
 
     val bmp = bitmapState

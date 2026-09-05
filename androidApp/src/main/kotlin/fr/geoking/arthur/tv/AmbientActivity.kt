@@ -9,6 +9,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import fr.geoking.arthur.R
@@ -17,16 +22,14 @@ import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
-import fr.geoking.arthur.source.ArtworkImageCache
-import fr.geoking.arthur.source.GenartStillCache
 import fr.geoking.arthur.ui.screens.AmbientScreenContent
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 
 /** Minimal leanback launcher — starts ambient fullscreen (no browse). */
 class AmbientActivity : ComponentActivity() {
     private val contentEngine: ContentEngine by inject()
-    private val imageCache: ArtworkImageCache by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,12 +39,20 @@ class AmbientActivity : ComponentActivity() {
         )
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         val artworkId = intent.getStringExtra(EXTRA_ARTWORK_ID)
-        val (catalog, artwork) = runBlocking { loadAmbient(contentEngine, imageCache, artworkId) }
-        val title = artwork?.title ?: getString(R.string.app_name)
+        val fallbackTitle = getString(R.string.app_name)
         setContent {
             ArthurTheme {
+                var catalog by remember { mutableStateOf<List<Artwork>>(emptyList()) }
+                var artwork by remember { mutableStateOf<Artwork?>(null) }
+                LaunchedEffect(artworkId) {
+                    val loaded = withContext(Dispatchers.IO) {
+                        loadAmbient(contentEngine, artworkId)
+                    }
+                    catalog = loaded.first
+                    artwork = loaded.second
+                }
                 AmbientScreenContent(
-                    title = title,
+                    title = artwork?.title ?: fallbackTitle,
                     artwork = artwork,
                     rotationPool = catalog,
                 )
@@ -62,24 +73,29 @@ class AmbientActivity : ComponentActivity() {
 /** TV Canvas screensaver / Dream — live generative Ambient via Compose. */
 class ArthurDreamService : DreamService() {
     private val contentEngine: ContentEngine by inject()
-    private val imageCache: ArtworkImageCache by inject()
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         isInteractive = false
         isFullscreen = true
         isScreenBright = true
-        val (catalog, artwork) = runBlocking {
-            loadAmbient(contentEngine, imageCache, artworkId = null)
-        }
-        val title = artwork?.title ?: getString(R.string.app_name)
+        val fallbackTitle = getString(R.string.app_name)
         setContentView(
             ComposeView(this).apply {
                 setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
                 setContent {
                     ArthurTheme {
+                        var catalog by remember { mutableStateOf<List<Artwork>>(emptyList()) }
+                        var artwork by remember { mutableStateOf<Artwork?>(null) }
+                        LaunchedEffect(Unit) {
+                            val loaded = withContext(Dispatchers.IO) {
+                                loadAmbient(contentEngine, artworkId = null)
+                            }
+                            catalog = loaded.first
+                            artwork = loaded.second
+                        }
                         AmbientScreenContent(
-                            title = title,
+                            title = artwork?.title ?: fallbackTitle,
                             artwork = artwork,
                             rotationPool = catalog,
                         )
@@ -90,9 +106,12 @@ class ArthurDreamService : DreamService() {
     }
 }
 
-private suspend fun loadAmbient(
+/**
+ * Loads the ambient catalog off the main thread.
+ * Does **not** bake genart stills — phone/TV Ambient uses live engines; Auto bakes on demand.
+ */
+internal suspend fun loadAmbient(
     contentEngine: ContentEngine,
-    imageCache: ArtworkImageCache,
     artworkId: String?,
 ): Pair<List<Artwork>, Artwork?> {
     val catalog = contentEngine.catalog(
@@ -101,9 +120,6 @@ private suspend fun loadAmbient(
             artworkIds = emptyList(),
         ),
     )
-    val withGenartStills = GenartStillCache.warm(imageCache, catalog)
-    val artwork = resolveAmbientArtwork(withGenartStills, artworkId)?.let { selected ->
-        withGenartStills.firstOrNull { it.id == selected.id } ?: selected
-    }
-    return withGenartStills to artwork
+    val artwork = resolveAmbientArtwork(catalog, artworkId)
+    return catalog to artwork
 }

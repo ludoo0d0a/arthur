@@ -30,6 +30,7 @@ import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.source.MuseumSearchSettings
 import fr.geoking.arthur.source.StockPhotoSettings
 import fr.geoking.arthur.tv.AmbientActivity
+import fr.geoking.arthur.tv.AmbientRotationLaunch
 import fr.geoking.arthur.ui.UpdateAvailableDialog
 import fr.geoking.arthur.ui.UpdateInProgressBanner
 import fr.geoking.arthur.ui.screens.ControlPlaneScreen
@@ -106,11 +107,13 @@ class MainActivity : ComponentActivity() {
                                         contentEngine = contentEngine,
                                         stockPhotoSettings = stockPhotoSettings,
                                         museumSearchSettings = museumSearchSettings,
-                                        onStartAmbient = { artwork ->
+                                        onStartAmbient = { artwork, pool ->
+                                            AmbientRotationLaunch.prepare(pool)
                                             startActivity(
                                                 AmbientActivity.intent(
                                                     this@MainActivity,
                                                     artwork,
+                                                    rotate = pool.size >= 2,
                                                 ),
                                             )
                                         },

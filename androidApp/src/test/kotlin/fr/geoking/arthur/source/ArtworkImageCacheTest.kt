@@ -1,5 +1,6 @@
 package fr.geoking.arthur.source
 
+import android.app.Application
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import fr.geoking.arthur.shared.domain.Artwork
@@ -11,8 +12,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
+@Config(application = Application::class)
 class ArtworkImageCacheTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
 
@@ -35,6 +38,32 @@ class ArtworkImageCacheTest {
         assertEquals(art.id, loaded[0].id)
         assertTrue(loaded[0].localPath != null)
         assertTrue(cache.hasImage(art.id))
+    }
+
+    @Test
+    fun loadCachedStock_randomMergesRemoteTopicBuckets() {
+        val cache = ArtworkImageCache(context)
+        val nature = Artwork(
+            id = "pexels-nature",
+            title = "Forest",
+            sourceId = PexelsSource.ID,
+            kind = ArtworkKind.Photo,
+            remoteUrl = "https://example.com/n.jpg",
+        )
+        val city = Artwork(
+            id = "pexels-city",
+            title = "Skyline",
+            sourceId = PexelsSource.ID,
+            kind = ArtworkKind.Photo,
+            remoteUrl = "https://example.com/c.jpg",
+        )
+        cache.remember(listOf(nature), StockPhotoCategory.Nature.query)
+        cache.remember(listOf(city), StockPhotoCategory.City.query)
+        cache.putImage(nature.id, ByteArray(2_000) { 0x4F })
+        cache.putImage(city.id, ByteArray(2_000) { 0x4F })
+
+        val loaded = cache.loadCachedStock(StockPhotoCategory.Random, PexelsSource.ID)
+        assertEquals(setOf(nature.id, city.id), loaded.map { it.id }.toSet())
     }
 
     @Test
@@ -62,5 +91,14 @@ class ArtworkImageCacheTest {
         val settings = StockPhotoSettings(context)
         settings.category = StockPhotoCategory.Ocean
         assertEquals(StockPhotoCategory.Ocean, StockPhotoSettings(context).category)
+    }
+
+    @Test
+    fun stockPhotoSettingsDefaultsToRandom() {
+        context.getSharedPreferences("arthur_stock_photo", Context.MODE_PRIVATE)
+            .edit()
+            .clear()
+            .commit()
+        assertEquals(StockPhotoCategory.Random, StockPhotoSettings(context).category)
     }
 }

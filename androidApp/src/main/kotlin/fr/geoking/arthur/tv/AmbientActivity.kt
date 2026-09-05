@@ -40,20 +40,31 @@ class AmbientActivity : ComponentActivity() {
         )
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         val requested = intentArtwork()
+        val rotate = intent.getBooleanExtra(EXTRA_ROTATE, false)
+        val stashedPool = if (rotate) AmbientRotationLaunch.pool else emptyList()
         val fallbackTitle = getString(R.string.app_name)
         setContent {
             ArthurTheme {
                 var artwork by remember { mutableStateOf(requested) }
-                LaunchedEffect(requested?.id) {
-                    artwork = withContext(Dispatchers.IO) {
-                        loadPinnedAmbient(contentEngine, requested)
+                var rotationPool by remember { mutableStateOf(stashedPool) }
+                LaunchedEffect(requested?.id, rotate) {
+                    val loaded = withContext(Dispatchers.IO) {
+                        if (rotate) {
+                            loadRotatingAmbient(contentEngine, requested, stashedPool)
+                        } else {
+                            val pinned = loadPinnedAmbient(contentEngine, requested)
+                            emptyList<Artwork>() to pinned
+                        }
                     }
+                    if (rotate && loaded.first.isNotEmpty()) {
+                        rotationPool = loaded.first
+                    }
+                    artwork = loaded.second
                 }
                 AmbientScreenContent(
                     title = artwork?.title ?: fallbackTitle,
                     artwork = artwork,
-                    // Pin to the selected piece — do not rotate the full catalog.
-                    rotationPool = emptyList(),
+                    rotationPool = if (rotate) rotationPool else emptyList(),
                 )
             }
         }
@@ -83,9 +94,15 @@ class AmbientActivity : ComponentActivity() {
         const val EXTRA_ATTRIBUTION = "attribution"
         const val EXTRA_REMOTE_URL = "remote_url"
         const val EXTRA_LOCAL_PATH = "local_path"
+        const val EXTRA_ROTATE = "rotate"
 
-        fun intent(context: Context, artwork: Artwork? = null): Intent =
+        fun intent(
+            context: Context,
+            artwork: Artwork? = null,
+            rotate: Boolean = false,
+        ): Intent =
             Intent(context, AmbientActivity::class.java).apply {
+                putExtra(EXTRA_ROTATE, rotate)
                 if (artwork != null) {
                     putExtra(EXTRA_ARTWORK_ID, artwork.id)
                     putExtra(EXTRA_ARTWORK_TITLE, artwork.title)
@@ -154,6 +171,32 @@ internal suspend fun loadPinnedAmbient(
         return resolveAmbientArtwork(catalog, artworkId = null)
     }
     return resolveAmbientArtwork(catalog, requested.id) ?: requested
+}
+
+/**
+ * Start ambient with random rotation: prefer the Control Plane pool (live URLs),
+ * else fall back to a fresh engine catalog. Seed with the requested piece when present.
+ */
+internal suspend fun loadRotatingAmbient(
+    contentEngine: ContentEngine,
+    requested: Artwork?,
+    stashedPool: List<Artwork>,
+): Pair<List<Artwork>, Artwork?> {
+    val pool = stashedPool.ifEmpty {
+        contentEngine.catalog(
+            PreparedRotation(
+                sourceIds = emptyList(),
+                artworkIds = emptyList(),
+            ),
+        )
+    }
+    val artwork = when {
+        requested == null -> pool.randomOrNull() ?: resolveAmbientArtwork(pool, artworkId = null)
+        pool.any { it.id == requested.id } ->
+            pool.first { it.id == requested.id }
+        else -> requested
+    }
+    return pool to artwork
 }
 
 /** Dream: rotate the full displayable catalog. */

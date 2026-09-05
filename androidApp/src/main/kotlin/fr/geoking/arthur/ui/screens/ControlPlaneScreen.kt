@@ -64,7 +64,7 @@ private val StockSourceIds = setOf(
 @Composable
 fun ControlPlaneScreen(
     contentEngine: ContentEngine,
-    onStartAmbient: (Artwork?) -> Unit,
+    onStartAmbient: (Artwork?, List<Artwork>) -> Unit,
     modifier: Modifier = Modifier,
     initialCatalog: List<Artwork>? = null,
     initialSelected: Artwork? = null,
@@ -77,7 +77,7 @@ fun ControlPlaneScreen(
     var catalog by remember { mutableStateOf(initialCatalog.orEmpty()) }
     var selected by remember { mutableStateOf(initialSelected) }
     var stockCategory by remember {
-        mutableStateOf(stockPhotoSettings?.category ?: StockPhotoCategory.Suggestions)
+        mutableStateOf(stockPhotoSettings?.category ?: StockPhotoCategory.Random)
     }
     var selectedCategory by remember { mutableStateOf(CategoryFilter.ALL) }
     var museumTopic by remember { mutableStateOf(MuseumTopic.Suggestions) }
@@ -121,12 +121,22 @@ fun ControlPlaneScreen(
         selected = selected,
         onSelect = { selected = it },
         onStartAmbient = {
+            val pool = resolveCategoryCatalog(
+                catalog = catalog,
+                category = selectedCategory,
+                museumTopic = museumTopic,
+                stockCategory = stockCategory,
+                genartTopic = genartTopic,
+            ).items
             // Prefer the live selection (keeps remote URL / kind) over a catalog re-resolve
             // that can miss ephemeral stock ids and silently swap to another engine.
             val chosen = selected?.let { sel ->
-                catalog.firstOrNull { it.id == sel.id } ?: sel
-            }
-            onStartAmbient(chosen ?: resolveAmbientArtwork(catalog, artworkId = null))
+                pool.firstOrNull { it.id == sel.id }
+                    ?: catalog.firstOrNull { it.id == sel.id }
+                    ?: sel
+            } ?: pool.randomOrNull()
+                ?: resolveAmbientArtwork(catalog, artworkId = null)
+            onStartAmbient(chosen, pool)
         },
         modifier = modifier,
         showFractalPreview = showFractalPreview,
@@ -164,7 +174,7 @@ fun ControlPlaneContent(
     onCategorySelected: (CategoryFilter) -> Unit = {},
     museumTopic: MuseumTopic = MuseumTopic.Suggestions,
     onMuseumTopicChange: (MuseumTopic) -> Unit = {},
-    stockCategory: StockPhotoCategory = StockPhotoCategory.Suggestions,
+    stockCategory: StockPhotoCategory = StockPhotoCategory.Random,
     onStockCategoryChange: (StockPhotoCategory) -> Unit = {},
     genartTopic: GenartTopic = GenartTopic.Fractal,
     onGenartTopicChange: (GenartTopic) -> Unit = {},
@@ -226,7 +236,7 @@ private fun PhoneControlPlaneContent(
     onCategorySelected: (CategoryFilter) -> Unit = {},
     museumTopic: MuseumTopic = MuseumTopic.Suggestions,
     onMuseumTopicChange: (MuseumTopic) -> Unit = {},
-    stockCategory: StockPhotoCategory = StockPhotoCategory.Suggestions,
+    stockCategory: StockPhotoCategory = StockPhotoCategory.Random,
     onStockCategoryChange: (StockPhotoCategory) -> Unit = {},
     genartTopic: GenartTopic = GenartTopic.Fractal,
     onGenartTopicChange: (GenartTopic) -> Unit = {},

@@ -35,9 +35,10 @@ import kotlinx.coroutines.delay
 /**
  * Fullscreen ambient surface.
  *
- * - Control Plane Start: pass the selected [artwork] and an empty [rotationPool] to pin it.
- * - Dream / screensaver: pass a multi-item [rotationPool] to rotate every
- *   [AmbientAlbumArt.ROTATION_INTERVAL_MS].
+ * - Control Plane Start: pass the selected [artwork] and the filtered catalog as
+ *   [rotationPool] (≥2 items) for random rotation every [AmbientAlbumArt.ROTATION_INTERVAL_MS].
+ * - Pin only: empty [rotationPool].
+ * - Dream / screensaver: pass a multi-item [rotationPool] to rotate the same way.
  *
  * Missing or unloadable assets render the category placeholder + warning — never a
  * silent swap to an unrelated genart engine (e.g. pond ripples).

@@ -218,6 +218,15 @@ class FilterChipRowsTest {
     }
 
     @Test
+    fun photoRandom_showsRemoteStockLikeNature() {
+        val filtered = catalog.filterByCategoryAndSources(
+            CategoryFilter.PHOTO,
+            stockCategory = StockPhotoCategory.Random,
+        )
+        assertEquals(listOf("pexels-1", "unsplash-1"), filtered.map { it.id })
+    }
+
+    @Test
     fun resolve_emptyMuseumSubcategory_hidesSubfiltersAndShowsCategoryMatches() {
         val resolved = resolveCategoryCatalog(
             catalog = catalog,

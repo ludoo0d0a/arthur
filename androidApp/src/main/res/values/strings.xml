@@ -23,6 +23,7 @@
     <string name="source_bundled">Bundled</string>
     <string name="stock_topic_section">Photo topic</string>
     <string name="stock_topic_suggestions">Suggestions</string>
+    <string name="stock_topic_random">Random</string>
     <string name="stock_topic_nature">Nature</string>
     <string name="stock_topic_city">City</string>
     <string name="stock_topic_ocean">Ocean</string>

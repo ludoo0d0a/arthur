@@ -23,6 +23,7 @@
     <string name="source_bundled">Pack</string>
     <string name="stock_topic_section">Thème photo</string>
     <string name="stock_topic_suggestions">Suggestions</string>
+    <string name="stock_topic_random">Aléatoire</string>
     <string name="stock_topic_nature">Nature</string>
     <string name="stock_topic_city">Ville</string>
     <string name="stock_topic_ocean">Océan</string>

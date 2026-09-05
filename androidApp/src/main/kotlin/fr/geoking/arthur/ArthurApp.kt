@@ -102,7 +102,9 @@ val appModule = module {
         PexelsSource(
             apiKey = apiKey,
             category = { settings.category },
-            offlineFallback = { cache.loadCached(settings.category.query, PexelsSource.ID) },
+            offlineFallback = {
+                cache.loadCachedStock(settings.category, PexelsSource.ID)
+            },
             onLoaded = { arts -> cache.remember(arts, settings.category.query) },
             httpGet = { url ->
                 client.get(url) {
@@ -119,7 +121,9 @@ val appModule = module {
         UnsplashSource(
             accessKey = accessKey,
             category = { settings.category },
-            offlineFallback = { cache.loadCached(settings.category.query, UnsplashSource.ID) },
+            offlineFallback = {
+                cache.loadCachedStock(settings.category, UnsplashSource.ID)
+            },
             onLoaded = { arts -> cache.remember(arts, settings.category.query) },
             httpGet = { url ->
                 client.get(url) {

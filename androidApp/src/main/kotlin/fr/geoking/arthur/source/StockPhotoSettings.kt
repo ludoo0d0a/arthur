@@ -14,7 +14,7 @@ class StockPhotoSettings(context: Context) {
 
     var category: StockPhotoCategory
         get() = StockPhotoCategory.fromQuery(
-            prefs.getString(KEY_CATEGORY, StockPhotoCategory.Suggestions.query).orEmpty(),
+            prefs.getString(KEY_CATEGORY, StockPhotoCategory.Random.query).orEmpty(),
         )
         set(value) {
             prefs.edit().putString(KEY_CATEGORY, value.query).apply()
@@ -93,6 +93,19 @@ class ArtworkImageCache(context: Context) {
             .filter { it.category.equals(category, ignoreCase = true) }
             .filter { it.sourceId == sourceId }
             .mapNotNull { it.toArtworkOrNull() }
+
+    /**
+     * Offline stock for a UX topic. [StockPhotoCategory.Random] merges every remote
+     * topic bucket so ambient still has photos without a network.
+     */
+    fun loadCachedStock(category: StockPhotoCategory, sourceId: String): List<Artwork> {
+        if (category != StockPhotoCategory.Random) {
+            return loadCached(category.query, sourceId)
+        }
+        val topics = listOf(category) + StockPhotoCategory.remoteSearchTopics
+        return topics.flatMap { loadCached(it.query, sourceId) }
+            .distinctBy { it.id }
+    }
 
     /** Cached genart stills with [localPath] set (max [MAX_GENART]). */
     fun loadCachedGenart(): List<Artwork> =

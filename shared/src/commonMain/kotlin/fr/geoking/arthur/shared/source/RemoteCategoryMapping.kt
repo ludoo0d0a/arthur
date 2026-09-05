@@ -40,13 +40,20 @@ object RemoteCategoryMapping {
     /**
      * Stock-photo topic → provider search `query`.
      * Returns null for curated [StockPhotoCategory.Suggestions] (no remote call).
+     * [StockPhotoCategory.Random] resolves to a random concrete remote topic each call.
      */
     fun stockQuery(category: StockPhotoCategory, provider: RemoteProvider): String? {
         if (!category.isRemoteSearch) return null
+        val resolved =
+            if (category == StockPhotoCategory.Random) {
+                StockPhotoCategory.remoteSearchTopics.random()
+            } else {
+                category
+            }
         return when (provider) {
-            RemoteProvider.Pexels -> pexelsStockQuery(category)
-            RemoteProvider.Unsplash -> unsplashStockQuery(category)
-            else -> category.query
+            RemoteProvider.Pexels -> pexelsStockQuery(resolved)
+            RemoteProvider.Unsplash -> unsplashStockQuery(resolved)
+            else -> resolved.query
         }
     }
 
@@ -69,7 +76,9 @@ object RemoteCategoryMapping {
     // --- Stock: Pexels free-text (docs examples use plain English topics) ---
 
     private fun pexelsStockQuery(category: StockPhotoCategory): String = when (category) {
-        StockPhotoCategory.Suggestions -> category.query
+        StockPhotoCategory.Suggestions,
+        StockPhotoCategory.Random,
+        -> category.query
         StockPhotoCategory.Nature -> "nature"
         StockPhotoCategory.City -> "city"
         StockPhotoCategory.Ocean -> "ocean"
@@ -82,7 +91,9 @@ object RemoteCategoryMapping {
     // --- Stock: Unsplash free-text (slightly more descriptive for relevance) ---
 
     private fun unsplashStockQuery(category: StockPhotoCategory): String = when (category) {
-        StockPhotoCategory.Suggestions -> category.query
+        StockPhotoCategory.Suggestions,
+        StockPhotoCategory.Random,
+        -> category.query
         StockPhotoCategory.Nature -> "nature landscape"
         StockPhotoCategory.City -> "city urban"
         StockPhotoCategory.Ocean -> "ocean sea"

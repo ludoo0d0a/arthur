@@ -3,6 +3,7 @@ package fr.geoking.arthur.shared.source
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class RemoteCategoryMappingTest {
 
@@ -14,6 +15,28 @@ class RemoteCategoryMappingTest {
         assertNull(
             RemoteCategoryMapping.stockQuery(StockPhotoCategory.Suggestions, RemoteProvider.Unsplash),
         )
+    }
+
+    @Test
+    fun randomResolvesToAConcreteRemoteQuery() {
+        val pexelsQueries = StockPhotoCategory.remoteSearchTopics.map {
+            RemoteCategoryMapping.stockQuery(it, RemoteProvider.Pexels)!!
+        }.toSet()
+        val unsplashQueries = StockPhotoCategory.remoteSearchTopics.map {
+            RemoteCategoryMapping.stockQuery(it, RemoteProvider.Unsplash)!!
+        }.toSet()
+        repeat(20) {
+            val pexels = RemoteCategoryMapping.stockQuery(
+                StockPhotoCategory.Random,
+                RemoteProvider.Pexels,
+            )
+            val unsplash = RemoteCategoryMapping.stockQuery(
+                StockPhotoCategory.Random,
+                RemoteProvider.Unsplash,
+            )
+            assertTrue(pexels in pexelsQueries)
+            assertTrue(unsplash in unsplashQueries)
+        }
     }
 
     @Test

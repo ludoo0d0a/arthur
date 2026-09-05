@@ -209,12 +209,19 @@ private val GENART_PLANETS_IDS = setOf(
     GenartSource.NEBULA,
 )
 
-/** Suggestions = curated bundled photos; other topics = remote stock (Pexels / Unsplash). */
+/** Suggestions = curated bundled photos; Random / other topics = remote stock (Pexels / Unsplash). */
 fun matchesPhotoTopic(art: Artwork, stockCategory: StockPhotoCategory): Boolean =
-    if (stockCategory == StockPhotoCategory.Suggestions) {
-        art.sourceId == BundledPackSource.ID
-    } else {
-        art.sourceId == PexelsSource.ID || art.sourceId == UnsplashSource.ID
+    when (stockCategory) {
+        StockPhotoCategory.Suggestions -> art.sourceId == BundledPackSource.ID
+        StockPhotoCategory.Random,
+        StockPhotoCategory.Nature,
+        StockPhotoCategory.City,
+        StockPhotoCategory.Ocean,
+        StockPhotoCategory.Mountains,
+        StockPhotoCategory.Abstract,
+        StockPhotoCategory.Architecture,
+        StockPhotoCategory.Sky,
+        -> art.sourceId == PexelsSource.ID || art.sourceId == UnsplashSource.ID
     }
 
 /** Suggestions = curated bundled; other topics = that museum Source only. */
@@ -393,6 +400,7 @@ private fun MuseumTopicFilterRow(
 @StringRes
 private fun StockPhotoCategory.labelRes(): Int = when (this) {
     StockPhotoCategory.Suggestions -> R.string.stock_topic_suggestions
+    StockPhotoCategory.Random -> R.string.stock_topic_random
     StockPhotoCategory.Nature -> R.string.stock_topic_nature
     StockPhotoCategory.City -> R.string.stock_topic_city
     StockPhotoCategory.Ocean -> R.string.stock_topic_ocean

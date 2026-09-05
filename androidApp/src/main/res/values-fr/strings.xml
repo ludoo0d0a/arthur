@@ -52,4 +52,20 @@
     <string name="update_in_progress">Mise à jour en cours</string>
     <string name="action_update">Mettre à jour</string>
     <string name="action_cancel">Annuler</string>
+    <string name="action_back">Retour</string>
+    <string name="screen_settings">Paramètres</string>
+    <string name="screen_about">À propos</string>
+    <string name="screen_licenses">Licences open source</string>
+    <string name="cd_settings">Paramètres</string>
+    <string name="settings_about_subtitle">Version et attributions</string>
+    <string name="about_version_name">Nom de version</string>
+    <string name="about_version_code">Code de version</string>
+    <string name="about_build_date">Date de build</string>
+    <string name="about_privacy">Politique de confidentialité</string>
+    <string name="about_terms">Conditions d’utilisation</string>
+    <string name="about_licenses">Licences open source</string>
+    <string name="about_website">Site web</string>
+    <string name="about_used_apis">API et services utilisés</string>
+    <string name="premium_active">Premium actif</string>
+    <string name="premium_thanks">Merci de soutenir Arthur</string>
 </resources>

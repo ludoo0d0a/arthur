@@ -26,7 +26,8 @@
   "urls": {
     "website": {
       "home": "https://arthur.geoking.fr",
-      "policy": "https://arthur.geoking.fr/privacy.html"
+      "policy": "https://arthur.geoking.fr/privacy.html",
+      "terms": "https://arthur.geoking.fr/terms.html"
     },
     "store": {
       "listing": "https://play.google.com/store/apps/details?id=fr.geoking.arthur",

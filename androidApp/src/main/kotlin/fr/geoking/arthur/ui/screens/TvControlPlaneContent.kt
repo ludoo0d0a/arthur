@@ -55,6 +55,7 @@ fun TvControlPlaneContent(
     onStartAmbient: () -> Unit,
     modifier: Modifier = Modifier,
     showFractalPreview: Boolean = true,
+    onOpenSettings: (() -> Unit)? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
     var selectedCategory by remember { mutableStateOf(CategoryFilter.ALL) }
@@ -84,6 +85,7 @@ fun TvControlPlaneContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 48.dp, vertical = 16.dp),
+            onOpenSettings = onOpenSettings,
         )
         Row(
             modifier = Modifier

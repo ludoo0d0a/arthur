@@ -33,6 +33,7 @@ import fr.geoking.arthur.ui.UpdateAvailableDialog
 import fr.geoking.arthur.ui.UpdateInProgressBanner
 import fr.geoking.arthur.ui.screens.ControlPlaneScreen
 import fr.geoking.arthur.ui.screens.CustomFractalEditorScreen
+import fr.geoking.arthur.ui.screens.SettingsScreen
 import fr.geoking.arthur.update.InAppUpdateHelper
 import org.koin.android.ext.android.inject
 
@@ -71,39 +72,53 @@ class MainActivity : ComponentActivity() {
 
                     Box(modifier = Modifier.fillMaxSize()) {
                         var showEditor by remember { mutableStateOf(false) }
+                        var showSettings by remember { mutableStateOf(false) }
                         var catalogEpoch by remember { mutableStateOf(0) }
                         // Custom fractal authoring needs touch; TV uses remote only.
-                        if (showEditor && !isTelevision) {
-                            CustomFractalEditorScreen(
-                                isPremium = premium.isPremium,
-                                onSave = { params ->
-                                    val art = customFractalStore.save(params)
-                                    catalogEpoch++
-                                    art
-                                },
-                                onClose = { showEditor = false },
-                                onRequestPremium = {
-                                    (purchases as? FakePurchasesGateway)?.setPremium(true)
-                                    showEditor = false
-                                    showEditor = true
-                                },
-                            )
-                        } else {
-                            key(catalogEpoch) {
-                                ControlPlaneScreen(
-                                    contentEngine = contentEngine,
-                                    stockPhotoSettings = stockPhotoSettings,
-                                    onStartAmbient = { artwork ->
-                                        startActivity(
-                                            AmbientActivity.intent(this@MainActivity, artwork?.id),
-                                        )
+                        when {
+                            showSettings -> {
+                                SettingsScreen(
+                                    onDismiss = { showSettings = false },
+                                    isPremium = premium.isPremium,
+                                )
+                            }
+                            showEditor && !isTelevision -> {
+                                CustomFractalEditorScreen(
+                                    isPremium = premium.isPremium,
+                                    onSave = { params ->
+                                        val art = customFractalStore.save(params)
+                                        catalogEpoch++
+                                        art
                                     },
-                                    onCreateCustomFractal = if (isTelevision) {
-                                        null
-                                    } else {
-                                        { showEditor = true }
+                                    onClose = { showEditor = false },
+                                    onRequestPremium = {
+                                        (purchases as? FakePurchasesGateway)?.setPremium(true)
+                                        showEditor = false
+                                        showEditor = true
                                     },
                                 )
+                            }
+                            else -> {
+                                key(catalogEpoch) {
+                                    ControlPlaneScreen(
+                                        contentEngine = contentEngine,
+                                        stockPhotoSettings = stockPhotoSettings,
+                                        onStartAmbient = { artwork ->
+                                            startActivity(
+                                                AmbientActivity.intent(
+                                                    this@MainActivity,
+                                                    artwork?.id,
+                                                ),
+                                            )
+                                        },
+                                        onCreateCustomFractal = if (isTelevision) {
+                                            null
+                                        } else {
+                                            { showEditor = true }
+                                        },
+                                        onOpenSettings = { showSettings = true },
+                                    )
+                                }
                             }
                         }
 

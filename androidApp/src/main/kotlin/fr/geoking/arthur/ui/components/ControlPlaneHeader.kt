@@ -21,7 +21,10 @@ import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.R
 
 @Composable
-internal fun ControlPlaneHeader(modifier: Modifier = Modifier) {
+internal fun ControlPlaneHeader(
+    modifier: Modifier = Modifier,
+    onOpenSettings: (() -> Unit)? = null,
+) {
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -53,6 +56,9 @@ internal fun ControlPlaneHeader(modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+        if (onOpenSettings != null) {
+            SettingsButton(onClick = onOpenSettings)
         }
     }
 }

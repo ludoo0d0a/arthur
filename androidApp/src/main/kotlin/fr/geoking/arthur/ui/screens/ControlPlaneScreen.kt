@@ -57,6 +57,7 @@ fun ControlPlaneScreen(
     showFractalPreview: Boolean = true,
     onCreateCustomFractal: (() -> Unit)? = null,
     stockPhotoSettings: StockPhotoSettings? = null,
+    onOpenSettings: (() -> Unit)? = null,
 ) {
     var catalog by remember { mutableStateOf(initialCatalog.orEmpty()) }
     var selected by remember { mutableStateOf(initialSelected) }
@@ -90,6 +91,7 @@ fun ControlPlaneScreen(
         onCreateCustomFractal = onCreateCustomFractal,
         stockCategory = stockCategory,
         onStockCategoryChange = { stockCategory = it },
+        onOpenSettings = onOpenSettings,
     )
 }
 
@@ -104,6 +106,7 @@ fun ControlPlaneContent(
     onCreateCustomFractal: (() -> Unit)? = null,
     stockCategory: StockPhotoCategory = StockPhotoCategory.Nature,
     onStockCategoryChange: (StockPhotoCategory) -> Unit = {},
+    onOpenSettings: (() -> Unit)? = null,
 ) {
     val configuration = LocalConfiguration.current
     val isTelevision = remember(configuration) {
@@ -118,6 +121,7 @@ fun ControlPlaneContent(
             onStartAmbient = onStartAmbient,
             modifier = modifier,
             showFractalPreview = showFractalPreview,
+            onOpenSettings = onOpenSettings,
         )
         return
     }
@@ -131,6 +135,7 @@ fun ControlPlaneContent(
         onCreateCustomFractal = onCreateCustomFractal,
         stockCategory = stockCategory,
         onStockCategoryChange = onStockCategoryChange,
+        onOpenSettings = onOpenSettings,
     )
 }
 
@@ -145,6 +150,7 @@ private fun PhoneControlPlaneContent(
     onCreateCustomFractal: (() -> Unit)? = null,
     stockCategory: StockPhotoCategory = StockPhotoCategory.Nature,
     onStockCategoryChange: (StockPhotoCategory) -> Unit = {},
+    onOpenSettings: (() -> Unit)? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
     var selectedCategory by remember { mutableStateOf(CategoryFilter.ALL) }
@@ -175,6 +181,7 @@ private fun PhoneControlPlaneContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp, vertical = 8.dp),
+                onOpenSettings = onOpenSettings,
             )
             if (onCreateCustomFractal != null) {
                 TextButton(

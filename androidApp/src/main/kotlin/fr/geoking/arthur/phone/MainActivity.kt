@@ -21,12 +21,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.google.android.play.core.install.model.InstallStatus
+import fr.geoking.arthur.BuildConfig
 import fr.geoking.arthur.billing.FakePurchasesGateway
 import fr.geoking.arthur.billing.PurchasesGateway
 import fr.geoking.arthur.fractal.CustomFractalStore
 import fr.geoking.arthur.phone.theme.ArthurTheme
 import fr.geoking.arthur.shared.domain.PremiumEntitlement
 import fr.geoking.arthur.shared.engine.ContentEngine
+import fr.geoking.arthur.source.DeveloperSettings
 import fr.geoking.arthur.source.MuseumSearchSettings
 import fr.geoking.arthur.source.StockPhotoSettings
 import fr.geoking.arthur.tv.AmbientActivity
@@ -46,6 +48,7 @@ class MainActivity : ComponentActivity() {
     private val customFractalStore: CustomFractalStore by inject()
     private val stockPhotoSettings: StockPhotoSettings by inject()
     private val museumSearchSettings: MuseumSearchSettings by inject()
+    private val developerSettings: DeveloperSettings by inject()
 
     private val inAppUpdateHelper by lazy { InAppUpdateHelper(applicationContext) }
 
@@ -77,17 +80,22 @@ class MainActivity : ComponentActivity() {
                         var showEditor by remember { mutableStateOf(false) }
                         var showSettings by remember { mutableStateOf(false) }
                         var catalogEpoch by remember { mutableStateOf(0) }
+                        val simulatePremium by developerSettings.simulatePremium.collectAsState()
+                        val isPremium = premium.isPremium
                         // Custom fractal authoring needs touch; TV uses remote only.
                         when {
                             showSettings -> {
                                 SettingsScreen(
                                     onDismiss = { showSettings = false },
-                                    isPremium = premium.isPremium,
+                                    isPremium = isPremium,
+                                    showDeveloper = BuildConfig.DEBUG,
+                                    simulatePremium = simulatePremium,
+                                    onSimulatePremiumChange = developerSettings::setSimulatePremium,
                                 )
                             }
                             showEditor && !isTelevision -> {
                                 CustomFractalEditorScreen(
-                                    isPremium = premium.isPremium,
+                                    isPremium = isPremium,
                                     onSave = { params ->
                                         val art = customFractalStore.save(params)
                                         catalogEpoch++
@@ -95,14 +103,18 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onClose = { showEditor = false },
                                     onRequestPremium = {
-                                        (purchases as? FakePurchasesGateway)?.setPremium(true)
+                                        if (BuildConfig.DEBUG) {
+                                            developerSettings.setSimulatePremium(true)
+                                        } else {
+                                            (purchases as? FakePurchasesGateway)?.setPremium(true)
+                                        }
                                         showEditor = false
                                         showEditor = true
                                     },
                                 )
                             }
                             else -> {
-                                key(catalogEpoch) {
+                                key(catalogEpoch, isPremium) {
                                     ControlPlaneScreen(
                                         contentEngine = contentEngine,
                                         stockPhotoSettings = stockPhotoSettings,

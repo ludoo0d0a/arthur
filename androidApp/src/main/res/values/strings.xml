@@ -91,4 +91,8 @@
     <string name="about_used_apis">Used APIs &amp; services</string>
     <string name="premium_active">Premium active</string>
     <string name="premium_thanks">Thank you for supporting Arthur</string>
+    <string name="screen_developer">Developer</string>
+    <string name="settings_developer_subtitle">Debug options &amp; testing tools</string>
+    <string name="dev_simulate_premium">Simulate premium</string>
+    <string name="dev_simulate_premium_subtitle">Unlock premium features without a purchase</string>
 </resources>

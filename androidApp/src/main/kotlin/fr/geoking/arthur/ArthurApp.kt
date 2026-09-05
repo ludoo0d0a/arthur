@@ -2,6 +2,7 @@ package fr.geoking.arthur
 
 import android.app.Application
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import fr.geoking.arthur.billing.DevAwarePremiumEntitlement
 import fr.geoking.arthur.billing.FakePurchasesGateway
 import fr.geoking.arthur.billing.PurchasesGateway
 import fr.geoking.arthur.billing.RevenueCatPremiumEntitlement
@@ -24,6 +25,7 @@ import fr.geoking.arthur.shared.source.SmithsonianSource
 import fr.geoking.arthur.shared.source.UnsplashSource
 import fr.geoking.arthur.shared.source.WikimediaStreetArtSource
 import fr.geoking.arthur.source.ArtworkImageCache
+import fr.geoking.arthur.source.DeveloperSettings
 import fr.geoking.arthur.source.MuseumSearchSettings
 import fr.geoking.arthur.source.StockPhotoSettings
 import io.ktor.client.HttpClient
@@ -53,7 +55,17 @@ class ArthurApp : Application() {
 val appModule = module {
     single { FakePurchasesGateway(premium = false) }
     single<PurchasesGateway> { get<FakePurchasesGateway>() }
-    single<PremiumEntitlement> { RevenueCatPremiumEntitlement(get()) }
+    single { DeveloperSettings(androidContext()) }
+    single<PremiumEntitlement> {
+        val gatewayEntitlement = RevenueCatPremiumEntitlement(get())
+        val developerSettings = get<DeveloperSettings>()
+        DevAwarePremiumEntitlement(
+            delegate = gatewayEntitlement,
+            simulatePremium = {
+                BuildConfig.DEBUG && developerSettings.simulatePremium.value
+            },
+        )
+    }
     single { CustomFractalStore(androidContext()) }
     single { StockPhotoSettings(androidContext()) }
     single { MuseumSearchSettings() }

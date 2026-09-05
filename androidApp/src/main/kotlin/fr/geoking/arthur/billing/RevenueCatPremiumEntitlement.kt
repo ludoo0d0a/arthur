@@ -17,6 +17,17 @@ class RevenueCatPremiumEntitlement(
     }
 }
 
+/**
+ * ORs a real entitlement with an optional developer override (debug simulate premium).
+ */
+class DevAwarePremiumEntitlement(
+    private val delegate: PremiumEntitlement,
+    private val simulatePremium: () -> Boolean,
+) : PremiumEntitlement {
+    override val isPremium: Boolean
+        get() = delegate.isPremium || simulatePremium()
+}
+
 interface PurchasesGateway {
     fun hasEntitlement(id: String): Boolean
 }

@@ -33,6 +33,7 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -65,6 +66,7 @@ enum class SettingsScreenPage {
     Main,
     About,
     Licenses,
+    Developer,
 }
 
 @Composable
@@ -72,6 +74,9 @@ enum class SettingsScreenPage {
 fun SettingsScreen(
     onDismiss: () -> Unit,
     isPremium: Boolean = false,
+    showDeveloper: Boolean = BuildConfig.DEBUG,
+    simulatePremium: Boolean = true,
+    onSimulatePremiumChange: (Boolean) -> Unit = {},
     initialScreenStack: List<SettingsScreenPage>? = null,
     onInitialRouteConsumed: () -> Unit = {},
 ) {
@@ -104,6 +109,7 @@ fun SettingsScreen(
                             SettingsScreenPage.Main -> stringResource(R.string.screen_settings)
                             SettingsScreenPage.About -> stringResource(R.string.screen_about)
                             SettingsScreenPage.Licenses -> stringResource(R.string.screen_licenses)
+                            SettingsScreenPage.Developer -> stringResource(R.string.screen_developer)
                         },
                     )
                 },
@@ -140,12 +146,17 @@ fun SettingsScreen(
             when (currentScreen) {
                 SettingsScreenPage.Main -> MainMenu(
                     isPremium = isPremium,
+                    showDeveloper = showDeveloper,
                     onNavigate = { screenStack = screenStack + it },
                 )
                 SettingsScreenPage.About -> AboutContent(
                     onOpenLicenses = { screenStack = screenStack + SettingsScreenPage.Licenses },
                 )
                 SettingsScreenPage.Licenses -> LicensesContent()
+                SettingsScreenPage.Developer -> DeveloperContent(
+                    simulatePremium = simulatePremium,
+                    onSimulatePremiumChange = onSimulatePremiumChange,
+                )
             }
         }
     }
@@ -154,6 +165,7 @@ fun SettingsScreen(
 @Composable
 private fun MainMenu(
     isPremium: Boolean,
+    showDeveloper: Boolean,
     onNavigate: (SettingsScreenPage) -> Unit,
 ) {
     Column(
@@ -211,6 +223,58 @@ private fun MainMenu(
                 value = stringResource(R.string.settings_about_subtitle),
                 onClick = { onNavigate(SettingsScreenPage.About) },
             )
+            if (showDeveloper) {
+                SettingsItem(
+                    label = stringResource(R.string.screen_developer),
+                    value = stringResource(R.string.settings_developer_subtitle),
+                    onClick = { onNavigate(SettingsScreenPage.Developer) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DeveloperContent(
+    simulatePremium: Boolean,
+    onSimulatePremiumChange: (Boolean) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp)
+            .testTag("settings_developer"),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+                    Text(
+                        text = stringResource(R.string.dev_simulate_premium),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    Text(
+                        text = stringResource(R.string.dev_simulate_premium_subtitle),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = simulatePremium,
+                    onCheckedChange = onSimulatePremiumChange,
+                    modifier = Modifier.testTag("dev_simulate_premium"),
+                )
+            }
         }
     }
 }

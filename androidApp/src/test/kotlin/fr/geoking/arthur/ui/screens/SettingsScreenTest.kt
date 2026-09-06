@@ -71,8 +71,44 @@ class SettingsScreenTest {
         composeTestRule.onNodeWithTag("developer_error_log_screen").assertIsDisplayed()
         composeTestRule.onNodeWithText("Authentication failure 401").assertIsDisplayed()
 
+        val errId = errorLogger.errors.value.first().id
+        composeTestRule.onNodeWithTag("btn_copy_error_$errId").assertIsDisplayed()
+
         composeTestRule.onNodeWithTag("btn_clear_all_errors").performClick()
 
         assertEquals(0, errorLogger.errors.value.size)
+    }
+
+    @Test
+    fun developerErrorLogScreen_filtersByCategoryAndSource() {
+        val errorLogger = ErrorLogger(clock = { 1000L })
+        errorLogger.log(
+            sourceId = "europeana",
+            message = "Europeana Auth Error",
+            category = ErrorCategory.Authentication,
+        )
+        errorLogger.log(
+            sourceId = "rijksmuseum",
+            message = "Rijksmuseum Rate Limit",
+            category = ErrorCategory.RateLimit,
+        )
+
+        composeTestRule.setContent {
+            ArthurTheme {
+                DeveloperErrorLogScreen(errorLogger = errorLogger)
+            }
+        }
+
+        composeTestRule.onNodeWithText("Europeana Auth Error").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Rijksmuseum Rate Limit").assertIsDisplayed()
+
+        composeTestRule.onNodeWithTag("chip_category_Authentication").performClick()
+        composeTestRule.onNodeWithText("Europeana Auth Error").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Rijksmuseum Rate Limit").assertDoesNotExist()
+
+        composeTestRule.onNodeWithTag("chip_category_all").performClick()
+        composeTestRule.onNodeWithTag("chip_source_rijksmuseum").performClick()
+        composeTestRule.onNodeWithText("Rijksmuseum Rate Limit").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Europeana Auth Error").assertDoesNotExist()
     }
 }

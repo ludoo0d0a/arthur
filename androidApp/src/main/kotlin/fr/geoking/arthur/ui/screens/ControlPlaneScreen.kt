@@ -68,6 +68,7 @@ import fr.geoking.arthur.ui.components.resolvePackPool
 import fr.geoking.arthur.ui.components.sourceIdsForAmbientLoad
 import fr.geoking.arthur.ui.components.stockCategoryOrNull
 import fr.geoking.arthur.ui.components.subPackTiles
+import fr.geoking.arthur.ui.components.videoSourceOrNull
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -107,8 +108,11 @@ fun ControlPlaneScreen(
         ?: remember { mutableStateOf(null) }
 
     val stockCategory = selection.stockCategoryOrNull()
-        ?: stockPhotoSettings?.category
-        ?: StockPhotoCategory.Random
+        ?: if (selection.videoSourceOrNull() != null) {
+            StockPhotoCategory.Random
+        } else {
+            stockPhotoSettings?.category ?: StockPhotoCategory.Random
+        }
 
     val museumKind = when (selection.family) {
         PackFamily.Painting -> MuseumSearchKind.Painting
@@ -119,9 +123,16 @@ fun ControlPlaneScreen(
     }
 
     fun syncSourceSettings() {
-        selection.stockCategoryOrNull()?.let { topic ->
-            if (stockPhotoSettings != null) {
-                stockPhotoSettings.category = topic
+        when {
+            selection.stockCategoryOrNull() != null -> {
+                if (stockPhotoSettings != null) {
+                    stockPhotoSettings.category = stockCategory
+                }
+            }
+            selection.videoSourceOrNull() != null -> {
+                if (stockPhotoSettings != null) {
+                    stockPhotoSettings.category = StockPhotoCategory.Random
+                }
             }
         }
         if (museumSearchSettings != null) {

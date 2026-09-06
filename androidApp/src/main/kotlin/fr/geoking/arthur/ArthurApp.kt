@@ -180,7 +180,9 @@ val appModule = module {
             apiKey = apiKey,
             httpGet = { url ->
                 safeHttpGet(client, url, EuropeanaSource.ID, errorLogger) {
-                    header("X-Api-Key", apiKey)
+                    if (apiKey.isNotBlank()) {
+                        header("X-Api-Key", apiKey)
+                    }
                 }
             },
             kind = { museum.kind },

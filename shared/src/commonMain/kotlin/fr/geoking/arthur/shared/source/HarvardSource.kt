@@ -51,7 +51,7 @@ class HarvardSource(
                 )
                 val page = json.decodeFromString<HarvardObjectPage>(payload)
                 RemoteSample.sample(
-                    page.records.mapNotNull { toArtwork(it, target) },
+                    page.records.orEmpty().mapNotNull { toArtwork(it, target) },
                     perKind,
                     random,
                 )
@@ -69,7 +69,7 @@ class HarvardSource(
 
     private fun looksEmptyHarvard(payload: String): Boolean =
         runCatching {
-            json.decodeFromString<HarvardObjectPage>(payload).records.isEmpty()
+            json.decodeFromString<HarvardObjectPage>(payload).records.isNullOrEmpty()
         }.getOrDefault(true)
 
     private fun toArtwork(item: HarvardObject, searchKind: MuseumSearchKind): Artwork? {
@@ -114,7 +114,7 @@ class HarvardSource(
                 "?apikey=$apiKey" +
                 "&classification=$classification" +
                 "&hasimage=1" +
-                "&q=imagepermissionlevel:0" +
+                "&q=imagepermissionlevel%3A0" +
                 "&size=$limit" +
                 "&page=$page" +
                 "&fields=id,title,primaryimageurl,people,classification"
@@ -124,7 +124,7 @@ class HarvardSource(
 
 @Serializable
 internal data class HarvardObjectPage(
-    val records: List<HarvardObject> = emptyList(),
+    val records: List<HarvardObject>? = emptyList(),
 )
 
 @Serializable

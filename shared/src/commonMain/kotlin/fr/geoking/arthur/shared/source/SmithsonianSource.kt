@@ -76,15 +76,15 @@ class SmithsonianSource(
         val recordId = row.url?.takeIf { it.isNotBlank() }
             ?: row.id?.takeIf { it.isNotBlank() }
             ?: return null
-        val media = row.content?.descriptiveNonRepeating?.onlineMedia?.media
-            ?.firstOrNull { media ->
+        val mediaList = row.content?.descriptiveNonRepeating?.onlineMedia?.media.orEmpty()
+        val media = mediaList
+            .firstOrNull { media ->
                 media.type.equals("Images", ignoreCase = true) &&
                     (media.usage?.access.equals("CC0", ignoreCase = true) ||
-                        row.content.descriptiveNonRepeating.metadataUsage?.access
+                        row.content?.descriptiveNonRepeating?.metadataUsage?.access
                             .equals("CC0", ignoreCase = true))
             }
-            ?: row.content?.descriptiveNonRepeating?.onlineMedia?.media
-                ?.firstOrNull { it.type.equals("Images", ignoreCase = true) }
+            ?: mediaList.firstOrNull { it.type.equals("Images", ignoreCase = true) }
             ?: return null
         val imageUrl = media.resources
             ?.firstOrNull { it.label.equals("Screen Image", ignoreCase = true) }
@@ -96,13 +96,13 @@ class SmithsonianSource(
             ?: row.content?.descriptiveNonRepeating?.title?.content?.takeIf { it.isNotBlank() }
             ?: "Smithsonian $recordId"
         val artist = row.content?.freetext?.name
-            ?.firstOrNull { it.label.equals("Artist", ignoreCase = true) }
+            ?.firstOrNull { it.label.equals("Artist", ignoreCase = true) || it.label == null }
             ?.content
             ?.takeIf { it.isNotBlank() }
         val dataSource = row.content?.descriptiveNonRepeating?.dataSource
             ?.takeIf { it.isNotBlank() }
             ?: "Smithsonian"
-        val attribution = listOfNotNull(artist, dataSource).joinToString(" / ")
+        val attribution = listOfNotNull(artist, dataSource).distinct().joinToString(" / ")
         val slug = recordId.replace(':', '-').replace('/', '-')
         return Artwork(
             id = "smithsonian-$slug",
@@ -155,7 +155,7 @@ internal data class SmithsonianSearchPage(
 
 @Serializable
 internal data class SmithsonianResponse(
-    val rows: List<SmithsonianRow> = emptyList(),
+    val rows: List<SmithsonianRow>? = emptyList(),
 )
 
 @Serializable
@@ -193,7 +193,7 @@ internal data class SmithsonianDescriptive(
 
 @Serializable
 internal data class SmithsonianOnlineMedia(
-    val media: List<SmithsonianMedia> = emptyList(),
+    val media: List<SmithsonianMedia>? = emptyList(),
 )
 
 @Serializable

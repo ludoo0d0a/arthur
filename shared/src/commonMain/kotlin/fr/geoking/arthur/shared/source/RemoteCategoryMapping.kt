@@ -215,13 +215,13 @@ object RemoteCategoryMapping {
 
     private fun smithsonianParams(kind: MuseumSearchKind): MuseumApiParams = when (kind) {
         MuseumSearchKind.All, MuseumSearchKind.Painting -> MuseumApiParams(
-            query = "online_media_type:Images AND object_type:Paintings",
+            query = "online_media_type:Images AND (object_type:Paintings OR object_type:Painting OR painting)",
         )
         MuseumSearchKind.Sculpture -> MuseumApiParams(
-            query = "online_media_type:Images AND sculpture",
+            query = "online_media_type:Images AND (object_type:Sculpture OR object_type:sculpture OR sculpture)",
         )
         MuseumSearchKind.Photo -> MuseumApiParams(
-            query = "online_media_type:Images AND photograph",
+            query = "online_media_type:Images AND (object_type:Photographs OR object_type:photograph OR photograph)",
         )
     }
 }

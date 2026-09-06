@@ -74,13 +74,17 @@ class HarvardSource(
 
     private fun toArtwork(item: HarvardObject, searchKind: MuseumSearchKind): Artwork? {
         val objectId = item.id ?: return null
-        val imageUrl = item.primaryImageUrl?.takeIf { it.isNotBlank() } ?: return null
+        val imageUrl = item.primaryImageUrl?.takeIf { it.isNotBlank() }
+            ?: item.images?.firstOrNull()?.baseImageUrl?.takeIf { it.isNotBlank() }
+            ?: return null
         val title = item.title?.takeIf { it.isNotBlank() } ?: "Object $objectId"
         val artist = item.people
             ?.firstOrNull { it.role.equals("Artist", ignoreCase = true) || it.displayname != null }
             ?.displayname
             ?.takeIf { it.isNotBlank() }
         val attribution = listOfNotNull(artist, "Harvard Art Museums").joinToString(" / ")
+        val externalUrl = item.url?.takeIf { it.isNotBlank() }
+            ?: "https://www.harvardartmuseums.org/collections/object/$objectId"
         return Artwork(
             id = "harvard-$objectId",
             title = title,
@@ -88,7 +92,7 @@ class HarvardSource(
             sourceId = ID,
             kind = searchKind.artworkKind ?: ArtworkKind.Painting,
             remoteUrl = imageUrl,
-            externalUrl = "https://harvardartmuseums.org/collections/object/$objectId",
+            externalUrl = externalUrl,
         )
     }
 
@@ -117,7 +121,8 @@ class HarvardSource(
                 "&q=imagepermissionlevel%3A0" +
                 "&size=$limit" +
                 "&page=$page" +
-                "&fields=id,title,primaryimageurl,people,classification"
+                "&sort=random" +
+                "&fields=id,title,primaryimageurl,people,classification,url,images"
         }
     }
 }
@@ -134,6 +139,16 @@ internal data class HarvardObject(
     @SerialName("primaryimageurl") val primaryImageUrl: String? = null,
     val people: List<HarvardPerson>? = null,
     val classification: String? = null,
+    val url: String? = null,
+    val images: List<HarvardImage>? = null,
+)
+
+@Serializable
+internal data class HarvardImage(
+    @SerialName("baseimageurl") val baseImageUrl: String? = null,
+    val width: Int? = null,
+    val height: Int? = null,
+    val alttext: String? = null,
 )
 
 @Serializable

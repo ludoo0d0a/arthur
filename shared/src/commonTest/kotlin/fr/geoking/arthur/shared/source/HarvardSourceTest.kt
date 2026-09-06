@@ -58,7 +58,7 @@ class HarvardSourceTest {
         assertEquals(
             "https://api.harvardartmuseums.org/object" +
                 "?apikey=k&classification=Photographs&hasimage=1&q=imagepermissionlevel%3A0&size=20" +
-                "&page=1&fields=id,title,primaryimageurl,people,classification",
+                "&page=1&sort=random&fields=id,title,primaryimageurl,people,classification,url,images",
             HarvardSource.searchUrl(apiKey = "k", kind = MuseumSearchKind.Photo),
         )
     }

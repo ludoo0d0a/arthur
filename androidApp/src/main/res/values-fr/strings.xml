@@ -45,6 +45,7 @@
     <string name="source_pixabay_video">Pixabay</string>
     <string name="source_coverr">Coverr</string>
     <string name="source_unsplash">Unsplash</string>
+    <string name="source_deviantart">DeviantArt</string>
     <string name="stock_topic_section">Thème photo</string>
     <string name="stock_topic_suggestions">Suggestions</string>
     <string name="stock_topic_random">Aléatoire</string>

@@ -46,6 +46,7 @@ import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.shared.source.BundledPackSource
+import fr.geoking.arthur.shared.source.DeviantArtSource
 import fr.geoking.arthur.shared.source.MuseumSearchKind
 import fr.geoking.arthur.shared.source.PexelsSource
 import fr.geoking.arthur.shared.source.PexelsVideoSource
@@ -77,6 +78,7 @@ private val StockSourceIds = setOf(
     BundledPackSource.ID,
     PexelsSource.ID,
     UnsplashSource.ID,
+    DeviantArtSource.ID,
 )
 
 private val VideoSourceIds = setOf(

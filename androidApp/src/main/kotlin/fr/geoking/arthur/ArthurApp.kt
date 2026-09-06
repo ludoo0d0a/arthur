@@ -17,6 +17,7 @@ import fr.geoking.arthur.shared.source.BundledPackSource
 import fr.geoking.arthur.shared.source.ClevelandSource
 import fr.geoking.arthur.shared.source.CoverrSource
 import fr.geoking.arthur.shared.source.CustomFractalSource
+import fr.geoking.arthur.shared.source.DeviantArtSource
 import fr.geoking.arthur.shared.source.EuropeanaSource
 import fr.geoking.arthur.shared.source.FractalSource
 import fr.geoking.arthur.shared.source.GenartSource
@@ -279,6 +280,25 @@ val appModule = module {
     }
     single {
         val client = get<HttpClient>()
+        val clientId = BuildConfig.DEVIANTART_CLIENT_ID
+        val clientSecret = BuildConfig.DEVIANTART_CLIENT_SECRET
+        val settings = get<StockPhotoSettings>()
+        val cache = get<ArtworkImageCache>()
+        val errorLogger = get<ErrorLogger>()
+        DeviantArtSource(
+            clientId = clientId,
+            clientSecret = clientSecret,
+            category = { settings.category },
+            offlineFallback = {
+                cache.loadCachedStock(settings.category, DeviantArtSource.ID)
+            },
+            onLoaded = { arts -> cache.remember(arts, settings.category.query) },
+            httpGet = { url -> safeHttpGet(client, url, DeviantArtSource.ID, errorLogger) },
+            errorLogger = errorLogger,
+        )
+    }
+    single {
+        val client = get<HttpClient>()
         val apiKey = BuildConfig.PEXELS_API_KEY
         val settings = get<StockPhotoSettings>()
         val errorLogger = get<ErrorLogger>()
@@ -325,6 +345,7 @@ val appModule = module {
                 get<BundledPackSource>(),
                 get<PexelsSource>(),
                 get<UnsplashSource>(),
+                get<DeviantArtSource>(),
                 get<PexelsVideoSource>(),
                 get<PixabayVideoSource>(),
                 get<CoverrSource>(),

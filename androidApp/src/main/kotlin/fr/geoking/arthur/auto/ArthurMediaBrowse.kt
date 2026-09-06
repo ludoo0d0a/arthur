@@ -7,6 +7,7 @@ import fr.geoking.arthur.shared.source.ArticSource
 import fr.geoking.arthur.shared.source.BundledPackSource
 import fr.geoking.arthur.shared.source.ClevelandSource
 import fr.geoking.arthur.shared.source.CustomFractalSource
+import fr.geoking.arthur.shared.source.DeviantArtSource
 import fr.geoking.arthur.shared.source.EuropeanaSource
 import fr.geoking.arthur.shared.source.FractalSource
 import fr.geoking.arthur.shared.source.GenartSource
@@ -43,6 +44,7 @@ object ArthurMediaBrowse {
         WikimediaStreetArtSource.ID,
         PexelsSource.ID,
         UnsplashSource.ID,
+        DeviantArtSource.ID,
     )
 
     fun folderId(sourceId: String): String = FOLDER_PREFIX + sourceId

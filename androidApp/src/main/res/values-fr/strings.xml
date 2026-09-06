@@ -7,7 +7,17 @@
     <string name="artwork_unavailable">Œuvre indisponible</string>
     <string name="artwork_unavailable_detail">Affichage du placeholder de catégorie</string>
     <string name="ambient_title">Ambient</string>
+    <string name="ambient_artwork_details">Détails de l\'œuvre</string>
     <string name="ambient_rotation_progress">Temps avant la prochaine œuvre</string>
+    <string name="screen_artwork_detail">Détails de l’œuvre</string>
+    <string name="detail_source">Source</string>
+    <string name="detail_author">Artiste</string>
+    <string name="detail_kind">Type</string>
+    <string name="detail_date">Date</string>
+    <string name="detail_medium">Technique</string>
+    <string name="detail_license">Licence</string>
+    <string name="detail_description">Description</string>
+    <string name="detail_open_source_page">Ouvrir la page source</string>
     <string name="dream_description">Art ambient Arthur</string>
     <string name="rotation_section">Rotation préparée</string>
     <string name="packs_section">Packs</string>
@@ -32,6 +42,7 @@
     <string name="source_pexels_video">Pexels</string>
     <string name="source_pixabay_video">Pixabay</string>
     <string name="source_coverr">Coverr</string>
+    <string name="source_unsplash">Unsplash</string>
     <string name="stock_topic_section">Thème photo</string>
     <string name="stock_topic_suggestions">Suggestions</string>
     <string name="stock_topic_random">Aléatoire</string>

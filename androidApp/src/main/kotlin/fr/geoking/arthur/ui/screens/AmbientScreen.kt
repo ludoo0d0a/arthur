@@ -15,8 +15,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -48,17 +53,21 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.R
 import fr.geoking.arthur.auto.AmbientAlbumArt
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
+import fr.geoking.arthur.shared.domain.hasDetailContent
 import fr.geoking.arthur.shared.domain.isGenerative
 import fr.geoking.arthur.source.StillImagePrefetcher
 import fr.geoking.arthur.source.rememberArtworkImageCache
 import fr.geoking.arthur.ui.components.ArtworkRenderer
 import fr.geoking.arthur.ui.components.StillArtworkPlaceholder
+import fr.geoking.arthur.ui.components.authorForDisplay
+import fr.geoking.arthur.ui.components.sourceLabel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.math.abs
@@ -146,9 +155,12 @@ fun AmbientScreenContent(
     val advanceLatest by rememberUpdatedState(::advance)
     val imageCache = rememberArtworkImageCache()
     val shown = if (shouldRotate) current else artwork
+    var showDetails by remember { mutableStateOf(false) }
+    LaunchedEffect(shown?.id) { showDetails = false }
+    val ambientActive = isActive && !showDetails
 
-    LaunchedEffect(shown?.id, poolIds, isActive) {
-        if (!isActive) return@LaunchedEffect
+    LaunchedEffect(shown?.id, poolIds, ambientActive) {
+        if (!ambientActive) return@LaunchedEffect
         val currentArt = shown ?: return@LaunchedEffect
         val pool = latestPool
         withContext(Dispatchers.IO) {
@@ -167,8 +179,8 @@ fun AmbientScreenContent(
         }
     }
 
-    LaunchedEffect(rotationEpoch, isActive, shouldRotate, poolIds, intervalMs) {
-        if (!isActive || !shouldRotate) {
+    LaunchedEffect(rotationEpoch, ambientActive, shouldRotate, poolIds, intervalMs) {
+        if (!ambientActive || !shouldRotate) {
             progress.snapTo(0f)
             return@LaunchedEffect
         }
@@ -190,7 +202,19 @@ fun AmbientScreenContent(
     }
 
     val shownTitle = shown?.title ?: title
+    val sourceLabel = shown?.sourceLabel().orEmpty()
+    val authorLabel = shown?.authorForDisplay(sourceLabel).orEmpty()
+    val canOpenDetails = shown?.hasDetailContent() == true
     val swipeThresholdPx = with(LocalDensity.current) { 56.dp.toPx() }
+
+    if (showDetails && shown != null) {
+        ArtworkDetailScreen(
+            artwork = shown,
+            onDismiss = { showDetails = false },
+            modifier = modifier,
+        )
+        return
+    }
 
     Box(
         modifier = modifier
@@ -225,7 +249,7 @@ fun AmbientScreenContent(
             shown != null -> {
                 ArtworkRenderer(
                     artwork = shown,
-                    isActive = isActive,
+                    isActive = ambientActive,
                     quality = GenartQuality.High,
                     modifier = Modifier.fillMaxSize(),
                 )
@@ -253,19 +277,36 @@ fun AmbientScreenContent(
                 .padding(28.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            Text(
-                text = stringResource(R.string.ambient_title),
-                style = MaterialTheme.typography.labelLarge,
-                color = Color.White.copy(alpha = 0.7f),
-            )
+            if (sourceLabel.isNotEmpty()) {
+                Text(
+                    text = sourceLabel,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = Color.White.copy(alpha = 0.7f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.testTag("ambient_source"),
+                )
+            }
+            if (authorLabel.isNotEmpty()) {
+                Text(
+                    text = authorLabel,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.White.copy(alpha = 0.85f),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.testTag("ambient_author"),
+                )
+            }
             Text(
                 text = shownTitle,
                 color = Color.White,
                 style = MaterialTheme.typography.headlineSmall,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.testTag("ambient_title"),
             )
         }
-        if (shouldRotate && isActive) {
+        if (shouldRotate && ambientActive) {
             AmbientRotationProgress(
                 progress = { progress.value },
                 modifier = Modifier
@@ -273,7 +314,7 @@ fun AmbientScreenContent(
                     .padding(28.dp),
             )
         }
-        // Topmost layer so taps/swipes aren't eaten by artwork / overlays.
+        // Above artwork chrome, below details button so ⋯ stays tappable.
         if (shouldRotate && !isTelevision) {
             Box(
                 modifier = Modifier
@@ -305,6 +346,49 @@ fun AmbientScreenContent(
                             }
                         }
                     },
+            )
+        }
+        if (canOpenDetails) {
+            AmbientDetailsButton(
+                onClick = { showDetails = true },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .statusBarsPadding()
+                    .padding(12.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun AmbientDetailsButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val description = stringResource(R.string.ambient_artwork_details)
+    Box(
+        modifier = modifier
+            .size(44.dp)
+            .semantics { contentDescription = description }
+            .testTag("ambient_details"),
+        contentAlignment = Alignment.Center,
+    ) {
+        val frosted = Modifier
+            .matchParentSize()
+            .then(
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    Modifier.blur(12.dp)
+                } else {
+                    Modifier
+                },
+            )
+            .background(Color.White.copy(alpha = 0.18f), CircleShape)
+        Box(modifier = frosted)
+        IconButton(onClick = onClick) {
+            Icon(
+                imageVector = Icons.Filled.MoreVert,
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.9f),
             )
         }
     }

@@ -56,6 +56,7 @@ class LouvreSource(
             sourceId = ID,
             kind = searchKind.artworkKind ?: ArtworkKind.Painting,
             remoteUrl = imageUrl,
+            externalUrl = collectionPageUrl(arkId),
         )
     }
 
@@ -96,6 +97,9 @@ class LouvreSource(
 
         fun objectUrl(arkId: String): String =
             "https://collections.louvre.fr/ark:/53355/$arkId.json"
+
+        fun collectionPageUrl(arkId: String): String =
+            "https://collections.louvre.fr/ark:/53355/$arkId"
 
         fun defaultArks(kind: MuseumSearchKind): List<String> = when (kind) {
             MuseumSearchKind.Sculpture -> SCULPTURE_ARKS

@@ -135,6 +135,29 @@ fun ArtworkRenderer(
     }
 }
 
+/** Small still preview for detail chrome (falls back to kind placeholder). */
+@Composable
+fun StillArtworkThumbnail(
+    artwork: Artwork,
+    modifier: Modifier = Modifier,
+) {
+    if (!artwork.localPath.isNullOrBlank() || !artwork.remoteUrl.isNullOrBlank()) {
+        RemoteStillImage(
+            artworkId = artwork.id,
+            localPath = artwork.localPath,
+            remoteUrl = artwork.remoteUrl,
+            kind = artwork.kind,
+            modifier = modifier,
+        )
+    } else {
+        StillArtworkPlaceholder(
+            kind = artwork.kind,
+            showWarning = false,
+            modifier = modifier,
+        )
+    }
+}
+
 @Composable
 private fun RemoteStillImage(
     artworkId: String,

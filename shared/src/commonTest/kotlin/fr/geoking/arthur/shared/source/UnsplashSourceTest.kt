@@ -34,7 +34,10 @@ class UnsplashSourceTest {
         assertEquals(1, art.size)
         assertEquals("unsplash-abc123", art[0].id)
         assertEquals("Misty forest path", art[0].title)
+        assertEquals("trees in fog", art[0].description)
         assertEquals("Jane Photographer / Unsplash", art[0].attribution)
+        assertEquals("Unsplash License", art[0].license)
+        assertEquals("https://unsplash.com/photos/abc123", art[0].externalUrl)
         assertEquals(
             "https://images.unsplash.com/photo-abc123?w=1080",
             art[0].remoteUrl,

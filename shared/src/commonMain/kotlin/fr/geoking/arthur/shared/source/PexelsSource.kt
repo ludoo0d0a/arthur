@@ -54,6 +54,9 @@ class PexelsSource(
                     sourceId = ID,
                     kind = ArtworkKind.Photo,
                     remoteUrl = imageUrl,
+                    license = "Pexels License",
+                    externalUrl = photo.url?.takeIf { it.isNotBlank() }
+                        ?: "https://www.pexels.com/photo/${photo.id}/",
                 )
             }
             RemoteSample.sample(mapped, limit, random)
@@ -94,6 +97,7 @@ internal data class PexelsPhoto(
     val id: Long,
     val alt: String? = null,
     val photographer: String? = null,
+    val url: String? = null,
     val src: PexelsSrc? = null,
 )
 

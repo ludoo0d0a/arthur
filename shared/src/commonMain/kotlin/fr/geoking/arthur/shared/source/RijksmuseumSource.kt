@@ -62,6 +62,7 @@ class RijksmuseumSource(
             sourceId = ID,
             kind = kind,
             remoteUrl = imageUrl,
+            externalUrl = collectionPageUrl(objectNumber),
         )
     }
 
@@ -144,6 +145,9 @@ class RijksmuseumSource(
                 ?: "painting"
             return "https://data.rijksmuseum.nl/search/collection?type=$type&imageAvailable=true"
         }
+
+        fun collectionPageUrl(objectNumber: String): String =
+            "https://www.rijksmuseum.nl/en/collection/$objectNumber"
 
         private fun searchTargetsFor(
             kind: MuseumSearchKind,

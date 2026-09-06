@@ -61,6 +61,8 @@ class ClevelandSource(
                 ?: searchKind.artworkKind
                 ?: ArtworkKind.Painting,
             remoteUrl = imageUrl,
+            license = item.shareLicenseStatus?.takeIf { it.isNotBlank() } ?: "CC0",
+            externalUrl = collectionPageUrl(objectId),
         )
     }
 
@@ -86,6 +88,9 @@ class ClevelandSource(
             return "https://openaccess-api.clevelandart.org/api/artworks/" +
                 "?cc0=1&has_image=1&limit=$limit&skip=$skip&type=$type"
         }
+
+        fun collectionPageUrl(objectId: Int): String =
+            "https://www.clevelandart.org/art/$objectId"
     }
 }
 

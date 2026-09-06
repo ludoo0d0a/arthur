@@ -43,6 +43,8 @@ class MetSourceTest {
             art[0].remoteUrl,
         )
         assertEquals(MetSource.ID, art[0].sourceId)
+        assertEquals(MetSource.collectionPageUrl(objectId), art[0].externalUrl)
+        assertEquals("Public Domain", art[0].license)
     }
 
     @Test

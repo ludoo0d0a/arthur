@@ -51,6 +51,11 @@ class MetSource(
             sourceId = ID,
             kind = searchKind.artworkKind ?: ArtworkKind.Painting,
             remoteUrl = imageUrl,
+            description = obj.creditLine?.takeIf { it.isNotBlank() }.orEmpty(),
+            date = obj.objectDate?.takeIf { it.isNotBlank() }.orEmpty(),
+            medium = obj.medium?.takeIf { it.isNotBlank() }.orEmpty(),
+            license = if (obj.isPublicDomain) "Public Domain" else "",
+            externalUrl = collectionPageUrl(objectId),
         )
     }
 
@@ -74,6 +79,9 @@ class MetSource(
         fun objectUrl(objectId: Int): String =
             "https://collectionapi.metmuseum.org/public/collection/v1/objects/$objectId"
 
+        fun collectionPageUrl(objectId: Int): String =
+            "https://www.metmuseum.org/art/collection/search/$objectId"
+
         internal fun parseSearchIds(payload: String): List<Int> {
             val page = json.decodeFromString<MetSearchPage>(payload)
             return page.objectIDs.orEmpty()
@@ -95,4 +103,7 @@ internal data class MetObject(
     val artistDisplayName: String? = null,
     val primaryImage: String? = null,
     val primaryImageSmall: String? = null,
+    val objectDate: String? = null,
+    val medium: String? = null,
+    val creditLine: String? = null,
 )

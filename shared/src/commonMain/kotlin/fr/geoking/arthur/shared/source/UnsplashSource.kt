@@ -49,9 +49,13 @@ class UnsplashSource(
                 val imageUrl = photo.urls?.regular?.takeIf { it.isNotBlank() }
                     ?: photo.urls?.full?.takeIf { it.isNotBlank() }
                     ?: return@mapNotNull null
-                val title = photo.description?.takeIf { it.isNotBlank() }
-                    ?: photo.altDescription?.takeIf { it.isNotBlank() }
-                    ?: "Unsplash ${photo.id}"
+                val primary = photo.description?.takeIf { it.isNotBlank() }
+                val alt = photo.altDescription?.takeIf { it.isNotBlank() }
+                val title = primary ?: alt ?: "Unsplash ${photo.id}"
+                val description = when {
+                    primary != null && alt != null && !alt.equals(primary, ignoreCase = true) -> alt
+                    else -> ""
+                }
                 val photographer = photo.user?.name?.takeIf { it.isNotBlank() } ?: "Unsplash"
                 Artwork(
                     id = "unsplash-${photo.id}",
@@ -60,6 +64,10 @@ class UnsplashSource(
                     sourceId = ID,
                     kind = ArtworkKind.Photo,
                     remoteUrl = imageUrl,
+                    description = description,
+                    license = "Unsplash License",
+                    externalUrl = photo.links?.html?.takeIf { it.isNotBlank() }
+                        ?: "https://unsplash.com/photos/${photo.id}",
                 )
             }
             RemoteSample.sample(mapped, limit, random)
@@ -104,12 +112,18 @@ internal data class UnsplashPhoto(
     val altDescription: String? = null,
     val urls: UnsplashUrls? = null,
     val user: UnsplashUser? = null,
+    val links: UnsplashLinks? = null,
 )
 
 @Serializable
 internal data class UnsplashUrls(
     val regular: String? = null,
     val full: String? = null,
+)
+
+@Serializable
+internal data class UnsplashLinks(
+    val html: String? = null,
 )
 
 @Serializable

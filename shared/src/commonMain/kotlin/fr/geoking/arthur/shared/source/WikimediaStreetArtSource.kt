@@ -50,6 +50,9 @@ class WikimediaStreetArtSource(
             sourceId = ID,
             kind = ArtworkKind.Painting,
             remoteUrl = imageUrl,
+            license = license.orEmpty(),
+            externalUrl = info.descriptionurl?.takeIf { it.isNotBlank() }
+                ?: page.title?.let { "https://commons.wikimedia.org/wiki/${it.replace(' ', '_')}" },
         )
     }
 
@@ -142,6 +145,7 @@ internal data class WikimediaImageInfo(
     val url: String? = null,
     val thumburl: String? = null,
     val mime: String? = null,
+    val descriptionurl: String? = null,
     val extmetadata: WikimediaExtMetadata? = null,
 )
 

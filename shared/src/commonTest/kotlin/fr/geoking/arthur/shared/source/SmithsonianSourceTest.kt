@@ -90,10 +90,9 @@ class SmithsonianSourceTest {
     fun searchUrlEncodesQuery() {
         val url = SmithsonianSource.searchUrl(apiKey = "k", kind = MuseumSearchKind.Sculpture)
         assertTrue(url.contains("api_key=k"))
-        assertTrue(url.contains("unit_code%3ASAAM"))
         assertTrue(url.contains("sculpture"))
         assertTrue(url.contains("online_media_type%3AImages"))
         assertTrue(url.contains("start=0"))
-        assertFalse(url.contains("unit_code:SAAM"))
+        assertFalse(url.contains("unit_code"))
     }
 }

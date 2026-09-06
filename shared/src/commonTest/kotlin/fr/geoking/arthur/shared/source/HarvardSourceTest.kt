@@ -57,7 +57,7 @@ class HarvardSourceTest {
     fun searchUrlRequiresPublicImagePermission() {
         assertEquals(
             "https://api.harvardartmuseums.org/object" +
-                "?apikey=k&classification=Photographs&hasimage=1&q=imagepermissionlevel:0&size=20" +
+                "?apikey=k&classification=Photographs&hasimage=1&q=imagepermissionlevel%3A0&size=20" +
                 "&page=1&fields=id,title,primaryimageurl,people,classification",
             HarvardSource.searchUrl(apiKey = "k", kind = MuseumSearchKind.Photo),
         )

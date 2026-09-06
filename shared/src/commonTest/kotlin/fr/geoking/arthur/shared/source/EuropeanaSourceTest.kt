@@ -10,7 +10,7 @@ class EuropeanaSourceTest {
     @Test
     fun loadsArtworkFromEuropeanaFixtures() = runBlocking {
         val fixtures = mapOf(
-            EuropeanaSource.searchUrl(limit = RemoteSample.SEARCH_POOL) to """
+            EuropeanaSource.searchUrl(limit = RemoteSample.SEARCH_POOL, apiKey = "test-key") to """
                 {
                   "items": [
                     {
@@ -56,7 +56,7 @@ class EuropeanaSourceTest {
     @Test
     fun prefersIsShownByOverPreviewAndSkipsMissingImage() = runBlocking {
         val fixtures = mapOf(
-            EuropeanaSource.searchUrl(limit = RemoteSample.SEARCH_POOL) to """
+            EuropeanaSource.searchUrl(limit = RemoteSample.SEARCH_POOL, apiKey = "test-key") to """
                 {
                   "items": [
                     {

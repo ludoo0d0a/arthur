@@ -48,7 +48,7 @@ class EuropeanaSource(
                 val payload = RemoteSample.fetchWindow(
                     randomOffset = start,
                     firstOffset = 1,
-                    fetch = { s -> httpGet(searchUrl(RemoteSample.SEARCH_POOL, target, start = s)) },
+                    fetch = { s -> httpGet(searchUrl(RemoteSample.SEARCH_POOL, target, start = s, apiKey = apiKey)) },
                     isEmpty = ::looksEmptyEuropeana,
                 )
                 val page = json.decodeFromString<EuropeanaSearchPage>(payload)
@@ -105,13 +105,16 @@ class EuropeanaSource(
             kind: MuseumSearchKind = MuseumSearchKind.Painting,
             /** Europeana result offset; first item is 1. */
             start: Int = 1,
+            apiKey: String = "",
         ): String {
-            val query = RemoteCategoryMapping.museumParams(kind, RemoteProvider.Europeana).query
+            val rawQuery = RemoteCategoryMapping.museumParams(kind, RemoteProvider.Europeana).query
                 .orEmpty()
+            val query = rawQuery.replace(" ", "%20")
+            val wskeyParam = if (apiKey.isNotBlank()) "&wskey=$apiKey" else ""
             // Encode qf value so `TYPE:IMAGE` survives strict URL parsers.
             return "https://api.europeana.eu/record/v2/search.json" +
                 "?query=$query&reusability=open&media=true&qf=TYPE%3AIMAGE" +
-                "&rows=$limit&start=$start&profile=standard"
+                "&rows=$limit&start=$start&profile=standard$wskeyParam"
         }
     }
 }

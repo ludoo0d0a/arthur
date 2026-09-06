@@ -7,6 +7,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +17,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,10 +26,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -39,6 +47,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,16 +58,25 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
 import fr.geoking.arthur.BuildConfig
 import fr.geoking.arthur.R
 import fr.geoking.arthur.UsedApisList
 import fr.geoking.arthur.auto.AmbientAlbumArt
 import fr.geoking.arthur.phone.theme.ArthurTheme
+import fr.geoking.arthur.shared.error.ErrorCategory
+import fr.geoking.arthur.shared.error.ErrorItem
+import fr.geoking.arthur.shared.error.ErrorLogger
 import fr.geoking.arthur.source.RotationSettings
+import org.koin.core.context.GlobalContext
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 private const val WebsiteUrl = "https://arthur.geoking.fr"
 private const val PrivacyUrl = "https://arthur.geoking.fr/privacy.html"
@@ -70,6 +88,7 @@ enum class SettingsScreenPage {
     About,
     Licenses,
     Developer,
+    DeveloperErrorLog,
 }
 
 @Composable
@@ -85,7 +104,12 @@ fun SettingsScreen(
     onCheckForUpdate: (() -> Unit)? = null,
     initialScreenStack: List<SettingsScreenPage>? = null,
     onInitialRouteConsumed: () -> Unit = {},
+    errorLogger: ErrorLogger? = null,
 ) {
+    val activeErrorLogger = remember(errorLogger) {
+        errorLogger ?: runCatching { GlobalContext.get().get<ErrorLogger>() }.getOrNull()
+            ?: ErrorLogger()
+    }
     var screenStack by remember { mutableStateOf(listOf(SettingsScreenPage.Main)) }
     val currentScreen = screenStack.last()
 
@@ -118,6 +142,7 @@ fun SettingsScreen(
                             SettingsScreenPage.About -> stringResource(R.string.screen_about)
                             SettingsScreenPage.Licenses -> stringResource(R.string.screen_licenses)
                             SettingsScreenPage.Developer -> stringResource(R.string.screen_developer)
+                            SettingsScreenPage.DeveloperErrorLog -> stringResource(R.string.dev_errors_list)
                         },
                     )
                 },
@@ -170,6 +195,10 @@ fun SettingsScreen(
                 SettingsScreenPage.Developer -> DeveloperContent(
                     simulatePremium = simulatePremium,
                     onSimulatePremiumChange = onSimulatePremiumChange,
+                    onOpenErrorLog = { screenStack = screenStack + SettingsScreenPage.DeveloperErrorLog },
+                )
+                SettingsScreenPage.DeveloperErrorLog -> DeveloperErrorLogScreen(
+                    errorLogger = activeErrorLogger,
                 )
             }
         }
@@ -324,6 +353,7 @@ private fun rotationIntervalLabel(ms: Long): String {
 private fun DeveloperContent(
     simulatePremium: Boolean,
     onSimulatePremiumChange: (Boolean) -> Unit,
+    onOpenErrorLog: () -> Unit = {},
 ) {
     Column(
         modifier = Modifier
@@ -360,6 +390,258 @@ private fun DeveloperContent(
                     onCheckedChange = onSimulatePremiumChange,
                     modifier = Modifier.testTag("dev_simulate_premium"),
                 )
+            }
+
+            SettingsItem(
+                label = stringResource(R.string.dev_errors_list),
+                value = stringResource(R.string.dev_errors_list_subtitle),
+                onClick = onOpenErrorLog,
+            )
+        }
+    }
+}
+
+@Composable
+@OptIn(ExperimentalLayoutApi::class)
+fun DeveloperErrorLogScreen(
+    errorLogger: ErrorLogger,
+) {
+    val errors by errorLogger.errors.collectAsState()
+    var selectedCategory by remember { mutableStateOf<ErrorCategory?>(null) }
+    var selectedSource by remember { mutableStateOf<String?>(null) }
+
+    val filteredErrors = remember(errors, selectedCategory, selectedSource) {
+        errors.filter { err ->
+            (selectedCategory == null || err.category == selectedCategory) &&
+                (selectedSource == null || err.sourceId.equals(selectedSource, ignoreCase = true))
+        }
+    }
+
+    val sources = remember(errors) {
+        errors.map { it.sourceId }.distinct().sorted()
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .testTag("developer_error_log_screen"),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "${filteredErrors.size} / ${errors.size} errors",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Button(
+                onClick = { errorLogger.clearAll() },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                ),
+                enabled = errors.isNotEmpty(),
+                modifier = Modifier.testTag("btn_clear_all_errors"),
+            ) {
+                Icon(
+                    Icons.Filled.Delete,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(stringResource(R.string.dev_clear_errors))
+            }
+        }
+
+        // Category Filter Chips
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            FilterChip(
+                selected = selectedCategory == null,
+                onClick = { selectedCategory = null },
+                label = { Text("All Categories") },
+            )
+            ErrorCategory.entries.forEach { cat ->
+                FilterChip(
+                    selected = selectedCategory == cat,
+                    onClick = {
+                        selectedCategory = if (selectedCategory == cat) null else cat
+                    },
+                    label = { Text(cat.name) },
+                )
+            }
+        }
+
+        // Source Filter Chips
+        if (sources.isNotEmpty()) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                FilterChip(
+                    selected = selectedSource == null,
+                    onClick = { selectedSource = null },
+                    label = { Text("All Sources") },
+                )
+                sources.forEach { src ->
+                    FilterChip(
+                        selected = selectedSource.equals(src, ignoreCase = true),
+                        onClick = {
+                            selectedSource = if (selectedSource.equals(src, ignoreCase = true)) null else src
+                        },
+                        label = { Text(src) },
+                    )
+                }
+            }
+        }
+
+        if (filteredErrors.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(32.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = stringResource(R.string.dev_no_errors),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(filteredErrors, key = { it.id }) { item ->
+                    ErrorItemCard(item)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ErrorItemCard(item: ErrorItem) {
+    var expanded by remember { mutableStateOf(false) }
+    val formattedTime = remember(item.timestamp) {
+        if (item.timestamp > 0) {
+            SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date(item.timestamp))
+        } else ""
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { expanded = !expanded },
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Surface(
+                        color = when (item.category) {
+                            ErrorCategory.Authentication -> Color(0xFFDC2626)
+                            ErrorCategory.RateLimit -> Color(0xFFD97706)
+                            ErrorCategory.Network -> Color(0xFF2563EB)
+                            ErrorCategory.Payload -> Color(0xFF7C3AED)
+                            ErrorCategory.Unknown -> Color(0xFF4B5563)
+                        },
+                        shape = RoundedCornerShape(4.dp),
+                    ) {
+                        Text(
+                            text = item.category.name,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = RoundedCornerShape(4.dp),
+                    ) {
+                        Text(
+                            text = item.sourceId,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        )
+                    }
+
+                    if (item.statusCode != null) {
+                        Text(
+                            text = "HTTP ${item.statusCode}",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+
+                if (formattedTime.isNotBlank()) {
+                    Text(
+                        text = formattedTime,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = item.message,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            val itemUrl = item.url
+            if (!itemUrl.isNullOrBlank()) {
+                Text(
+                    text = itemUrl,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+
+            val itemDetails = item.details
+            if (expanded && !itemDetails.isNullOrBlank()) {
+                Spacer(Modifier.height(8.dp))
+                Surface(
+                    color = MaterialTheme.colorScheme.surface,
+                    shape = RoundedCornerShape(4.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        text = itemDetails,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontSize = 11.sp,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(8.dp),
+                    )
+                }
             }
         }
     }

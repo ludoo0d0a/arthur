@@ -152,7 +152,7 @@ fun StillArtworkThumbnail(
     } else {
         StillArtworkPlaceholder(
             kind = artwork.kind,
-            showWarning = false,
+            showWarning = true,
             modifier = modifier,
         )
     }

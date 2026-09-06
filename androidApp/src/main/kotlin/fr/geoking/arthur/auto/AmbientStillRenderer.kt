@@ -47,9 +47,9 @@ object AmbientStillRenderer {
             artwork.isGenerative -> drawFractalField(canvas, artwork.id, seed)
             !artwork.localPath.isNullOrBlank() || !artwork.remoteUrl.isNullOrBlank() -> {
                 val drawn = drawStillImage(canvas, artwork.localPath, artwork.remoteUrl)
-                if (!drawn) drawStillPlaceholder(canvas, seed)
+                if (!drawn) drawStillPlaceholder(canvas, seed, isError = true)
             }
-            else -> drawStillPlaceholder(canvas, seed)
+            else -> drawStillPlaceholder(canvas, seed, isError = true)
         }
         return bitmap
     }
@@ -107,7 +107,7 @@ object AmbientStillRenderer {
 
     private fun drawCustomFractal(canvas: Canvas, artworkId: String, generation: Long) {
         val params = CustomFractalParams.fromArtworkId(artworkId)
-            ?: return drawStillPlaceholder(canvas, artworkId.hashCode().toLong() xor generation)
+            ?: return drawStillPlaceholder(canvas, artworkId.hashCode().toLong() xor generation, isError = true)
         CustomFractalStillRenderer.draw(
             canvas = canvas,
             params = params,
@@ -117,7 +117,7 @@ object AmbientStillRenderer {
         )
     }
 
-    private fun drawStillPlaceholder(canvas: Canvas, seed: Long) {
+    private fun drawStillPlaceholder(canvas: Canvas, seed: Long, isError: Boolean = false) {
         val rnd = Random(seed)
         val c1 = Color.rgb(12 + rnd.nextInt(20), 16 + rnd.nextInt(24), 32 + rnd.nextInt(40))
         val c2 = Color.rgb(8, 10, 24)
@@ -140,12 +140,21 @@ object AmbientStillRenderer {
         }
         canvas.drawCircle(SIZE * 0.5f, SIZE * 0.48f, SIZE * 0.28f, accent)
         canvas.drawCircle(SIZE * 0.5f, SIZE * 0.48f, SIZE * 0.18f, accent)
+
+        if (isError) {
+            val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.argb(220, 255, 255, 255)
+                textSize = 28f
+                textAlign = Paint.Align.CENTER
+            }
+            canvas.drawText("Artwork unavailable", SIZE * 0.5f, SIZE * 0.50f, textPaint)
+        }
     }
 
     private fun drawGenart(canvas: Canvas, artworkId: String, generation: Long) {
         val engine = GenartCatalog.engineForId(artworkId)
         if (engine == null) {
-            drawStillPlaceholder(canvas, artworkId.hashCode().toLong() xor generation)
+            drawStillPlaceholder(canvas, artworkId.hashCode().toLong() xor generation, isError = true)
             return
         }
         GenartStillRenderer.draw(

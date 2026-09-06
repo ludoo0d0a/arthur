@@ -47,7 +47,9 @@ class ArthurApp : Application() {
     override fun onCreate() {
         super.onCreate()
         // Avoid debug noise / timeouts; release builds still report.
-        FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(!BuildConfig.DEBUG)
+        runCatching {
+            FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(!BuildConfig.DEBUG)
+        }
         stopKoin()
         startKoin {
             androidContext(this@ArthurApp)

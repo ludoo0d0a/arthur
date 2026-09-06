@@ -5,7 +5,7 @@
     <string name="control_plane_subtitle">Votre art ambient</string>
     <string name="preview_label">Aperçu : %1$s</string>
     <string name="artwork_unavailable">Œuvre indisponible</string>
-    <string name="artwork_unavailable_detail">Affichage du placeholder de catégorie</string>
+    <string name="artwork_unavailable_detail">Impossible de charger l\'image. Vérifiez votre connexion réseau ou réessayez.</string>
     <string name="ambient_title">Ambient</string>
     <string name="ambient_artwork_details">Détails de l\'œuvre</string>
     <string name="ambient_rotation_progress">Temps avant la prochaine œuvre</string>

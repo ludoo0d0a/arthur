@@ -79,17 +79,23 @@ class SmithsonianSource(
         val mediaList = row.content?.descriptiveNonRepeating?.onlineMedia?.media.orEmpty()
         val media = mediaList
             .firstOrNull { media ->
-                media.type.equals("Images", ignoreCase = true) &&
+                (media.type.isNullOrBlank() || media.type.equals("Images", ignoreCase = true)) &&
                     (media.usage?.access.equals("CC0", ignoreCase = true) ||
                         row.content?.descriptiveNonRepeating?.metadataUsage?.access
                             .equals("CC0", ignoreCase = true))
             }
-            ?: mediaList.firstOrNull { it.type.equals("Images", ignoreCase = true) }
+            ?: mediaList.firstOrNull { media ->
+                media.type.isNullOrBlank() || media.type.equals("Images", ignoreCase = true)
+            }
             ?: return null
         val imageUrl = media.resources
-            ?.firstOrNull { it.label.equals("Screen Image", ignoreCase = true) }
+            ?.firstOrNull {
+                it.label.equals("Screen Image", ignoreCase = true) ||
+                    it.label.equals("High-resolution JPEG", ignoreCase = true)
+            }
             ?.url
             ?.takeIf { it.isNotBlank() }
+            ?: media.resources?.firstOrNull { !it.url.isNullOrBlank() }?.url
             ?: media.content?.takeIf { it.isNotBlank() }
             ?: return null
         val title = row.title?.takeIf { it.isNotBlank() }
@@ -103,6 +109,9 @@ class SmithsonianSource(
             ?.takeIf { it.isNotBlank() }
             ?: "Smithsonian"
         val attribution = listOfNotNull(artist, dataSource).distinct().joinToString(" / ")
+        val externalUrl = row.content?.descriptiveNonRepeating?.recordLink?.takeIf { it.isNotBlank() }
+            ?: row.content?.descriptiveNonRepeating?.guid?.takeIf { it.isNotBlank() }
+            ?: row.url?.takeIf { it.isNotBlank() && it.startsWith("http") }
         val slug = recordId.replace(':', '-').replace('/', '-')
         return Artwork(
             id = "smithsonian-$slug",
@@ -111,6 +120,7 @@ class SmithsonianSource(
             sourceId = ID,
             kind = searchKind.artworkKind ?: ArtworkKind.Painting,
             remoteUrl = imageUrl,
+            externalUrl = externalUrl,
         )
     }
 
@@ -186,7 +196,9 @@ internal data class SmithsonianLabeledText(
 @Serializable
 internal data class SmithsonianDescriptive(
     val title: SmithsonianLabeledText? = null,
+    val guid: String? = null,
     @SerialName("data_source") val dataSource: String? = null,
+    @SerialName("record_link") val recordLink: String? = null,
     @SerialName("online_media") val onlineMedia: SmithsonianOnlineMedia? = null,
     @SerialName("metadata_usage") val metadataUsage: SmithsonianUsage? = null,
 )
@@ -194,12 +206,16 @@ internal data class SmithsonianDescriptive(
 @Serializable
 internal data class SmithsonianOnlineMedia(
     val media: List<SmithsonianMedia>? = emptyList(),
+    @SerialName("mediaCount") val mediaCount: Int? = null,
 )
 
 @Serializable
 internal data class SmithsonianMedia(
+    val id: String? = null,
     val type: String? = null,
     val content: String? = null,
+    val thumbnail: String? = null,
+    @SerialName("idsId") val idsId: String? = null,
     val usage: SmithsonianUsage? = null,
     val resources: List<SmithsonianResource>? = null,
 )
@@ -213,4 +229,6 @@ internal data class SmithsonianUsage(
 internal data class SmithsonianResource(
     val label: String? = null,
     val url: String? = null,
+    val width: Int? = null,
+    val height: Int? = null,
 )

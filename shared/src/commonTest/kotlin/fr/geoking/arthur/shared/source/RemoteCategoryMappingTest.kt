@@ -143,7 +143,7 @@ class RemoteCategoryMappingTest {
         )
         assertEquals(
             MuseumApiParams(
-                query = "online_media_type:Images AND sculpture",
+                query = "online_media_type:Images AND (object_type:Sculpture OR object_type:sculpture OR sculpture)",
             ),
             RemoteCategoryMapping.museumParams(
                 MuseumSearchKind.Sculpture,

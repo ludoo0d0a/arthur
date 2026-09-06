@@ -167,7 +167,7 @@ object RemoteCategoryMapping {
             query = "sculpture",
             medium = "Sculpture",
         )
-        // Not tagged for Photo remote search — placeholder for exhaustiveness.
+        // Not tagged for Photo remote search historically — now used by all museums.
         MuseumSearchKind.Photo -> MuseumApiParams(query = "photograph", medium = "Photographs")
     }
 

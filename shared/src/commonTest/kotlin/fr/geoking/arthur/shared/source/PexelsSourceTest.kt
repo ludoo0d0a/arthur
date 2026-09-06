@@ -8,7 +8,7 @@ class PexelsSourceTest {
     @Test
     fun loadsArtworkFromPexelsFixtures() = runBlocking {
         val fixtures = mapOf(
-            PexelsSource.searchUrl() to """
+            PexelsSource.searchUrl(perPage = RemoteSample.SEARCH_POOL) to """
                 {
                   "photos": [
                     {
@@ -28,6 +28,7 @@ class PexelsSourceTest {
         val source = PexelsSource(
             apiKey = "test-key",
             httpGet = { url -> fixtures.getValue(url) },
+            random = ZeroRandom,
         )
         val art = source.load()
         assertEquals(1, art.size)
@@ -68,7 +69,7 @@ class PexelsSourceTest {
     @Test
     fun searchUrlIncludesCategoryQuery() {
         assertEquals(
-            "https://api.pexels.com/v1/search?query=ocean&orientation=landscape&per_page=20",
+            "https://api.pexels.com/v1/search?query=ocean&orientation=landscape&per_page=20&page=1",
             PexelsSource.searchUrl("ocean"),
         )
     }
@@ -91,13 +92,14 @@ class PexelsSourceTest {
     @Test
     fun skipsPhotosWithoutImageUrl() = runBlocking {
         val fixtures = mapOf(
-            PexelsSource.searchUrl() to """
+            PexelsSource.searchUrl(perPage = RemoteSample.SEARCH_POOL) to """
                 {"photos":[{"id":1,"alt":"No src","photographer":"X","src":{}}]}
             """.trimIndent(),
         )
         val source = PexelsSource(
             apiKey = "test-key",
             httpGet = { url -> fixtures.getValue(url) },
+            random = ZeroRandom,
         )
         assertEquals(emptyList(), source.load())
     }

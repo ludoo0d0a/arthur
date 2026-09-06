@@ -8,7 +8,7 @@ class UnsplashSourceTest {
     @Test
     fun loadsArtworkFromUnsplashFixtures() = runBlocking {
         val fixtures = mapOf(
-            UnsplashSource.searchUrl() to """
+            UnsplashSource.searchUrl(perPage = RemoteSample.SEARCH_POOL) to """
                 {
                   "results": [
                     {
@@ -28,6 +28,7 @@ class UnsplashSourceTest {
         val source = UnsplashSource(
             accessKey = "test-key",
             httpGet = { url -> fixtures.getValue(url) },
+            random = ZeroRandom,
         )
         val art = source.load()
         assertEquals(1, art.size)
@@ -68,7 +69,8 @@ class UnsplashSourceTest {
     @Test
     fun searchUrlIncludesCategoryQuery() {
         assertEquals(
-            "https://api.unsplash.com/search/photos?query=city&orientation=landscape&per_page=20",
+            "https://api.unsplash.com/search/photos" +
+                "?query=city&orientation=landscape&per_page=20&page=1",
             UnsplashSource.searchUrl("city"),
         )
     }
@@ -76,7 +78,7 @@ class UnsplashSourceTest {
     @Test
     fun fallsBackToAltDescriptionWhenDescriptionMissing() = runBlocking {
         val fixtures = mapOf(
-            UnsplashSource.searchUrl() to """
+            UnsplashSource.searchUrl(perPage = RemoteSample.SEARCH_POOL) to """
                 {
                   "results": [
                     {
@@ -92,6 +94,7 @@ class UnsplashSourceTest {
         val source = UnsplashSource(
             accessKey = "test-key",
             httpGet = { url -> fixtures.getValue(url) },
+            random = ZeroRandom,
         )
         assertEquals("calm lake", source.load().single().title)
     }

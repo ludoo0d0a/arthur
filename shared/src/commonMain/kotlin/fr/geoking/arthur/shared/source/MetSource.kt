@@ -27,17 +27,13 @@ class MetSource(
     override val displayName: String = "The Met"
 
     override suspend fun load(): List<Artwork> = runCatching {
-        val targets = RemoteCategoryMapping.museumTargets(kind())
-        val perKind = (limit / targets.size).coerceAtLeast(1)
-        val results = mutableListOf<Artwork>()
-        for (target in targets) {
+        MuseumLoad.acrossTargets(kind(), limit, random) { target, perKind ->
             val searchJson = httpGet(searchUrl(target))
             val ids = RemoteSample.sample(parseSearchIds(searchJson), perKind, random)
-            for (objectId in ids) {
-                runCatching { loadArtwork(objectId, target) }.getOrNull()?.let { results.add(it) }
+            ids.mapNotNull { objectId ->
+                runCatching { loadArtwork(objectId, target) }.getOrNull()
             }
         }
-        RemoteSample.sample(results, limit, random)
     }.getOrDefault(emptyList())
 
     private suspend fun loadArtwork(objectId: Int, searchKind: MuseumSearchKind): Artwork? {

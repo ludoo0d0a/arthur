@@ -28,25 +28,23 @@ class SmithsonianSource(
     override suspend fun load(): List<Artwork> {
         if (apiKey.isBlank()) return emptyList()
         return runCatching {
-            val targets = RemoteCategoryMapping.museumTargets(kind())
-            val perKind = (limit / targets.size).coerceAtLeast(1)
-            val results = mutableListOf<Artwork>()
-            for (target in targets) {
+            MuseumLoad.acrossTargets(kind(), limit, random) { target, perKind ->
                 val start = RemoteSample.randomStart(RemoteSample.SEARCH_POOL, random = random)
-                val payload = httpGet(
-                    searchUrl(apiKey, RemoteSample.SEARCH_POOL, target, start = start),
-                ).let { body ->
-                    if (start > 0 && looksEmptySmithsonian(body)) {
-                        httpGet(searchUrl(apiKey, RemoteSample.SEARCH_POOL, target, start = 0))
-                    } else {
-                        body
-                    }
-                }
+                val payload = RemoteSample.fetchWindow(
+                    randomOffset = start,
+                    firstOffset = 0,
+                    fetch = { s ->
+                        httpGet(searchUrl(apiKey, RemoteSample.SEARCH_POOL, target, start = s))
+                    },
+                    isEmpty = ::looksEmptySmithsonian,
+                )
                 val page = json.decodeFromString<SmithsonianSearchPage>(payload)
-                val mapped = page.response?.rows.orEmpty().mapNotNull { toArtwork(it, target) }
-                results.addAll(RemoteSample.sample(mapped, perKind, random))
+                RemoteSample.sample(
+                    page.response?.rows.orEmpty().mapNotNull { toArtwork(it, target) },
+                    perKind,
+                    random,
+                )
             }
-            RemoteSample.sample(results, limit, random)
         }.getOrDefault(emptyList())
     }
 

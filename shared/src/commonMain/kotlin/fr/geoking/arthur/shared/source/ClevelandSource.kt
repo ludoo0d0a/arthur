@@ -25,24 +25,17 @@ class ClevelandSource(
     override val displayName: String = "Cleveland Museum of Art"
 
     override suspend fun load(): List<Artwork> = runCatching {
-        val targets = RemoteCategoryMapping.museumTargets(kind())
-        val perKind = (limit / targets.size).coerceAtLeast(1)
-        val results = mutableListOf<Artwork>()
-        for (target in targets) {
+        MuseumLoad.acrossTargets(kind(), limit, random) { target, perKind ->
             val skip = RemoteSample.randomStart(RemoteSample.SEARCH_POOL, random = random)
-            val payload = httpGet(searchUrl(RemoteSample.SEARCH_POOL, target, skip = skip))
-                .let { body ->
-                    if (skip > 0 && looksEmptyCleveland(body)) {
-                        httpGet(searchUrl(RemoteSample.SEARCH_POOL, target, skip = 0))
-                    } else {
-                        body
-                    }
-                }
+            val payload = RemoteSample.fetchWindow(
+                randomOffset = skip,
+                firstOffset = 0,
+                fetch = { s -> httpGet(searchUrl(RemoteSample.SEARCH_POOL, target, skip = s)) },
+                isEmpty = ::looksEmptyCleveland,
+            )
             val page = json.decodeFromString<ClevelandSearchPage>(payload)
-            val mapped = page.data.mapNotNull { toArtwork(it, target) }
-            results.addAll(RemoteSample.sample(mapped, perKind, random))
+            RemoteSample.sample(page.data.mapNotNull { toArtwork(it, target) }, perKind, random)
         }
-        RemoteSample.sample(results, limit, random)
     }.getOrDefault(emptyList())
 
     private fun looksEmptyCleveland(payload: String): Boolean =

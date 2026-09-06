@@ -27,19 +27,14 @@ class LouvreSource(
     override val displayName: String = "Musée du Louvre"
 
     override suspend fun load(): List<Artwork> = runCatching {
-        val targets = RemoteCategoryMapping.museumTargets(kind())
-        val results = mutableListOf<Artwork>()
-        for (target in targets) {
-            val remaining = (limit - results.size).coerceAtLeast(0)
-            if (remaining == 0) break
-            val selected = RemoteSample.sample(arkIds(target), remaining, random)
-            for (arkId in selected) {
+        MuseumLoad.acrossTargets(kind(), limit, random) { target, perKind ->
+            val selected = RemoteSample.sample(arkIds(target), perKind, random)
+            selected.mapNotNull { arkId ->
                 val payload = httpGet(objectUrl(arkId))
                 val record = json.decodeFromString<LouvreRecord>(payload)
-                toArtwork(record, target)?.let { results.add(it) }
+                toArtwork(record, target)
             }
         }
-        RemoteSample.sample(results, limit, random)
     }.getOrDefault(emptyList())
 
     private fun toArtwork(record: LouvreRecord, searchKind: MuseumSearchKind): Artwork? {

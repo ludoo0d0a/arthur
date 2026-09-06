@@ -28,25 +28,23 @@ class HarvardSource(
     override suspend fun load(): List<Artwork> {
         if (apiKey.isBlank()) return emptyList()
         return runCatching {
-            val targets = RemoteCategoryMapping.museumTargets(kind())
-            val perKind = (limit / targets.size).coerceAtLeast(1)
-            val results = mutableListOf<Artwork>()
-            for (target in targets) {
+            MuseumLoad.acrossTargets(kind(), limit, random) { target, perKind ->
                 val pageIndex = RemoteSample.randomPage(random = random)
-                val payload = httpGet(
-                    searchUrl(apiKey, RemoteSample.SEARCH_POOL, target, page = pageIndex),
-                ).let { body ->
-                    if (pageIndex > 1 && looksEmptyHarvard(body)) {
-                        httpGet(searchUrl(apiKey, RemoteSample.SEARCH_POOL, target, page = 1))
-                    } else {
-                        body
-                    }
-                }
+                val payload = RemoteSample.fetchWindow(
+                    randomOffset = pageIndex,
+                    firstOffset = 1,
+                    fetch = { p ->
+                        httpGet(searchUrl(apiKey, RemoteSample.SEARCH_POOL, target, page = p))
+                    },
+                    isEmpty = ::looksEmptyHarvard,
+                )
                 val page = json.decodeFromString<HarvardObjectPage>(payload)
-                val mapped = page.records.mapNotNull { toArtwork(it, target) }
-                results.addAll(RemoteSample.sample(mapped, perKind, random))
+                RemoteSample.sample(
+                    page.records.mapNotNull { toArtwork(it, target) },
+                    perKind,
+                    random,
+                )
             }
-            RemoteSample.sample(results, limit, random)
         }.getOrDefault(emptyList())
     }
 

@@ -17,12 +17,8 @@ data class SourceContentSupport(
  */
 object SourceCapabilities {
 
-    private val museumPaintingSculpture = SourceContentSupport(
-        kinds = setOf(ArtworkKind.Painting, ArtworkKind.Sculpture),
-        remoteSearchKinds = setOf(ArtworkKind.Painting, ArtworkKind.Sculpture),
-    )
-
-    private val museumWithPhoto = SourceContentSupport(
+    /** Museums currently expose Painting + Sculpture + Photo remote search. */
+    private val museumStillKinds = SourceContentSupport(
         kinds = setOf(ArtworkKind.Painting, ArtworkKind.Sculpture, ArtworkKind.Photo),
         remoteSearchKinds = setOf(
             ArtworkKind.Painting,
@@ -59,14 +55,14 @@ object SourceCapabilities {
                 ArtworkKind.Sculpture,
             ),
         ),
-        RijksmuseumSource.ID to museumWithPhoto,
-        ClevelandSource.ID to museumWithPhoto,
-        MetSource.ID to museumPaintingSculpture,
-        ArticSource.ID to museumPaintingSculpture,
-        EuropeanaSource.ID to museumPaintingSculpture,
-        HarvardSource.ID to museumPaintingSculpture,
-        SmithsonianSource.ID to museumPaintingSculpture,
-        LouvreSource.ID to museumPaintingSculpture,
+        RijksmuseumSource.ID to museumStillKinds,
+        ClevelandSource.ID to museumStillKinds,
+        MetSource.ID to museumStillKinds,
+        ArticSource.ID to museumStillKinds,
+        EuropeanaSource.ID to museumStillKinds,
+        HarvardSource.ID to museumStillKinds,
+        SmithsonianSource.ID to museumStillKinds,
+        LouvreSource.ID to museumStillKinds,
         WikimediaStreetArtSource.ID to SourceContentSupport(
             kinds = setOf(ArtworkKind.Painting),
         ),
@@ -90,4 +86,11 @@ object SourceCapabilities {
     /** Source ids that can remotely search for [kind]. */
     fun sourceIdsWithRemoteSearch(kind: ArtworkKind): List<String> =
         byId.filter { (_, support) -> kind in support.remoteSearchKinds }.keys.toList()
+
+    /**
+     * Ambient Start for Painting / Sculpture / Photo **All**: bundled suggestions
+     * plus every Source that can remotely search that kind (museums + stock).
+     */
+    fun sourceIdsForKindAmbient(kind: ArtworkKind): List<String> =
+        listOf(BundledPackSource.ID) + sourceIdsWithRemoteSearch(kind)
 }

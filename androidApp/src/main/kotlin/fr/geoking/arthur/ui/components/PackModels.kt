@@ -236,10 +236,10 @@ fun PackSelection.museumTopicOrNull(): MuseumTopic? =
     }
 
 /**
- * Source ids to load for Ambient Start. Still packs (museum / photo) load only the
- * selected institution or capability-matched providers so free-tier photo slots are
- * not eaten by unrelated Sources — and so we never fall back to a genart engine
- * like Particles. Genart uses the in-memory catalog (`null`).
+ * Source ids to load for Ambient Start. Still packs (museum / photo / painting /
+ * sculpture) load capability-matched providers so free-tier slots are not eaten by
+ * unrelated Sources — and so we never fall back to a genart engine like Particles.
+ * Genart uses the in-memory catalog (`null`).
  */
 fun PackSelection.sourceIdsForAmbientLoad(): List<String>? = when (family) {
     PackFamily.Museum -> {
@@ -248,28 +248,13 @@ fun PackSelection.sourceIdsForAmbientLoad(): List<String>? = when (family) {
             else -> listOfNotNull(topic.sourceId)
         }
     }
-    PackFamily.Painting -> {
-        when (val topic = museumTopicOrNull()) {
-            null -> SourceCapabilities.sourceIdsSupporting(ArtworkKind.Painting)
-            MuseumTopic.Suggestions -> listOf(BundledPackSource.ID)
-            else -> listOfNotNull(topic.sourceId)
-        }
-    }
-    PackFamily.Sculpture -> {
-        when (val topic = museumTopicOrNull()) {
-            null -> SourceCapabilities.sourceIdsSupporting(ArtworkKind.Sculpture)
-            MuseumTopic.Suggestions -> listOf(BundledPackSource.ID)
-            else -> listOfNotNull(topic.sourceId)
-        }
-    }
-    PackFamily.Photo -> {
-        when (stockCategoryOrNull()) {
-            StockPhotoCategory.Suggestions -> listOf(BundledPackSource.ID)
-            null, StockPhotoCategory.Random ->
-                listOf(BundledPackSource.ID) +
-                    SourceCapabilities.sourceIdsWithRemoteSearch(ArtworkKind.Photo)
-            else -> SourceCapabilities.sourceIdsWithRemoteSearch(ArtworkKind.Photo)
-        }
+    PackFamily.Painting -> stillKindAmbientIds(ArtworkKind.Painting, museumTopicOrNull())
+    PackFamily.Sculpture -> stillKindAmbientIds(ArtworkKind.Sculpture, museumTopicOrNull())
+    PackFamily.Photo -> when (stockCategoryOrNull()) {
+        StockPhotoCategory.Suggestions -> listOf(BundledPackSource.ID)
+        null, StockPhotoCategory.Random ->
+            SourceCapabilities.sourceIdsForKindAmbient(ArtworkKind.Photo)
+        else -> SourceCapabilities.sourceIdsWithRemoteSearch(ArtworkKind.Photo)
     }
     PackFamily.Video -> {
         when (stockCategoryOrNull()) {
@@ -281,6 +266,14 @@ fun PackSelection.sourceIdsForAmbientLoad(): List<String>? = when (family) {
     }
     PackFamily.Genart -> null
 }
+
+/** Painting / Sculpture pack: All → bundled + remote APIs for that kind keyword. */
+private fun stillKindAmbientIds(kind: ArtworkKind, topic: MuseumTopic?): List<String> =
+    when (topic) {
+        null -> SourceCapabilities.sourceIdsForKindAmbient(kind)
+        MuseumTopic.Suggestions -> listOf(BundledPackSource.ID)
+        else -> listOfNotNull(topic.sourceId)
+    }
 
 fun PackSelection.isGenartCustom(): Boolean =
     family == PackFamily.Genart && genartTopicOrNull() == GenartTopic.Custom

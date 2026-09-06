@@ -28,24 +28,17 @@ class EuropeanaSource(
     override suspend fun load(): List<Artwork> {
         if (apiKey.isBlank()) return emptyList()
         return runCatching {
-            val targets = RemoteCategoryMapping.museumTargets(kind())
-            val perKind = (limit / targets.size).coerceAtLeast(1)
-            val results = mutableListOf<Artwork>()
-            for (target in targets) {
+            MuseumLoad.acrossTargets(kind(), limit, random) { target, perKind ->
                 val start = 1 + RemoteSample.randomStart(RemoteSample.SEARCH_POOL, random = random)
-                val payload = httpGet(searchUrl(RemoteSample.SEARCH_POOL, target, start = start))
-                    .let { body ->
-                        if (start > 1 && looksEmptyEuropeana(body)) {
-                            httpGet(searchUrl(RemoteSample.SEARCH_POOL, target, start = 1))
-                        } else {
-                            body
-                        }
-                    }
+                val payload = RemoteSample.fetchWindow(
+                    randomOffset = start,
+                    firstOffset = 1,
+                    fetch = { s -> httpGet(searchUrl(RemoteSample.SEARCH_POOL, target, start = s)) },
+                    isEmpty = ::looksEmptyEuropeana,
+                )
                 val page = json.decodeFromString<EuropeanaSearchPage>(payload)
-                val mapped = page.items.mapNotNull { toArtwork(it, target) }
-                results.addAll(RemoteSample.sample(mapped, perKind, random))
+                RemoteSample.sample(page.items.mapNotNull { toArtwork(it, target) }, perKind, random)
             }
-            RemoteSample.sample(results, limit, random)
         }.getOrDefault(emptyList())
     }
 

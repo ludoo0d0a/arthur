@@ -25,28 +25,21 @@ class ArticSource(
     override val displayName: String = "Art Institute of Chicago"
 
     override suspend fun load(): List<Artwork> = runCatching {
-        val targets = RemoteCategoryMapping.museumTargets(kind())
-        val perKind = (limit / targets.size).coerceAtLeast(1)
-        val results = mutableListOf<Artwork>()
-        for (target in targets) {
+        MuseumLoad.acrossTargets(kind(), limit, random) { target, perKind ->
             val pageIndex = RemoteSample.randomPage(random = random)
-            val payload = httpGet(searchUrl(RemoteSample.SEARCH_POOL, target, page = pageIndex))
-                .let { body ->
-                    // Empty deep pages → fall back to page 1.
-                    if (pageIndex > 1 && looksEmptyArtic(body)) {
-                        httpGet(searchUrl(RemoteSample.SEARCH_POOL, target, page = 1))
-                    } else {
-                        body
-                    }
-                }
+            val payload = RemoteSample.fetchWindow(
+                randomOffset = pageIndex,
+                firstOffset = 1,
+                fetch = { page -> httpGet(searchUrl(RemoteSample.SEARCH_POOL, target, page = page)) },
+                isEmpty = ::looksEmptyArtic,
+            )
             val page = json.decodeFromString<ArticSearchPage>(payload)
             val iiifBase = page.config?.iiifUrl?.takeIf { it.isNotBlank() } ?: DEFAULT_IIIF_BASE
             val mapped = page.data
                 .filter { it.isPublicDomain }
                 .mapNotNull { item -> toArtwork(item, iiifBase, target) }
-            results.addAll(RemoteSample.sample(mapped, perKind, random))
+            RemoteSample.sample(mapped, perKind, random)
         }
-        RemoteSample.sample(results, limit, random)
     }.getOrDefault(emptyList())
 
     private fun looksEmptyArtic(payload: String): Boolean =

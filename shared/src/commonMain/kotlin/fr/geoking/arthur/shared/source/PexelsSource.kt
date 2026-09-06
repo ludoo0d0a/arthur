@@ -3,6 +3,7 @@ package fr.geoking.arthur.shared.source
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.Source
+import kotlin.random.Random
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -11,6 +12,7 @@ import kotlinx.serialization.json.Json
  * [httpGet] must send `Authorization: <apiKey>`; blank [apiKey] uses [offlineFallback].
  *
  * Search: `GET /v1/search?query=…` — query mapped via [RemoteCategoryMapping].
+ * No native random: each [load] picks a random page and samples the hits.
  */
 class PexelsSource(
     private val httpGet: suspend (url: String) -> String,
@@ -19,16 +21,26 @@ class PexelsSource(
     private val offlineFallback: () -> List<Artwork> = { emptyList() },
     private val onLoaded: (List<Artwork>) -> Unit = {},
     private val limit: Int = DEFAULT_LIMIT,
+    private val random: Random = Random.Default,
 ) : Source {
     override val id: String = ID
     override val displayName: String = "Pexels"
 
     override suspend fun load(): List<Artwork> {
         if (apiKey.isBlank()) return offlineFallback()
-        val q = RemoteCategoryMapping.stockQuery(category(), RemoteProvider.Pexels) ?: return emptyList()
+        val q = RemoteCategoryMapping.stockQuery(category(), RemoteProvider.Pexels)
+            ?: return emptyList()
         val art = runCatching {
-            val page = json.decodeFromString<PexelsSearchPage>(httpGet(searchUrl(q, limit)))
-            page.photos.mapNotNull { photo ->
+            val pageIndex = RemoteSample.randomPage(random = random)
+            val payload = RemoteSample.fetchWindow(
+                randomOffset = pageIndex,
+                firstOffset = 1,
+                fetch = { page -> httpGet(searchUrl(q, RemoteSample.SEARCH_POOL, page = page)) },
+                isEmpty = { body ->
+                    json.decodeFromString<PexelsSearchPage>(body).photos.isEmpty()
+                },
+            )
+            val mapped = json.decodeFromString<PexelsSearchPage>(payload).photos.mapNotNull { photo ->
                 val imageUrl = photo.src?.large2x?.takeIf { it.isNotBlank() }
                     ?: photo.src?.large?.takeIf { it.isNotBlank() }
                     ?: photo.src?.original?.takeIf { it.isNotBlank() }
@@ -44,6 +56,7 @@ class PexelsSource(
                     remoteUrl = imageUrl,
                 )
             }
+            RemoteSample.sample(mapped, limit, random)
         }.getOrDefault(emptyList())
         if (art.isNotEmpty()) {
             onLoaded(art)
@@ -64,9 +77,10 @@ class PexelsSource(
                 RemoteProvider.Pexels,
             )!!,
             perPage: Int = DEFAULT_LIMIT,
+            page: Int = 1,
         ): String =
             "https://api.pexels.com/v1/search" +
-                "?query=$query&orientation=landscape&per_page=$perPage"
+                "?query=$query&orientation=landscape&per_page=$perPage&page=$page"
     }
 }
 

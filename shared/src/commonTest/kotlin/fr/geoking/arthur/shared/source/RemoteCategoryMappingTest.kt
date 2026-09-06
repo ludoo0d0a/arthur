@@ -213,7 +213,7 @@ class RemoteCategoryMappingTest {
         )
         assertEquals(
             "https://api.unsplash.com/search/photos" +
-                "?query=nature%20landscape&orientation=landscape&per_page=20",
+                "?query=nature%20landscape&orientation=landscape&per_page=20&page=1",
             UnsplashSource.searchUrl(),
         )
     }

@@ -57,4 +57,22 @@ object RemoteSample {
         val slots = maxAligned / step
         return random.nextInt(slots + 1) * step
     }
+
+    /**
+     * Fetch a search window at [randomOffset]; if empty and offset ≠ [firstOffset],
+     * retry at [firstOffset] (deep pages / skips often return nothing).
+     */
+    suspend fun fetchWindow(
+        randomOffset: Int,
+        firstOffset: Int,
+        fetch: suspend (offset: Int) -> String,
+        isEmpty: (String) -> Boolean,
+    ): String {
+        val body = fetch(randomOffset)
+        return if (randomOffset != firstOffset && isEmpty(body)) {
+            fetch(firstOffset)
+        } else {
+            body
+        }
+    }
 }

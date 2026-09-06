@@ -225,7 +225,7 @@ class PackModelsTest {
         assertTrue(UnsplashSource.ID in ids)
         assertTrue(RijksmuseumSource.ID in ids)
         assertTrue(ClevelandSource.ID in ids)
-        assertFalse(MetSource.ID in ids)
+        assertTrue(MetSource.ID in ids)
     }
 
     @Test
@@ -239,6 +239,7 @@ class PackModelsTest {
         assertTrue(UnsplashSource.ID in ids)
         assertTrue(RijksmuseumSource.ID in ids)
         assertTrue(ClevelandSource.ID in ids)
+        assertTrue(MetSource.ID in ids)
     }
 
     @Test

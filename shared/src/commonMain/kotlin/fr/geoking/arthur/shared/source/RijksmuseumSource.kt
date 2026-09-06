@@ -34,15 +34,11 @@ class RijksmuseumSource(
         val searchTargets = searchTargetsFor(kind())
         val perTypeLimit = (limit / searchTargets.size).coerceAtLeast(2)
         val results = mutableListOf<Artwork>()
-
         for ((searchUrl, fallbackKind) in searchTargets) {
             val searchJson = runCatching { httpGet(searchUrl) }.getOrNull() ?: continue
             val ids = RemoteSample.sample(parseSearchIds(searchJson), perTypeLimit, random)
             for (objectId in ids) {
-                val art = runCatching { loadArtwork(objectId, fallbackKind) }.getOrNull()
-                if (art != null) {
-                    results.add(art)
-                }
+                runCatching { loadArtwork(objectId, fallbackKind) }.getOrNull()?.let { results.add(it) }
             }
         }
         RemoteSample.sample(results, limit, random)

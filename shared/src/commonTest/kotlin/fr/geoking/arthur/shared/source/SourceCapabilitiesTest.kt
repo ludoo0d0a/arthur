@@ -30,21 +30,23 @@ class SourceCapabilitiesTest {
     }
 
     @Test
-    fun rijksAndClevelandSupportMuseumPhotoSearch() {
-        for (id in listOf(RijksmuseumSource.ID, ClevelandSource.ID)) {
+    fun museumsSupportPaintingSculptureAndPhotoSearch() {
+        for (id in listOf(
+            MetSource.ID,
+            RijksmuseumSource.ID,
+            ArticSource.ID,
+            ClevelandSource.ID,
+            EuropeanaSource.ID,
+            HarvardSource.ID,
+            SmithsonianSource.ID,
+            LouvreSource.ID,
+        )) {
             val support = SourceCapabilities.support(id)!!
-            assertTrue(ArtworkKind.Photo in support.kinds)
-            assertTrue(ArtworkKind.Photo in support.remoteSearchKinds)
-            assertTrue(ArtworkKind.Painting in support.remoteSearchKinds)
-            assertTrue(ArtworkKind.Sculpture in support.remoteSearchKinds)
+            assertTrue(ArtworkKind.Photo in support.kinds, id)
+            assertTrue(ArtworkKind.Photo in support.remoteSearchKinds, id)
+            assertTrue(ArtworkKind.Painting in support.remoteSearchKinds, id)
+            assertTrue(ArtworkKind.Sculpture in support.remoteSearchKinds, id)
         }
-    }
-
-    @Test
-    fun metDoesNotOfferPhotoRemoteSearch() {
-        val met = SourceCapabilities.support(MetSource.ID)!!
-        assertFalse(ArtworkKind.Photo in met.kinds)
-        assertFalse(ArtworkKind.Photo in met.remoteSearchKinds)
     }
 
     @Test
@@ -57,15 +59,23 @@ class SourceCapabilitiesTest {
     }
 
     @Test
-    fun photoRemoteSearchIdsIncludeStockAndMuseumPhotoApis() {
+    fun photoRemoteSearchIdsIncludeStockAndAllMuseums() {
         val ids = SourceCapabilities.sourceIdsWithRemoteSearch(ArtworkKind.Photo)
         assertTrue(PexelsSource.ID in ids)
         assertTrue(UnsplashSource.ID in ids)
+        assertTrue(MetSource.ID in ids)
         assertTrue(RijksmuseumSource.ID in ids)
         assertTrue(ClevelandSource.ID in ids)
         assertFalse(BundledPackSource.ID in ids)
-        assertFalse(MetSource.ID in ids)
         assertFalse(PexelsVideoSource.ID in ids)
+    }
+
+    @Test
+    fun kindAmbientIdsPrependBundled() {
+        val ids = SourceCapabilities.sourceIdsForKindAmbient(ArtworkKind.Painting)
+        assertEquals(BundledPackSource.ID, ids.first())
+        assertTrue(MetSource.ID in ids)
+        assertTrue(PexelsSource.ID !in ids)
     }
 
     @Test

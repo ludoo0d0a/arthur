@@ -17,6 +17,7 @@
     <string name="genart_hero_label">Canevas genart live</string>
     <string name="gallery_hero_label">Canevas galerie</string>
     <string name="selected_artwork">Sélectionné</string>
+    <string name="start_ambient">Lancer l\'ambient</string>
     <string name="category_all">Tout</string>
     <string name="source_met">The Met</string>
     <string name="source_rijksmuseum">Rijksmuseum</string>

@@ -1,5 +1,6 @@
 package fr.geoking.arthur.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,13 +21,12 @@ import fr.geoking.arthur.ui.components.ControlPlaneHeader
 import fr.geoking.arthur.ui.components.PackFamily
 import fr.geoking.arthur.ui.components.PackGrid
 import fr.geoking.arthur.ui.components.PackSelection
-import fr.geoking.arthur.ui.components.PackTile
 import fr.geoking.arthur.ui.components.homeTile
 import fr.geoking.arthur.ui.components.subPackTiles
 
 /**
- * TV Control Plane: pack grid (no hero preview). D-pad OK selects a sub-pack;
- * OK again on the already-selected tile starts Ambient.
+ * TV Control Plane: pack grid (no hero preview).
+ * D-pad moves selection; OK starts Ambient; Back returns to the previous screen.
  */
 @Composable
 fun TvControlPlaneContent(
@@ -41,6 +41,10 @@ fun TvControlPlaneContent(
 ) {
     val scheme = MaterialTheme.colorScheme
     val firstTileFocus = remember { FocusRequester() }
+
+    BackHandler(enabled = openedFamily != null) {
+        onBackToHome()
+    }
 
     LaunchedEffect(openedFamily) {
         firstTileFocus.requestFocus()
@@ -79,23 +83,21 @@ fun TvControlPlaneContent(
                     firstTileFocusRequester = firstTileFocus,
                 )
             } else {
-                PackSubPackHeader(
-                    family = openedFamily,
-                    onBack = onBackToHome,
+                Text(
+                    text = stringResource(openedFamily.titleRes),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = scheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 8.dp),
                 )
                 PackGrid(
                     tiles = openedFamily.subPackTiles(),
                     selected = selection,
-                    onTileClick = { tile: PackTile ->
-                        if (tile.selection == selection) {
-                            onStartAmbient()
-                        } else {
-                            onSelectSubPack(tile.selection)
-                        }
-                    },
+                    onTileClick = { onStartAmbient() },
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(bottom = 24.dp),
                     firstTileFocusRequester = firstTileFocus,
+                    selectOnFocus = true,
+                    onTileFocused = { onSelectSubPack(it.selection) },
                 )
             }
         }

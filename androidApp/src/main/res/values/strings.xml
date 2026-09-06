@@ -17,6 +17,7 @@
     <string name="genart_hero_label">Live genart canvas</string>
     <string name="gallery_hero_label">Gallery canvas</string>
     <string name="selected_artwork">Selected</string>
+    <string name="start_ambient">Start ambient</string>
     <string name="category_all">All</string>
     <string name="source_met">The Met</string>
     <string name="source_rijksmuseum">Rijksmuseum</string>

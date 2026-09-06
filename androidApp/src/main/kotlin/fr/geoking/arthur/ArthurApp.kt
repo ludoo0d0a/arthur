@@ -9,9 +9,13 @@ import fr.geoking.arthur.billing.RevenueCatPremiumEntitlement
 import fr.geoking.arthur.fractal.CustomFractalStore
 import fr.geoking.arthur.shared.domain.PremiumEntitlement
 import fr.geoking.arthur.shared.engine.ContentEngine
+import fr.geoking.arthur.shared.error.ErrorCategory
+import fr.geoking.arthur.shared.error.ErrorClassifier
+import fr.geoking.arthur.shared.error.ErrorLogger
 import fr.geoking.arthur.shared.source.ArticSource
 import fr.geoking.arthur.shared.source.BundledPackSource
 import fr.geoking.arthur.shared.source.ClevelandSource
+import fr.geoking.arthur.shared.source.CoverrSource
 import fr.geoking.arthur.shared.source.CustomFractalSource
 import fr.geoking.arthur.shared.source.EuropeanaSource
 import fr.geoking.arthur.shared.source.FractalSource
@@ -22,7 +26,6 @@ import fr.geoking.arthur.shared.source.MetSource
 import fr.geoking.arthur.shared.source.PexelsSource
 import fr.geoking.arthur.shared.source.PexelsVideoSource
 import fr.geoking.arthur.shared.source.PixabayVideoSource
-import fr.geoking.arthur.shared.source.CoverrSource
 import fr.geoking.arthur.shared.source.RijksmuseumSource
 import fr.geoking.arthur.shared.source.SmithsonianSource
 import fr.geoking.arthur.shared.source.UnsplashSource
@@ -34,6 +37,8 @@ import fr.geoking.arthur.source.RotationSettings
 import fr.geoking.arthur.source.StockPhotoSettings
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.ResponseException
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.statement.bodyAsText
@@ -47,7 +52,9 @@ class ArthurApp : Application() {
     override fun onCreate() {
         super.onCreate()
         // Avoid debug noise / timeouts; release builds still report.
-        FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(!BuildConfig.DEBUG)
+        runCatching {
+            FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(!BuildConfig.DEBUG)
+        }
         stopKoin()
         startKoin {
             androidContext(this@ArthurApp)
@@ -56,7 +63,51 @@ class ArthurApp : Application() {
     }
 }
 
+private suspend fun safeHttpGet(
+    client: HttpClient,
+    url: String,
+    sourceId: String,
+    errorLogger: ErrorLogger,
+    configure: (HttpRequestBuilder.() -> Unit)? = null,
+): String {
+    return try {
+        val response = client.get(url) {
+            configure?.invoke(this)
+        }
+        val statusCode = response.status.value
+        if (statusCode !in 200..299) {
+            val bodyText = runCatching { response.bodyAsText() }.getOrDefault("")
+            val category = ErrorClassifier.classify(statusCode, null)
+            val msg = "HTTP $statusCode for $sourceId"
+            errorLogger.log(
+                sourceId = sourceId,
+                category = category,
+                message = msg,
+                details = bodyText.take(300),
+                url = url,
+                statusCode = statusCode,
+            )
+            throw ResponseException(response, bodyText)
+        }
+        response.bodyAsText()
+    } catch (e: Throwable) {
+        if (e !is ResponseException) {
+            val category = ErrorClassifier.classify(null, e)
+            errorLogger.log(
+                sourceId = sourceId,
+                category = category,
+                message = e.message ?: "Request failed for $sourceId",
+                details = e.stackTraceToString().take(300),
+                url = url,
+                throwable = e,
+            )
+        }
+        throw e
+    }
+}
+
 val appModule = module {
+    single { ErrorLogger(clock = { System.currentTimeMillis() }) }
     single { FakePurchasesGateway(premium = false) }
     single<PurchasesGateway> { get<FakePurchasesGateway>() }
     single { DeveloperSettings(androidContext()) }
@@ -87,32 +138,36 @@ val appModule = module {
     single {
         val client = get<HttpClient>()
         val museum = get<MuseumSearchSettings>()
+        val errorLogger = get<ErrorLogger>()
         RijksmuseumSource(
-            httpGet = { url -> client.get(url).bodyAsText() },
+            httpGet = { url -> safeHttpGet(client, url, RijksmuseumSource.ID, errorLogger) },
             kind = { museum.kind },
         )
     }
     single {
         val client = get<HttpClient>()
         val museum = get<MuseumSearchSettings>()
+        val errorLogger = get<ErrorLogger>()
         MetSource(
-            httpGet = { url -> client.get(url).bodyAsText() },
+            httpGet = { url -> safeHttpGet(client, url, MetSource.ID, errorLogger) },
             kind = { museum.kind },
         )
     }
     single {
         val client = get<HttpClient>()
         val museum = get<MuseumSearchSettings>()
+        val errorLogger = get<ErrorLogger>()
         ArticSource(
-            httpGet = { url -> client.get(url).bodyAsText() },
+            httpGet = { url -> safeHttpGet(client, url, ArticSource.ID, errorLogger) },
             kind = { museum.kind },
         )
     }
     single {
         val client = get<HttpClient>()
         val museum = get<MuseumSearchSettings>()
+        val errorLogger = get<ErrorLogger>()
         ClevelandSource(
-            httpGet = { url -> client.get(url).bodyAsText() },
+            httpGet = { url -> safeHttpGet(client, url, ClevelandSource.ID, errorLogger) },
             kind = { museum.kind },
         )
     }
@@ -120,51 +175,59 @@ val appModule = module {
         val client = get<HttpClient>()
         val museum = get<MuseumSearchSettings>()
         val apiKey = BuildConfig.EUROPEANA_API_KEY
+        val errorLogger = get<ErrorLogger>()
         EuropeanaSource(
             apiKey = apiKey,
             httpGet = { url ->
-                client.get(url) {
+                safeHttpGet(client, url, EuropeanaSource.ID, errorLogger) {
                     header("X-Api-Key", apiKey)
-                }.bodyAsText()
+                }
             },
             kind = { museum.kind },
+            errorLogger = errorLogger,
         )
     }
     single {
         val client = get<HttpClient>()
         val museum = get<MuseumSearchSettings>()
         val apiKey = BuildConfig.HARVARD_API_KEY
+        val errorLogger = get<ErrorLogger>()
         HarvardSource(
             apiKey = apiKey,
-            httpGet = { url -> client.get(url).bodyAsText() },
+            httpGet = { url -> safeHttpGet(client, url, HarvardSource.ID, errorLogger) },
             kind = { museum.kind },
+            errorLogger = errorLogger,
         )
     }
     single {
         val client = get<HttpClient>()
         val museum = get<MuseumSearchSettings>()
         val apiKey = BuildConfig.SMITHSONIAN_API_KEY
+        val errorLogger = get<ErrorLogger>()
         SmithsonianSource(
             apiKey = apiKey,
-            httpGet = { url -> client.get(url).bodyAsText() },
+            httpGet = { url -> safeHttpGet(client, url, SmithsonianSource.ID, errorLogger) },
             kind = { museum.kind },
+            errorLogger = errorLogger,
         )
     }
     single {
         val client = get<HttpClient>()
         val museum = get<MuseumSearchSettings>()
+        val errorLogger = get<ErrorLogger>()
         LouvreSource(
-            httpGet = { url -> client.get(url).bodyAsText() },
+            httpGet = { url -> safeHttpGet(client, url, LouvreSource.ID, errorLogger) },
             kind = { museum.kind },
         )
     }
     single {
         val client = get<HttpClient>()
+        val errorLogger = get<ErrorLogger>()
         WikimediaStreetArtSource(
             httpGet = { url ->
-                client.get(url) {
+                safeHttpGet(client, url, WikimediaStreetArtSource.ID, errorLogger) {
                     header(HttpHeaders.UserAgent, "Arthur/1.0 (Android; fr.geoking.arthur)")
-                }.bodyAsText()
+                }
             },
         )
     }
@@ -173,6 +236,7 @@ val appModule = module {
         val apiKey = BuildConfig.PEXELS_API_KEY
         val settings = get<StockPhotoSettings>()
         val cache = get<ArtworkImageCache>()
+        val errorLogger = get<ErrorLogger>()
         PexelsSource(
             apiKey = apiKey,
             category = { settings.category },
@@ -181,9 +245,9 @@ val appModule = module {
             },
             onLoaded = { arts -> cache.remember(arts, settings.category.query) },
             httpGet = { url ->
-                client.get(url) {
+                safeHttpGet(client, url, PexelsSource.ID, errorLogger) {
                     header(HttpHeaders.Authorization, apiKey)
-                }.bodyAsText()
+                }
             },
         )
     }
@@ -192,6 +256,7 @@ val appModule = module {
         val accessKey = BuildConfig.UNSPLASH_ACCESS_KEY
         val settings = get<StockPhotoSettings>()
         val cache = get<ArtworkImageCache>()
+        val errorLogger = get<ErrorLogger>()
         UnsplashSource(
             accessKey = accessKey,
             category = { settings.category },
@@ -200,10 +265,10 @@ val appModule = module {
             },
             onLoaded = { arts -> cache.remember(arts, settings.category.query) },
             httpGet = { url ->
-                client.get(url) {
+                safeHttpGet(client, url, UnsplashSource.ID, errorLogger) {
                     header(HttpHeaders.Authorization, "Client-ID $accessKey")
                     header("Accept-Version", "v1")
-                }.bodyAsText()
+                }
             },
         )
     }
@@ -211,13 +276,14 @@ val appModule = module {
         val client = get<HttpClient>()
         val apiKey = BuildConfig.PEXELS_API_KEY
         val settings = get<StockPhotoSettings>()
+        val errorLogger = get<ErrorLogger>()
         PexelsVideoSource(
             apiKey = apiKey,
             category = { settings.category },
             httpGet = { url ->
-                client.get(url) {
+                safeHttpGet(client, url, PexelsVideoSource.ID, errorLogger) {
                     header(HttpHeaders.Authorization, apiKey)
-                }.bodyAsText()
+                }
             },
         )
     }
@@ -225,23 +291,25 @@ val appModule = module {
         val client = get<HttpClient>()
         val apiKey = BuildConfig.PIXABAY_API_KEY
         val settings = get<StockPhotoSettings>()
+        val errorLogger = get<ErrorLogger>()
         PixabayVideoSource(
             apiKey = apiKey,
             category = { settings.category },
-            httpGet = { url -> client.get(url).bodyAsText() },
+            httpGet = { url -> safeHttpGet(client, url, PixabayVideoSource.ID, errorLogger) },
         )
     }
     single {
         val client = get<HttpClient>()
         val apiKey = BuildConfig.COVERR_API_KEY
         val settings = get<StockPhotoSettings>()
+        val errorLogger = get<ErrorLogger>()
         CoverrSource(
             apiKey = apiKey,
             category = { settings.category },
             httpGet = { url ->
-                client.get(url) {
+                safeHttpGet(client, url, CoverrSource.ID, errorLogger) {
                     header(HttpHeaders.Authorization, "Bearer $apiKey")
-                }.bodyAsText()
+                }
             },
         )
     }

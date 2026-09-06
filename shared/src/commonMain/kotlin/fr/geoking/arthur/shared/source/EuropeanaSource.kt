@@ -3,6 +3,9 @@ package fr.geoking.arthur.shared.source
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.Source
+import fr.geoking.arthur.shared.error.ErrorCategory
+import fr.geoking.arthur.shared.error.ErrorClassifier
+import fr.geoking.arthur.shared.error.ErrorLogger
 import kotlin.random.Random
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -21,12 +24,20 @@ class EuropeanaSource(
     private val kind: () -> MuseumSearchKind = { MuseumSearchKind.Painting },
     private val limit: Int = DEFAULT_LIMIT,
     private val random: Random = Random.Default,
+    private val errorLogger: ErrorLogger? = null,
 ) : Source {
     override val id: String = ID
     override val displayName: String = "Europeana"
 
     override suspend fun load(): List<Artwork> {
-        if (apiKey.isBlank()) return emptyList()
+        if (apiKey.isBlank()) {
+            errorLogger?.log(
+                sourceId = id,
+                category = ErrorCategory.Authentication,
+                message = "API key for $displayName is missing or blank",
+            )
+            return emptyList()
+        }
         return runCatching {
             MuseumLoad.acrossTargets(kind(), limit, random) { target, perKind ->
                 val start = 1 + RemoteSample.randomStart(
@@ -43,6 +54,14 @@ class EuropeanaSource(
                 val page = json.decodeFromString<EuropeanaSearchPage>(payload)
                 RemoteSample.sample(page.items.mapNotNull { toArtwork(it, target) }, perKind, random)
             }
+        }.onFailure { e ->
+            errorLogger?.log(
+                sourceId = id,
+                category = ErrorClassifier.classify(null, e),
+                message = "Failed to load $displayName catalog",
+                details = e.stackTraceToString().take(300),
+                throwable = e,
+            )
         }.getOrDefault(emptyList())
     }
 

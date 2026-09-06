@@ -13,6 +13,7 @@ import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.isGenerative
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
+import fr.geoking.arthur.source.ArtworkImageCache
 import fr.geoking.arthur.source.RotationSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -36,6 +37,7 @@ import org.koin.android.ext.android.inject
 class ArthurMediaService : MediaBrowserServiceCompat() {
     private val contentEngine: ContentEngine by inject()
     private val rotationSettings: RotationSettings by inject()
+    private val imageCache: ArtworkImageCache by inject()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private lateinit var session: MediaSessionCompat
     private var catalog: List<Artwork> = emptyList()
@@ -145,7 +147,9 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
         withContext(Dispatchers.IO) {
             val file = AmbientAlbumArt.cacheFile(this@ArthurMediaService, art.id, gen)
             if (!file.exists()) {
-                AmbientStillRenderer.renderToFile(art, gen, file)
+                runCatching {
+                    AmbientStillRenderer.renderToFile(art, gen, file, imageCache)
+                }
             }
         }
         val uri = AmbientAlbumArt.contentUri(packageName, art.id, gen).toString()
@@ -206,7 +210,8 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
         parentId: String,
         result: Result<MutableList<MediaBrowserCompat.MediaItem>>,
     ) {
-        result.sendResult(buildChildren(parentId).toMutableList())
+        val children = runCatching { buildChildren(parentId).toMutableList() }.getOrDefault(mutableListOf())
+        result.sendResult(children)
     }
 
     private fun buildChildren(parentId: String): List<MediaBrowserCompat.MediaItem> {

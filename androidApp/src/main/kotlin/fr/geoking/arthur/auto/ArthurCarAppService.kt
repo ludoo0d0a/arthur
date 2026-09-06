@@ -24,6 +24,7 @@ import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
+import fr.geoking.arthur.source.ArtworkImageCache
 import fr.geoking.arthur.source.RotationSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -66,6 +67,7 @@ class ArthurCarSession : Session() {
 class ArtworkPaneScreen(carContext: CarContext) : Screen(carContext), KoinComponent {
     private val contentEngine: ContentEngine by inject()
     private val rotationSettings: RotationSettings by inject()
+    private val imageCache: ArtworkImageCache by inject()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     private var catalog: List<Artwork> = emptyList()
@@ -73,13 +75,22 @@ class ArtworkPaneScreen(carContext: CarContext) : Screen(carContext), KoinCompon
     private var generation: Long = 0L
     private var isPlaying: Boolean = true
     private var rotationJob: Job? = null
+    private var renderJob: Job? = null
     private var loaded: Boolean = false
+
+    @Volatile
+    private var renderedBitmap: android.graphics.Bitmap? = null
+    @Volatile
+    private var renderedArtId: String? = null
+    @Volatile
+    private var renderedGen: Long = -1L
 
     init {
         lifecycle.addObserver(
             object : DefaultLifecycleObserver {
                 override fun onDestroy(owner: LifecycleOwner) {
                     rotationJob?.cancel()
+                    renderJob?.cancel()
                     scope.cancel()
                 }
             },
@@ -92,8 +103,31 @@ class ArtworkPaneScreen(carContext: CarContext) : Screen(carContext), KoinCompon
             }
             current = resolveAmbientArtwork(catalog, null)
             loaded = true
+            scheduleAsyncRender()
             invalidate()
             if (isPlaying) startRotation()
+        }
+    }
+
+    private fun scheduleAsyncRender() {
+        val art = current ?: return
+        val gen = generation
+        if (art.id == renderedArtId && gen == renderedGen && renderedBitmap != null) {
+            return
+        }
+        renderJob?.cancel()
+        renderJob = scope.launch {
+            val bitmap = withContext(Dispatchers.IO) {
+                runCatching {
+                    AmbientStillRenderer.render(art, gen, imageCache)
+                }.getOrNull()
+            }
+            if (isActive && bitmap != null) {
+                renderedBitmap = bitmap
+                renderedArtId = art.id
+                renderedGen = gen
+                invalidate()
+            }
         }
     }
 
@@ -117,6 +151,7 @@ class ArtworkPaneScreen(carContext: CarContext) : Screen(carContext), KoinCompon
         }
         current = catalog[nextIndex]
         generation += 1
+        scheduleAsyncRender()
         // Restart the interval so a manual skip doesn't get auto-advanced immediately.
         if (isPlaying) startRotation()
         invalidate()
@@ -163,7 +198,12 @@ class ArtworkPaneScreen(carContext: CarContext) : Screen(carContext), KoinCompon
         val rowLimit = paneRowLimit()
 
         if (art != null && rowLimit > 0) {
-            val bitmap = AmbientStillRenderer.render(art, generation)
+            val bitmap = if (art.id == renderedArtId && generation == renderedGen && renderedBitmap != null) {
+                renderedBitmap!!
+            } else {
+                scheduleAsyncRender()
+                AmbientStillRenderer.render(art, generation, imageCache)
+            }
             val carIcon = CarIcon.Builder(IconCompat.createWithBitmap(bitmap)).build()
             paneBuilder.addRow(
                 Row.Builder()

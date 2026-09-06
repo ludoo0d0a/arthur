@@ -23,11 +23,13 @@ class AlbumArtContentProvider : ContentProvider() {
         val file = AmbientAlbumArt.cacheFile(ctx, artworkId, generation)
         if (!file.exists()) {
             ensureParent(file)
-            val bitmap = AmbientStillRenderer.renderForId(artworkId, generation)
-            file.outputStream().use { out ->
-                bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 90, out)
+            runCatching {
+                val bitmap = AmbientStillRenderer.renderForId(artworkId, generation)
+                file.outputStream().use { out ->
+                    bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 90, out)
+                }
+                bitmap.recycle()
             }
-            bitmap.recycle()
         }
         return ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
     }

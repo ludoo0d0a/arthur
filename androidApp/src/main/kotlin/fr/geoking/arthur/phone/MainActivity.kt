@@ -96,7 +96,7 @@ class MainActivity : ComponentActivity() {
                                 SettingsScreen(
                                     onDismiss = { showSettings = false },
                                     isPremium = isPremium,
-                                    showDeveloper = BuildConfig.DEBUG_DEV,
+                                    showDeveloper = BuildConfig.DEBUG || BuildConfig.DEBUG_DEV,
                                     simulatePremium = simulatePremium,
                                     onSimulatePremiumChange = developerSettings::setSimulatePremium,
                                     rotationIntervalMs = rotationIntervalMs,
@@ -116,7 +116,7 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onClose = { showEditor = false },
                                     onRequestPremium = {
-                                        if (BuildConfig.DEBUG) {
+                                        if (BuildConfig.DEBUG || BuildConfig.DEBUG_DEV) {
                                             developerSettings.setSimulatePremium(true)
                                         } else {
                                             (purchases as? FakePurchasesGateway)?.setPremium(true)

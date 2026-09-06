@@ -26,6 +26,12 @@ fun secret(key: String): String {
     return ""
 }
 
+fun secretFlag(key: String): Boolean =
+    when (secret(key).trim().lowercase()) {
+        "true", "1", "yes" -> true
+        else -> false
+    }
+
 val versionProps = Properties().apply {
     val f = rootProject.file("playstore/version.properties")
     if (f.exists()) f.inputStream().use { load(it) }
@@ -53,8 +59,8 @@ android {
         buildConfigField("String", "EUROPEANA_API_KEY", "\"${secret("EUROPEANA_API_KEY")}\"")
         buildConfigField("String", "HARVARD_API_KEY", "\"${secret("HARVARD_API_KEY")}\"")
         buildConfigField("String", "SMITHSONIAN_API_KEY", "\"${secret("SMITHSONIAN_API_KEY")}\"")
-        val debugDev = secret("DEBUG_DEV").ifBlank { "true" }.lowercase().toBoolean().toString()
-        buildConfigField("boolean", "DEBUG_DEV", debugDev)
+        // Opt-in developer UI on non-debug builds (local.properties / CI: DEBUG_DEV=true).
+        buildConfigField("boolean", "DEBUG_DEV", secretFlag("DEBUG_DEV").toString())
         val buildDate = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
         buildConfigField("String", "BUILD_DATE", "\"$buildDate\"")
     }

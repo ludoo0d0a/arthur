@@ -96,7 +96,7 @@ enum class SettingsScreenPage {
 fun SettingsScreen(
     onDismiss: () -> Unit,
     isPremium: Boolean = false,
-    showDeveloper: Boolean = BuildConfig.DEBUG_DEV,
+    showDeveloper: Boolean = BuildConfig.DEBUG || BuildConfig.DEBUG_DEV,
     simulatePremium: Boolean = true,
     onSimulatePremiumChange: (Boolean) -> Unit = {},
     rotationIntervalMs: Long = AmbientAlbumArt.ROTATION_INTERVAL_MS,

@@ -120,7 +120,8 @@ val appModule = module {
         DevAwarePremiumEntitlement(
             delegate = gatewayEntitlement,
             simulatePremium = {
-                BuildConfig.DEBUG && developerSettings.simulatePremium.value
+                (BuildConfig.DEBUG || BuildConfig.DEBUG_DEV) &&
+                    developerSettings.simulatePremium.value
             },
         )
     }

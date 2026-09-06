@@ -55,8 +55,12 @@ import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.isGenerative
+import fr.geoking.arthur.source.StillImagePrefetcher
+import fr.geoking.arthur.source.rememberArtworkImageCache
 import fr.geoking.arthur.ui.components.ArtworkRenderer
 import fr.geoking.arthur.ui.components.StillArtworkPlaceholder
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlin.math.abs
 import kotlin.random.Random
 
@@ -140,6 +144,28 @@ fun AmbientScreenContent(
     }
 
     val advanceLatest by rememberUpdatedState(::advance)
+    val imageCache = rememberArtworkImageCache()
+    val shown = if (shouldRotate) current else artwork
+
+    LaunchedEffect(shown?.id, poolIds, isActive) {
+        if (!isActive) return@LaunchedEffect
+        val currentArt = shown ?: return@LaunchedEffect
+        val pool = latestPool
+        withContext(Dispatchers.IO) {
+            StillImagePrefetcher.ensureCached(imageCache, currentArt)
+            if (pool.size < 2) return@withContext
+            val index = pool.indexOfFirst { it.id == currentArt.id }.let { if (it < 0) 0 else it }
+            val next = pool[AmbientAlbumArt.advanceIndex(index, pool.size)]
+            val prev = pool[Math.floorMod(index - 1, pool.size)]
+            StillImagePrefetcher.ensureCached(imageCache, next)
+            StillImagePrefetcher.ensureCached(imageCache, prev)
+            val covered = setOf(currentArt.id, next.id, prev.id)
+            val timerCandidate = pool.filter { it.id !in covered }.randomOrNull(Random.Default)
+            if (timerCandidate != null) {
+                StillImagePrefetcher.ensureCached(imageCache, timerCandidate)
+            }
+        }
+    }
 
     LaunchedEffect(rotationEpoch, isActive, shouldRotate, poolIds, intervalMs) {
         if (!isActive || !shouldRotate) {
@@ -163,7 +189,6 @@ fun AmbientScreenContent(
         }
     }
 
-    val shown = if (shouldRotate) current else artwork
     val shownTitle = shown?.title ?: title
     val swipeThresholdPx = with(LocalDensity.current) { 56.dp.toPx() }
 

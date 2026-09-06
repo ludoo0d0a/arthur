@@ -18,6 +18,7 @@ enum class PackFamily(
     Museum(R.string.pack_museum, R.drawable.pack_museum, "museum"),
     Genart(R.string.kind_genart, R.drawable.pack_genart, "genart"),
     Photo(R.string.kind_photo, R.drawable.pack_photo, "photo"),
+    Video(R.string.kind_video, R.drawable.pack_photo, "video"),
     Sculpture(R.string.kind_sculpture, R.drawable.pack_sculpture, "sculpture"),
     Painting(R.string.kind_painting, R.drawable.pack_painting, "painting"),
 }
@@ -107,6 +108,15 @@ fun PackFamily.subPackTiles(): List<PackTile> {
                 testTagSuffix = "photo_${topic.query}",
             )
         }
+        PackFamily.Video -> videoStockTopics().map { topic ->
+            PackTile(
+                id = "sub_video_${topic.query}",
+                titleRes = topic.packLabelRes(),
+                coverRes = PackCovers.photo(topic),
+                selection = PackSelection(PackFamily.Video, topic.query),
+                testTagSuffix = "video_${topic.query}",
+            )
+        }
         PackFamily.Sculpture -> MuseumTopic.entries.map { topic ->
             PackTile(
                 id = "sub_sculpture_${topic.testTagSuffix}",
@@ -163,6 +173,17 @@ fun resolvePackPool(catalog: List<Artwork>, selection: PackSelection): List<Artw
                 )
             }
         }
+        PackFamily.Video -> {
+            val topic = selection.stockCategoryOrNull()
+            if (topic == null) {
+                catalog.filter { CategoryFilter.VIDEO.matches(it.kind) }
+            } else {
+                catalog.filterByCategoryAndSources(
+                    category = CategoryFilter.VIDEO,
+                    stockCategory = topic,
+                )
+            }
+        }
         PackFamily.Sculpture -> {
             val topic = selection.museumTopicOrNull()
             if (topic == null) {
@@ -188,7 +209,7 @@ fun resolvePackPool(catalog: List<Artwork>, selection: PackSelection): List<Artw
     }
 
 fun PackSelection.stockCategoryOrNull(): StockPhotoCategory? =
-    if (family != PackFamily.Photo || subId == null) {
+    if ((family != PackFamily.Photo && family != PackFamily.Video) || subId == null) {
         null
     } else {
         StockPhotoCategory.fromQuery(subId)
@@ -250,6 +271,14 @@ fun PackSelection.sourceIdsForAmbientLoad(): List<String>? = when (family) {
             else -> SourceCapabilities.sourceIdsWithRemoteSearch(ArtworkKind.Photo)
         }
     }
+    PackFamily.Video -> {
+        when (stockCategoryOrNull()) {
+            null, StockPhotoCategory.Random ->
+                SourceCapabilities.sourceIdsWithRemoteSearch(ArtworkKind.Video)
+            StockPhotoCategory.Suggestions -> emptyList()
+            else -> SourceCapabilities.sourceIdsWithRemoteSearch(ArtworkKind.Video)
+        }
+    }
     PackFamily.Genart -> null
 }
 
@@ -273,3 +302,7 @@ private fun StockPhotoCategory.packLabelRes(): Int = when (this) {
     StockPhotoCategory.Sky -> R.string.stock_topic_sky
     StockPhotoCategory.StreetArt -> R.string.stock_topic_streetart
 }
+
+/** Video has no curated Suggestions pack — Random + remote topics only. */
+private fun videoStockTopics(): List<StockPhotoCategory> =
+    listOf(StockPhotoCategory.Random) + StockPhotoCategory.remoteSearchTopics

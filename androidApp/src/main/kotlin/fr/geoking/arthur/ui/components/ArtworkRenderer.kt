@@ -104,6 +104,19 @@ fun ArtworkRenderer(
                         StillArtworkPlaceholder(kind = artwork.kind, showWarning = true)
                     }
                 }
+                ArtworkKind.Video -> {
+                    val url = artwork.remoteUrl?.takeIf { it.isNotBlank() }
+                        ?: artwork.localPath?.takeIf { it.isNotBlank() }
+                    if (url != null) {
+                        AmbientVideoPlayer(
+                            url = url,
+                            isActive = isActive,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    } else {
+                        StillArtworkPlaceholder(kind = artwork.kind, showWarning = true)
+                    }
+                }
                 else -> {
                     if (!artwork.localPath.isNullOrBlank() || !artwork.remoteUrl.isNullOrBlank()) {
                         RemoteStillImage(

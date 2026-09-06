@@ -40,6 +40,18 @@ object SourceCapabilities {
             kinds = setOf(ArtworkKind.Photo),
             remoteSearchKinds = setOf(ArtworkKind.Photo),
         ),
+        PexelsVideoSource.ID to SourceContentSupport(
+            kinds = setOf(ArtworkKind.Video),
+            remoteSearchKinds = setOf(ArtworkKind.Video),
+        ),
+        PixabayVideoSource.ID to SourceContentSupport(
+            kinds = setOf(ArtworkKind.Video),
+            remoteSearchKinds = setOf(ArtworkKind.Video),
+        ),
+        CoverrSource.ID to SourceContentSupport(
+            kinds = setOf(ArtworkKind.Video),
+            remoteSearchKinds = setOf(ArtworkKind.Video),
+        ),
         BundledPackSource.ID to SourceContentSupport(
             kinds = setOf(
                 ArtworkKind.Photo,

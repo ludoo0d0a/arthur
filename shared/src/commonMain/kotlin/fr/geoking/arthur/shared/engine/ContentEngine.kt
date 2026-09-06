@@ -47,7 +47,7 @@ class ContentEngine(
         return candidates.filter { art ->
             when (art.kind) {
                 ArtworkKind.PersonalPhoto, ArtworkKind.CustomFractal -> false
-                ArtworkKind.Photo, ArtworkKind.Painting, ArtworkKind.Sculpture -> {
+                ArtworkKind.Photo, ArtworkKind.Video, ArtworkKind.Painting, ArtworkKind.Sculpture -> {
                     // Bundled pack (incl. Photo suggestions) always available on free tier.
                     if (art.sourceId == BundledPackSource.ID) return@filter true
                     photos++

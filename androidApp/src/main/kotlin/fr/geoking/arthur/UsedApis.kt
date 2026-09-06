@@ -18,5 +18,8 @@ val UsedApisList: List<UsedApi> = listOf(
     UsedApi("Smithsonian Open Access", "https://api.si.edu/openaccess"),
     UsedApi("Musée du Louvre Collections", "https://collections.louvre.fr/en/page/documentationJSON"),
     UsedApi("Pexels", "https://www.pexels.com/api/"),
+    UsedApi("Pexels Videos", "https://www.pexels.com/api/documentation/#videos"),
+    UsedApi("Pixabay Videos", "https://pixabay.com/api/docs/"),
+    UsedApi("Coverr", "https://api.coverr.co/docs/"),
     UsedApi("Unsplash", "https://unsplash.com/developers"),
 )

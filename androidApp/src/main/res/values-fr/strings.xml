@@ -42,6 +42,7 @@
     <string name="kind_painting">Peinture</string>
     <string name="kind_sculpture">Sculpture</string>
     <string name="kind_photo">Photo</string>
+    <string name="kind_video">Vidéo</string>
     <string name="kind_fractal">Fractale</string>
     <string name="kind_custom_fractal">Fractale personnalisée</string>
     <string name="kind_genart">Genart</string>

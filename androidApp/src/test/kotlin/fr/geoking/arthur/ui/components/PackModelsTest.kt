@@ -4,9 +4,12 @@ import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.source.BundledPackSource
 import fr.geoking.arthur.shared.source.ClevelandSource
+import fr.geoking.arthur.shared.source.CoverrSource
 import fr.geoking.arthur.shared.source.GenartSource
 import fr.geoking.arthur.shared.source.MetSource
 import fr.geoking.arthur.shared.source.PexelsSource
+import fr.geoking.arthur.shared.source.PexelsVideoSource
+import fr.geoking.arthur.shared.source.PixabayVideoSource
 import fr.geoking.arthur.shared.source.RijksmuseumSource
 import fr.geoking.arthur.shared.source.StockPhotoCategory
 import fr.geoking.arthur.shared.source.UnsplashSource
@@ -239,6 +242,36 @@ class PackModelsTest {
     }
 
     @Test
+    fun sourceIdsForAmbientLoad_videoAll_threeVideoApis() {
+        val ids = PackSelection(PackFamily.Video).sourceIdsForAmbientLoad()!!
+        assertEquals(
+            setOf(PexelsVideoSource.ID, PixabayVideoSource.ID, CoverrSource.ID),
+            ids.toSet(),
+        )
+    }
+
+    @Test
+    fun sourceIdsForAmbientLoad_videoNature_threeVideoApis() {
+        val ids = PackSelection(
+            PackFamily.Video,
+            StockPhotoCategory.Nature.query,
+        ).sourceIdsForAmbientLoad()!!
+        assertEquals(
+            setOf(PexelsVideoSource.ID, PixabayVideoSource.ID, CoverrSource.ID),
+            ids.toSet(),
+        )
+    }
+
+    @Test
+    fun videoSubPacks_excludeSuggestions() {
+        val suffixes = PackFamily.Video.subPackTiles().map { it.testTagSuffix }
+        assertTrue("video_all" in suffixes)
+        assertTrue("video_random" in suffixes)
+        assertTrue("video_nature" in suffixes)
+        assertFalse(suffixes.any { it.contains("suggestions") })
+    }
+
+    @Test
     fun sourceIdsForAmbientLoad_paintingAll_capabilityTaggedSources() {
         val ids = PackSelection(PackFamily.Painting).sourceIdsForAmbientLoad()!!
         assertTrue(BundledPackSource.ID in ids)
@@ -284,6 +317,7 @@ class PackModelsTest {
                 .allowsGenerativeAmbientFallback(),
         )
         assertFalse(PackSelection(PackFamily.Photo).allowsGenerativeAmbientFallback())
+        assertFalse(PackSelection(PackFamily.Video).allowsGenerativeAmbientFallback())
         assertFalse(PackSelection(PackFamily.Painting).allowsGenerativeAmbientFallback())
         assertFalse(PackSelection(PackFamily.Sculpture).allowsGenerativeAmbientFallback())
     }

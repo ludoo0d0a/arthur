@@ -6,6 +6,9 @@ package fr.geoking.arthur.shared.source
  */
 enum class RemoteProvider {
     Pexels,
+    PexelsVideo,
+    Pixabay,
+    Coverr,
     Unsplash,
     Met,
     Artic,
@@ -59,7 +62,11 @@ object RemoteCategoryMapping {
                 category
             }
         return when (provider) {
-            RemoteProvider.Pexels -> pexelsStockQuery(resolved)
+            RemoteProvider.Pexels,
+            RemoteProvider.PexelsVideo,
+            -> pexelsStockQuery(resolved)
+            RemoteProvider.Pixabay -> pixabayStockQuery(resolved)
+            RemoteProvider.Coverr -> coverrStockQuery(resolved)
             RemoteProvider.Unsplash -> unsplashStockQuery(resolved)
             else -> resolved.query
         }
@@ -99,6 +106,38 @@ object RemoteCategoryMapping {
         StockPhotoCategory.Architecture -> "architecture"
         StockPhotoCategory.Sky -> "sky"
         StockPhotoCategory.StreetArt -> "street art mural"
+    }
+
+    // --- Stock video: Pixabay free-text ---
+
+    private fun pixabayStockQuery(category: StockPhotoCategory): String = when (category) {
+        StockPhotoCategory.Suggestions,
+        StockPhotoCategory.Random,
+        -> category.query
+        StockPhotoCategory.Nature -> "nature landscape"
+        StockPhotoCategory.City -> "city timelapse"
+        StockPhotoCategory.Ocean -> "ocean waves"
+        StockPhotoCategory.Mountains -> "mountains aerial"
+        StockPhotoCategory.Abstract -> "abstract motion"
+        StockPhotoCategory.Architecture -> "architecture building"
+        StockPhotoCategory.Sky -> "sky clouds"
+        StockPhotoCategory.StreetArt -> "street art mural"
+    }
+
+    // --- Stock video: Coverr free-text ---
+
+    private fun coverrStockQuery(category: StockPhotoCategory): String = when (category) {
+        StockPhotoCategory.Suggestions,
+        StockPhotoCategory.Random,
+        -> category.query
+        StockPhotoCategory.Nature -> "nature"
+        StockPhotoCategory.City -> "city"
+        StockPhotoCategory.Ocean -> "ocean"
+        StockPhotoCategory.Mountains -> "mountains"
+        StockPhotoCategory.Abstract -> "abstract"
+        StockPhotoCategory.Architecture -> "architecture"
+        StockPhotoCategory.Sky -> "sky"
+        StockPhotoCategory.StreetArt -> "street"
     }
 
     // --- Stock: Unsplash free-text (slightly more descriptive for relevance) ---

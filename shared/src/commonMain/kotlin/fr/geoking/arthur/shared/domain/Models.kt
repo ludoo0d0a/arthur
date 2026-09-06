@@ -13,6 +13,7 @@ data class Artwork(
 
 enum class ArtworkKind {
     Photo,
+    Video,
     Painting,
     Sculpture,
     FractalPreset,
@@ -21,7 +22,7 @@ enum class ArtworkKind {
     PersonalPhoto,
 }
 
-/** Live procedural kinds (genart / fractal) vs still image Artwork. */
+/** Live procedural kinds (genart / fractal) vs still / video Artwork. */
 val ArtworkKind.isGenerative: Boolean
     get() = when (this) {
         ArtworkKind.Genart,
@@ -29,6 +30,7 @@ val ArtworkKind.isGenerative: Boolean
         ArtworkKind.CustomFractal,
         -> true
         ArtworkKind.Photo,
+        ArtworkKind.Video,
         ArtworkKind.Painting,
         ArtworkKind.Sculpture,
         ArtworkKind.PersonalPhoto,

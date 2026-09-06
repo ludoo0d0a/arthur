@@ -48,6 +48,8 @@ android {
         buildConfigField("String", "PEXELS_API_KEY", "\"${secret("PEXELS_API_KEY")}\"")
         // Unsplash Access Key = public Client-ID. Secret Key is OAuth-only — do not BuildConfig it into the APK.
         buildConfigField("String", "UNSPLASH_ACCESS_KEY", "\"${secret("UNSPLASH_ACCESS_KEY")}\"")
+        buildConfigField("String", "PIXABAY_API_KEY", "\"${secret("PIXABAY_API_KEY")}\"")
+        buildConfigField("String", "COVERR_API_KEY", "\"${secret("COVERR_API_KEY")}\"")
         buildConfigField("String", "EUROPEANA_API_KEY", "\"${secret("EUROPEANA_API_KEY")}\"")
         buildConfigField("String", "HARVARD_API_KEY", "\"${secret("HARVARD_API_KEY")}\"")
         buildConfigField("String", "SMITHSONIAN_API_KEY", "\"${secret("SMITHSONIAN_API_KEY")}\"")
@@ -112,6 +114,8 @@ dependencies {
     implementation(libs.compose.material.icons.core)
     implementation(libs.koin.android)
     implementation(libs.androidx.media)
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
     implementation(libs.androidx.leanback)
     implementation(libs.androidx.car.app)
     implementation(libs.ktor.client.okhttp)

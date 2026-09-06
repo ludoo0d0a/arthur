@@ -117,6 +117,7 @@ class FilterChipRowsTest {
                 CategoryFilter.GENART,
                 CategoryFilter.PAINTING,
                 CategoryFilter.PHOTO,
+                CategoryFilter.VIDEO,
                 CategoryFilter.SCULPTURE,
                 CategoryFilter.PERSONAL,
             ),

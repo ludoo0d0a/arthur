@@ -20,6 +20,9 @@ import fr.geoking.arthur.shared.source.HarvardSource
 import fr.geoking.arthur.shared.source.LouvreSource
 import fr.geoking.arthur.shared.source.MetSource
 import fr.geoking.arthur.shared.source.PexelsSource
+import fr.geoking.arthur.shared.source.PexelsVideoSource
+import fr.geoking.arthur.shared.source.PixabayVideoSource
+import fr.geoking.arthur.shared.source.CoverrSource
 import fr.geoking.arthur.shared.source.RijksmuseumSource
 import fr.geoking.arthur.shared.source.SmithsonianSource
 import fr.geoking.arthur.shared.source.UnsplashSource
@@ -205,12 +208,53 @@ val appModule = module {
         )
     }
     single {
+        val client = get<HttpClient>()
+        val apiKey = BuildConfig.PEXELS_API_KEY
+        val settings = get<StockPhotoSettings>()
+        PexelsVideoSource(
+            apiKey = apiKey,
+            category = { settings.category },
+            httpGet = { url ->
+                client.get(url) {
+                    header(HttpHeaders.Authorization, apiKey)
+                }.bodyAsText()
+            },
+        )
+    }
+    single {
+        val client = get<HttpClient>()
+        val apiKey = BuildConfig.PIXABAY_API_KEY
+        val settings = get<StockPhotoSettings>()
+        PixabayVideoSource(
+            apiKey = apiKey,
+            category = { settings.category },
+            httpGet = { url -> client.get(url).bodyAsText() },
+        )
+    }
+    single {
+        val client = get<HttpClient>()
+        val apiKey = BuildConfig.COVERR_API_KEY
+        val settings = get<StockPhotoSettings>()
+        CoverrSource(
+            apiKey = apiKey,
+            category = { settings.category },
+            httpGet = { url ->
+                client.get(url) {
+                    header(HttpHeaders.Authorization, "Bearer $apiKey")
+                }.bodyAsText()
+            },
+        )
+    }
+    single {
         ContentEngine(
             sources = listOf(
                 // Bundled + stock first so free-tier still slots are displayable photos.
                 get<BundledPackSource>(),
                 get<PexelsSource>(),
                 get<UnsplashSource>(),
+                get<PexelsVideoSource>(),
+                get<PixabayVideoSource>(),
+                get<CoverrSource>(),
                 get<RijksmuseumSource>(),
                 get<MetSource>(),
                 get<ArticSource>(),

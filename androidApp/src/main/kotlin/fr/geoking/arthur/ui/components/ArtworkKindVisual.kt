@@ -37,6 +37,12 @@ internal fun ArtworkKind.visual(): ArtworkKindVisual {
             container = scheme.secondaryContainer,
             onContainer = scheme.onSecondaryContainer,
         )
+        ArtworkKind.Video -> ArtworkKindVisual(
+            iconRes = R.drawable.ic_kind_video,
+            labelRes = R.string.kind_video,
+            container = scheme.secondaryContainer,
+            onContainer = scheme.onSecondaryContainer,
+        )
         ArtworkKind.FractalPreset, ArtworkKind.CustomFractal -> ArtworkKindVisual(
             iconRes = R.drawable.ic_kind_fractal,
             labelRes = if (this == ArtworkKind.CustomFractal) {

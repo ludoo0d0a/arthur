@@ -41,6 +41,9 @@ import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.shared.source.BundledPackSource
 import fr.geoking.arthur.shared.source.MuseumSearchKind
 import fr.geoking.arthur.shared.source.PexelsSource
+import fr.geoking.arthur.shared.source.PexelsVideoSource
+import fr.geoking.arthur.shared.source.PixabayVideoSource
+import fr.geoking.arthur.shared.source.CoverrSource
 import fr.geoking.arthur.shared.source.StockPhotoCategory
 import fr.geoking.arthur.shared.source.UnsplashSource
 import fr.geoking.arthur.source.MuseumSearchSettings
@@ -60,6 +63,12 @@ private val StockSourceIds = setOf(
     BundledPackSource.ID,
     PexelsSource.ID,
     UnsplashSource.ID,
+)
+
+private val VideoSourceIds = setOf(
+    PexelsVideoSource.ID,
+    PixabayVideoSource.ID,
+    CoverrSource.ID,
 )
 
 @Composable
@@ -106,7 +115,14 @@ fun ControlPlaneScreen(
                 artworkIds = emptyList(),
             ),
         )
-        catalog = catalog.filterNot { it.sourceId in StockSourceIds } + stockOnly
+        val videoOnly = contentEngine.catalog(
+            PreparedRotation(
+                sourceIds = VideoSourceIds.toList(),
+                artworkIds = emptyList(),
+            ),
+        )
+        catalog = catalog.filterNot { it.sourceId in StockSourceIds || it.sourceId in VideoSourceIds } +
+            stockOnly + videoOnly
 
         catalog = contentEngine.catalog(
             PreparedRotation(

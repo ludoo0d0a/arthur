@@ -39,12 +39,13 @@ import fr.geoking.arthur.shared.source.SourceCapabilities
 import fr.geoking.arthur.shared.source.StockPhotoCategory
 import fr.geoking.arthur.shared.source.WikimediaStreetArtSource
 
-/** Top-level chips: All → Genart → Painting → Photo → Sculpture (Personal last). */
+/** Top-level chips: All → Genart → Painting → Photo → Video → Sculpture (Personal last). */
 enum class CategoryFilter(@get:StringRes val labelRes: Int) {
     ALL(R.string.category_all),
     GENART(R.string.kind_genart),
     PAINTING(R.string.kind_painting),
     PHOTO(R.string.kind_photo),
+    VIDEO(R.string.kind_video),
     SCULPTURE(R.string.kind_sculpture),
     PERSONAL(R.string.kind_personal);
 
@@ -56,6 +57,7 @@ enum class CategoryFilter(@get:StringRes val labelRes: Int) {
                 kind == ArtworkKind.CustomFractal
         PAINTING -> kind == ArtworkKind.Painting
         PHOTO -> kind == ArtworkKind.Photo
+        VIDEO -> kind == ArtworkKind.Video
         SCULPTURE -> kind == ArtworkKind.Sculpture
         PERSONAL -> kind == ArtworkKind.PersonalPhoto
     }
@@ -63,6 +65,8 @@ enum class CategoryFilter(@get:StringRes val labelRes: Int) {
     fun showsGenartTopics(): Boolean = this == GENART
 
     fun showsPhotoTopics(): Boolean = this == PHOTO
+
+    fun showsVideoTopics(): Boolean = this == VIDEO
 
     fun showsMuseumTopics(): Boolean = this == PAINTING || this == SCULPTURE
 }
@@ -120,6 +124,8 @@ fun List<Artwork>.filterByCategoryAndSources(
             matchesGenartTopic(art, genartTopic)
         category == CategoryFilter.PHOTO && stockCategory != null ->
             matchesPhotoTopic(art, stockCategory)
+        category == CategoryFilter.VIDEO && stockCategory != null ->
+            matchesVideoTopic(art, stockCategory)
         category.showsMuseumTopics() && museumTopic != null ->
             matchesMuseumTopic(art, museumTopic)
         else -> true
@@ -145,6 +151,7 @@ fun resolveCategoryCatalog(
     val categoryMatches = catalog.filter { category.matches(it.kind) }
     val usesSubfilter = category.showsGenartTopics() ||
         category.showsPhotoTopics() ||
+        category.showsVideoTopics() ||
         category.showsMuseumTopics()
     if (!usesSubfilter) {
         return ResolvedCategoryCatalog(items = categoryMatches, showSubfilters = false)
@@ -155,8 +162,8 @@ fun resolveCategoryCatalog(
         stockCategory = stockCategory,
         genartTopic = genartTopic,
     )
-    // Photo topics drive remote search — keep chips visible even while results load.
-    if (category.showsPhotoTopics()) {
+    // Photo / video topics drive remote search — keep chips visible even while results load.
+    if (category.showsPhotoTopics() || category.showsVideoTopics()) {
         return ResolvedCategoryCatalog(
             items = subMatches.ifEmpty { categoryMatches },
             showSubfilters = true,
@@ -255,6 +262,21 @@ fun matchesPhotoTopic(art: Artwork, stockCategory: StockPhotoCategory): Boolean 
         -> art.sourceId in SourceCapabilities.sourceIdsWithRemoteSearch(ArtworkKind.Photo)
     }
 
+fun matchesVideoTopic(art: Artwork, stockCategory: StockPhotoCategory): Boolean =
+    when (stockCategory) {
+        StockPhotoCategory.Suggestions -> false
+        StockPhotoCategory.Random,
+        StockPhotoCategory.Nature,
+        StockPhotoCategory.City,
+        StockPhotoCategory.Ocean,
+        StockPhotoCategory.Mountains,
+        StockPhotoCategory.Abstract,
+        StockPhotoCategory.Architecture,
+        StockPhotoCategory.Sky,
+        StockPhotoCategory.StreetArt,
+        -> art.sourceId in SourceCapabilities.sourceIdsWithRemoteSearch(ArtworkKind.Video)
+    }
+
 /** Suggestions = curated bundled; other topics = that museum Source only. */
 fun matchesMuseumTopic(art: Artwork, museumTopic: MuseumTopic): Boolean =
     when (museumTopic) {
@@ -304,7 +326,7 @@ fun ContextualSubFilterRow(
     horizontalSpacing: Dp = 8.dp,
 ) {
     val showGenart = selectedCategory.showsGenartTopics()
-    val showTopics = selectedCategory.showsPhotoTopics() &&
+    val showTopics = (selectedCategory.showsPhotoTopics() || selectedCategory.showsVideoTopics()) &&
         stockCategory != null &&
         onStockCategoryChange != null
     val showMuseum = selectedCategory.showsMuseumTopics()

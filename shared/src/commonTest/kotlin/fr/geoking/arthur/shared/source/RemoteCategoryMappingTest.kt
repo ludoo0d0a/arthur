@@ -46,8 +46,20 @@ class RemoteCategoryMappingTest {
             RemoteCategoryMapping.stockQuery(StockPhotoCategory.Nature, RemoteProvider.Pexels),
         )
         assertEquals(
+            "nature",
+            RemoteCategoryMapping.stockQuery(StockPhotoCategory.Nature, RemoteProvider.PexelsVideo),
+        )
+        assertEquals(
             "nature landscape",
             RemoteCategoryMapping.stockQuery(StockPhotoCategory.Nature, RemoteProvider.Unsplash),
+        )
+        assertEquals(
+            "nature landscape",
+            RemoteCategoryMapping.stockQuery(StockPhotoCategory.Nature, RemoteProvider.Pixabay),
+        )
+        assertEquals(
+            "nature",
+            RemoteCategoryMapping.stockQuery(StockPhotoCategory.Nature, RemoteProvider.Coverr),
         )
     }
 

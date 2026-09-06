@@ -79,9 +79,11 @@ class MuseumSourceE2eTest {
         assertTrue("Europeana sculpture catalog empty", sculptures.isNotEmpty())
         assertEquals(ArtworkKind.Sculpture, sculptures.first().kind)
 
-        val page1Ids = parseEuropeanaIds(httpGet(EuropeanaSource.searchUrl(PAGE_SIZE, start = 1)))
+        val page1Ids = parseEuropeanaIds(
+            httpGet(EuropeanaSource.searchUrl(PAGE_SIZE, start = 1, apiKey = apiKey)),
+        )
         val page2Ids = parseEuropeanaIds(
-            httpGet(EuropeanaSource.searchUrl(PAGE_SIZE, start = 1 + PAGE_SIZE)),
+            httpGet(EuropeanaSource.searchUrl(PAGE_SIZE, start = 1 + PAGE_SIZE, apiKey = apiKey)),
         )
         assertTrue("Europeana page 1 empty", page1Ids.isNotEmpty())
         assertTrue("Europeana page 2 empty", page2Ids.isNotEmpty())

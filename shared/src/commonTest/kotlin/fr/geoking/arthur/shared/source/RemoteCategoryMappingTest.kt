@@ -106,7 +106,7 @@ class RemoteCategoryMappingTest {
             RemoteCategoryMapping.museumParams(MuseumSearchKind.Painting, RemoteProvider.Rijksmuseum),
         )
         assertEquals(
-            MuseumApiParams(query = "painting"),
+            MuseumApiParams(query = "painting", medium = "art"),
             RemoteCategoryMapping.museumParams(MuseumSearchKind.Painting, RemoteProvider.Europeana),
         )
         assertEquals(
@@ -134,7 +134,7 @@ class RemoteCategoryMappingTest {
             RemoteCategoryMapping.museumParams(MuseumSearchKind.Sculpture, RemoteProvider.Rijksmuseum),
         )
         assertEquals(
-            MuseumApiParams(query = "sculpture"),
+            MuseumApiParams(query = "sculpture", medium = "art"),
             RemoteCategoryMapping.museumParams(MuseumSearchKind.Sculpture, RemoteProvider.Europeana),
         )
         assertEquals(
@@ -207,7 +207,7 @@ class RemoteCategoryMappingTest {
         )
         assertEquals(
             "https://api.europeana.eu/record/v2/search.json" +
-                "?query=sculpture&reusability=open&media=true&qf=TYPE%3AIMAGE" +
+                "?query=sculpture&theme=art&reusability=open&media=true&qf=TYPE%3AIMAGE" +
                 "&rows=20&start=1&profile=standard",
             EuropeanaSource.searchUrl(kind = MuseumSearchKind.Sculpture),
         )

@@ -107,13 +107,14 @@ class EuropeanaSource(
             start: Int = 1,
             apiKey: String = "",
         ): String {
-            val rawQuery = RemoteCategoryMapping.museumParams(kind, RemoteProvider.Europeana).query
-                .orEmpty()
+            val params = RemoteCategoryMapping.museumParams(kind, RemoteProvider.Europeana)
+            val rawQuery = params.query.orEmpty().ifBlank { "*" }
             val query = rawQuery.replace(" ", "%20")
+            val themeParam = params.medium?.takeIf { it.isNotBlank() }?.let { "&theme=$it" }.orEmpty()
             val wskeyParam = if (apiKey.isNotBlank()) "&wskey=$apiKey" else ""
             // Encode qf value so `TYPE:IMAGE` survives strict URL parsers.
             return "https://api.europeana.eu/record/v2/search.json" +
-                "?query=$query&reusability=open&media=true&qf=TYPE%3AIMAGE" +
+                "?query=$query$themeParam&reusability=open&media=true&qf=TYPE%3AIMAGE" +
                 "&rows=$limit&start=$start&profile=standard$wskeyParam"
         }
     }

@@ -195,12 +195,13 @@ object RemoteCategoryMapping {
         MuseumSearchKind.Photo -> MuseumApiParams(type = "photograph")
     }
 
-    // --- Museum: Europeana Search (`query` free-text + open reusability) ---
+    // --- Museum: Europeana Search (`query` free-text + `medium` theme + open reusability) ---
 
     private fun europeanaParams(kind: MuseumSearchKind): MuseumApiParams = when (kind) {
-        MuseumSearchKind.All, MuseumSearchKind.Painting -> MuseumApiParams(query = "painting")
-        MuseumSearchKind.Sculpture -> MuseumApiParams(query = "sculpture")
-        MuseumSearchKind.Photo -> MuseumApiParams(query = "photograph")
+        MuseumSearchKind.All -> MuseumApiParams(query = "*", medium = "art")
+        MuseumSearchKind.Painting -> MuseumApiParams(query = "painting", medium = "art")
+        MuseumSearchKind.Sculpture -> MuseumApiParams(query = "sculpture", medium = "art")
+        MuseumSearchKind.Photo -> MuseumApiParams(query = "photograph", medium = "photography")
     }
 
     // --- Museum: Harvard Art Museums (`classification` title-case) ---

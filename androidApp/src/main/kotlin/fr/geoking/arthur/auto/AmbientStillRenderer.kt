@@ -15,7 +15,9 @@ import fr.geoking.arthur.genart.GenartStillRenderer
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.isGenerative
+import android.os.Looper
 import fr.geoking.arthur.shared.source.CustomFractalSource
+import fr.geoking.arthur.source.ArtworkImageCache
 import fr.geoking.arthur.source.SafeBitmapDecoder
 import fr.geoking.arthur.source.StillImageDownloader
 import java.io.File
@@ -28,28 +30,41 @@ import kotlin.random.Random
 object AmbientStillRenderer {
     const val SIZE = 720
 
-    fun renderToFile(artwork: Artwork, generation: Long, file: File) {
-        val bitmap = render(artwork, generation)
+    fun renderToFile(
+        artwork: Artwork,
+        generation: Long,
+        file: File,
+        imageCache: ArtworkImageCache? = null,
+    ) {
+        val bitmap = render(artwork, generation, imageCache)
         file.outputStream().use { out ->
             bitmap.compress(Bitmap.CompressFormat.PNG, 90, out)
         }
         bitmap.recycle()
     }
 
-    fun render(artwork: Artwork, generation: Long): Bitmap {
+    fun render(
+        artwork: Artwork,
+        generation: Long,
+        imageCache: ArtworkImageCache? = null,
+    ): Bitmap {
         val bitmap = Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         val seed = artwork.id.hashCode().toLong() xor (generation * 0x9E3779B9L)
-        when {
-            artwork.kind == ArtworkKind.Genart -> drawGenart(canvas, artwork.id, generation)
-            artwork.kind == ArtworkKind.CustomFractal || CustomFractalSource.isCustomId(artwork.id) ->
-                drawCustomFractal(canvas, artwork.id, generation)
-            artwork.isGenerative -> drawFractalField(canvas, artwork.id, seed)
-            !artwork.localPath.isNullOrBlank() || !artwork.remoteUrl.isNullOrBlank() -> {
-                val drawn = drawStillImage(canvas, artwork.localPath, artwork.remoteUrl)
-                if (!drawn) drawStillPlaceholder(canvas, seed, isError = true)
+        runCatching {
+            when {
+                artwork.kind == ArtworkKind.Genart -> drawGenart(canvas, artwork.id, generation)
+                artwork.kind == ArtworkKind.CustomFractal || CustomFractalSource.isCustomId(artwork.id) ->
+                    drawCustomFractal(canvas, artwork.id, generation)
+                artwork.isGenerative -> drawFractalField(canvas, artwork.id, seed)
+                !artwork.localPath.isNullOrBlank() || !artwork.remoteUrl.isNullOrBlank() -> {
+                    val drawn = drawStillImage(canvas, artwork.id, artwork.localPath, artwork.remoteUrl, imageCache)
+                    if (!drawn) drawStillPlaceholder(canvas, seed, isError = true)
+                }
+                else -> drawStillPlaceholder(canvas, seed, isError = true)
             }
-            else -> drawStillPlaceholder(canvas, seed, isError = true)
+        }.onFailure {
+            drawStillPlaceholder(canvas, seed, isError = true)
         }
         return bitmap
     }
@@ -77,7 +92,14 @@ object AmbientStillRenderer {
         else -> ArtworkKind.Photo
     }
 
-    private fun drawStillImage(canvas: Canvas, localPath: String?, remoteUrl: String?): Boolean {
+    private fun drawStillImage(
+        canvas: Canvas,
+        artworkId: String,
+        localPath: String?,
+        remoteUrl: String?,
+        imageCache: ArtworkImageCache?,
+    ): Boolean {
+        // 1. Check local path
         val fromFile = localPath?.takeIf { it.isNotBlank() }?.let { path ->
             SafeBitmapDecoder.decodeFile(path, SafeBitmapDecoder.AMBIENT_STILL_MAX_SIDE)
         }
@@ -86,9 +108,29 @@ object AmbientStillRenderer {
             fromFile.recycle()
             return true
         }
+
+        // 2. Check disk cache
+        val cachedPath = imageCache?.localPathOrNull(artworkId)
+        if (cachedPath != null) {
+            val fromCache = SafeBitmapDecoder.decodeFile(cachedPath, SafeBitmapDecoder.AMBIENT_STILL_MAX_SIDE)
+            if (fromCache != null) {
+                drawBitmapCover(canvas, fromCache)
+                fromCache.recycle()
+                return true
+            }
+        }
+
         val url = remoteUrl?.takeIf { it.isNotBlank() } ?: return false
+
+        // 3. Do not execute network requests on the main thread
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            return false
+        }
+
+        // 4. Download on background thread
         return runCatching {
             val bytes = StillImageDownloader.downloadBytes(url)
+            imageCache?.putImage(artworkId, bytes)
             val bmp = SafeBitmapDecoder.decodeByteArray(
                 bytes,
                 SafeBitmapDecoder.AMBIENT_STILL_MAX_SIDE,

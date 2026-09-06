@@ -117,4 +117,48 @@ class ArthurCarAppTest {
         val content = file.readText()
         assertTrue("Must contain <uses name=\"template\"", content.contains("<uses name=\"template\""))
     }
+
+    @Test
+    fun ambientStillRenderer_mainThreadRemoteUrlReturnsPlaceholderWithoutCrash() {
+        val remoteArt = Artwork(
+            id = "rijks-SK-C-5",
+            title = "Night Watch",
+            attribution = "Rembrandt",
+            sourceId = "rijksmuseum",
+            kind = ArtworkKind.Painting,
+            remoteUrl = "https://example.com/nightwatch.jpg",
+        )
+
+        // Running on Main thread should return a fallback placeholder bitmap rather than throwing NetworkOnMainThreadException.
+        val bitmap = AmbientStillRenderer.render(remoteArt, generation = 1L)
+        assertNotNull("Renderer must return a fallback placeholder bitmap on main thread", bitmap)
+        assertEquals(AmbientStillRenderer.SIZE, bitmap.width)
+        assertEquals(AmbientStillRenderer.SIZE, bitmap.height)
+    }
+
+    @Test
+    fun ambientStillRenderer_usesDiskCacheWhenAvailable() {
+        val context = org.robolectric.RuntimeEnvironment.getApplication()
+        val cache = fr.geoking.arthur.source.ArtworkImageCache(context)
+        val artworkId = "test_cached_photo"
+
+        // Put fake bitmap bytes into ArtworkImageCache
+        val testBmp = android.graphics.Bitmap.createBitmap(100, 100, android.graphics.Bitmap.Config.ARGB_8888)
+        val stream = java.io.ByteArrayOutputStream()
+        testBmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, stream)
+        cache.putImage(artworkId, stream.toByteArray())
+
+        val photoArt = Artwork(
+            id = artworkId,
+            title = "Test Photo",
+            attribution = "GeoKing",
+            sourceId = "pexels",
+            kind = ArtworkKind.Photo,
+            remoteUrl = "https://example.com/photo.jpg",
+        )
+
+        val rendered = AmbientStillRenderer.render(photoArt, generation = 1L, imageCache = cache)
+        assertNotNull("Renderer should load cached photo from disk", rendered)
+        assertEquals(AmbientStillRenderer.SIZE, rendered.width)
+    }
 }

@@ -18,8 +18,9 @@ class AmbientRotationLaunchTest {
             Artwork(id = "a", title = "A", sourceId = "bundled", kind = ArtworkKind.Photo),
             Artwork(id = "b", title = "B", sourceId = "genart", kind = ArtworkKind.Genart),
         )
-        AmbientRotationLaunch.prepare(pool)
+        AmbientRotationLaunch.prepare(pool, renewSourceIds = listOf("met"))
         assertEquals(pool, AmbientRotationLaunch.pool)
+        assertEquals(listOf("met"), AmbientRotationLaunch.renewSourceIds)
     }
 
     @Test

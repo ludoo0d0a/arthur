@@ -3,6 +3,7 @@ package fr.geoking.arthur.shared.source
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.Source
+import kotlin.random.Random
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -12,11 +13,13 @@ import kotlinx.serialization.json.Json
  * CC0 works with JPEG images only; [httpGet] is injected for fixtures.
  *
  * Search: `GET /api/artworks/?type=…` — `type` codes from [RemoteCategoryMapping].
+ * No native random: each [load] uses a random `skip` and samples the window.
  */
 class ClevelandSource(
     private val httpGet: suspend (url: String) -> String,
     private val kind: () -> MuseumSearchKind = { MuseumSearchKind.Painting },
     private val limit: Int = DEFAULT_LIMIT,
+    private val random: Random = Random.Default,
 ) : Source {
     override val id: String = ID
     override val displayName: String = "Cleveland Museum of Art"
@@ -26,16 +29,26 @@ class ClevelandSource(
         val perKind = (limit / targets.size).coerceAtLeast(1)
         val results = mutableListOf<Artwork>()
         for (target in targets) {
-            val payload = httpGet(searchUrl(perKind, target))
+            val skip = RemoteSample.randomStart(RemoteSample.SEARCH_POOL, random = random)
+            val payload = httpGet(searchUrl(RemoteSample.SEARCH_POOL, target, skip = skip))
+                .let { body ->
+                    if (skip > 0 && looksEmptyCleveland(body)) {
+                        httpGet(searchUrl(RemoteSample.SEARCH_POOL, target, skip = 0))
+                    } else {
+                        body
+                    }
+                }
             val page = json.decodeFromString<ClevelandSearchPage>(payload)
-            page.data
-                .asSequence()
-                .mapNotNull { toArtwork(it, target) }
-                .take(perKind)
-                .forEach { results.add(it) }
+            val mapped = page.data.mapNotNull { toArtwork(it, target) }
+            results.addAll(RemoteSample.sample(mapped, perKind, random))
         }
-        results.take(limit)
+        RemoteSample.sample(results, limit, random)
     }.getOrDefault(emptyList())
+
+    private fun looksEmptyCleveland(payload: String): Boolean =
+        runCatching {
+            json.decodeFromString<ClevelandSearchPage>(payload).data.isEmpty()
+        }.getOrDefault(true)
 
     private fun toArtwork(item: ClevelandArtwork, searchKind: MuseumSearchKind): Artwork? {
         val objectId = item.id ?: return null
@@ -73,11 +86,12 @@ class ClevelandSource(
         fun searchUrl(
             limit: Int = DEFAULT_LIMIT,
             kind: MuseumSearchKind = MuseumSearchKind.Painting,
+            skip: Int = 0,
         ): String {
             val type = RemoteCategoryMapping.museumParams(kind, RemoteProvider.Cleveland).type
                 .orEmpty()
             return "https://openaccess-api.clevelandart.org/api/artworks/" +
-                "?cc0=1&has_image=1&limit=$limit&type=$type"
+                "?cc0=1&has_image=1&limit=$limit&skip=$skip&type=$type"
         }
     }
 }

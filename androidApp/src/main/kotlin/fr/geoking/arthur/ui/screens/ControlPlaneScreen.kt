@@ -25,6 +25,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -53,11 +54,16 @@ import fr.geoking.arthur.ui.components.PackFamily
 import fr.geoking.arthur.ui.components.PackGrid
 import fr.geoking.arthur.ui.components.PackSelection
 import fr.geoking.arthur.ui.components.PackTile
+import fr.geoking.arthur.ui.components.allowsGenerativeAmbientFallback
 import fr.geoking.arthur.ui.components.homeTile
 import fr.geoking.arthur.ui.components.isGenartCustom
 import fr.geoking.arthur.ui.components.resolvePackPool
+import fr.geoking.arthur.ui.components.sourceIdsForAmbientLoad
 import fr.geoking.arthur.ui.components.stockCategoryOrNull
 import fr.geoking.arthur.ui.components.subPackTiles
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private val StockSourceIds = setOf(
     BundledPackSource.ID,
@@ -74,7 +80,7 @@ private val VideoSourceIds = setOf(
 @Composable
 fun ControlPlaneScreen(
     contentEngine: ContentEngine,
-    onStartAmbient: (Artwork?, List<Artwork>) -> Unit,
+    onStartAmbient: (artwork: Artwork?, pool: List<Artwork>, renewSourceIds: List<String>?) -> Unit,
     modifier: Modifier = Modifier,
     initialCatalog: List<Artwork>? = null,
     onCreateCustomFractal: (() -> Unit)? = null,
@@ -85,6 +91,8 @@ fun ControlPlaneScreen(
     var catalog by remember { mutableStateOf(initialCatalog.orEmpty()) }
     var openedFamily by remember { mutableStateOf<PackFamily?>(null) }
     var selection by remember { mutableStateOf(PackSelection(PackFamily.Museum)) }
+    var startingAmbient by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     val stockCategory = selection.stockCategoryOrNull()
         ?: stockPhotoSettings?.category
@@ -142,10 +150,44 @@ fun ControlPlaneScreen(
         onSelectSubPack = { selection = it },
         onBackToHome = { openedFamily = null },
         onStartAmbient = {
-            val pool = resolvePackPool(catalog, selection)
-            val chosen = pool.randomOrNull()
-                ?: resolveAmbientArtwork(catalog, artworkId = null)
-            onStartAmbient(chosen, pool)
+            if (startingAmbient) return@ControlPlaneContent
+            scope.launch {
+                startingAmbient = true
+                try {
+                    // Keep Source kind in sync before a fresh remote search sample.
+                    if (museumSearchSettings != null) {
+                        museumSearchSettings.kind = museumKind
+                    }
+                    selection.stockCategoryOrNull()?.let { topic ->
+                        if (stockPhotoSettings != null) {
+                            stockPhotoSettings.category = topic
+                        }
+                    }
+                    val renewIds = selection.sourceIdsForAmbientLoad()
+                    val loaded = if (renewIds != null) {
+                        withContext(Dispatchers.IO) {
+                            contentEngine.catalog(
+                                PreparedRotation(
+                                    sourceIds = renewIds,
+                                    artworkIds = emptyList(),
+                                ),
+                            )
+                        }
+                    } else {
+                        catalog
+                    }
+                    val pool = resolvePackPool(loaded, selection)
+                    val chosen = pool.randomOrNull()
+                        ?: if (selection.allowsGenerativeAmbientFallback()) {
+                            resolveAmbientArtwork(catalog, artworkId = null)
+                        } else {
+                            null
+                        }
+                    onStartAmbient(chosen, pool, renewIds)
+                } finally {
+                    startingAmbient = false
+                }
+            }
         },
         modifier = modifier,
         onCreateCustomFractal = onCreateCustomFractal,

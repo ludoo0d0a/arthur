@@ -3,6 +3,7 @@ package fr.geoking.arthur.shared.source
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.Source
+import kotlin.random.Random
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -12,10 +13,12 @@ import kotlinx.serialization.json.Json
  * (PD / CC0 / CC BY / CC BY-SA — no NC/ND). [httpGet] is injected for fixtures.
  *
  * Distinct from museum connectors: Wikimedia is not the famous-art Source (ADR 0008).
+ * Each [load] samples a random subset of the fetched category window.
  */
 class WikimediaStreetArtSource(
     private val httpGet: suspend (url: String) -> String,
     private val limit: Int = DEFAULT_LIMIT,
+    private val random: Random = Random.Default,
 ) : Source {
     override val id: String = ID
     override val displayName: String = "Wikimedia Street Art"
@@ -23,12 +26,8 @@ class WikimediaStreetArtSource(
     override suspend fun load(): List<Artwork> = runCatching {
         val payload = httpGet(searchUrl(limit = limit.coerceAtLeast(1) * FETCH_MULTIPLIER))
         val response = json.decodeFromString<WikimediaQueryResponse>(payload)
-        response.query?.pages
-            .orEmpty()
-            .asSequence()
-            .mapNotNull { toArtwork(it) }
-            .take(limit)
-            .toList()
+        val mapped = response.query?.pages.orEmpty().mapNotNull { toArtwork(it) }
+        RemoteSample.sample(mapped, limit, random)
     }.getOrDefault(emptyList())
 
     private fun toArtwork(page: WikimediaPage): Artwork? {

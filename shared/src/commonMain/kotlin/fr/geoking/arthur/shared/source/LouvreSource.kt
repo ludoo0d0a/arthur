@@ -3,6 +3,7 @@ package fr.geoking.arthur.shared.source
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.Source
+import kotlin.random.Random
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -11,6 +12,7 @@ import kotlinx.serialization.json.Json
  * Musée du Louvre Remote Source (no API key).
  * Louvre publishes per-object JSON (`…/ark:/53355/{id}.json`) but no search API,
  * so Arthur loads a curated open-access ARK list and hydrates titles/images from JSON.
+ * Each [load] samples a random subset of the curated list.
  *
  * Follow Louvre Collections ToS for image reuse; attribution is required.
  */
@@ -19,6 +21,7 @@ class LouvreSource(
     private val kind: () -> MuseumSearchKind = { MuseumSearchKind.Painting },
     private val arkIds: (MuseumSearchKind) -> List<String> = { defaultArks(it) },
     private val limit: Int = DEFAULT_LIMIT,
+    private val random: Random = Random.Default,
 ) : Source {
     override val id: String = ID
     override val displayName: String = "Musée du Louvre"
@@ -29,13 +32,14 @@ class LouvreSource(
         for (target in targets) {
             val remaining = (limit - results.size).coerceAtLeast(0)
             if (remaining == 0) break
-            for (arkId in arkIds(target).take(remaining)) {
+            val selected = RemoteSample.sample(arkIds(target), remaining, random)
+            for (arkId in selected) {
                 val payload = httpGet(objectUrl(arkId))
                 val record = json.decodeFromString<LouvreRecord>(payload)
                 toArtwork(record, target)?.let { results.add(it) }
             }
         }
-        results.take(limit)
+        RemoteSample.sample(results, limit, random)
     }.getOrDefault(emptyList())
 
     private fun toArtwork(record: LouvreRecord, searchKind: MuseumSearchKind): Artwork? {

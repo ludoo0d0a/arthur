@@ -130,8 +130,8 @@ class MainActivity : ComponentActivity() {
                                         contentEngine = contentEngine,
                                         stockPhotoSettings = stockPhotoSettings,
                                         museumSearchSettings = museumSearchSettings,
-                                        onStartAmbient = { artwork, pool ->
-                                            AmbientRotationLaunch.prepare(pool)
+                                        onStartAmbient = { artwork, pool, renewSourceIds ->
+                                            AmbientRotationLaunch.prepare(pool, renewSourceIds)
                                             startActivity(
                                                 AmbientActivity.intent(
                                                     this@MainActivity,

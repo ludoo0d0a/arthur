@@ -8,7 +8,7 @@ class ArticSourceTest {
     @Test
     fun loadsArtworkFromArticFixtures() = runBlocking {
         val fixtures = mapOf(
-            ArticSource.searchUrl() to """
+            ArticSource.searchUrl(limit = RemoteSample.SEARCH_POOL) to """
                 {
                   "data": [
                     {
@@ -23,7 +23,10 @@ class ArticSourceTest {
                 }
             """.trimIndent(),
         )
-        val source = ArticSource(httpGet = { url -> fixtures.getValue(url) })
+        val source = ArticSource(
+            httpGet = { url -> fixtures.getValue(url) },
+            random = ZeroRandom,
+        )
         val art = source.load()
         assertEquals(1, art.size)
         assertEquals("artic-27992", art[0].id)
@@ -39,7 +42,7 @@ class ArticSourceTest {
     @Test
     fun skipsNonPublicDomainOrMissingImage() = runBlocking {
         val fixtures = mapOf(
-            ArticSource.searchUrl() to """
+            ArticSource.searchUrl(limit = RemoteSample.SEARCH_POOL) to """
                 {
                   "data": [
                     {
@@ -61,7 +64,10 @@ class ArticSourceTest {
                 }
             """.trimIndent(),
         )
-        val source = ArticSource(httpGet = { url -> fixtures.getValue(url) })
+        val source = ArticSource(
+            httpGet = { url -> fixtures.getValue(url) },
+            random = ZeroRandom,
+        )
         assertEquals(emptyList(), source.load())
     }
 
@@ -80,6 +86,7 @@ class ArticSourceTest {
                 "?q=sculpture" +
                 "&query[term][is_public_domain]=true" +
                 "&limit=20" +
+                "&page=1" +
                 "&fields=id,title,artist_display,image_id,is_public_domain",
             ArticSource.searchUrl(kind = MuseumSearchKind.Sculpture),
         )

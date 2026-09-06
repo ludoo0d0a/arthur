@@ -189,12 +189,12 @@ class RemoteCategoryMappingTest {
         )
         assertEquals(
             "https://openaccess-api.clevelandart.org/api/artworks/" +
-                "?cc0=1&has_image=1&limit=20&type=Sculpture",
+                "?cc0=1&has_image=1&limit=20&skip=0&type=Sculpture",
             ClevelandSource.searchUrl(kind = MuseumSearchKind.Sculpture),
         )
         assertEquals(
             "https://openaccess-api.clevelandart.org/api/artworks/" +
-                "?cc0=1&has_image=1&limit=20&type=Photograph",
+                "?cc0=1&has_image=1&limit=20&skip=0&type=Photograph",
             ClevelandSource.searchUrl(kind = MuseumSearchKind.Photo),
         )
         assertEquals(

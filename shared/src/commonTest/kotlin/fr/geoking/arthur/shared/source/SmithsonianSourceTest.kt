@@ -9,7 +9,10 @@ import kotlinx.coroutines.runBlocking
 class SmithsonianSourceTest {
     @Test
     fun loadsCc0ArtworkFromFixtures() = runBlocking {
-        val url = SmithsonianSource.searchUrl(apiKey = "test-key")
+        val url = SmithsonianSource.searchUrl(
+            apiKey = "test-key",
+            limit = RemoteSample.SEARCH_POOL,
+        )
         val fixtures = mapOf(
             url to """
                 {
@@ -55,6 +58,7 @@ class SmithsonianSourceTest {
         val source = SmithsonianSource(
             apiKey = "test-key",
             httpGet = { fixtures.getValue(it) },
+            random = ZeroRandom,
         )
         val art = source.load()
         assertEquals(1, art.size)

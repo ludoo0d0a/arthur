@@ -47,7 +47,10 @@ class RijksmuseumSourceTest {
                 }
             """.trimIndent(),
         )
-        val source = RijksmuseumSource(httpGet = fixtureGet(fixtures))
+        val source = RijksmuseumSource(
+            httpGet = fixtureGet(fixtures),
+            random = ZeroRandom,
+        )
         val art = source.load()
         assertEquals(1, art.size)
         assertEquals("rijks-SK-C-1726", art[0].id)
@@ -100,7 +103,10 @@ class RijksmuseumSourceTest {
                 }
             """.trimIndent(),
         )
-        val source = RijksmuseumSource(httpGet = fixtureGet(fixtures))
+        val source = RijksmuseumSource(
+            httpGet = fixtureGet(fixtures),
+            random = ZeroRandom,
+        )
         val art = source.load()
         assertEquals(1, art.size)
         assertEquals("rijks-200105975", art[0].id)
@@ -129,7 +135,10 @@ class RijksmuseumSourceTest {
                 }
             """.trimIndent(),
         )
-        val source = RijksmuseumSource(httpGet = fixtureGet(fixtures))
+        val source = RijksmuseumSource(
+            httpGet = fixtureGet(fixtures),
+            random = ZeroRandom,
+        )
         assertEquals(emptyList(), source.load())
     }
 

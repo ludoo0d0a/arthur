@@ -14,6 +14,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
@@ -27,6 +28,7 @@ import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.source.RotationSettings
 import fr.geoking.arthur.ui.screens.AmbientScreenContent
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 
@@ -51,6 +53,7 @@ class AmbientActivity : ComponentActivity() {
                 var artwork by remember { mutableStateOf(requested) }
                 var rotationPool by remember { mutableStateOf(stashedPool) }
                 val intervalMs by rotationSettings.intervalMs.collectAsState()
+                val scope = rememberCoroutineScope()
                 LaunchedEffect(requested?.id, rotate) {
                     val loaded = withContext(Dispatchers.IO) {
                         if (rotate) {
@@ -70,6 +73,29 @@ class AmbientActivity : ComponentActivity() {
                     artwork = artwork,
                     rotationPool = if (rotate) rotationPool else emptyList(),
                     intervalMs = intervalMs,
+                    onNeedRenewPool = if (rotate) {
+                        {
+                            val ids = AmbientRotationLaunch.renewSourceIds
+                            if (ids != null) {
+                                scope.launch {
+                                    val fresh = withContext(Dispatchers.IO) {
+                                        contentEngine.catalog(
+                                            PreparedRotation(
+                                                sourceIds = ids,
+                                                artworkIds = emptyList(),
+                                            ),
+                                        )
+                                    }
+                                    if (fresh.size >= 2) {
+                                        rotationPool = fresh
+                                        AmbientRotationLaunch.prepare(fresh, ids)
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        null
+                    },
                 )
             }
         }

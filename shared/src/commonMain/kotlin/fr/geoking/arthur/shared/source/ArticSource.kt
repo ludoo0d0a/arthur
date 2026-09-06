@@ -3,6 +3,7 @@ package fr.geoking.arthur.shared.source
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.Source
+import kotlin.random.Random
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -12,11 +13,13 @@ import kotlinx.serialization.json.Json
  * Public-domain works with IIIF images only; [httpGet] is injected for fixtures.
  *
  * Search: `GET /api/v1/artworks/search?q=…` — `q` from [RemoteCategoryMapping].
+ * No native random: each [load] picks a random page and samples the hits.
  */
 class ArticSource(
     private val httpGet: suspend (url: String) -> String,
     private val kind: () -> MuseumSearchKind = { MuseumSearchKind.Painting },
     private val limit: Int = DEFAULT_LIMIT,
+    private val random: Random = Random.Default,
 ) : Source {
     override val id: String = ID
     override val displayName: String = "Art Institute of Chicago"
@@ -26,18 +29,30 @@ class ArticSource(
         val perKind = (limit / targets.size).coerceAtLeast(1)
         val results = mutableListOf<Artwork>()
         for (target in targets) {
-            val payload = httpGet(searchUrl(perKind, target))
+            val pageIndex = RemoteSample.randomPage(random = random)
+            val payload = httpGet(searchUrl(RemoteSample.SEARCH_POOL, target, page = pageIndex))
+                .let { body ->
+                    // Empty deep pages → fall back to page 1.
+                    if (pageIndex > 1 && looksEmptyArtic(body)) {
+                        httpGet(searchUrl(RemoteSample.SEARCH_POOL, target, page = 1))
+                    } else {
+                        body
+                    }
+                }
             val page = json.decodeFromString<ArticSearchPage>(payload)
             val iiifBase = page.config?.iiifUrl?.takeIf { it.isNotBlank() } ?: DEFAULT_IIIF_BASE
-            page.data
-                .asSequence()
+            val mapped = page.data
                 .filter { it.isPublicDomain }
                 .mapNotNull { item -> toArtwork(item, iiifBase, target) }
-                .take(perKind)
-                .forEach { results.add(it) }
+            results.addAll(RemoteSample.sample(mapped, perKind, random))
         }
-        results.take(limit)
+        RemoteSample.sample(results, limit, random)
     }.getOrDefault(emptyList())
+
+    private fun looksEmptyArtic(payload: String): Boolean =
+        runCatching {
+            json.decodeFromString<ArticSearchPage>(payload).data.isEmpty()
+        }.getOrDefault(true)
 
     private fun toArtwork(
         item: ArticArtwork,
@@ -70,12 +85,14 @@ class ArticSource(
         fun searchUrl(
             limit: Int = DEFAULT_LIMIT,
             kind: MuseumSearchKind = MuseumSearchKind.Painting,
+            page: Int = 1,
         ): String {
             val q = RemoteCategoryMapping.museumParams(kind, RemoteProvider.Artic).query.orEmpty()
             return "https://api.artic.edu/api/v1/artworks/search" +
                 "?q=$q" +
                 "&query[term][is_public_domain]=true" +
                 "&limit=$limit" +
+                "&page=$page" +
                 "&fields=id,title,artist_display,image_id,is_public_domain"
         }
 

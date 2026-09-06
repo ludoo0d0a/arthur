@@ -3,12 +3,16 @@ package fr.geoking.arthur.shared.source
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.Source
+import kotlin.random.Random
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 /**
  * The Met Collection API Remote Source (no API key).
  * Open-access works with images only; [httpGet] is injected so unit tests use fixtures.
+ *
+ * Search returns the full matching ID list (no native random). Each [load] samples a
+ * random subset, then hydrates those objects — renew Ambient by calling [load] again.
  *
  * Search contract: `GET /public/collection/v1/search`
  * (`q`, `medium`, `hasImages`, `isPublicDomain`) — tokens from [RemoteCategoryMapping].
@@ -17,6 +21,7 @@ class MetSource(
     private val httpGet: suspend (url: String) -> String,
     private val kind: () -> MuseumSearchKind = { MuseumSearchKind.Painting },
     private val limit: Int = DEFAULT_LIMIT,
+    private val random: Random = Random.Default,
 ) : Source {
     override val id: String = ID
     override val displayName: String = "The Met"
@@ -27,12 +32,12 @@ class MetSource(
         val results = mutableListOf<Artwork>()
         for (target in targets) {
             val searchJson = httpGet(searchUrl(target))
-            val ids = parseSearchIds(searchJson).take(perKind)
+            val ids = RemoteSample.sample(parseSearchIds(searchJson), perKind, random)
             for (objectId in ids) {
                 runCatching { loadArtwork(objectId, target) }.getOrNull()?.let { results.add(it) }
             }
         }
-        results.take(limit)
+        RemoteSample.sample(results, limit, random)
     }.getOrDefault(emptyList())
 
     private suspend fun loadArtwork(objectId: Int, searchKind: MuseumSearchKind): Artwork? {

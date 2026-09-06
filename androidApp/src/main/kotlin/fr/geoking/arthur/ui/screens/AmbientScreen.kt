@@ -67,6 +67,8 @@ import kotlin.random.Random
  *   [rotationPool] (≥2 items) for random rotation every [intervalMs].
  * - Pin only: empty [rotationPool].
  * - Dream / screensaver: pass a multi-item [rotationPool] to rotate the same way.
+ * - [onNeedRenewPool]: after every pool id has been shown once, request a fresh
+ *   API sample (museums / stock). Parent replaces [rotationPool].
  *
  * Navigation while rotating:
  * - Phone: tap left half = previous, tap right half = next; swipe left = next,
@@ -84,6 +86,7 @@ fun AmbientScreenContent(
     rotationPool: List<Artwork> = emptyList(),
     isActive: Boolean = true,
     intervalMs: Long = AmbientAlbumArt.ROTATION_INTERVAL_MS,
+    onNeedRenewPool: (() -> Unit)? = null,
 ) {
     val rotatePool = remember(rotationPool) {
         rotationPool.filter { it.isAmbientDisplayable() }
@@ -103,11 +106,13 @@ fun AmbientScreenContent(
         )
     }
     var rotationEpoch by remember { mutableIntStateOf(0) }
+    var seenIds by remember(rotatePool.map { it.id }) { mutableStateOf(emptySet<String>()) }
     val progress = remember { Animatable(0f) }
     val focusRequester = remember { FocusRequester() }
     val poolIds = remember(rotatePool) { rotatePool.map { it.id } }
     val latestCurrent by rememberUpdatedState(current)
     val latestPool by rememberUpdatedState(rotatePool)
+    val renewLatest by rememberUpdatedState(onNeedRenewPool)
 
     fun advance(delta: Int, random: Boolean) {
         if (!shouldRotate) return
@@ -121,6 +126,15 @@ fun AmbientScreenContent(
             pool[AmbientAlbumArt.advanceIndex(index, pool.size)]
         } else {
             pool[Math.floorMod(index - 1, pool.size)]
+        }
+        val nextId = current?.id
+        if (nextId != null) {
+            val nextSeen = seenIds + nextId
+            seenIds = nextSeen
+            if (renewLatest != null && poolIds.all { it in nextSeen }) {
+                seenIds = emptySet()
+                renewLatest?.invoke()
+            }
         }
         rotationEpoch++
     }

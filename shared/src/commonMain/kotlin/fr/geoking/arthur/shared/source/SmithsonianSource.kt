@@ -3,6 +3,7 @@ package fr.geoking.arthur.shared.source
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.Source
+import kotlin.random.Random
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -12,12 +13,14 @@ import kotlinx.serialization.json.Json
  * Prefers CC0 media with images; blank [apiKey] yields an empty catalog.
  *
  * Search: `GET /openaccess/api/v1.0/search?q=…&api_key=…`
+ * No native random: each [load] picks a random `start` and samples the window.
  */
 class SmithsonianSource(
     private val httpGet: suspend (url: String) -> String,
     private val apiKey: String,
     private val kind: () -> MuseumSearchKind = { MuseumSearchKind.Painting },
     private val limit: Int = DEFAULT_LIMIT,
+    private val random: Random = Random.Default,
 ) : Source {
     override val id: String = ID
     override val displayName: String = "Smithsonian"
@@ -29,18 +32,28 @@ class SmithsonianSource(
             val perKind = (limit / targets.size).coerceAtLeast(1)
             val results = mutableListOf<Artwork>()
             for (target in targets) {
-                val payload = httpGet(searchUrl(apiKey, perKind, target))
+                val start = RemoteSample.randomStart(RemoteSample.SEARCH_POOL, random = random)
+                val payload = httpGet(
+                    searchUrl(apiKey, RemoteSample.SEARCH_POOL, target, start = start),
+                ).let { body ->
+                    if (start > 0 && looksEmptySmithsonian(body)) {
+                        httpGet(searchUrl(apiKey, RemoteSample.SEARCH_POOL, target, start = 0))
+                    } else {
+                        body
+                    }
+                }
                 val page = json.decodeFromString<SmithsonianSearchPage>(payload)
-                page.response?.rows
-                    .orEmpty()
-                    .asSequence()
-                    .mapNotNull { toArtwork(it, target) }
-                    .take(perKind)
-                    .forEach { results.add(it) }
+                val mapped = page.response?.rows.orEmpty().mapNotNull { toArtwork(it, target) }
+                results.addAll(RemoteSample.sample(mapped, perKind, random))
             }
-            results.take(limit)
+            RemoteSample.sample(results, limit, random)
         }.getOrDefault(emptyList())
     }
+
+    private fun looksEmptySmithsonian(payload: String): Boolean =
+        runCatching {
+            json.decodeFromString<SmithsonianSearchPage>(payload).response?.rows.isNullOrEmpty()
+        }.getOrDefault(true)
 
     private fun toArtwork(row: SmithsonianRow, searchKind: MuseumSearchKind): Artwork? {
         val recordId = row.url?.takeIf { it.isNotBlank() }

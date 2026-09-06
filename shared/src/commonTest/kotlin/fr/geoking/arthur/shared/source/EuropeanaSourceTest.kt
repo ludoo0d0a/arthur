@@ -10,7 +10,7 @@ class EuropeanaSourceTest {
     @Test
     fun loadsArtworkFromEuropeanaFixtures() = runBlocking {
         val fixtures = mapOf(
-            EuropeanaSource.searchUrl() to """
+            EuropeanaSource.searchUrl(limit = RemoteSample.SEARCH_POOL) to """
                 {
                   "items": [
                     {
@@ -29,6 +29,7 @@ class EuropeanaSourceTest {
         val source = EuropeanaSource(
             apiKey = "test-key",
             httpGet = { url -> fixtures.getValue(url) },
+            random = ZeroRandom,
         )
         val art = source.load()
         assertEquals(1, art.size)
@@ -55,7 +56,7 @@ class EuropeanaSourceTest {
     @Test
     fun prefersIsShownByOverPreviewAndSkipsMissingImage() = runBlocking {
         val fixtures = mapOf(
-            EuropeanaSource.searchUrl() to """
+            EuropeanaSource.searchUrl(limit = RemoteSample.SEARCH_POOL) to """
                 {
                   "items": [
                     {
@@ -75,6 +76,7 @@ class EuropeanaSourceTest {
         val source = EuropeanaSource(
             apiKey = "test-key",
             httpGet = { url -> fixtures.getValue(url) },
+            random = ZeroRandom,
         )
         val art = source.load()
         assertEquals(1, art.size)

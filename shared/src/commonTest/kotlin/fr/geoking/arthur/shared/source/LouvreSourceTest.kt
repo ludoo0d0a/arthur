@@ -30,6 +30,7 @@ class LouvreSourceTest {
         val source = LouvreSource(
             httpGet = { fixtures.getValue(it) },
             arkIds = { listOf(ark) },
+            random = ZeroRandom,
         )
         val art = source.load()
         assertEquals(1, art.size)
@@ -55,6 +56,7 @@ class LouvreSourceTest {
         val source = LouvreSource(
             httpGet = { fixtures.getValue(it) },
             arkIds = { listOf(ark) },
+            random = ZeroRandom,
         )
         assertTrue(source.load().isEmpty())
     }

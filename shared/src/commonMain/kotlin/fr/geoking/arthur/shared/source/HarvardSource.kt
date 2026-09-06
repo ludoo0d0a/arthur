@@ -3,6 +3,7 @@ package fr.geoking.arthur.shared.source
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.Source
+import kotlin.random.Random
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -12,12 +13,14 @@ import kotlinx.serialization.json.Json
  * Objects with images only; blank [apiKey] yields an empty catalog.
  *
  * Search: `GET /object?classification=…&hasimage=1&apikey=…`
+ * No native random: each [load] picks a random page and samples the window.
  */
 class HarvardSource(
     private val httpGet: suspend (url: String) -> String,
     private val apiKey: String,
     private val kind: () -> MuseumSearchKind = { MuseumSearchKind.Painting },
     private val limit: Int = DEFAULT_LIMIT,
+    private val random: Random = Random.Default,
 ) : Source {
     override val id: String = ID
     override val displayName: String = "Harvard Art Museums"
@@ -29,17 +32,28 @@ class HarvardSource(
             val perKind = (limit / targets.size).coerceAtLeast(1)
             val results = mutableListOf<Artwork>()
             for (target in targets) {
-                val payload = httpGet(searchUrl(apiKey, perKind, target))
+                val pageIndex = RemoteSample.randomPage(random = random)
+                val payload = httpGet(
+                    searchUrl(apiKey, RemoteSample.SEARCH_POOL, target, page = pageIndex),
+                ).let { body ->
+                    if (pageIndex > 1 && looksEmptyHarvard(body)) {
+                        httpGet(searchUrl(apiKey, RemoteSample.SEARCH_POOL, target, page = 1))
+                    } else {
+                        body
+                    }
+                }
                 val page = json.decodeFromString<HarvardObjectPage>(payload)
-                page.records
-                    .asSequence()
-                    .mapNotNull { toArtwork(it, target) }
-                    .take(perKind)
-                    .forEach { results.add(it) }
+                val mapped = page.records.mapNotNull { toArtwork(it, target) }
+                results.addAll(RemoteSample.sample(mapped, perKind, random))
             }
-            results.take(limit)
+            RemoteSample.sample(results, limit, random)
         }.getOrDefault(emptyList())
     }
+
+    private fun looksEmptyHarvard(payload: String): Boolean =
+        runCatching {
+            json.decodeFromString<HarvardObjectPage>(payload).records.isEmpty()
+        }.getOrDefault(true)
 
     private fun toArtwork(item: HarvardObject, searchKind: MuseumSearchKind): Artwork? {
         val objectId = item.id ?: return null

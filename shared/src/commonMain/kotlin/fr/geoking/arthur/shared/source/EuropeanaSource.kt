@@ -3,6 +3,7 @@ package fr.geoking.arthur.shared.source
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.Source
+import kotlin.random.Random
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -12,12 +13,14 @@ import kotlinx.serialization.json.Json
  * [httpGet] should send `X-Api-Key: <apiKey>` (preferred over deprecated `wskey`).
  *
  * Search: `GET /record/v2/search.json?query=…&reusability=open&media=true&qf=TYPE:IMAGE`
+ * No native random: each [load] picks a random `start` and samples the window.
  */
 class EuropeanaSource(
     private val httpGet: suspend (url: String) -> String,
     private val apiKey: String,
     private val kind: () -> MuseumSearchKind = { MuseumSearchKind.Painting },
     private val limit: Int = DEFAULT_LIMIT,
+    private val random: Random = Random.Default,
 ) : Source {
     override val id: String = ID
     override val displayName: String = "Europeana"
@@ -29,17 +32,27 @@ class EuropeanaSource(
             val perKind = (limit / targets.size).coerceAtLeast(1)
             val results = mutableListOf<Artwork>()
             for (target in targets) {
-                val payload = httpGet(searchUrl(perKind, target))
+                val start = 1 + RemoteSample.randomStart(RemoteSample.SEARCH_POOL, random = random)
+                val payload = httpGet(searchUrl(RemoteSample.SEARCH_POOL, target, start = start))
+                    .let { body ->
+                        if (start > 1 && looksEmptyEuropeana(body)) {
+                            httpGet(searchUrl(RemoteSample.SEARCH_POOL, target, start = 1))
+                        } else {
+                            body
+                        }
+                    }
                 val page = json.decodeFromString<EuropeanaSearchPage>(payload)
-                page.items
-                    .asSequence()
-                    .mapNotNull { toArtwork(it, target) }
-                    .take(perKind)
-                    .forEach { results.add(it) }
+                val mapped = page.items.mapNotNull { toArtwork(it, target) }
+                results.addAll(RemoteSample.sample(mapped, perKind, random))
             }
-            results.take(limit)
+            RemoteSample.sample(results, limit, random)
         }.getOrDefault(emptyList())
     }
+
+    private fun looksEmptyEuropeana(payload: String): Boolean =
+        runCatching {
+            json.decodeFromString<EuropeanaSearchPage>(payload).items.isEmpty()
+        }.getOrDefault(true)
 
     private fun toArtwork(item: EuropeanaItem, searchKind: MuseumSearchKind): Artwork? {
         val recordId = item.id?.takeIf { it.isNotBlank() } ?: return null

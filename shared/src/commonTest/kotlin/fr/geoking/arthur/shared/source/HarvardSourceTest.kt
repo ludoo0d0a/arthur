@@ -9,7 +9,10 @@ import kotlinx.coroutines.runBlocking
 class HarvardSourceTest {
     @Test
     fun loadsArtworkFromHarvardFixtures() = runBlocking {
-        val url = HarvardSource.searchUrl(apiKey = "test-key")
+        val url = HarvardSource.searchUrl(
+            apiKey = "test-key",
+            limit = RemoteSample.SEARCH_POOL,
+        )
         val fixtures = mapOf(
             url to """
                 {
@@ -30,6 +33,7 @@ class HarvardSourceTest {
         val source = HarvardSource(
             apiKey = "test-key",
             httpGet = { fixtures.getValue(it) },
+            random = ZeroRandom,
         )
         val art = source.load()
         assertEquals(1, art.size)

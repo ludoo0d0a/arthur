@@ -66,7 +66,10 @@ class WikimediaStreetArtSourceTest {
                 }
             """.trimIndent(),
         )
-        val source = WikimediaStreetArtSource(httpGet = { url -> fixtures.getValue(url) })
+        val source = WikimediaStreetArtSource(
+            httpGet = { url -> fixtures.getValue(url) },
+            random = ZeroRandom,
+        )
         val art = source.load()
         assertEquals(1, art.size)
         assertEquals("wikimedia-streetart-100", art[0].id)
@@ -116,7 +119,10 @@ class WikimediaStreetArtSourceTest {
                 }
             """.trimIndent(),
         )
-        val source = WikimediaStreetArtSource(httpGet = { url -> fixtures.getValue(url) })
+        val source = WikimediaStreetArtSource(
+            httpGet = { url -> fixtures.getValue(url) },
+            random = ZeroRandom,
+        )
         val art = source.load()
         assertEquals(1, art.size)
         assertEquals("wikimedia-streetart-2", art[0].id)

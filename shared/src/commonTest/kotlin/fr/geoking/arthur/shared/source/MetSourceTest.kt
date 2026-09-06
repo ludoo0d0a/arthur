@@ -1,8 +1,10 @@
 package fr.geoking.arthur.shared.source
 
 import fr.geoking.arthur.shared.domain.ArtworkKind
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlinx.coroutines.runBlocking
 
 class MetSourceTest {
@@ -27,7 +29,10 @@ class MetSourceTest {
                 }
             """.trimIndent(),
         )
-        val source = MetSource(httpGet = { url -> fixtures.getValue(url) })
+        val source = MetSource(
+            httpGet = { url -> fixtures.getValue(url) },
+            random = ZeroRandom,
+        )
         val art = source.load()
         assertEquals(1, art.size)
         assertEquals("met-$objectId", art[0].id)
@@ -64,7 +69,10 @@ class MetSourceTest {
                 }
             """.trimIndent(),
         )
-        val source = MetSource(httpGet = { url -> fixtures.getValue(url) })
+        val source = MetSource(
+            httpGet = { url -> fixtures.getValue(url) },
+            random = ZeroRandom,
+        )
         assertEquals(emptyList(), source.load())
     }
 
@@ -72,6 +80,36 @@ class MetSourceTest {
     fun parseSearchIdsReadsObjectIDs() {
         val ids = MetSource.parseSearchIds("""{"total":2,"objectIDs":[10,20]}""")
         assertEquals(listOf(10, 20), ids)
+    }
+
+    @Test
+    fun samplesRandomObjectIdsInsteadOfPrefix() = runBlocking {
+        val fixtures = mutableMapOf(
+            MetSource.SEARCH_URL to """{"total":5,"objectIDs":[1,2,3,4,5]}""",
+        )
+        for (id in 1..5) {
+            fixtures[MetSource.objectUrl(id)] = """
+                {
+                  "objectID": $id,
+                  "isPublicDomain": true,
+                  "title": "Work $id",
+                  "artistDisplayName": "Artist",
+                  "primaryImage": "https://images.metmuseum.org/$id.jpg"
+                }
+            """.trimIndent()
+        }
+        val httpGet: suspend (String) -> String = { url -> fixtures.getValue(url) }
+        val prefixIds = MetSource(httpGet = httpGet, limit = 2, random = ZeroRandom)
+            .load()
+            .map { it.id }
+            .toSet()
+        val sampledIds = MetSource(httpGet = httpGet, limit = 2, random = Random(42))
+            .load()
+            .map { it.id }
+            .toSet()
+        assertEquals(2, sampledIds.size)
+        assertEquals(setOf("met-1", "met-2"), prefixIds)
+        assertTrue(sampledIds != prefixIds)
     }
 
     @Test
@@ -103,6 +141,7 @@ class MetSourceTest {
         val source = MetSource(
             httpGet = { url -> fixtures.getValue(url) },
             kind = { MuseumSearchKind.Sculpture },
+            random = ZeroRandom,
         )
         val art = source.load()
         assertEquals(1, art.size)

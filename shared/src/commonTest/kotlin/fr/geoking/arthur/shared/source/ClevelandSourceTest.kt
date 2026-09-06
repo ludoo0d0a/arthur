@@ -9,7 +9,7 @@ class ClevelandSourceTest {
     @Test
     fun loadsArtworkFromClevelandFixtures() = runBlocking {
         val fixtures = mapOf(
-            ClevelandSource.searchUrl() to """
+            ClevelandSource.searchUrl(limit = RemoteSample.SEARCH_POOL) to """
                 {
                   "data": [
                     {
@@ -36,7 +36,10 @@ class ClevelandSourceTest {
                 }
             """.trimIndent(),
         )
-        val source = ClevelandSource(httpGet = { url -> fixtures.getValue(url) })
+        val source = ClevelandSource(
+            httpGet = { url -> fixtures.getValue(url) },
+            random = ZeroRandom,
+        )
         val art = source.load()
         assertEquals(1, art.size)
         assertEquals("cleveland-94979", art[0].id)
@@ -53,7 +56,7 @@ class ClevelandSourceTest {
     @Test
     fun skipsMissingImageAndPrefersWebWhenPrintAbsent() = runBlocking {
         val fixtures = mapOf(
-            ClevelandSource.searchUrl() to """
+            ClevelandSource.searchUrl(limit = RemoteSample.SEARCH_POOL) to """
                 {
                   "data": [
                     {
@@ -77,7 +80,10 @@ class ClevelandSourceTest {
                 }
             """.trimIndent(),
         )
-        val source = ClevelandSource(httpGet = { url -> fixtures.getValue(url) })
+        val source = ClevelandSource(
+            httpGet = { url -> fixtures.getValue(url) },
+            random = ZeroRandom,
+        )
         val art = source.load()
         assertEquals(1, art.size)
         assertEquals("cleveland-2", art[0].id)
@@ -93,7 +99,7 @@ class ClevelandSourceTest {
     fun searchUrlIncludesCategoryType() {
         assertEquals(
             "https://openaccess-api.clevelandart.org/api/artworks/" +
-                "?cc0=1&has_image=1&limit=20&type=Sculpture",
+                "?cc0=1&has_image=1&limit=20&skip=0&type=Sculpture",
             ClevelandSource.searchUrl(kind = MuseumSearchKind.Sculpture),
         )
     }

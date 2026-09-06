@@ -3,6 +3,7 @@ package fr.geoking.arthur.shared.source
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.Source
+import kotlin.random.Random
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -15,6 +16,8 @@ import kotlinx.serialization.json.jsonPrimitive
  * Rijksmuseum Remote Source via the public Linked Art Search API (no API key).
  * [httpGet] is injected so unit tests use fixtures.
  *
+ * Search returns ordered IDs (no native random). Each [load] samples a random subset.
+ *
  * Image URLs often live behind `shows` → VisualItem → DigitalObject → `access_point`
  * rather than inline `representation`.
  */
@@ -22,6 +25,7 @@ class RijksmuseumSource(
     private val httpGet: suspend (url: String) -> String,
     private val kind: () -> MuseumSearchKind = { MuseumSearchKind.All },
     private val limit: Int = DEFAULT_LIMIT,
+    private val random: Random = Random.Default,
 ) : Source {
     override val id: String = ID
     override val displayName: String = "Rijksmuseum"
@@ -33,7 +37,7 @@ class RijksmuseumSource(
 
         for ((searchUrl, fallbackKind) in searchTargets) {
             val searchJson = runCatching { httpGet(searchUrl) }.getOrNull() ?: continue
-            val ids = parseSearchIds(searchJson).take(perTypeLimit)
+            val ids = RemoteSample.sample(parseSearchIds(searchJson), perTypeLimit, random)
             for (objectId in ids) {
                 val art = runCatching { loadArtwork(objectId, fallbackKind) }.getOrNull()
                 if (art != null) {
@@ -41,7 +45,7 @@ class RijksmuseumSource(
                 }
             }
         }
-        results.take(limit)
+        RemoteSample.sample(results, limit, random)
     }.getOrDefault(emptyList())
 
     private suspend fun loadArtwork(

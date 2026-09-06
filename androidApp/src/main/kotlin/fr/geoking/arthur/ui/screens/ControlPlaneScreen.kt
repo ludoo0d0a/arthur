@@ -362,6 +362,7 @@ private fun PhoneControlPlaneContent(
                     tiles = PackFamily.entries.map { it.homeTile() },
                     selected = null,
                     onTileClick = { onOpenFamily(it.selection.family) },
+                    columns = 3,
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(
                         start = 20.dp,
@@ -391,6 +392,7 @@ private fun PhoneControlPlaneContent(
                             onSelectSubPack(tile.selection)
                         }
                     },
+                    columns = 3,
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(
                         start = 20.dp,

@@ -18,7 +18,7 @@ enum class PackFamily(
     Museum(R.string.pack_museum, R.drawable.pack_museum, "museum"),
     Genart(R.string.kind_genart, R.drawable.pack_genart, "genart"),
     Photo(R.string.kind_photo, R.drawable.pack_photo, "photo"),
-    Video(R.string.kind_video, R.drawable.pack_photo, "video"),
+    Video(R.string.kind_video, R.drawable.pack_video, "video"),
     Sculpture(R.string.kind_sculpture, R.drawable.pack_sculpture, "sculpture"),
     Painting(R.string.kind_painting, R.drawable.pack_painting, "painting"),
 }

@@ -161,19 +161,20 @@ fun PackGrid(
     selected: PackSelection?,
     onTileClick: (PackTile) -> Unit,
     modifier: Modifier = Modifier,
+    columns: Int = 3,
     contentPadding: PaddingValues = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
     firstTileFocusRequester: FocusRequester? = null,
     selectOnFocus: Boolean = false,
     onTileFocused: ((PackTile) -> Unit)? = null,
 ) {
     LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
+        columns = GridCells.Fixed(columns),
         modifier = modifier
             .fillMaxWidth()
             .testTag("pack_grid"),
         contentPadding = contentPadding,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         items(tiles, key = { it.id }) { tile ->
             PackCoverTile(

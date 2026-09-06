@@ -187,6 +187,46 @@ class ContentEngineTest {
             limits = FreeTierLimits(maxPhotoArtwork = 5, maxGenart = 2),
         )
         val catalog = engine.catalog(PreparedRotation(sourceIds = listOf("mixed"), artworkIds = emptyList()))
-        assertEquals(listOf("ok", "g1"), catalog.map { it.id })
+        assertEquals(setOf("ok", "g1"), catalog.map { it.id }.toSet())
+        assertEquals(2, catalog.size)
+    }
+
+    @Test
+    fun freeTier_roundRobinsStillsAcrossSources() = runBlocking {
+        fun stills(sourceId: String, count: Int) = object : Source {
+            override val id = sourceId
+            override val displayName = sourceId
+            override suspend fun load() = (1..count).map { i ->
+                Artwork(
+                    id = "$sourceId-$i",
+                    title = "$sourceId $i",
+                    sourceId = sourceId,
+                    kind = ArtworkKind.Painting,
+                    remoteUrl = "https://example.com/$sourceId-$i.jpg",
+                )
+            }
+        }
+        val engine = ContentEngine(
+            sources = listOf(
+                stills("artic", 10),
+                stills("europeana", 10),
+                stills("harvard", 10),
+                stills("smithsonian", 10),
+            ),
+            entitlement = FakePremiumEntitlement(isPremium = false),
+            limits = FreeTierLimits(maxPhotoArtwork = 8),
+        )
+        val catalog = engine.catalog(
+            PreparedRotation(
+                sourceIds = listOf("artic", "europeana", "harvard", "smithsonian"),
+                artworkIds = emptyList(),
+            ),
+        )
+        assertEquals(8, catalog.size)
+        val bySource = catalog.groupingBy { it.sourceId }.eachCount()
+        assertEquals(2, bySource["artic"])
+        assertEquals(2, bySource["europeana"])
+        assertEquals(2, bySource["harvard"])
+        assertEquals(2, bySource["smithsonian"])
     }
 }

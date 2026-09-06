@@ -9,7 +9,26 @@ data class Artwork(
     val kind: ArtworkKind,
     val remoteUrl: String? = null,
     val localPath: String? = null,
+    /** Longer museum/stock blurb beyond title + author; empty when unavailable. */
+    val description: String = "",
+    /** Creation / photograph / object date when the Source provides it. */
+    val date: String = "",
+    /** Medium / materials when provided (e.g. "Oil on canvas"). */
+    val medium: String = "",
+    /** License or rights notice (e.g. "Public Domain", "CC0"). */
+    val license: String = "",
+    /** Museum object page or stock photo page when available. */
+    val externalUrl: String? = null,
 )
+
+/** True when Ambient should offer the detail page (⋯). */
+fun Artwork.hasDetailContent(): Boolean =
+    description.isNotBlank() ||
+        date.isNotBlank() ||
+        medium.isNotBlank() ||
+        license.isNotBlank() ||
+        !externalUrl.isNullOrBlank()
+
 
 enum class ArtworkKind {
     Photo,
@@ -67,7 +86,12 @@ interface PremiumEntitlement {
 }
 
 data class FreeTierLimits(
-    val maxPhotoArtwork: Int = 5,
+    /**
+     * Cap on free-tier stills (photo / video / painting / sculpture). High enough
+     * that Painting/Museum **All** can keep at least one piece from each remote
+     * museum after fair round-robin — a tiny prefix cap emptied later Sources.
+     */
+    val maxPhotoArtwork: Int = 24,
     val maxFractalPresets: Int = 3,
     /**
      * Cap on free-tier Genart engines. Must cover the full shipped catalog so

@@ -69,6 +69,7 @@ class HarvardSource(
             sourceId = ID,
             kind = searchKind.artworkKind ?: ArtworkKind.Painting,
             remoteUrl = imageUrl,
+            externalUrl = "https://harvardartmuseums.org/collections/object/$objectId",
         )
     }
 
@@ -88,10 +89,13 @@ class HarvardSource(
             val classification = RemoteCategoryMapping.museumParams(kind, RemoteProvider.Harvard)
                 .type
                 .orEmpty()
+            // hasimage=1 alone still returns permission-gated records with null
+            // primaryimageurl (esp. Photographs). Level 0 = publicly viewable.
             return "https://api.harvardartmuseums.org/object" +
                 "?apikey=$apiKey" +
                 "&classification=$classification" +
                 "&hasimage=1" +
+                "&q=imagepermissionlevel:0" +
                 "&size=$limit" +
                 "&page=$page" +
                 "&fields=id,title,primaryimageurl,people,classification"

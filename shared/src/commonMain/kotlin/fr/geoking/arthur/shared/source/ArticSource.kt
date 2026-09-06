@@ -26,7 +26,10 @@ class ArticSource(
 
     override suspend fun load(): List<Artwork> = runCatching {
         MuseumLoad.acrossTargets(kind(), limit, random) { target, perKind ->
-            val pageIndex = RemoteSample.randomPage(random = random)
+            val pageIndex = RemoteSample.randomPage(
+                maxPage = RemoteSample.maxPageForHitWindow(),
+                random = random,
+            )
             val payload = RemoteSample.fetchWindow(
                 randomOffset = pageIndex,
                 firstOffset = 1,
@@ -57,6 +60,10 @@ class ArticSource(
         val title = item.title?.takeIf { it.isNotBlank() } ?: "Object $objectId"
         val attribution = item.artistDisplay?.takeIf { it.isNotBlank() }
             ?: "Art Institute of Chicago"
+        val description = item.description
+            ?.let(::plainTextDescription)
+            ?.takeIf { it.isNotBlank() && !it.equals(title, ignoreCase = true) }
+            .orEmpty()
         return Artwork(
             id = "artic-$objectId",
             title = title,
@@ -64,6 +71,11 @@ class ArticSource(
             sourceId = ID,
             kind = searchKind.artworkKind ?: ArtworkKind.Painting,
             remoteUrl = iiifImageUrl(iiifBase, imageId),
+            description = description,
+            date = item.dateDisplay?.takeIf { it.isNotBlank() }.orEmpty(),
+            medium = item.mediumDisplay?.takeIf { it.isNotBlank() }.orEmpty(),
+            license = if (item.isPublicDomain) "Public Domain" else "",
+            externalUrl = collectionPageUrl(objectId),
         )
     }
 
@@ -81,16 +93,28 @@ class ArticSource(
             page: Int = 1,
         ): String {
             val q = RemoteCategoryMapping.museumParams(kind, RemoteProvider.Artic).query.orEmpty()
+            // Percent-encode brackets — raw `query[term]…` breaks some HTTP stacks.
             return "https://api.artic.edu/api/v1/artworks/search" +
                 "?q=$q" +
-                "&query[term][is_public_domain]=true" +
+                "&query%5Bterm%5D%5Bis_public_domain%5D=true" +
                 "&limit=$limit" +
                 "&page=$page" +
-                "&fields=id,title,artist_display,image_id,is_public_domain"
+                "&fields=id,title,artist_display,image_id,is_public_domain,description," +
+                "date_display,medium_display"
         }
+
+        fun collectionPageUrl(objectId: Int): String =
+            "https://www.artic.edu/artworks/$objectId"
 
         fun iiifImageUrl(iiifBase: String, imageId: String): String =
             "${iiifBase.trimEnd('/')}/$imageId/full/$IIIF_SIZE/0/default.jpg"
+
+        /** Strip light HTML from Artic description blobs. */
+        internal fun plainTextDescription(raw: String): String =
+            raw
+                .replace(Regex("<[^>]+>"), " ")
+                .replace(Regex("\\s+"), " ")
+                .trim()
     }
 }
 
@@ -112,4 +136,7 @@ internal data class ArticArtwork(
     @SerialName("artist_display") val artistDisplay: String? = null,
     @SerialName("image_id") val imageId: String? = null,
     @SerialName("is_public_domain") val isPublicDomain: Boolean = false,
+    val description: String? = null,
+    @SerialName("date_display") val dateDisplay: String? = null,
+    @SerialName("medium_display") val mediumDisplay: String? = null,
 )

@@ -110,8 +110,16 @@ class SmithsonianSource(
         ): String {
             val q = RemoteCategoryMapping.museumParams(kind, RemoteProvider.Smithsonian).query
                 .orEmpty()
-            // Spaces must be encoded for fixture URL matching.
-            val encoded = q.replace(" ", "%20")
+            // Encode reserved query chars (`:`, spaces) for fixture URL matching + HTTP stacks.
+            val encoded = buildString(q.length + 8) {
+                for (ch in q) {
+                    when (ch) {
+                        ' ' -> append("%20")
+                        ':' -> append("%3A")
+                        else -> append(ch)
+                    }
+                }
+            }
             return "https://api.si.edu/openaccess/api/v1.0/search" +
                 "?q=$encoded" +
                 "&rows=$limit" +

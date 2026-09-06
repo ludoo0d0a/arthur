@@ -41,28 +41,59 @@ class ContentEngine(
         if (entitlement.isPremium) {
             return candidates
         }
-        var photos = 0
         var fractals = 0
         var genart = 0
-        return candidates.filter { art ->
+        val stills = ArrayList<Artwork>()
+        val kept = ArrayList<Artwork>(candidates.size)
+        for (art in candidates) {
             when (art.kind) {
-                ArtworkKind.PersonalPhoto, ArtworkKind.CustomFractal -> false
+                ArtworkKind.PersonalPhoto, ArtworkKind.CustomFractal -> Unit
                 ArtworkKind.Photo, ArtworkKind.Video, ArtworkKind.Painting, ArtworkKind.Sculpture -> {
                     // Bundled pack (incl. Photo suggestions) always available on free tier.
-                    if (art.sourceId == BundledPackSource.ID) return@filter true
-                    photos++
-                    photos <= limits.maxPhotoArtwork
+                    if (art.sourceId == BundledPackSource.ID) {
+                        kept.add(art)
+                    } else {
+                        stills.add(art)
+                    }
                 }
                 ArtworkKind.FractalPreset -> {
                     fractals++
-                    fractals <= limits.maxFractalPresets
+                    if (fractals <= limits.maxFractalPresets) kept.add(art)
                 }
                 ArtworkKind.Genart -> {
                     genart++
-                    genart <= limits.maxGenart
+                    if (genart <= limits.maxGenart) kept.add(art)
                 }
             }
         }
+        kept.addAll(fairStillSample(stills, limits.maxPhotoArtwork))
+        return kept
+    }
+
+    /**
+     * Round-robin stills by [Artwork.sourceId] so Painting/Museum **All** does not
+     * starve later museums (prefix-cap used to keep only Rijks/Met).
+     */
+    private fun fairStillSample(stills: List<Artwork>, limit: Int): List<Artwork> {
+        if (limit <= 0 || stills.isEmpty()) return emptyList()
+        if (stills.size <= limit) return stills
+        val bySource = LinkedHashMap<String, ArrayDeque<Artwork>>()
+        for (art in stills) {
+            bySource.getOrPut(art.sourceId) { ArrayDeque() }.add(art)
+        }
+        val out = ArrayList<Artwork>(limit)
+        while (out.size < limit) {
+            var progressed = false
+            for (queue in bySource.values) {
+                if (queue.isNotEmpty()) {
+                    out.add(queue.removeFirst())
+                    progressed = true
+                    if (out.size >= limit) break
+                }
+            }
+            if (!progressed) break
+        }
+        return out
     }
 
     private fun hasDisplayableStill(artwork: Artwork): Boolean =

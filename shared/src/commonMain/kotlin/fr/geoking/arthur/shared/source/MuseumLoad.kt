@@ -24,7 +24,8 @@ internal object MuseumLoad {
         val perKind = (limit / targets.size).coerceAtLeast(1)
         val results = ArrayList<Artwork>(limit)
         for (target in targets) {
-            results.addAll(loadTarget(target, perKind))
+            // One failing target (timeout / 403 body) must not wipe siblings.
+            results.addAll(runCatching { loadTarget(target, perKind) }.getOrDefault(emptyList()))
         }
         return RemoteSample.sample(results, limit, random)
     }

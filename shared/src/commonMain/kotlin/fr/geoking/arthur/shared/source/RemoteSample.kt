@@ -13,11 +13,21 @@ object RemoteSample {
     /** How many search hits to pull before sampling down to the Source limit. */
     const val SEARCH_POOL = 60
 
-    /** Upper bound for 1-based page APIs (Harvard, Artic, …). */
+    /** Upper bound for 1-based page APIs (Harvard, …). */
     const val MAX_PAGE = 20
+
+    /**
+     * Artic (and similar ES search APIs) reject windows past ~[maxHits] results
+     * (`Invalid number of results`). Cap 1-based pages so `(page-1)*pool < maxHits`.
+     */
+    fun maxPageForHitWindow(pool: Int = SEARCH_POOL, maxHits: Int = 1000): Int =
+        (maxHits / pool.coerceAtLeast(1)).coerceAtLeast(1)
 
     /** Upper bound for 0-based start offsets (Smithsonian), in result rows. */
     const val MAX_START = 200
+
+    /** Europeana refuses `start` beyond the first 1000 hits (use cursor past that). */
+    const val EUROPEANA_MAX_START = 940
 
     /**
      * Random subset of [items] (size [count]).

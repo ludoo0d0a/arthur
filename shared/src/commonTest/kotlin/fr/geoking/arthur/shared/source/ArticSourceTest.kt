@@ -84,10 +84,11 @@ class ArticSourceTest {
         assertEquals(
             "https://api.artic.edu/api/v1/artworks/search" +
                 "?q=sculpture" +
-                "&query[term][is_public_domain]=true" +
+                "&query%5Bterm%5D%5Bis_public_domain%5D=true" +
                 "&limit=20" +
                 "&page=1" +
-                "&fields=id,title,artist_display,image_id,is_public_domain",
+                "&fields=id,title,artist_display,image_id,is_public_domain,description," +
+                "date_display,medium_display",
             ArticSource.searchUrl(kind = MuseumSearchKind.Sculpture),
         )
     }

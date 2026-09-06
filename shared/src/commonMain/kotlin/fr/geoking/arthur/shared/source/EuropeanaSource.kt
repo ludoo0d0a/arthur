@@ -29,7 +29,11 @@ class EuropeanaSource(
         if (apiKey.isBlank()) return emptyList()
         return runCatching {
             MuseumLoad.acrossTargets(kind(), limit, random) { target, perKind ->
-                val start = 1 + RemoteSample.randomStart(RemoteSample.SEARCH_POOL, random = random)
+                val start = 1 + RemoteSample.randomStart(
+                    pageSize = RemoteSample.SEARCH_POOL,
+                    maxStart = RemoteSample.EUROPEANA_MAX_START,
+                    random = random,
+                )
                 val payload = RemoteSample.fetchWindow(
                     randomOffset = start,
                     firstOffset = 1,
@@ -66,6 +70,8 @@ class EuropeanaSource(
             sourceId = ID,
             kind = searchKind.artworkKind ?: ArtworkKind.Painting,
             remoteUrl = imageUrl,
+            externalUrl = item.guid?.takeIf { it.isNotBlank() }
+                ?: "https://www.europeana.eu/item$recordId",
         )
     }
 
@@ -83,8 +89,9 @@ class EuropeanaSource(
         ): String {
             val query = RemoteCategoryMapping.museumParams(kind, RemoteProvider.Europeana).query
                 .orEmpty()
+            // Encode qf value so `TYPE:IMAGE` survives strict URL parsers.
             return "https://api.europeana.eu/record/v2/search.json" +
-                "?query=$query&reusability=open&media=true&qf=TYPE:IMAGE" +
+                "?query=$query&reusability=open&media=true&qf=TYPE%3AIMAGE" +
                 "&rows=$limit&start=$start&profile=standard"
         }
     }
@@ -103,5 +110,6 @@ internal data class EuropeanaItem(
     val dataProvider: List<String>? = null,
     val edmPreview: List<String>? = null,
     val edmIsShownBy: List<String>? = null,
+    val guid: String? = null,
     val type: String? = null,
 )

@@ -18,7 +18,7 @@ tasks.register<Exec>("copyWebsiteScreenshots") {
     group = "website"
     description = "Copy Roborazzi/Play screenshots into website/assets per website/screenshot-sources.json"
     workingDir = rootDir
-    commandLine("python3", "scripts/fill_website_screenshots.py")
+    commandLine("scripts/fill_website_screenshots.py")
 }
 
 tasks.register("generateWebsiteScreenshots") {

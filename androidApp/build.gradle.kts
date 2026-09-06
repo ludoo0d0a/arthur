@@ -53,6 +53,8 @@ android {
         buildConfigField("String", "EUROPEANA_API_KEY", "\"${secret("EUROPEANA_API_KEY")}\"")
         buildConfigField("String", "HARVARD_API_KEY", "\"${secret("HARVARD_API_KEY")}\"")
         buildConfigField("String", "SMITHSONIAN_API_KEY", "\"${secret("SMITHSONIAN_API_KEY")}\"")
+        val debugDev = secret("DEBUG_DEV").ifBlank { "true" }.lowercase().toBoolean().toString()
+        buildConfigField("boolean", "DEBUG_DEV", debugDev)
         val buildDate = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
         buildConfigField("String", "BUILD_DATE", "\"$buildDate\"")
     }

@@ -96,7 +96,7 @@ class MainActivity : ComponentActivity() {
                                 SettingsScreen(
                                     onDismiss = { showSettings = false },
                                     isPremium = isPremium,
-                                    showDeveloper = BuildConfig.DEBUG,
+                                    showDeveloper = BuildConfig.DEBUG_DEV,
                                     simulatePremium = simulatePremium,
                                     onSimulatePremiumChange = developerSettings::setSimulatePremium,
                                     rotationIntervalMs = rotationIntervalMs,

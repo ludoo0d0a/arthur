@@ -25,6 +25,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,6 +54,7 @@ import fr.geoking.arthur.shared.source.CoverrSource
 import fr.geoking.arthur.shared.source.StockPhotoCategory
 import fr.geoking.arthur.shared.source.UnsplashSource
 import fr.geoking.arthur.source.MuseumSearchSettings
+import fr.geoking.arthur.source.ScreensaverSettings
 import fr.geoking.arthur.source.StockPhotoSettings
 import fr.geoking.arthur.ui.components.ControlPlaneHeader
 import fr.geoking.arthur.ui.components.PackFamily
@@ -91,6 +93,7 @@ fun ControlPlaneScreen(
     onCreateCustomFractal: (() -> Unit)? = null,
     stockPhotoSettings: StockPhotoSettings? = null,
     museumSearchSettings: MuseumSearchSettings? = null,
+    screensaverSettings: ScreensaverSettings? = null,
     onOpenSettings: (() -> Unit)? = null,
 ) {
     var catalog by remember { mutableStateOf(initialCatalog.orEmpty()) }
@@ -99,6 +102,9 @@ fun ControlPlaneScreen(
     var startingAmbient by remember { mutableStateOf(false) }
     val packCatalogCache = remember { mutableMapOf<String, List<Artwork>>() }
     val scope = rememberCoroutineScope()
+
+    val defaultScreensaver by screensaverSettings?.defaultPack?.collectAsState()
+        ?: remember { mutableStateOf(null) }
 
     val stockCategory = selection.stockCategoryOrNull()
         ?: stockPhotoSettings?.category
@@ -212,6 +218,8 @@ fun ControlPlaneScreen(
         modifier = modifier,
         onCreateCustomFractal = onCreateCustomFractal,
         onOpenSettings = onOpenSettings,
+        defaultScreensaverSelection = defaultScreensaver,
+        onSetDefaultScreensaver = screensaverSettings?.let { settings -> { settings.setDefaultPack(it) } },
     )
 }
 
@@ -232,6 +240,8 @@ fun ControlPlaneContent(
     startingAmbient: Boolean = false,
     onCreateCustomFractal: (() -> Unit)? = null,
     onOpenSettings: (() -> Unit)? = null,
+    defaultScreensaverSelection: PackSelection? = null,
+    onSetDefaultScreensaver: ((PackSelection) -> Unit)? = null,
 ) {
     val configuration = LocalConfiguration.current
     val isTelevision = remember(configuration) {
@@ -249,6 +259,8 @@ fun ControlPlaneContent(
                 onStartAmbient = onStartAmbient,
                 modifier = Modifier.fillMaxSize(),
                 onOpenSettings = onOpenSettings,
+                defaultScreensaverSelection = defaultScreensaverSelection,
+                onSetDefaultScreensaver = onSetDefaultScreensaver,
             )
         } else {
             PhoneControlPlaneContent(

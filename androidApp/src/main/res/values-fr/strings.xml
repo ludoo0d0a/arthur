@@ -19,6 +19,8 @@
     <string name="detail_description">Description</string>
     <string name="detail_open_source_page">Ouvrir la page source</string>
     <string name="dream_description">Art ambient Arthur</string>
+    <string name="save_default_screensaver">Définir comme écran de veille par défaut</string>
+    <string name="is_default_screensaver">Écran de veille par défaut</string>
     <string name="rotation_section">Rotation préparée</string>
     <string name="packs_section">Packs</string>
     <string name="pack_museum">Musée</string>

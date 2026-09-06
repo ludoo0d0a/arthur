@@ -34,6 +34,7 @@ import fr.geoking.arthur.source.ArtworkImageCache
 import fr.geoking.arthur.source.DeveloperSettings
 import fr.geoking.arthur.source.MuseumSearchSettings
 import fr.geoking.arthur.source.RotationSettings
+import fr.geoking.arthur.source.ScreensaverSettings
 import fr.geoking.arthur.source.StockPhotoSettings
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
@@ -112,6 +113,7 @@ val appModule = module {
     single<PurchasesGateway> { get<FakePurchasesGateway>() }
     single { DeveloperSettings(androidContext()) }
     single { RotationSettings(androidContext()) }
+    single { ScreensaverSettings(androidContext()) }
     single<PremiumEntitlement> {
         val gatewayEntitlement = RevenueCatPremiumEntitlement(get())
         val developerSettings = get<DeveloperSettings>()

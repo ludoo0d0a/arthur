@@ -19,6 +19,8 @@
     <string name="detail_description">Description</string>
     <string name="detail_open_source_page">Open source page</string>
     <string name="dream_description">Arthur ambient art</string>
+    <string name="save_default_screensaver">Save as default screensaver</string>
+    <string name="is_default_screensaver">Default screensaver</string>
     <string name="rotation_section">Prepared rotation</string>
     <string name="packs_section">Packs</string>
     <string name="pack_museum">Museum</string>

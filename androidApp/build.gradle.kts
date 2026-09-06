@@ -138,6 +138,7 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.android)
     testImplementation(libs.ktor.server.cio)
     testImplementation(libs.ktor.client.okhttp)
+    testImplementation(libs.mockwebserver)
     // Phone @Preview screenshots (Robolectric + Roborazzi) — same stack as Scora
     testImplementation(libs.robolectric)
     testImplementation(libs.roborazzi)

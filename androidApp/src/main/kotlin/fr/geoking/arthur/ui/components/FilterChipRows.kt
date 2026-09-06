@@ -28,11 +28,14 @@ import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.source.ArticSource
 import fr.geoking.arthur.shared.source.BundledPackSource
 import fr.geoking.arthur.shared.source.ClevelandSource
+import fr.geoking.arthur.shared.source.CoverrSource
 import fr.geoking.arthur.shared.source.EuropeanaSource
 import fr.geoking.arthur.shared.source.GenartSource
 import fr.geoking.arthur.shared.source.HarvardSource
 import fr.geoking.arthur.shared.source.LouvreSource
 import fr.geoking.arthur.shared.source.MetSource
+import fr.geoking.arthur.shared.source.PexelsVideoSource
+import fr.geoking.arthur.shared.source.PixabayVideoSource
 import fr.geoking.arthur.shared.source.RijksmuseumSource
 import fr.geoking.arthur.shared.source.SmithsonianSource
 import fr.geoking.arthur.shared.source.SourceCapabilities
@@ -110,6 +113,20 @@ enum class MuseumTopic(
         R.string.source_wikimedia_streetart,
         WikimediaStreetArtSource.ID,
     ),
+}
+
+/**
+ * Video pack Source tiles — one Remote Source each (same role as [MuseumTopic] institutions).
+ * Keyword topics stay on [StockPhotoCategory] and search across all video Sources.
+ */
+enum class VideoTopic(
+    val sourceId: String,
+    @get:StringRes val labelRes: Int,
+    val testTagSuffix: String,
+) {
+    Pexels(PexelsVideoSource.ID, R.string.source_pexels_video, PexelsVideoSource.ID),
+    Pixabay(PixabayVideoSource.ID, R.string.source_pixabay_video, PixabayVideoSource.ID),
+    Coverr(CoverrSource.ID, R.string.source_coverr, CoverrSource.ID),
 }
 
 fun List<Artwork>.filterByCategoryAndSources(
@@ -283,6 +300,9 @@ fun matchesMuseumTopic(art: Artwork, museumTopic: MuseumTopic): Boolean =
         MuseumTopic.Suggestions -> art.sourceId == BundledPackSource.ID
         else -> art.sourceId == museumTopic.sourceId
     }
+
+fun matchesVideoSource(art: Artwork, videoTopic: VideoTopic): Boolean =
+    art.sourceId == videoTopic.sourceId
 
 @Composable
 fun CategoryFilterRow(

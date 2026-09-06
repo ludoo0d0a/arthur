@@ -29,6 +29,9 @@
     <string name="source_louvre">Louvre</string>
     <string name="source_wikimedia_streetart">Street Art</string>
     <string name="source_bundled">Bundled</string>
+    <string name="source_pexels_video">Pexels</string>
+    <string name="source_pixabay_video">Pixabay</string>
+    <string name="source_coverr">Coverr</string>
     <string name="stock_topic_section">Photo topic</string>
     <string name="stock_topic_suggestions">Suggestions</string>
     <string name="stock_topic_random">Random</string>

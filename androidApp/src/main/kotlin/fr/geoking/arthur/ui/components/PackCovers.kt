@@ -39,4 +39,12 @@ object PackCovers {
         StockPhotoCategory.Sky -> R.drawable.pack_photo_sky
         else -> R.drawable.pack_photo
     }
+
+    /** Themed official logo marks (gold-on-dark, same treatment as museum packs). */
+    @DrawableRes
+    fun video(topic: VideoTopic): Int = when (topic) {
+        VideoTopic.Pexels -> R.drawable.pack_pexels
+        VideoTopic.Pixabay -> R.drawable.pack_pixabay
+        VideoTopic.Coverr -> R.drawable.pack_coverr
+    }
 }

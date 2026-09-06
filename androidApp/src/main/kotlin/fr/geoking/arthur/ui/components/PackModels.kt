@@ -46,6 +46,10 @@ data class PackTile(
 private val MuseumSourceIds: Set<String> =
     MuseumTopic.entries.mapNotNull { it.sourceId }.toSet()
 
+/** All remote video Source ids — kept in sync with [VideoTopic]. */
+private val VideoSourceIds: Set<String> =
+    VideoTopic.entries.map { it.sourceId }.toSet()
+
 /**
  * Museum institution sub-packs (every [MuseumTopic] with a Source).
  * Suggestions stays on Painting / Sculpture only.
@@ -108,14 +112,26 @@ fun PackFamily.subPackTiles(): List<PackTile> {
                 testTagSuffix = "photo_${topic.query}",
             )
         }
-        PackFamily.Video -> videoStockTopics().map { topic ->
-            PackTile(
-                id = "sub_video_${topic.query}",
-                titleRes = topic.packLabelRes(),
-                coverRes = PackCovers.photo(topic),
-                selection = PackSelection(PackFamily.Video, topic.query),
-                testTagSuffix = "video_${topic.query}",
-            )
+        PackFamily.Video -> {
+            val sources = VideoTopic.entries.map { topic ->
+                PackTile(
+                    id = "sub_video_${topic.testTagSuffix}",
+                    titleRes = topic.labelRes,
+                    coverRes = PackCovers.video(topic),
+                    selection = PackSelection(PackFamily.Video, topic.testTagSuffix),
+                    testTagSuffix = "video_${topic.testTagSuffix}",
+                )
+            }
+            val keywords = videoStockTopics().map { topic ->
+                PackTile(
+                    id = "sub_video_${topic.query}",
+                    titleRes = topic.packLabelRes(),
+                    coverRes = PackCovers.photo(topic),
+                    selection = PackSelection(PackFamily.Video, topic.query),
+                    testTagSuffix = "video_${topic.query}",
+                )
+            }
+            sources + keywords
         }
         PackFamily.Sculpture -> MuseumTopic.entries.map { topic ->
             PackTile(
@@ -174,14 +190,19 @@ fun resolvePackPool(catalog: List<Artwork>, selection: PackSelection): List<Artw
             }
         }
         PackFamily.Video -> {
+            val source = selection.videoSourceOrNull()
             val topic = selection.stockCategoryOrNull()
-            if (topic == null) {
-                catalog.filter { CategoryFilter.VIDEO.matches(it.kind) }
-            } else {
-                catalog.filterByCategoryAndSources(
+            when {
+                source != null -> catalog.filter { art ->
+                    CategoryFilter.VIDEO.matches(art.kind) && matchesVideoSource(art, source)
+                }
+                topic != null -> catalog.filterByCategoryAndSources(
                     category = CategoryFilter.VIDEO,
                     stockCategory = topic,
                 )
+                else -> catalog.filter { art ->
+                    CategoryFilter.VIDEO.matches(art.kind) && art.sourceId in VideoSourceIds
+                }
             }
         }
         PackFamily.Sculpture -> {
@@ -209,10 +230,23 @@ fun resolvePackPool(catalog: List<Artwork>, selection: PackSelection): List<Artw
     }
 
 fun PackSelection.stockCategoryOrNull(): StockPhotoCategory? =
-    if ((family != PackFamily.Photo && family != PackFamily.Video) || subId == null) {
+    if (subId == null) {
         null
     } else {
-        StockPhotoCategory.fromQuery(subId)
+        when (family) {
+            PackFamily.Photo -> StockPhotoCategory.fromQuery(subId)
+            PackFamily.Video -> {
+                // Source tiles use VideoTopic ids; keywords use StockPhotoCategory.query.
+                if (videoSourceOrNull() != null) {
+                    null
+                } else {
+                    StockPhotoCategory.entries.firstOrNull {
+                        it.query.equals(subId, ignoreCase = true)
+                    }
+                }
+            }
+            else -> null
+        }
     }
 
 fun PackSelection.genartTopicOrNull(): GenartTopic? =
@@ -233,6 +267,13 @@ fun PackSelection.museumTopicOrNull(): MuseumTopic? =
             -> MuseumTopic.entries.firstOrNull { it.testTagSuffix == subId }
             else -> null
         }
+    }
+
+fun PackSelection.videoSourceOrNull(): VideoTopic? =
+    if (family != PackFamily.Video || subId == null) {
+        null
+    } else {
+        VideoTopic.entries.firstOrNull { it.testTagSuffix == subId }
     }
 
 /**
@@ -257,11 +298,12 @@ fun PackSelection.sourceIdsForAmbientLoad(): List<String>? = when (family) {
         else -> SourceCapabilities.sourceIdsWithRemoteSearch(ArtworkKind.Photo)
     }
     PackFamily.Video -> {
-        when (stockCategoryOrNull()) {
-            null, StockPhotoCategory.Random ->
-                SourceCapabilities.sourceIdsWithRemoteSearch(ArtworkKind.Video)
-            StockPhotoCategory.Suggestions -> emptyList()
-            else -> SourceCapabilities.sourceIdsWithRemoteSearch(ArtworkKind.Video)
+        when (val source = videoSourceOrNull()) {
+            null -> when (stockCategoryOrNull()) {
+                StockPhotoCategory.Suggestions -> emptyList()
+                else -> SourceCapabilities.sourceIdsWithRemoteSearch(ArtworkKind.Video)
+            }
+            else -> listOf(source.sourceId)
         }
     }
     PackFamily.Genart -> null

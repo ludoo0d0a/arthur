@@ -264,12 +264,92 @@ class PackModelsTest {
     }
 
     @Test
-    fun videoSubPacks_excludeSuggestions() {
+    fun sourceIdsForAmbientLoad_videoPexels_onlyThatSource() {
+        val ids = PackSelection(
+            PackFamily.Video,
+            VideoTopic.Pexels.testTagSuffix,
+        ).sourceIdsForAmbientLoad()
+        assertEquals(listOf(PexelsVideoSource.ID), ids)
+    }
+
+    @Test
+    fun sourceIdsForAmbientLoad_everyVideoSource() {
+        for (topic in VideoTopic.entries) {
+            val ids = PackSelection(
+                PackFamily.Video,
+                topic.testTagSuffix,
+            ).sourceIdsForAmbientLoad()
+            assertEquals(listOf(topic.sourceId), ids)
+        }
+    }
+
+    @Test
+    fun videoSubPacks_listSourcesThenKeywords_excludeSuggestions() {
         val suffixes = PackFamily.Video.subPackTiles().map { it.testTagSuffix }
-        assertTrue("video_all" in suffixes)
+        assertEquals("video_all", suffixes.first())
+        val sourceSuffixes = VideoTopic.entries.map { "video_${it.testTagSuffix}" }
+        assertEquals(sourceSuffixes, suffixes.drop(1).take(VideoTopic.entries.size))
         assertTrue("video_random" in suffixes)
         assertTrue("video_nature" in suffixes)
         assertFalse(suffixes.any { it.contains("suggestions") })
+    }
+
+    @Test
+    fun videoPexels_onlyPexelsInPool() {
+        val catalog = listOf(
+            Artwork(
+                id = "pv-1",
+                title = "Pexels clip",
+                sourceId = PexelsVideoSource.ID,
+                kind = ArtworkKind.Video,
+            ),
+            Artwork(
+                id = "px-1",
+                title = "Pixabay clip",
+                sourceId = PixabayVideoSource.ID,
+                kind = ArtworkKind.Video,
+            ),
+            Artwork(
+                id = "cv-1",
+                title = "Coverr clip",
+                sourceId = CoverrSource.ID,
+                kind = ArtworkKind.Video,
+            ),
+        )
+        val pool = resolvePackPool(
+            catalog,
+            PackSelection(PackFamily.Video, VideoTopic.Pexels.testTagSuffix),
+        )
+        assertEquals(listOf("pv-1"), pool.map { it.id })
+    }
+
+    @Test
+    fun videoNature_allVideoSourcesInPool() {
+        val catalog = listOf(
+            Artwork(
+                id = "pv-1",
+                title = "Pexels clip",
+                sourceId = PexelsVideoSource.ID,
+                kind = ArtworkKind.Video,
+            ),
+            Artwork(
+                id = "px-1",
+                title = "Pixabay clip",
+                sourceId = PixabayVideoSource.ID,
+                kind = ArtworkKind.Video,
+            ),
+            Artwork(
+                id = "photo-1",
+                title = "Photo",
+                sourceId = PexelsSource.ID,
+                kind = ArtworkKind.Photo,
+            ),
+        )
+        val pool = resolvePackPool(
+            catalog,
+            PackSelection(PackFamily.Video, StockPhotoCategory.Nature.query),
+        )
+        assertEquals(listOf("pv-1", "px-1"), pool.map { it.id })
     }
 
     @Test

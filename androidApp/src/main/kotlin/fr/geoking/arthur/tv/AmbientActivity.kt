@@ -26,6 +26,11 @@ import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.source.RotationSettings
+import fr.geoking.arthur.source.ScreensaverSettings
+import fr.geoking.arthur.ui.components.PackSelection
+import fr.geoking.arthur.ui.components.allowsGenerativeAmbientFallback
+import fr.geoking.arthur.ui.components.resolvePackPool
+import fr.geoking.arthur.ui.components.sourceIdsForAmbientLoad
 import fr.geoking.arthur.ui.screens.AmbientScreenContent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -151,6 +156,7 @@ class AmbientActivity : ComponentActivity() {
 class ArthurDreamService : DreamService() {
     private val contentEngine: ContentEngine by inject()
     private val rotationSettings: RotationSettings by inject()
+    private val screensaverSettings: ScreensaverSettings by inject()
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
@@ -166,9 +172,10 @@ class ArthurDreamService : DreamService() {
                         var catalog by remember { mutableStateOf<List<Artwork>>(emptyList()) }
                         var artwork by remember { mutableStateOf<Artwork?>(null) }
                         val intervalMs by rotationSettings.intervalMs.collectAsState()
-                        LaunchedEffect(Unit) {
+                        val defaultPack by screensaverSettings.defaultPack.collectAsState()
+                        LaunchedEffect(defaultPack) {
                             val loaded = withContext(Dispatchers.IO) {
-                                loadDreamAmbient(contentEngine)
+                                loadDreamAmbient(contentEngine, defaultPack)
                             }
                             catalog = loaded.first
                             artwork = loaded.second
@@ -234,16 +241,26 @@ internal suspend fun loadRotatingAmbient(
     return pool to artwork
 }
 
-/** Dream: rotate the full displayable catalog. */
+/** Dream: rotate the selected screensaver pack catalog, or default ambient pack when none selected. */
 internal suspend fun loadDreamAmbient(
     contentEngine: ContentEngine,
+    selection: PackSelection? = null,
 ): Pair<List<Artwork>, Artwork?> {
-    val catalog = contentEngine.catalog(
+    val activeSelection = selection ?: ScreensaverSettings.DEFAULT_PACK_SELECTION
+    val renewIds = activeSelection.sourceIdsForAmbientLoad()
+    val fullCatalog = contentEngine.catalog(
         PreparedRotation(
-            sourceIds = emptyList(),
+            sourceIds = renewIds ?: emptyList(),
             artworkIds = emptyList(),
         ),
     )
-    val artwork = resolveAmbientArtwork(catalog, artworkId = null)
-    return catalog to artwork
+    val pool = resolvePackPool(fullCatalog, activeSelection)
+    val chosen = pool.randomOrNull()
+        ?: if (activeSelection.allowsGenerativeAmbientFallback()) {
+            resolveAmbientArtwork(fullCatalog, artworkId = null)
+        } else {
+            null
+        }
+    val rotationPool = if (pool.isNotEmpty()) pool else fullCatalog
+    return rotationPool to chosen
 }

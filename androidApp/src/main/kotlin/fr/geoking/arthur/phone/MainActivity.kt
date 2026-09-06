@@ -31,6 +31,7 @@ import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.source.DeveloperSettings
 import fr.geoking.arthur.source.MuseumSearchSettings
 import fr.geoking.arthur.source.RotationSettings
+import fr.geoking.arthur.source.ScreensaverSettings
 import fr.geoking.arthur.source.StockPhotoSettings
 import fr.geoking.arthur.tv.AmbientActivity
 import fr.geoking.arthur.tv.AmbientRotationLaunch
@@ -53,6 +54,7 @@ class MainActivity : ComponentActivity() {
     private val museumSearchSettings: MuseumSearchSettings by inject()
     private val developerSettings: DeveloperSettings by inject()
     private val rotationSettings: RotationSettings by inject()
+    private val screensaverSettings: ScreensaverSettings by inject()
 
     private val inAppUpdateHelper by lazy { InAppUpdateHelper(applicationContext) }
 
@@ -130,6 +132,7 @@ class MainActivity : ComponentActivity() {
                                         contentEngine = contentEngine,
                                         stockPhotoSettings = stockPhotoSettings,
                                         museumSearchSettings = museumSearchSettings,
+                                        screensaverSettings = screensaverSettings,
                                         onStartAmbient = { artwork, pool, renewSourceIds ->
                                             AmbientRotationLaunch.prepare(pool, renewSourceIds)
                                             startActivity(

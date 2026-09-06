@@ -5,6 +5,8 @@ import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.PremiumEntitlement
 import fr.geoking.arthur.shared.domain.Source
 import fr.geoking.arthur.shared.engine.ContentEngine
+import fr.geoking.arthur.ui.components.PackFamily
+import fr.geoking.arthur.ui.components.PackSelection
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -135,5 +137,81 @@ class AmbientRotationLaunchTest {
         )
         assertEquals(listOf(met), pool)
         assertEquals(met.id, artwork?.id)
+    }
+
+    @Test
+    fun loadDreamAmbient_withSelection_filtersForSelectedPack() = runBlocking {
+        val painting = Artwork(
+            id = "met-painting",
+            title = "Mona Lisa",
+            sourceId = "met",
+            kind = ArtworkKind.Painting,
+            remoteUrl = "https://example.com/p.jpg",
+        )
+        val photo = Artwork(
+            id = "pexels-photo",
+            title = "Forest",
+            sourceId = "pexels",
+            kind = ArtworkKind.Photo,
+            remoteUrl = "https://example.com/ph.jpg",
+        )
+        val engine = ContentEngine(
+            sources = listOf(
+                object : Source {
+                    override val id = "met"
+                    override val displayName = "Met"
+                    override suspend fun load(): List<Artwork> = listOf(painting)
+                },
+                object : Source {
+                    override val id = "pexels"
+                    override val displayName = "Pexels"
+                    override suspend fun load(): List<Artwork> = listOf(photo)
+                },
+            ),
+            entitlement = object : PremiumEntitlement {
+                override val isPremium = true
+            },
+        )
+        val selection = PackSelection(PackFamily.Painting)
+        val (pool, artwork) = loadDreamAmbient(engine, selection)
+        assertEquals(listOf(painting), pool)
+        assertEquals(painting, artwork)
+    }
+
+    @Test
+    fun loadDreamAmbient_nullSelection_usesDefaultPackSelection() = runBlocking {
+        val museum = Artwork(
+            id = "met-sculpture",
+            title = "David",
+            sourceId = "met",
+            kind = ArtworkKind.Sculpture,
+            remoteUrl = "https://example.com/s.jpg",
+        )
+        val genart = Artwork(
+            id = "genart.particles",
+            title = "Particles",
+            sourceId = "genart",
+            kind = ArtworkKind.Genart,
+        )
+        val engine = ContentEngine(
+            sources = listOf(
+                object : Source {
+                    override val id = "met"
+                    override val displayName = "Met"
+                    override suspend fun load(): List<Artwork> = listOf(museum)
+                },
+                object : Source {
+                    override val id = "genart"
+                    override val displayName = "Genart"
+                    override suspend fun load(): List<Artwork> = listOf(genart)
+                },
+            ),
+            entitlement = object : PremiumEntitlement {
+                override val isPremium = true
+            },
+        )
+        val (pool, artwork) = loadDreamAmbient(engine, selection = null)
+        assertEquals(listOf(museum), pool)
+        assertEquals(museum, artwork)
     }
 }

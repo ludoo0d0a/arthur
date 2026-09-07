@@ -246,7 +246,7 @@ class PackModelsTest {
     fun sourceIdsForAmbientLoad_videoAll_threeVideoApis() {
         val ids = PackSelection(PackFamily.Video).sourceIdsForAmbientLoad()!!
         assertEquals(
-            setOf(PexelsVideoSource.ID, PixabayVideoSource.ID, CoverrSource.ID),
+            setOf(PexelsVideoSource.ID, UnsplashSource.ID, PixabayVideoSource.ID, CoverrSource.ID),
             ids.toSet(),
         )
     }
@@ -258,7 +258,7 @@ class PackModelsTest {
             StockPhotoCategory.Nature.query,
         ).sourceIdsForAmbientLoad()!!
         assertEquals(
-            setOf(PexelsVideoSource.ID, PixabayVideoSource.ID, CoverrSource.ID),
+            setOf(PexelsVideoSource.ID, UnsplashSource.ID, PixabayVideoSource.ID, CoverrSource.ID),
             ids.toSet(),
         )
     }

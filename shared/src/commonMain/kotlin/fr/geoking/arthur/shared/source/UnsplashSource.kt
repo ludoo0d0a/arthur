@@ -27,6 +27,7 @@ class UnsplashSource(
     private val onLoaded: (List<Artwork>) -> Unit = {},
     private val limit: Int = DEFAULT_LIMIT,
     private val random: Random = Random.Default,
+    private val kind: ArtworkKind = ArtworkKind.Photo,
 ) : Source {
     override val id: String = ID
     override val displayName: String = "Unsplash"
@@ -62,7 +63,7 @@ class UnsplashSource(
                     title = title,
                     attribution = "$photographer / Unsplash",
                     sourceId = ID,
-                    kind = ArtworkKind.Photo,
+                    kind = kind,
                     remoteUrl = imageUrl,
                     description = description,
                     license = "Unsplash License",

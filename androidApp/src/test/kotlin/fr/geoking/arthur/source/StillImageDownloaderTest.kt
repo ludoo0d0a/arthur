@@ -47,6 +47,28 @@ class StillImageDownloaderTest {
     }
 
     @Test
+    fun downloadToFile_throwsIOExceptionWithHttpStatusCode_whenHttpError() {
+        val server = MockWebServer()
+        server.enqueue(MockResponse.Builder().code(404).build())
+        server.start()
+
+        val targetFile = File.createTempFile("test_file_404_", ".img")
+        try {
+            val url = server.url("/missing.jpg").toString()
+            try {
+                StillImageDownloader.downloadToFile(url, targetFile)
+                org.junit.Assert.fail("Expected IOException")
+            } catch (e: java.io.IOException) {
+                assertTrue(e.message?.contains("404") == true)
+                assertTrue(e.message?.contains("HTTP 404") == true)
+            }
+        } finally {
+            targetFile.delete()
+            server.close()
+        }
+    }
+
+    @Test
     fun downloadInChunks_handlesRangeRequests() {
         val server = MockWebServer()
         server.enqueue(MockResponse.Builder().code(206).body("chunk-part-1").build())

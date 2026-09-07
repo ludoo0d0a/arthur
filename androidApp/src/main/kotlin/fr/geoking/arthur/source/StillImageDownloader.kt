@@ -28,7 +28,9 @@ object StillImageDownloader {
         try {
             targetFile.parentFile?.mkdirs()
 
-            downloadSingleStream(url, tempFile)
+            downloadSingleStream(url, tempFile) { code ->
+                responseCode = code
+            }
 
             if (!tempFile.exists() || tempFile.length() == 0L) {
                 throw java.io.IOException("Downloaded file is empty or missing")
@@ -121,7 +123,11 @@ object StillImageDownloader {
         }
     }
 
-    private fun downloadSingleStream(url: String, tempFile: File) {
+    private fun downloadSingleStream(
+        url: String,
+        tempFile: File,
+        onResponseCode: ((Int) -> Unit)? = null,
+    ) {
         var connection: HttpURLConnection? = null
         try {
             connection = (URL(url).openConnection() as HttpURLConnection).apply {
@@ -132,8 +138,11 @@ object StillImageDownloader {
                 setRequestProperty("Accept", "image/*,*/*;q=0.8")
             }
             val responseCode = connection.responseCode
+            onResponseCode?.invoke(responseCode)
             if (responseCode !in 200..299) {
-                throw java.io.IOException("HTTP $responseCode while downloading image")
+                val responseMsg = runCatching { connection.responseMessage }.getOrNull()?.takeIf { it.isNotBlank() }
+                val msgDetails = if (responseMsg != null) " $responseMsg" else ""
+                throw java.io.IOException("HTTP $responseCode$msgDetails while downloading image")
             }
             connection.inputStream.use { input ->
                 FileOutputStream(tempFile).use { output ->

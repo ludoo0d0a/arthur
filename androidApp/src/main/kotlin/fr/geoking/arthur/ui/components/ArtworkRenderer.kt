@@ -186,9 +186,9 @@ private fun RemoteStillImage(
             val url = remoteUrl?.takeIf { it.isNotBlank() }
                 ?: return@withContext Result.failure(IllegalStateException("no image"))
             runCatching {
-                val bytes = StillImageDownloader.downloadBytes(url)
-                imageCache.putImage(artworkId, bytes)
-                SafeBitmapDecoder.decodeByteArray(bytes)
+                val downloadedFile = imageCache.downloadAndCache(artworkId, url)
+                    ?: error("download failed")
+                SafeBitmapDecoder.decodeFile(downloadedFile.absolutePath)
                     ?: error("decode failed")
             }
         }

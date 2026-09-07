@@ -137,10 +137,20 @@ object AmbientStillRenderer {
 
         // 4. Download on background thread
         return runCatching {
-            val bytes = StillImageDownloader.downloadBytes(url)
-            imageCache?.putImage(artworkId, bytes)
-            val bmp = SafeBitmapDecoder.decodeByteArray(
-                bytes,
+            val file = if (imageCache != null) {
+                imageCache.downloadAndCache(artworkId, url)
+            } else {
+                val tempFile = File.createTempFile("ambient_still_", ".tmp")
+                try {
+                    StillImageDownloader.downloadToFile(url, tempFile)
+                } catch (e: Throwable) {
+                    tempFile.delete()
+                    throw e
+                }
+            } ?: return false
+
+            val bmp = SafeBitmapDecoder.decodeFile(
+                file.absolutePath,
                 SafeBitmapDecoder.AMBIENT_STILL_MAX_SIDE,
             ) ?: return false
             drawBitmapCover(canvas, bmp)

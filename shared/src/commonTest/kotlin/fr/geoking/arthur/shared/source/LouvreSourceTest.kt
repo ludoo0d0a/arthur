@@ -68,4 +68,19 @@ class LouvreSourceTest {
             LouvreSource.objectUrl("cl010062370"),
         )
     }
+
+    @Test
+    fun rethrowsCancellationException() = runBlocking {
+        val source = LouvreSource(
+            httpGet = { throw kotlinx.coroutines.CancellationException("Scope left composition") },
+            arkIds = { listOf("cl010062370") },
+            random = ZeroRandom,
+        )
+        try {
+            source.load()
+            kotlin.test.fail("Expected CancellationException to be thrown")
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            assertEquals("Scope left composition", e.message)
+        }
+    }
 }

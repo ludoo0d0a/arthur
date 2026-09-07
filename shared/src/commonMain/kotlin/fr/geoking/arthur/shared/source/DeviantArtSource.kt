@@ -80,6 +80,7 @@ class DeviantArtSource(
             }
             RemoteSample.sample(mapped, limit, random)
         }.onFailure { e ->
+            if (e is kotlinx.coroutines.CancellationException) throw e
             errorLogger?.log(
                 sourceId = id,
                 category = ErrorClassifier.classify(null, e),

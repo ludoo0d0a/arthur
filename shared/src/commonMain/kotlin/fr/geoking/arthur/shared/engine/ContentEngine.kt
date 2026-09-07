@@ -20,7 +20,14 @@ class ContentEngine(
 ) {
     suspend fun resolve(prepared: PreparedRotation): AmbientRotation {
         val selectedSources = sources.filter { it.id in prepared.sourceIds }
-        val loaded = selectedSources.flatMap { it.load() }
+        val loaded = selectedSources.flatMap { source ->
+            try {
+                source.load()
+            } catch (e: Throwable) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                emptyList()
+            }
+        }
         val byId = loaded.associateBy { it.id }
         val ordered = prepared.artworkIds.mapNotNull { byId[it] }
             .ifEmpty { loaded }
@@ -29,7 +36,14 @@ class ContentEngine(
 
     suspend fun catalog(prepared: PreparedRotation): List<Artwork> {
         val selectedSources = sources.filter { it.id in prepared.sourceIds.ifEmpty { sources.map { s -> s.id } } }
-        val loaded = selectedSources.flatMap { it.load() }
+        val loaded = selectedSources.flatMap { source ->
+            try {
+                source.load()
+            } catch (e: Throwable) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                emptyList()
+            }
+        }
         return applyGates(loaded)
     }
 

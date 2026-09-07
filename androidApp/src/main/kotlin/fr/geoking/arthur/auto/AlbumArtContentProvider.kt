@@ -22,14 +22,17 @@ class AlbumArtContentProvider : ContentProvider() {
         val (artworkId, generation) = parsed
         val file = AmbientAlbumArt.cacheFile(ctx, artworkId, generation)
         if (!file.exists()) {
-            ensureParent(file)
             runCatching {
+                ensureParent(file)
                 val bitmap = AmbientStillRenderer.renderForId(artworkId, generation)
                 file.outputStream().use { out ->
                     bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 90, out)
                 }
                 bitmap.recycle()
             }
+        }
+        if (!file.exists()) {
+            throw FileNotFoundException("Failed to render album art for $uri")
         }
         return ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
     }

@@ -229,4 +229,31 @@ class ContentEngineTest {
         assertEquals(2, bySource["harvard"])
         assertEquals(2, bySource["smithsonian"])
     }
+
+    @Test
+    fun catalog_resilientToSourceLoadException() = runBlocking {
+        val failingSource = object : Source {
+            override val id = "failing"
+            override val displayName = "Failing Source"
+            override suspend fun load(): List<Artwork> {
+                throw IllegalStateException("Network or API error")
+            }
+        }
+        val goodSource = object : Source {
+            override val id = "good"
+            override val displayName = "Good Source"
+            override suspend fun load() = listOf(
+                Artwork("g1", "Good Art", sourceId = id, kind = ArtworkKind.Genart),
+            )
+        }
+        val engine = ContentEngine(
+            sources = listOf(failingSource, goodSource),
+            entitlement = FakePremiumEntitlement(isPremium = false),
+        )
+        val catalog = engine.catalog(
+            PreparedRotation(sourceIds = listOf("failing", "good"), artworkIds = emptyList()),
+        )
+        assertEquals(1, catalog.size)
+        assertEquals("g1", catalog.first().id)
+    }
 }

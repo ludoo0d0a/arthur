@@ -111,4 +111,24 @@ class SettingsScreenTest {
         composeTestRule.onNodeWithText("Rijksmuseum Rate Limit").assertIsDisplayed()
         composeTestRule.onNodeWithText("Europeana Auth Error").assertDoesNotExist()
     }
+
+    @Test
+    fun developerContent_showsVerboseToggle() {
+        var verboseState = false
+        composeTestRule.setContent {
+            ArthurTheme {
+                SettingsScreen(
+                    onDismiss = {},
+                    showDeveloper = true,
+                    verbose = verboseState,
+                    onVerboseChange = { verboseState = it },
+                    initialScreenStack = listOf(SettingsScreenPage.Developer),
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithTag("dev_verbose").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("dev_verbose").performClick()
+        assertEquals(true, verboseState)
+    }
 }

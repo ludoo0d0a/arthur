@@ -30,4 +30,22 @@ class DeveloperSettingsTest {
         assertEquals(false, settings.simulatePremium.value)
         assertEquals(false, DeveloperSettings(context).simulatePremium.value)
     }
+
+    @Test
+    fun verbose_defaultsFalse() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        context.getSharedPreferences("arthur_developer", Context.MODE_PRIVATE).edit().clear().commit()
+        val settings = DeveloperSettings(context)
+        assertEquals(false, settings.verbose.value)
+    }
+
+    @Test
+    fun verbose_persists() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        context.getSharedPreferences("arthur_developer", Context.MODE_PRIVATE).edit().clear().commit()
+        val settings = DeveloperSettings(context)
+        settings.setVerbose(true)
+        assertEquals(true, settings.verbose.value)
+        assertEquals(true, DeveloperSettings(context).verbose.value)
+    }
 }

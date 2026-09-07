@@ -121,6 +121,8 @@
     <string name="settings_developer_subtitle">Options de debug et outils de test</string>
     <string name="dev_simulate_premium">Simuler Premium</string>
     <string name="dev_simulate_premium_subtitle">Débloquer les fonctions Premium sans achat</string>
+    <string name="dev_verbose">Mode verbeux</string>
+    <string name="dev_verbose_subtitle">Afficher la barre flottante de métriques de debug et temps de requête</string>
     <string name="dev_errors_list">Journal d\'erreurs</string>
     <string name="dev_errors_list_subtitle">Erreurs réseau, auth et application collectées</string>
     <string name="dev_clear_errors">Tout effacer</string>

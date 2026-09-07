@@ -62,19 +62,17 @@ class ArtworkImageCache(context: Context) {
         remoteUrl: String,
         errorLogger: fr.geoking.arthur.shared.error.ErrorLogger? = null,
         sourceId: String = "image_download",
-    ): File? {
+    ): File {
         val target = imageFile(artworkId)
         if (target.exists() && target.length() > MIN_BYTES) {
             return target
         }
-        return runCatching {
-            StillImageDownloader.downloadToFile(
-                url = remoteUrl,
-                targetFile = target,
-                errorLogger = errorLogger,
-                sourceId = sourceId,
-            )
-        }.getOrNull()
+        return StillImageDownloader.downloadToFile(
+            url = remoteUrl,
+            targetFile = target,
+            errorLogger = errorLogger,
+            sourceId = sourceId,
+        )
     }
 
     fun remember(artworks: List<Artwork>, category: String) {

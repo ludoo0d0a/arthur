@@ -69,6 +69,14 @@ object AmbientStillRenderer {
         return bitmap
     }
 
+    fun renderPlaceholder(artwork: Artwork, generation: Long): Bitmap {
+        val bitmap = Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val seed = artwork.id.hashCode().toLong() xor (generation * 0x9E3779B9L)
+        drawStillPlaceholder(canvas, seed, isError = false)
+        return bitmap
+    }
+
     /** On-demand bake when only the media id is known (browse icon URI). */
     fun renderForId(artworkId: String, generation: Long): Bitmap {
         val kind = kindForId(artworkId)

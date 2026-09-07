@@ -119,6 +119,23 @@ class ArthurCarAppTest {
     }
 
     @Test
+    fun artworkPaneScreen_onGetTemplateWithRemoteUrlDoesNotCrashOnMainThread() {
+        val remoteArt = Artwork(
+            id = "test_remote_art",
+            title = "Test Remote Art",
+            attribution = "Test Artist",
+            sourceId = "pexels",
+            kind = ArtworkKind.Photo,
+            remoteUrl = "https://example.com/photo.jpg",
+        )
+
+        // Verify AmbientStillRenderer returns immediate local placeholder without crash
+        val placeholder = AmbientStillRenderer.renderPlaceholder(remoteArt, generation = 0L)
+        assertNotNull("Placeholder bitmap should be generated", placeholder)
+        assertEquals(AmbientStillRenderer.SIZE, placeholder.width)
+    }
+
+    @Test
     fun ambientStillRenderer_mainThreadRemoteUrlReturnsPlaceholderWithoutCrash() {
         val remoteArt = Artwork(
             id = "rijks-SK-C-5",

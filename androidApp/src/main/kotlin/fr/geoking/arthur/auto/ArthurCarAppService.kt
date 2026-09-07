@@ -202,7 +202,7 @@ class ArtworkPaneScreen(carContext: CarContext) : Screen(carContext), KoinCompon
                 renderedBitmap!!
             } else {
                 scheduleAsyncRender()
-                AmbientStillRenderer.render(art, generation, imageCache)
+                AmbientStillRenderer.renderPlaceholder(art, generation)
             }
             val carIcon = CarIcon.Builder(IconCompat.createWithBitmap(bitmap)).build()
             paneBuilder.addRow(

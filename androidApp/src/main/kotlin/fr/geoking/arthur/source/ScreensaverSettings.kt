@@ -1,6 +1,7 @@
 package fr.geoking.arthur.source
 
 import android.content.Context
+import fr.geoking.arthur.ui.components.MuseumTopic
 import fr.geoking.arthur.ui.components.PackFamily
 import fr.geoking.arthur.ui.components.PackSelection
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,7 +36,7 @@ class ScreensaverSettings(context: Context) {
     }
 
     companion object {
-        val DEFAULT_PACK_SELECTION = PackSelection(PackFamily.Museum)
+        val DEFAULT_PACK_SELECTION = PackSelection(PackFamily.Museum, MuseumTopic.Met.testTagSuffix)
 
         private const val PREFS = "arthur_screensaver"
         private const val KEY_FAMILY = "default_pack_family"

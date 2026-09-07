@@ -4,8 +4,10 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -78,12 +80,14 @@ private fun PackSelectedPlayOverlay(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PackCoverTile(
     tile: PackTile,
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null,
     focusRequester: FocusRequester? = null,
     selectOnFocus: Boolean = false,
     onFocusSelect: (() -> Unit)? = null,
@@ -110,7 +114,6 @@ fun PackCoverTile(
             .testTag("pack_tile_${tile.testTagSuffix}"),
     ) {
         Surface(
-            onClick = onClick,
             shape = PackCoverShape,
             border = if (highlight) {
                 BorderStroke(3.dp, scheme.primary)
@@ -118,9 +121,14 @@ fun PackCoverTile(
                 null
             },
             tonalElevation = if (highlight) 2.dp else 0.dp,
-            interactionSource = interactionSource,
             modifier = Modifier
                 .fillMaxWidth()
+                .combinedClickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onClick,
+                    onLongClick = onLongClick,
+                )
                 .then(
                     if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier,
                 ),
@@ -161,6 +169,7 @@ fun PackGrid(
     selected: PackSelection?,
     onTileClick: (PackTile) -> Unit,
     modifier: Modifier = Modifier,
+    onTileLongClick: ((PackTile) -> Unit)? = null,
     contentPadding: PaddingValues = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
     firstTileFocusRequester: FocusRequester? = null,
     selectOnFocus: Boolean = false,
@@ -180,6 +189,7 @@ fun PackGrid(
                 tile = tile,
                 selected = selected == tile.selection,
                 onClick = { onTileClick(tile) },
+                onLongClick = onTileLongClick?.let { longClick -> { longClick(tile) } },
                 focusRequester = if (tile == tiles.firstOrNull()) firstTileFocusRequester else null,
                 selectOnFocus = selectOnFocus,
                 onFocusSelect = onTileFocused?.let { focused -> { focused(tile) } },

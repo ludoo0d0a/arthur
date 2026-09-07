@@ -178,4 +178,23 @@ class ArthurCarAppTest {
         assertNotNull("Renderer should load cached photo from disk", rendered)
         assertEquals(AmbientStillRenderer.SIZE, rendered.width)
     }
+
+    @Test
+    fun rowBuilder_handlesBlankTitleAndAttribution() {
+        val blankTitleArtwork = Artwork(
+            id = "blank_title_art",
+            title = "",
+            attribution = "",
+            sourceId = "genart",
+            kind = ArtworkKind.Genart,
+        )
+        val titleText = blankTitleArtwork.title.ifBlank { "Arthur" }
+        val rowBuilder = Row.Builder().setTitle(titleText)
+        if (blankTitleArtwork.attribution.isNotBlank()) {
+            rowBuilder.addText(blankTitleArtwork.attribution)
+        }
+        val row = rowBuilder.build()
+        assertEquals("Arthur", row.title.toString())
+        assertTrue("No text lines when attribution is blank", row.texts.isEmpty())
+    }
 }

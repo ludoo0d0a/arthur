@@ -35,6 +35,8 @@ class LouvreSource(
                 toArtwork(record, target)
             }
         }
+    }.onFailure { e ->
+        if (e is kotlinx.coroutines.CancellationException) throw e
     }.getOrDefault(emptyList())
 
     private fun toArtwork(record: LouvreRecord, searchKind: MuseumSearchKind): Artwork? {

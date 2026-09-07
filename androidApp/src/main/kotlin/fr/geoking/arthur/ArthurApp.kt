@@ -93,6 +93,9 @@ private suspend fun safeHttpGet(
         }
         response.bodyAsText()
     } catch (e: Throwable) {
+        if (e is kotlinx.coroutines.CancellationException) {
+            throw e
+        }
         if (e !is ResponseException) {
             val category = ErrorClassifier.classify(null, e)
             errorLogger.log(

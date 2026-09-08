@@ -173,12 +173,26 @@ class ArtworkPaneScreen(carContext: CarContext) : Screen(carContext), KoinCompon
         return try {
             buildPaneTemplate()
         } catch (e: Throwable) {
-            val message = (e.message ?: carContext.getString(R.string.car_error_generic)).take(500)
-            MessageTemplate.Builder(message)
-                .setTitle(carContext.getString(R.string.app_name))
-                .setHeaderAction(Action.APP_ICON)
-                .build()
+            buildErrorTemplate(e)
         }
+    }
+
+    private fun buildErrorTemplate(e: Throwable): Template {
+        val detail = e.message?.take(300)?.takeIf { it.isNotBlank() }
+        val message = buildString {
+            append(e::class.simpleName ?: carContext.getString(R.string.car_error_generic))
+            if (detail != null) {
+                append(": ")
+                append(detail)
+            }
+        }.take(500)
+        val logo = CarIcon.Builder(IconCompat.createWithResource(carContext, R.mipmap.ic_launcher)).build()
+        return MessageTemplate.Builder(message)
+            .setTitle(carContext.getString(R.string.app_name))
+            .setHeaderAction(Action.APP_ICON)
+            .setIcon(logo)
+            .setDebugMessage(e)
+            .build()
     }
 
     private fun buildPaneTemplate(): Template {

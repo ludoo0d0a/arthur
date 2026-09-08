@@ -198,7 +198,7 @@ class ArtworkImageCache(context: Context) {
 
     companion object {
         /** Bake budget for Auto stills — keep ≥ shipped GenartSource catalog size. */
-        const val MAX_GENART = 64
+        const val MAX_GENART = 96
         const val CATEGORY_GENART = "genart"
 
         private const val PREFS = "arthur_artwork_cache"

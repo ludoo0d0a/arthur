@@ -25,12 +25,13 @@ import fr.geoking.arthur.genart.phase01
 import fr.geoking.arthur.genart.qualityCount
 import fr.geoking.arthur.genart.seededRange
 import fr.geoking.arthur.genart.seededUnit
+import fr.geoking.arthur.genart.sin01
 import kotlin.math.PI
 import kotlin.math.sin
 
-/** Soft fog banks drifting horizontally — low contrast, car-safe. */
+/** Ochre dust settling and re-stirring in the bottom third, as if after a slow landslide — low contrast, car-safe. */
 @Composable
-internal fun FogEngine(
+internal fun LandslideDustEngine(
     isActive: Boolean,
     paletteColors: List<Color>,
     quality: GenartQuality,
@@ -38,55 +39,65 @@ internal fun FogEngine(
     speed: Float,
     modifier: Modifier = Modifier,
 ) {
-    val count = qualityCount(quality, low = 5, medium = 7, high = 10)
-    val banks = remember(count) {
+    val count = qualityCount(quality, low = 4, medium = 6, high = 9)
+    val clouds = remember(count) {
         List(count) { i ->
-            FogBank(
-                x0 = seededUnit(i * 17 + 3),
-                yFrac = seededRange(i * 29 + 7, 0.15f, 0.85f),
-                speedMul = seededRange(i * 41 + 11, 0.04f, 0.14f),
-                widthFrac = seededRange(i * 53 + 13, 0.35f, 0.7f),
-                heightFrac = seededRange(i * 67 + 19, 0.08f, 0.22f),
-                bobAmp = seededRange(i * 79 + 23, 0.004f, 0.02f),
-                bobFreq = seededRange(i * 89 + 29, 0.2f, 0.8f),
-                alphaBase = seededRange(i * 97 + 31, 0.08f, 0.22f),
+            DustCloud(
+                x0 = seededUnit(i * 17 + 5),
+                yFrac = seededRange(i * 29 + 11, 0.7f, 0.97f),
+                speedMul = seededRange(i * 41 + 13, 0.015f, 0.05f),
+                widthFrac = seededRange(i * 53 + 17, 0.4f, 0.85f),
+                heightFrac = seededRange(i * 67 + 19, 0.1f, 0.22f),
+                bobAmp = seededRange(i * 79 + 23, 0.003f, 0.012f),
+                bobFreq = seededRange(i * 89 + 29, 0.15f, 0.5f),
+                alphaBase = seededRange(i * 97 + 31, 0.1f, 0.24f),
                 colorIndex = i,
             )
         }
     }
-    val transition = rememberInfiniteTransition(label = "fog")
+    val transition = rememberInfiniteTransition(label = "landslide_dust")
     val t by transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((55000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween((95000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
-        label = "fog_t",
+        label = "landslide_dust_t",
+    )
+    val breathT by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween((32000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "landslide_dust_breath",
     )
     Box(modifier = modifier) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             drawRect(
                 brush = Brush.verticalGradient(
-                    colors = listOf(Color(0xFF101820), Color(0xFF080C12)),
+                    colors = listOf(Color(0xFF1A140E), Color(0xFF241A10)),
                 ),
             )
         }
-        // Real gaussian blur on the fog banks — softer and less "ring-shaped" than gradient-only fog.
-        Canvas(modifier = Modifier.fillMaxSize().blur(22.dp)) {
+        // Real gaussian blur on the dust clouds — softer, confined to the bottom third of the frame.
+        Canvas(modifier = Modifier.fillMaxSize().blur(24.dp)) {
             val w = size.width
             val h = size.height
             val time = phase01(t)
-            val dim = if (isActive) 1f else 0.6f
-            banks.forEach { bank ->
-                val x = phase01(bank.x0 + time * bank.speedMul) * w
-                val bob = sin(time * bank.bobFreq * 2f * PI.toFloat()) * bank.bobAmp * h
-                val y = bank.yFrac * h + bob
-                val rw = bank.widthFrac * w
-                val rh = bank.heightFrac * h
-                val base = TonalPalette.mix(Color(0xFFD8E4F0), TonalPalette.pick(paletteColors, bank.colorIndex), 0.2f)
-                val tint = TonalPalette.brightness(base, brightness * 0.9f)
-                val alpha = bank.alphaBase * dim
+            val dim = if (isActive) 1f else 0.55f
+            val breathe = 0.75f + 0.25f * sin01(breathT * 2f * PI.toFloat())
+            clouds.forEach { cloud ->
+                val x = phase01(cloud.x0 + time * cloud.speedMul) * w
+                val bob = sin(time * cloud.bobFreq * 2f * PI.toFloat()) * cloud.bobAmp * h
+                val y = (cloud.yFrac * h + bob).coerceIn(h * 0.62f, h)
+                val rw = cloud.widthFrac * w
+                val rh = cloud.heightFrac * h
+                val base = TonalPalette.mix(Color(0xFFC9A16A), TonalPalette.pick(paletteColors, cloud.colorIndex), 0.25f)
+                val tint = TonalPalette.brightness(base, brightness * 0.85f)
+                val alpha = cloud.alphaBase * dim * breathe
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(
@@ -94,13 +105,13 @@ internal fun FogEngine(
                             Color.Transparent,
                         ),
                         center = Offset(x, y),
-                        radius = rw.coerceAtLeast(rh) * 0.65f,
+                        radius = rw.coerceAtLeast(rh) * 0.6f,
                     ),
-                    radius = rw.coerceAtLeast(rh) * 0.65f,
+                    radius = rw.coerceAtLeast(rh) * 0.6f,
                     center = Offset(x, y),
                 )
                 drawOval(
-                    color = TonalPalette.withAlpha(tint, alpha * 0.7f),
+                    color = TonalPalette.withAlpha(tint, alpha * 0.65f),
                     topLeft = Offset(x - rw * 0.5f, y - rh * 0.5f),
                     size = Size(rw, rh),
                 )
@@ -109,7 +120,7 @@ internal fun FogEngine(
     }
 }
 
-private data class FogBank(
+private data class DustCloud(
     val x0: Float,
     val yFrac: Float,
     val speedMul: Float,

@@ -5,38 +5,6 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RadialGradient
 import android.graphics.Shader
-import fr.geoking.arthur.genart.stills.ArcMosaicStill
-import fr.geoking.arthur.genart.stills.AuroraStill
-import fr.geoking.arthur.genart.stills.BirdFlockStill
-import fr.geoking.arthur.genart.stills.BreathCirclesStill
-import fr.geoking.arthur.genart.stills.BubblesStill
-import fr.geoking.arthur.genart.stills.CherryBlossomsStill
-import fr.geoking.arthur.genart.stills.CloudsStill
-import fr.geoking.arthur.genart.stills.ConstellationStill
-import fr.geoking.arthur.genart.stills.DunesStill
-import fr.geoking.arthur.genart.stills.FallingLeavesStill
-import fr.geoking.arthur.genart.stills.FireEmbersStill
-import fr.geoking.arthur.genart.stills.FirefliesStill
-import fr.geoking.arthur.genart.stills.FishSchoolStill
-import fr.geoking.arthur.genart.stills.FogStill
-import fr.geoking.arthur.genart.stills.GradientMeshStill
-import fr.geoking.arthur.genart.stills.GrassStill
-import fr.geoking.arthur.genart.stills.MeteorsStill
-import fr.geoking.arthur.genart.stills.MicroStill
-import fr.geoking.arthur.genart.stills.MorphingBlobsStill
-import fr.geoking.arthur.genart.stills.MountainsStill
-import fr.geoking.arthur.genart.stills.NebulaStill
-import fr.geoking.arthur.genart.stills.ParticlesStill
-import fr.geoking.arthur.genart.stills.PondRipplesStill
-import fr.geoking.arthur.genart.stills.RainStill
-import fr.geoking.arthur.genart.stills.SilkFoldsStill
-import fr.geoking.arthur.genart.stills.SnowStill
-import fr.geoking.arthur.genart.stills.SoftNoiseFieldStill
-import fr.geoking.arthur.genart.stills.SoftRibbonsStill
-import fr.geoking.arthur.genart.stills.SphereStill
-import fr.geoking.arthur.genart.stills.SunbeamsStill
-import fr.geoking.arthur.genart.stills.VoronoiWashStill
-import fr.geoking.arthur.genart.stills.WavesStill
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -57,129 +25,19 @@ object GenartStillRenderer {
         val phase = ((generation % 360L).toFloat() / 360f) * (2f * PI.toFloat())
         val rotationDeg = ((generation * 37L) % 360L).toFloat()
         val pulse = 0.35f + ((generation % 100L).toFloat() / 100f) * 0.65f
-        when (engineId) {
-            GenartEngineId.Sphere -> SphereStill.draw(
-                canvas = canvas,
-                size = size,
-                rotationDeg = rotationDeg,
-                pulse = pulse,
-                palette = palette,
-            )
-            GenartEngineId.Waves -> WavesStill.draw(
-                canvas = canvas,
-                size = size,
-                phaseBase = phase,
-                palette = palette,
-            )
-            GenartEngineId.Particles -> ParticlesStill.draw(
-                canvas = canvas,
-                size = size,
-                seed = generation,
-                time = phase * 0.02f,
-                rotationDeg = rotationDeg,
-                pulse = pulse,
-                palette = palette,
-            )
-            GenartEngineId.Micro -> MicroStill.draw(
-                canvas = canvas,
-                size = size,
-                rotationDeg = rotationDeg,
-                pulseScale = 1f + pulse * 0.15f,
-                palette = palette,
-            )
-            GenartEngineId.Snow -> SnowStill.draw(
-                canvas, size, generation, phase, rotationDeg, pulse, palette,
-            )
-            GenartEngineId.Grass -> GrassStill.draw(
-                canvas, size, generation, phase, rotationDeg, pulse, palette,
-            )
-            GenartEngineId.BirdFlock -> BirdFlockStill.draw(
-                canvas, size, generation, phase, rotationDeg, pulse, palette,
-            )
-            GenartEngineId.Mountains -> MountainsStill.draw(
-                canvas, size, generation, phase, rotationDeg, pulse, palette,
-            )
-            GenartEngineId.Aurora -> AuroraStill.draw(
-                canvas, size, generation, phase, rotationDeg, pulse, palette,
-            )
-            GenartEngineId.PondRipples -> PondRipplesStill.draw(
-                canvas, size, generation, phase, rotationDeg, pulse, palette,
-            )
-            GenartEngineId.FallingLeaves -> FallingLeavesStill.draw(
-                canvas, size, generation, phase, rotationDeg, pulse, palette,
-            )
-            GenartEngineId.BreathCircles -> BreathCirclesStill.draw(
-                canvas, size, generation, phase, rotationDeg, pulse, palette,
-            )
-            GenartEngineId.FireEmbers -> FireEmbersStill.draw(
-                canvas, size, generation, phase, rotationDeg, pulse, palette,
-            )
-            GenartEngineId.Dunes -> DunesStill.draw(
-                canvas, size, generation, phase, rotationDeg, pulse, palette,
-            )
-            GenartEngineId.Constellation -> ConstellationStill.draw(
-                canvas, size, generation, phase, rotationDeg, pulse, palette,
-            )
-            GenartEngineId.Clouds -> CloudsStill.draw(
-                canvas, size, generation, phase, rotationDeg, pulse, palette,
-            )
-            GenartEngineId.Rain -> RainStill.draw(
-                canvas, size, generation, phase, rotationDeg, pulse, palette,
-            )
-            GenartEngineId.Fog -> FogStill.draw(
-                canvas, size, generation, phase, rotationDeg, pulse, palette,
-            )
-            GenartEngineId.FishSchool -> FishSchoolStill.draw(
-                canvas, size, generation, phase, rotationDeg, pulse, palette,
-            )
-            GenartEngineId.Fireflies -> FirefliesStill.draw(
-                canvas, size, generation, phase, rotationDeg, pulse, palette,
-            )
-            GenartEngineId.Sunbeams -> SunbeamsStill.draw(
-                canvas, size, generation, phase, rotationDeg, pulse, palette,
-            )
-            GenartEngineId.Meteors -> MeteorsStill.draw(
-                canvas, size, generation, phase, rotationDeg, pulse, palette,
-            )
-            GenartEngineId.Bubbles -> BubblesStill.draw(
-                canvas, size, generation, phase, rotationDeg, pulse, palette,
-            )
-            GenartEngineId.CherryBlossoms -> CherryBlossomsStill.draw(
-                canvas, size, generation, phase, rotationDeg, pulse, palette,
-            )
-            GenartEngineId.SoftRibbons -> SoftRibbonsStill.draw(
-                canvas, size, generation, phase, rotationDeg, pulse, palette,
-            )
-            GenartEngineId.Nebula -> NebulaStill.draw(
-                canvas, size, generation, phase, rotationDeg, pulse, palette,
-            )
-            GenartEngineId.MorphingBlobs -> MorphingBlobsStill.draw(
-                canvas, size, generation, phase, rotationDeg, pulse, palette,
-            )
-            GenartEngineId.SoftNoiseField -> SoftNoiseFieldStill.draw(
-                canvas, size, generation, phase, rotationDeg, pulse, palette,
-            )
-            GenartEngineId.VoronoiWash -> VoronoiWashStill.draw(
-                canvas, size, generation, phase, rotationDeg, pulse, palette,
-            )
-            GenartEngineId.SilkFolds -> SilkFoldsStill.draw(
-                canvas, size, generation, phase, rotationDeg, pulse, palette,
-            )
-            GenartEngineId.GradientMesh -> GradientMeshStill.draw(
-                canvas, size, generation, phase, rotationDeg, pulse, palette,
-            )
-            GenartEngineId.ArcMosaic -> ArcMosaicStill.draw(
-                canvas, size, generation, phase, rotationDeg, pulse, palette,
-            )
-            GenartEngineId.Pseudo3D,
-            GenartEngineId.SoftShadows,
-            GenartEngineId.Tunnel,
-            GenartEngineId.TonalGeometry,
-            -> drawFallback(canvas, size, generation, palette, engineId)
-        }
+        GenartRegistry.descriptorFor(engineId).renderStill(
+            canvas,
+            size,
+            generation,
+            phase,
+            rotationDeg,
+            pulse,
+            palette,
+        )
     }
 
-    private fun drawFallback(
+    /** Generic particle-scatter fallback for engines with no dedicated still baker. */
+    internal fun drawFallback(
         canvas: Canvas,
         size: Int,
         generation: Long,

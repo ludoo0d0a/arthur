@@ -37,6 +37,29 @@ enum class GenartEngineId {
     SilkFolds,
     GradientMesh,
     ArcMosaic,
+    Storm,
+    StarField,
+    SolarSystem,
+    CandleEmber,
+    Rainbow,
+    Smog,
+    Smoke,
+    HeatHaze,
+    Sunshine,
+    LightDrizzle,
+    SteamCurl,
+    DriftingPollen,
+    LandslideDust,
+    PebbleShoreWash,
+    FrostCrystals,
+    IonTrail,
+    AntTrails,
+    SleepingPet,
+    WarpStreak,
+    SpaceStationDrift,
+    MoonlightRipples,
+    EclipseCorona,
+    InkInWater,
 }
 
 enum class GenartQuality { Low, Medium, High }
@@ -47,47 +70,14 @@ data class GenartCatalogEntry(
     val title: String,
 )
 
-/** Stable ids/titles for Content Engine Source mapping. */
+/**
+ * Stable ids/titles for Content Engine Source mapping.
+ *
+ * Backed by [GenartRegistry] — the single place a new engine gets registered (live Composable +
+ * baked still) instead of a separate `when` dispatch per renderer.
+ */
 object GenartCatalog {
-    fun entries(): List<GenartCatalogEntry> = listOf(
-        GenartCatalogEntry(GenartEngineId.Particles, "genart.particles", "Drifting Particles"),
-        GenartCatalogEntry(GenartEngineId.Pseudo3D, "genart.pseudo3d", "Wire Lattice"),
-        GenartCatalogEntry(GenartEngineId.SoftShadows, "genart.softshadows", "Soft Shadows"),
-        GenartCatalogEntry(GenartEngineId.Tunnel, "genart.tunnel", "Vanishing Tunnel"),
-        GenartCatalogEntry(GenartEngineId.TonalGeometry, "genart.tonalgeometry", "Tonal Geometry"),
-        GenartCatalogEntry(GenartEngineId.Sphere, "genart.sphere", "Orbiting Sphere"),
-        GenartCatalogEntry(GenartEngineId.Waves, "genart.waves", "Layered Waves"),
-        GenartCatalogEntry(GenartEngineId.Micro, "genart.micro", "Volumetric Rays"),
-        GenartCatalogEntry(GenartEngineId.Snow, "genart.snow", "Falling Snow"),
-        GenartCatalogEntry(GenartEngineId.Grass, "genart.grass", "Grass in Wind"),
-        GenartCatalogEntry(GenartEngineId.BirdFlock, "genart.birdflock", "Bird Flock"),
-        GenartCatalogEntry(GenartEngineId.Mountains, "genart.mountains", "Layered Mountains"),
-        GenartCatalogEntry(GenartEngineId.Aurora, "genart.aurora", "Aurora Ribbons"),
-        GenartCatalogEntry(GenartEngineId.PondRipples, "genart.pondripples", "Pond Ripples"),
-        GenartCatalogEntry(GenartEngineId.FallingLeaves, "genart.fallingleaves", "Falling Leaves"),
-        GenartCatalogEntry(GenartEngineId.BreathCircles, "genart.breathcircles", "Breath Circles"),
-        GenartCatalogEntry(GenartEngineId.FireEmbers, "genart.fireembers", "Fireplace Embers"),
-        GenartCatalogEntry(GenartEngineId.Dunes, "genart.dunes", "Wind-Blown Dunes"),
-        GenartCatalogEntry(GenartEngineId.Constellation, "genart.constellation", "Constellation Twinkle"),
-        GenartCatalogEntry(GenartEngineId.Clouds, "genart.clouds", "Drifting Clouds"),
-        GenartCatalogEntry(GenartEngineId.Rain, "genart.rain", "Soft Rain"),
-        GenartCatalogEntry(GenartEngineId.Fog, "genart.fog", "Soft Fog"),
-        GenartCatalogEntry(GenartEngineId.FishSchool, "genart.fishschool", "School of Fish"),
-        GenartCatalogEntry(GenartEngineId.Fireflies, "genart.fireflies", "Fireflies"),
-        GenartCatalogEntry(GenartEngineId.Sunbeams, "genart.sunbeams", "Sunbeams Through Haze"),
-        GenartCatalogEntry(GenartEngineId.Meteors, "genart.meteors", "Sparse Meteors"),
-        GenartCatalogEntry(GenartEngineId.Bubbles, "genart.bubbles", "Rising Bubbles"),
-        GenartCatalogEntry(GenartEngineId.CherryBlossoms, "genart.cherryblossoms", "Cherry Blossom Petals"),
-        GenartCatalogEntry(GenartEngineId.SoftRibbons, "genart.ribbons", "Soft Ribbons"),
-        GenartCatalogEntry(GenartEngineId.Nebula, "genart.nebula", "Nebula Drift"),
-        GenartCatalogEntry(GenartEngineId.MorphingBlobs, "genart.blobs", "Morphing Blobs"),
-        GenartCatalogEntry(GenartEngineId.SoftNoiseField, "genart.noisefield", "Soft Noise Field"),
-        GenartCatalogEntry(GenartEngineId.VoronoiWash, "genart.voronoi", "Voronoi Wash"),
-        GenartCatalogEntry(GenartEngineId.SilkFolds, "genart.silk", "Silk Folds"),
-        GenartCatalogEntry(GenartEngineId.GradientMesh, "genart.gradientmesh", "Gradient Mesh"),
-        GenartCatalogEntry(GenartEngineId.ArcMosaic, "genart.arcmosaic", "Arc Mosaic"),
-    )
+    fun entries(): List<GenartCatalogEntry> = GenartRegistry.catalogEntries()
 
-    fun engineForId(id: String): GenartEngineId? =
-        entries().firstOrNull { it.id == id }?.engine
+    fun engineForId(id: String): GenartEngineId? = GenartRegistry.engineForId(id)
 }

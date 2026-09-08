@@ -28,9 +28,9 @@ import fr.geoking.arthur.genart.seededUnit
 import kotlin.math.PI
 import kotlin.math.sin
 
-/** Soft fog banks drifting horizontally — low contrast, car-safe. */
+/** Dingy smog banks drifting horizontally — desaturated urban haze, car-safe. */
 @Composable
-internal fun FogEngine(
+internal fun SmogEngine(
     isActive: Boolean,
     paletteColors: List<Color>,
     quality: GenartQuality,
@@ -41,38 +41,38 @@ internal fun FogEngine(
     val count = qualityCount(quality, low = 5, medium = 7, high = 10)
     val banks = remember(count) {
         List(count) { i ->
-            FogBank(
+            SmogBank(
                 x0 = seededUnit(i * 17 + 3),
                 yFrac = seededRange(i * 29 + 7, 0.15f, 0.85f),
-                speedMul = seededRange(i * 41 + 11, 0.04f, 0.14f),
+                speedMul = seededRange(i * 41 + 11, 0.03f, 0.1f),
                 widthFrac = seededRange(i * 53 + 13, 0.35f, 0.7f),
                 heightFrac = seededRange(i * 67 + 19, 0.08f, 0.22f),
                 bobAmp = seededRange(i * 79 + 23, 0.004f, 0.02f),
                 bobFreq = seededRange(i * 89 + 29, 0.2f, 0.8f),
-                alphaBase = seededRange(i * 97 + 31, 0.08f, 0.22f),
+                alphaBase = seededRange(i * 97 + 31, 0.06f, 0.18f),
                 colorIndex = i,
             )
         }
     }
-    val transition = rememberInfiniteTransition(label = "fog")
+    val transition = rememberInfiniteTransition(label = "smog")
     val t by transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((55000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween((68000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
-        label = "fog_t",
+        label = "smog_t",
     )
     Box(modifier = modifier) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             drawRect(
                 brush = Brush.verticalGradient(
-                    colors = listOf(Color(0xFF101820), Color(0xFF080C12)),
+                    colors = listOf(Color(0xFF221F1A), Color(0xFF120F0C)),
                 ),
             )
         }
-        // Real gaussian blur on the fog banks — softer and less "ring-shaped" than gradient-only fog.
+        // Real gaussian blur on the smog banks — softer and less "ring-shaped" than gradient-only haze.
         Canvas(modifier = Modifier.fillMaxSize().blur(22.dp)) {
             val w = size.width
             val h = size.height
@@ -84,8 +84,8 @@ internal fun FogEngine(
                 val y = bank.yFrac * h + bob
                 val rw = bank.widthFrac * w
                 val rh = bank.heightFrac * h
-                val base = TonalPalette.mix(Color(0xFFD8E4F0), TonalPalette.pick(paletteColors, bank.colorIndex), 0.2f)
-                val tint = TonalPalette.brightness(base, brightness * 0.9f)
+                val base = TonalPalette.mix(Color(0xFFB8AD90), TonalPalette.pick(paletteColors, bank.colorIndex), 0.15f)
+                val tint = TonalPalette.brightness(base, brightness * 0.8f)
                 val alpha = bank.alphaBase * dim
                 drawCircle(
                     brush = Brush.radialGradient(
@@ -109,7 +109,7 @@ internal fun FogEngine(
     }
 }
 
-private data class FogBank(
+private data class SmogBank(
     val x0: Float,
     val yFrac: Float,
     val speedMul: Float,

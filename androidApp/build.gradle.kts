@@ -105,6 +105,16 @@ android {
     }
 }
 
+androidComponents {
+    // Always-increasing debug versionCode so local installs never collide with
+    // whatever versionCode is already on the device (e.g. a Play track build).
+    onVariants(selector().withBuildType("debug")) { variant ->
+        variant.outputs.forEach { output ->
+            output.versionCode.set((System.currentTimeMillis() / 1000).toInt())
+        }
+    }
+}
+
 kotlin {
     jvmToolchain(21)
 }

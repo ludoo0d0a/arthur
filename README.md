@@ -26,7 +26,8 @@ export JAVA_HOME="$HOME/.sdkman/candidates/java/21.0.2-open"
 
 - Unit: `./gradlew :shared:testDebugUnitTest :fractal:testDebugUnitTest :genart:testDebugUnitTest`
 - UI: `./gradlew :androidApp:connectedDebugAndroidTest` (emulator)
-- E2E: `maestro test maestro/smoke.yaml`
+- E2E (phone): `maestro test maestro/smoke.yaml`
+- Android Auto (DHU): `./scripts/debug-play-dhu.sh --logcat` — see [`docs/android-auto-dhu-debug.md`](docs/android-auto-dhu-debug.md)
 
 ## Release spine
 

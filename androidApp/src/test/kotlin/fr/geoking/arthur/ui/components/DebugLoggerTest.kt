@@ -6,7 +6,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class FloatingDebugBarTest {
+class DebugLoggerTest {
 
     @Test
     fun debugLogger_recordsCacheHitsAndMisses() {
@@ -49,5 +49,28 @@ class FloatingDebugBarTest {
 
         val stats = logger.stats.value
         assertEquals(450L, stats.lastLoadDurationMs)
+    }
+
+    @Test
+    fun debugLogger_recordsRichNetworkLogDetails() {
+        val logger = DebugLogger()
+        logger.recordQueryEnd(
+            sourceId = "met",
+            url = "https://api.metmuseum.org/objects/1?q=mona",
+            durationMs = 120L,
+            isCached = false,
+            statusCode = 200,
+            host = "api.metmuseum.org",
+            requestHeaders = mapOf("Accept" to listOf("application/json")),
+            responseHeaders = mapOf("Content-Type" to listOf("application/json")),
+            responseBody = """{"title":"Mona Lisa"}""",
+        )
+
+        val item = logger.stats.value.recentQueries.single()
+        assertEquals("api.metmuseum.org", item.host)
+        assertEquals(listOf("application/json"), item.requestHeaders["Accept"])
+        assertEquals(listOf("application/json"), item.responseHeaders["Content-Type"])
+        assertTrue(item.responseBody!!.contains("Mona Lisa"))
+        assertFalse(item.responseBodyTruncated)
     }
 }

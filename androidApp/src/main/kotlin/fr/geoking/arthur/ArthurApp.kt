@@ -10,8 +10,10 @@ import fr.geoking.arthur.fractal.CustomFractalStore
 import fr.geoking.arthur.shared.debug.DebugLogger
 import fr.geoking.arthur.shared.domain.PremiumEntitlement
 import fr.geoking.arthur.shared.engine.ContentEngine
+import fr.geoking.arthur.source.CacheBypassInterceptor
 import fr.geoking.arthur.source.DebugInterceptor
 import fr.geoking.arthur.source.ForceCacheNetworkInterceptor
+import fr.geoking.arthur.source.HttpCacheController
 import java.io.File
 import fr.geoking.arthur.shared.error.ErrorCategory
 import fr.geoking.arthur.shared.error.ErrorClassifier
@@ -140,13 +142,19 @@ val appModule = module {
     single { MuseumSearchSettings() }
     single { ArtworkImageCache(androidContext()) }
     single {
-        val debugLogger = get<DebugLogger>()
         val httpCacheDir = File(androidContext().cacheDir, "http_cache").also { it.mkdirs() }
-        val okHttpCache = okhttp3.Cache(httpCacheDir, 50 * 1024 * 1024L)
+        okhttp3.Cache(httpCacheDir, 50 * 1024 * 1024L)
+    }
+    single { HttpCacheController(get()) }
+    single {
+        val debugLogger = get<DebugLogger>()
+        val cacheController = get<HttpCacheController>()
+        val okHttpCache = get<okhttp3.Cache>()
         HttpClient(OkHttp) {
             engine {
                 config {
                     cache(okHttpCache)
+                    addInterceptor(CacheBypassInterceptor(cacheController))
                     addInterceptor(DebugInterceptor(debugLogger))
                     addNetworkInterceptor(ForceCacheNetworkInterceptor())
                 }

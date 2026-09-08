@@ -17,7 +17,14 @@ import fr.geoking.arthur.shared.source.SmithsonianSource
 import fr.geoking.arthur.shared.source.UnsplashSource
 import fr.geoking.arthur.shared.source.WikimediaStreetArtSource
 import okhttp3.Interceptor
+import okhttp3.MediaType
 import okhttp3.Response
+import okio.Buffer
+import okio.IOException
+
+/** Max bytes peeked off a response body for logging; never consumes the real stream. */
+private const val MAX_PEEK_BYTES = 64L * 1024
+private const val MAX_BODY_CHARS = 8_192
 
 class DebugInterceptor(
     private val debugLogger: DebugLogger,
@@ -25,6 +32,10 @@ class DebugInterceptor(
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
         val sourceId = request.header("X-Source-Id") ?: urlToSourceId(request.url.toString())
+        val host = request.url.host
+        val requestHeaders = request.headers.toMultimap()
+        val (requestBody, requestBodyTruncated) = readRequestBodySnapshot(request)
+
         debugLogger.recordQueryStart()
         val startTime = System.currentTimeMillis()
         val response = try {
@@ -37,12 +48,18 @@ class DebugInterceptor(
                 durationMs = duration,
                 isCached = false,
                 statusCode = null,
+                host = host,
+                requestHeaders = requestHeaders,
+                requestBody = requestBody,
+                requestBodyTruncated = requestBodyTruncated,
+                errorMessage = e.message ?: e::class.simpleName,
             )
             throw e
         }
         val duration = System.currentTimeMillis() - startTime
         val isCached = response.networkResponse == null ||
             (response.cacheResponse != null && response.networkResponse?.code == 304)
+        val (responseBody, responseBodyTruncated) = readResponseBodySnapshot(response)
 
         debugLogger.recordQueryEnd(
             sourceId = sourceId,
@@ -50,6 +67,13 @@ class DebugInterceptor(
             durationMs = duration,
             isCached = isCached,
             statusCode = response.code,
+            host = host,
+            requestHeaders = requestHeaders,
+            requestBody = requestBody,
+            requestBodyTruncated = requestBodyTruncated,
+            responseHeaders = response.headers.toMultimap(),
+            responseBody = responseBody,
+            responseBodyTruncated = responseBodyTruncated,
         )
         return response
     }
@@ -73,6 +97,20 @@ class DebugInterceptor(
     }
 }
 
+/** Forces a fresh network fetch (bypassing the OkHttp response cache) while [HttpCacheController.disabled] is set. */
+class CacheBypassInterceptor(
+    private val cacheController: HttpCacheController,
+) : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val request = chain.request()
+        return if (cacheController.disabled.value) {
+            chain.proceed(request.newBuilder().header("Cache-Control", "no-cache").build())
+        } else {
+            chain.proceed(request)
+        }
+    }
+}
+
 class ForceCacheNetworkInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val response = chain.proceed(chain.request())
@@ -84,4 +122,42 @@ class ForceCacheNetworkInterceptor : Interceptor {
         }
         return response
     }
+}
+
+private fun readRequestBodySnapshot(request: okhttp3.Request): Pair<String?, Boolean> {
+    val body = request.body ?: return null to false
+    if (body.isOneShot() || !isTextualBody(body.contentType())) return null to false
+    return try {
+        val buffer = Buffer()
+        body.writeTo(buffer)
+        truncateBody(buffer.readString(Charsets.UTF_8))
+    } catch (_: IOException) {
+        null to false
+    } catch (_: Exception) {
+        null to false
+    }
+}
+
+private fun readResponseBodySnapshot(response: Response): Pair<String?, Boolean> {
+    if (!isTextualBody(response.body?.contentType())) return null to false
+    return try {
+        val text = response.peekBody(MAX_PEEK_BYTES).string()
+        truncateBody(text)
+    } catch (_: IOException) {
+        null to false
+    } catch (_: Exception) {
+        null to false
+    }
+}
+
+private fun isTextualBody(mediaType: MediaType?): Boolean {
+    if (mediaType == null) return true
+    val type = mediaType.type.lowercase()
+    val subtype = mediaType.subtype.lowercase()
+    return type == "text" || subtype.contains("json") || subtype.contains("xml") || subtype.contains("html")
+}
+
+private fun truncateBody(text: String): Pair<String, Boolean> {
+    if (text.length <= MAX_BODY_CHARS) return text to false
+    return "${text.take(MAX_BODY_CHARS)}\n… [truncated ${text.length - MAX_BODY_CHARS} chars]" to true
 }

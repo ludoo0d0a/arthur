@@ -124,6 +124,33 @@ class MetSourceTest {
     }
 
     @Test
+    fun skipsObjectWhenHttpResponseIsError() = runBlocking {
+        val validObjectId = 100
+        val invalidObjectId = 894011
+        val fixtures = mapOf(
+            MetSource.SEARCH_URL to """{"total":2,"objectIDs":[$validObjectId, $invalidObjectId]}""",
+            MetSource.objectUrl(validObjectId) to """
+                {
+                  "objectID": $validObjectId,
+                  "isPublicDomain": true,
+                  "title": "Valid Work",
+                  "artistDisplayName": "Artist",
+                  "primaryImage": "https://images.metmuseum.org/valid.jpg"
+                }
+            """.trimIndent(),
+        )
+        val source = MetSource(
+            httpGet = { url ->
+                fixtures[url] ?: throw IllegalStateException("HTTP 404 for met")
+            },
+            random = ZeroRandom,
+        )
+        val art = source.load()
+        assertEquals(1, art.size)
+        assertEquals("met-$validObjectId", art[0].id)
+    }
+
+    @Test
     fun loadsSculptureKindFromCategoryQuery() = runBlocking {
         val objectId = 200668
         val fixtures = mapOf(

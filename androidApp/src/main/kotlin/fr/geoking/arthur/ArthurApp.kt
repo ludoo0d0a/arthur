@@ -296,6 +296,7 @@ val appModule = module {
         UnsplashSource(
             accessKey = accessKey,
             category = { settings.category },
+            kind = { settings.contentKind },
             offlineFallback = {
                 cache.loadCachedStock(settings.category, UnsplashSource.ID)
             },

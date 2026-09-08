@@ -26,8 +26,17 @@ class LouvreSource(
     override val id: String = ID
     override val displayName: String = "Musée du Louvre"
 
+    // Rotates which MuseumSearchKind target this Source hydrates each load() call
+    // — defers the other target(s) to the next call instead of fetching them all now.
+    private var targetCursor = 0
+
     override suspend fun load(): List<Artwork> = runCatching {
-        MuseumLoad.acrossTargets(kind(), limit, random) { target, perKind ->
+        MuseumLoad.acrossTargets(
+            kind(),
+            limit,
+            random,
+            nextTargetIndex = { targetCursor++ },
+        ) { target, perKind ->
             val selected = RemoteSample.sample(arkIds(target), perKind, random)
             selected.mapNotNull { arkId ->
                 val payload = httpGet(objectUrl(arkId))

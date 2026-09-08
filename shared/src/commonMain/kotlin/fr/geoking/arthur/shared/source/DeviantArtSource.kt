@@ -45,15 +45,17 @@ class DeviantArtSource(
     override val id: String = ID
     override val displayName: String = "DeviantArt"
 
+    // Advances each load() call so "load more" pages forward instead of re-sampling.
+    private var startCursor = 0
+
     override suspend fun load(): List<Artwork> {
         if (clientId.isBlank() || clientSecret.isBlank()) return offlineFallback()
         val tag = RemoteCategoryMapping.stockQuery(category(), RemoteProvider.DeviantArt)
-            ?: return emptyList()
         val art = runCatching {
             val token = json.decodeFromString<DeviantArtToken>(
                 httpGet(tokenUrl(clientId, clientSecret)),
             ).accessToken?.takeIf { it.isNotBlank() } ?: return@runCatching emptyList()
-            val offset = RemoteSample.randomStart(pageSize = RemoteSample.SEARCH_POOL, random = random)
+            val offset = RemoteSample.nextStart(startCursor++, pageSize = RemoteSample.SEARCH_POOL)
             val payload = RemoteSample.fetchWindow(
                 randomOffset = offset,
                 firstOffset = 0,

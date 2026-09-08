@@ -42,18 +42,15 @@ import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.R
 import fr.geoking.arthur.phone.theme.ArthurTheme
 import fr.geoking.arthur.shared.domain.Artwork
+import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
-import fr.geoking.arthur.shared.source.BundledPackSource
-import fr.geoking.arthur.shared.source.DeviantArtSource
+import fr.geoking.arthur.shared.source.CustomFractalSource
+import fr.geoking.arthur.shared.source.FractalSource
+import fr.geoking.arthur.shared.source.GenartSource
 import fr.geoking.arthur.shared.source.MuseumSearchKind
-import fr.geoking.arthur.shared.source.PexelsSource
-import fr.geoking.arthur.shared.source.PexelsVideoSource
-import fr.geoking.arthur.shared.source.PixabayVideoSource
-import fr.geoking.arthur.shared.source.CoverrSource
 import fr.geoking.arthur.shared.source.StockPhotoCategory
-import fr.geoking.arthur.shared.source.UnsplashSource
 import fr.geoking.arthur.shared.debug.DebugLogger
 import fr.geoking.arthur.source.MuseumSearchSettings
 import fr.geoking.arthur.source.ScreensaverSettings
@@ -67,6 +64,7 @@ import fr.geoking.arthur.ui.components.PackTile
 import fr.geoking.arthur.ui.components.allowsGenerativeAmbientFallback
 import fr.geoking.arthur.ui.components.homeTile
 import fr.geoking.arthur.ui.components.isGenartCustom
+import fr.geoking.arthur.ui.components.museumTopicOrNull
 import fr.geoking.arthur.ui.components.resolvePackPool
 import fr.geoking.arthur.ui.components.sourceIdsForAmbientLoad
 import fr.geoking.arthur.ui.components.stockCategoryOrNull
@@ -75,19 +73,6 @@ import fr.geoking.arthur.ui.components.videoSourceOrNull
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
-private val StockSourceIds = setOf(
-    BundledPackSource.ID,
-    PexelsSource.ID,
-    UnsplashSource.ID,
-    DeviantArtSource.ID,
-)
-
-private val VideoSourceIds = setOf(
-    PexelsVideoSource.ID,
-    PixabayVideoSource.ID,
-    CoverrSource.ID,
-)
 
 @Composable
 fun ControlPlaneScreen(
@@ -116,7 +101,7 @@ fun ControlPlaneScreen(
         ?: remember { mutableStateOf(null) }
 
     val stockCategory = selection.stockCategoryOrNull()
-        ?: if (selection.videoSourceOrNull() != null) {
+        ?: if (selection.videoSourceOrNull() != null || selection.museumTopicOrNull() != null) {
             StockPhotoCategory.Random
         } else {
             stockPhotoSettings?.category ?: StockPhotoCategory.Random
@@ -143,34 +128,27 @@ fun ControlPlaneScreen(
                 }
             }
         }
+        // Unsplash supports both Photo and Video — tell it which kind to emit.
+        if (stockPhotoSettings != null) {
+            stockPhotoSettings.contentKind =
+                if (selection.family == PackFamily.Video) ArtworkKind.Video else ArtworkKind.Photo
+        }
         if (museumSearchSettings != null) {
             museumSearchSettings.kind = museumKind
         }
     }
 
-    LaunchedEffect(contentEngine, initialCatalog, stockCategory, museumKind) {
+    // Genart/Fractal/CustomFractal are procedural (no network) — safe to load eagerly so
+    // the Genart pack and the generative Ambient fallback have something to read from
+    // catalog without ever waiting on an HTTP call at screen entry.
+    LaunchedEffect(contentEngine, initialCatalog) {
         syncSourceSettings()
         if (initialCatalog != null) return@LaunchedEffect
 
         val startTime = System.currentTimeMillis()
-        val stockOnly = contentEngine.catalog(
-            PreparedRotation(
-                sourceIds = StockSourceIds.toList(),
-                artworkIds = emptyList(),
-            ),
-        )
-        val videoOnly = contentEngine.catalog(
-            PreparedRotation(
-                sourceIds = VideoSourceIds.toList(),
-                artworkIds = emptyList(),
-            ),
-        )
-        catalog = catalog.filterNot { it.sourceId in StockSourceIds || it.sourceId in VideoSourceIds } +
-            stockOnly + videoOnly
-
         catalog = contentEngine.catalog(
             PreparedRotation(
-                sourceIds = emptyList(),
+                sourceIds = listOf(GenartSource.ID, FractalSource.ID, CustomFractalSource.ID),
                 artworkIds = emptyList(),
             ),
         )
@@ -203,7 +181,9 @@ fun ControlPlaneScreen(
         startingAmbient = startingAmbient,
         onOpenFamily = { family ->
             openedFamily = family
-            selection = PackSelection(family)
+            // "random" is every family's default sub-pack — every Random tile shares this
+            // id — so opening a family highlights it instead of leaving nothing selected.
+            selection = PackSelection(family, "random")
         },
         onSelectSubPack = { selection = it },
         onBackToHome = { openedFamily = null },

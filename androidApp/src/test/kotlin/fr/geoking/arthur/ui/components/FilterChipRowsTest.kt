@@ -222,12 +222,12 @@ class FilterChipRowsTest {
     }
 
     @Test
-    fun sculptureSuggestions_showsOnlyBundled() {
+    fun sculptureRandom_showsEveryMuseumSculpture_excludesBundled() {
         val filtered = catalog.filterByCategoryAndSources(
             CategoryFilter.SCULPTURE,
-            museumTopic = MuseumTopic.Suggestions,
+            museumTopic = MuseumTopic.Random,
         )
-        assertEquals(listOf("bundled-sculpt"), filtered.map { it.id })
+        assertEquals(listOf("rijks-sculpt"), filtered.map { it.id })
     }
 
     @Test
@@ -258,15 +258,6 @@ class FilterChipRowsTest {
         assertTrue(CategoryFilter.SCULPTURE.showsMuseumTopics())
         assertTrue(CategoryFilter.PAINTING.showsMuseumTopics())
         assertFalse(CategoryFilter.ALL.showsGenartTopics())
-    }
-
-    @Test
-    fun photoSuggestions_showsOnlyBundledPhotos() {
-        val filtered = catalog.filterByCategoryAndSources(
-            CategoryFilter.PHOTO,
-            stockCategory = StockPhotoCategory.Suggestions,
-        )
-        assertEquals(listOf("bundled-3"), filtered.map { it.id })
     }
 
     @Test

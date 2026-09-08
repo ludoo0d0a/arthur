@@ -26,8 +26,17 @@ class MetSource(
     override val id: String = ID
     override val displayName: String = "The Met"
 
+    // Rotates which MuseumSearchKind target this Source hydrates each load() call
+    // — defers the other target(s) to the next call instead of fetching them all now.
+    private var targetCursor = 0
+
     override suspend fun load(): List<Artwork> = runCatching {
-        MuseumLoad.acrossTargets(kind(), limit, random) { target, perKind ->
+        MuseumLoad.acrossTargets(
+            kind(),
+            limit,
+            random,
+            nextTargetIndex = { targetCursor++ },
+        ) { target, perKind ->
             val searchJson = httpGet(searchUrl(target))
             val ids = RemoteSample.sample(parseSearchIds(searchJson), perKind, random)
             ids.mapNotNull { objectId ->

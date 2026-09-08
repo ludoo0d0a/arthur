@@ -7,7 +7,6 @@ package fr.geoking.arthur.shared.source
  * Provider search tokens come from [RemoteCategoryMapping.stockQuery].
  */
 enum class StockPhotoCategory(val query: String) {
-    Suggestions("suggestions"),
     /** Easy start: each load picks a random remote topic for Pexels / Unsplash. */
     Random("random"),
     Nature("nature"),
@@ -19,16 +18,12 @@ enum class StockPhotoCategory(val query: String) {
     Sky("sky"),
     StreetArt("streetart");
 
-    /** False for curated topics that must not hit Pexels / Unsplash. */
-    val isRemoteSearch: Boolean
-        get() = this != Suggestions
-
     companion object {
-        /** Concrete remote topics [Random] may resolve to (excludes Suggestions / Random). */
+        /** Concrete remote topics [Random] may resolve to (excludes Random itself). */
         val remoteSearchTopics: List<StockPhotoCategory>
-            get() = entries.filter { it.isRemoteSearch && it != Random }
+            get() = entries.filter { it != Random }
 
         fun fromQuery(query: String): StockPhotoCategory =
-            entries.firstOrNull { it.query.equals(query, ignoreCase = true) } ?: Suggestions
+            entries.firstOrNull { it.query.equals(query, ignoreCase = true) } ?: Random
     }
 }

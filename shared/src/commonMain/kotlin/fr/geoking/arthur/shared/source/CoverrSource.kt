@@ -27,7 +27,6 @@ class CoverrSource(
     override suspend fun load(): List<Artwork> {
         if (apiKey.isBlank()) return offlineFallback()
         val q = RemoteCategoryMapping.stockQuery(category(), RemoteProvider.Coverr)
-            ?: return emptyList()
         val art = runCatching {
             val page = json.decodeFromString<CoverrVideoSearchPage>(httpGet(searchUrl(q, limit)))
             page.hits.mapNotNull { hit ->
@@ -61,7 +60,7 @@ class CoverrSource(
             query: String = RemoteCategoryMapping.stockQuery(
                 StockPhotoCategory.Nature,
                 RemoteProvider.Coverr,
-            )!!,
+            ),
             pageSize: Int = DEFAULT_LIMIT,
         ): String =
             "https://api.coverr.co/videos" +

@@ -27,7 +27,6 @@ class PexelsVideoSource(
     override suspend fun load(): List<Artwork> {
         if (apiKey.isBlank()) return offlineFallback()
         val q = RemoteCategoryMapping.stockQuery(category(), RemoteProvider.PexelsVideo)
-            ?: return emptyList()
         val art = runCatching {
             val page = json.decodeFromString<PexelsVideoSearchPage>(httpGet(searchUrl(q, limit)))
             page.videos.mapNotNull { video ->
@@ -62,7 +61,7 @@ class PexelsVideoSource(
             query: String = RemoteCategoryMapping.stockQuery(
                 StockPhotoCategory.Nature,
                 RemoteProvider.PexelsVideo,
-            )!!,
+            ),
             perPage: Int = DEFAULT_LIMIT,
         ): String =
             "https://api.pexels.com/v1/videos/search" +

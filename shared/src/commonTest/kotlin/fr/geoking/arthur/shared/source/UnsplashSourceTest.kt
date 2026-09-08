@@ -65,7 +65,7 @@ class UnsplashSourceTest {
             accessKey = "test-key",
             httpGet = { url -> fixtures.getValue(url) },
             random = ZeroRandom,
-            kind = fr.geoking.arthur.shared.domain.ArtworkKind.Video,
+            kind = { fr.geoking.arthur.shared.domain.ArtworkKind.Video },
         )
         val art = source.load()
         assertEquals(1, art.size)

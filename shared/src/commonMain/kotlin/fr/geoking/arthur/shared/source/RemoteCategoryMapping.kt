@@ -51,11 +51,9 @@ object RemoteCategoryMapping {
 
     /**
      * Stock-photo topic → provider search `query`.
-     * Returns null for curated [StockPhotoCategory.Suggestions] (no remote call).
      * [StockPhotoCategory.Random] resolves to a random concrete remote topic each call.
      */
-    fun stockQuery(category: StockPhotoCategory, provider: RemoteProvider): String? {
-        if (!category.isRemoteSearch) return null
+    fun stockQuery(category: StockPhotoCategory, provider: RemoteProvider): String {
         val resolved =
             if (category == StockPhotoCategory.Random) {
                 StockPhotoCategory.remoteSearchTopics.random()
@@ -97,9 +95,7 @@ object RemoteCategoryMapping {
     // --- Stock: Pexels free-text (docs examples use plain English topics) ---
 
     private fun pexelsStockQuery(category: StockPhotoCategory): String = when (category) {
-        StockPhotoCategory.Suggestions,
-        StockPhotoCategory.Random,
-        -> category.query
+        StockPhotoCategory.Random -> category.query
         StockPhotoCategory.Nature -> "nature"
         StockPhotoCategory.City -> "city"
         StockPhotoCategory.Ocean -> "ocean"
@@ -113,9 +109,7 @@ object RemoteCategoryMapping {
     // --- Stock video: Pixabay free-text ---
 
     private fun pixabayStockQuery(category: StockPhotoCategory): String = when (category) {
-        StockPhotoCategory.Suggestions,
-        StockPhotoCategory.Random,
-        -> category.query
+        StockPhotoCategory.Random -> category.query
         StockPhotoCategory.Nature -> "nature landscape"
         StockPhotoCategory.City -> "city timelapse"
         StockPhotoCategory.Ocean -> "ocean waves"
@@ -129,9 +123,7 @@ object RemoteCategoryMapping {
     // --- Stock video: Coverr free-text ---
 
     private fun coverrStockQuery(category: StockPhotoCategory): String = when (category) {
-        StockPhotoCategory.Suggestions,
-        StockPhotoCategory.Random,
-        -> category.query
+        StockPhotoCategory.Random -> category.query
         StockPhotoCategory.Nature -> "nature"
         StockPhotoCategory.City -> "city"
         StockPhotoCategory.Ocean -> "ocean"
@@ -145,9 +137,7 @@ object RemoteCategoryMapping {
     // --- Stock: Unsplash free-text (slightly more descriptive for relevance) ---
 
     private fun unsplashStockQuery(category: StockPhotoCategory): String = when (category) {
-        StockPhotoCategory.Suggestions,
-        StockPhotoCategory.Random,
-        -> category.query
+        StockPhotoCategory.Random -> category.query
         StockPhotoCategory.Nature -> "nature landscape"
         StockPhotoCategory.City -> "city urban"
         StockPhotoCategory.Ocean -> "ocean sea"
@@ -161,9 +151,7 @@ object RemoteCategoryMapping {
     // --- Stock: DeviantArt Browse tags (single alphanumeric word, no spaces) ---
 
     private fun deviantArtStockQuery(category: StockPhotoCategory): String = when (category) {
-        StockPhotoCategory.Suggestions,
-        StockPhotoCategory.Random,
-        -> category.query
+        StockPhotoCategory.Random -> category.query
         StockPhotoCategory.Nature -> "nature"
         StockPhotoCategory.City -> "cityscape"
         StockPhotoCategory.Ocean -> "ocean"

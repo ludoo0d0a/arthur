@@ -71,9 +71,9 @@ class SourceCapabilitiesTest {
     }
 
     @Test
-    fun kindAmbientIdsPrependBundled() {
+    fun kindAmbientIdsExcludeBundled() {
         val ids = SourceCapabilities.sourceIdsForKindAmbient(ArtworkKind.Painting)
-        assertEquals(BundledPackSource.ID, ids.first())
+        assertTrue(BundledPackSource.ID !in ids)
         assertTrue(MetSource.ID in ids)
         assertTrue(PexelsSource.ID !in ids)
     }

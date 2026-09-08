@@ -92,9 +92,9 @@ object SourceCapabilities {
         byId.filter { (_, support) -> kind in support.remoteSearchKinds }.keys.toList()
 
     /**
-     * Ambient Start for Painting / Sculpture / Photo **All**: bundled suggestions
-     * plus every Source that can remotely search that kind (museums + stock).
+     * Ambient Start for Painting / Sculpture / Photo **Random**: every Source that can
+     * remotely search that kind (museums + stock).
      */
     fun sourceIdsForKindAmbient(kind: ArtworkKind): List<String> =
-        listOf(BundledPackSource.ID) + sourceIdsWithRemoteSearch(kind)
+        sourceIdsWithRemoteSearch(kind)
 }

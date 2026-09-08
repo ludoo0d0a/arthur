@@ -26,7 +26,6 @@ import fr.geoking.arthur.R
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.source.ArticSource
-import fr.geoking.arthur.shared.source.BundledPackSource
 import fr.geoking.arthur.shared.source.ClevelandSource
 import fr.geoking.arthur.shared.source.CoverrSource
 import fr.geoking.arthur.shared.source.EuropeanaSource
@@ -76,13 +75,14 @@ enum class CategoryFilter(@get:StringRes val labelRes: Int) {
 }
 
 /**
- * Genart subcategory: Fractal presets, Custom fractal, Abstract, Nature, Weather,
- * Geometry, Planets.
+ * Genart subcategory: Random mix, Fractal presets, Custom fractal, Abstract, Nature,
+ * Weather, Geometry, Planets.
  */
 enum class GenartTopic(
     @get:StringRes val labelRes: Int,
     val testTagSuffix: String,
 ) {
+    Random(R.string.stock_topic_random, "random"),
     Fractal(R.string.genart_topic_fractal, "fractal"),
     Custom(R.string.genart_topic_custom, "custom"),
     Abstract(R.string.genart_topic_abstract, "abstract"),
@@ -93,14 +93,15 @@ enum class GenartTopic(
 }
 
 /**
- * Painting / Sculpture subcategory: curated Suggestions, or a remote museum Source.
+ * Painting / Sculpture subcategory: Random mix across every museum Source, or one
+ * specific remote museum Source.
  */
 enum class MuseumTopic(
     val sourceId: String?,
     @get:StringRes val labelRes: Int,
     val testTagSuffix: String,
 ) {
-    Suggestions(null, R.string.stock_topic_suggestions, "suggestions"),
+    Random(null, R.string.stock_topic_random, "random"),
     Met(MetSource.ID, R.string.source_met, MetSource.ID),
     Rijksmuseum(RijksmuseumSource.ID, R.string.source_rijksmuseum, RijksmuseumSource.ID),
     Artic(ArticSource.ID, R.string.source_artic, ArticSource.ID),
@@ -114,6 +115,14 @@ enum class MuseumTopic(
         R.string.source_wikimedia_streetart,
         WikimediaStreetArtSource.ID,
     ),
+    ;
+
+    companion object {
+        /** Every concrete museum institution's Source id (excludes [Random]). */
+        val institutionSourceIds: Set<String> by lazy {
+            entries.mapNotNull { it.sourceId }.toSet()
+        }
+    }
 }
 
 /**
@@ -205,6 +214,7 @@ fun List<Artwork>.canLoadMoreCatalog(visibleCount: Int): Boolean =
     visibleCount < size
 
 fun matchesGenartTopic(art: Artwork, topic: GenartTopic): Boolean = when (topic) {
+    GenartTopic.Random -> true
     GenartTopic.Fractal -> art.kind == ArtworkKind.FractalPreset
     GenartTopic.Custom -> art.kind == ArtworkKind.CustomFractal
     GenartTopic.Abstract -> art.id in GENART_ABSTRACT_IDS
@@ -265,10 +275,9 @@ private val GENART_PLANETS_IDS = setOf(
     GenartSource.NEBULA,
 )
 
-/** Suggestions = curated bundled photos; Random / other topics = remote photo search. */
+/** Random / other topics = remote photo search across capable Sources. */
 fun matchesPhotoTopic(art: Artwork, stockCategory: StockPhotoCategory): Boolean =
     when (stockCategory) {
-        StockPhotoCategory.Suggestions -> art.sourceId == BundledPackSource.ID
         StockPhotoCategory.Random,
         StockPhotoCategory.Nature,
         StockPhotoCategory.City,
@@ -283,7 +292,6 @@ fun matchesPhotoTopic(art: Artwork, stockCategory: StockPhotoCategory): Boolean 
 
 fun matchesVideoTopic(art: Artwork, stockCategory: StockPhotoCategory): Boolean =
     when (stockCategory) {
-        StockPhotoCategory.Suggestions -> false
         StockPhotoCategory.Random,
         StockPhotoCategory.Nature,
         StockPhotoCategory.City,
@@ -296,10 +304,10 @@ fun matchesVideoTopic(art: Artwork, stockCategory: StockPhotoCategory): Boolean 
         -> art.sourceId in SourceCapabilities.sourceIdsWithRemoteSearch(ArtworkKind.Video)
     }
 
-/** Suggestions = curated bundled; other topics = that museum Source only. */
+/** Random = every museum Source; other topics = that museum Source only. */
 fun matchesMuseumTopic(art: Artwork, museumTopic: MuseumTopic): Boolean =
     when (museumTopic) {
-        MuseumTopic.Suggestions -> art.sourceId == BundledPackSource.ID
+        MuseumTopic.Random -> art.sourceId in MuseumTopic.institutionSourceIds
         else -> art.sourceId == museumTopic.sourceId
     }
 
@@ -474,7 +482,6 @@ private fun MuseumTopicFilterRow(
 
 @StringRes
 private fun StockPhotoCategory.labelRes(): Int = when (this) {
-    StockPhotoCategory.Suggestions -> R.string.stock_topic_suggestions
     StockPhotoCategory.Random -> R.string.stock_topic_random
     StockPhotoCategory.Nature -> R.string.stock_topic_nature
     StockPhotoCategory.City -> R.string.stock_topic_city

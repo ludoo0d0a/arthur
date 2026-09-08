@@ -105,6 +105,7 @@ class RijksmuseumSourceTest {
         )
         val source = RijksmuseumSource(
             httpGet = fixtureGet(fixtures),
+            kind = { MuseumSearchKind.Sculpture },
             random = ZeroRandom,
         )
         val art = source.load()

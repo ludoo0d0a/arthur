@@ -69,6 +69,29 @@ object RemoteSample {
     }
 
     /**
+     * 1-based page index in `1..maxPage`, advancing forward from [cursor] instead of
+     * rolling a new random page — repeated [load] calls on the same Source instance
+     * walk through the result set ("load more") rather than re-sampling overlapping
+     * content, wrapping back to page 1 once [maxPage] is exhausted.
+     */
+    fun nextPage(cursor: Int, maxPage: Int = MAX_PAGE): Int {
+        val max = maxPage.coerceAtLeast(1)
+        return 1 + cursor.mod(max)
+    }
+
+    /**
+     * 0-based start offset aligned to [pageSize], advancing forward from [cursor]
+     * within `0..maxStart` instead of picking a new random offset — see [nextPage].
+     */
+    fun nextStart(cursor: Int, pageSize: Int, maxStart: Int = MAX_START): Int {
+        val step = pageSize.coerceAtLeast(1)
+        val maxAligned = (maxStart / step) * step
+        if (maxAligned <= 0) return 0
+        val slots = maxAligned / step + 1
+        return cursor.mod(slots) * step
+    }
+
+    /**
      * Fetch a search window at [randomOffset]; if empty and offset ≠ [firstOffset],
      * retry at [firstOffset] (deep pages / skips often return nothing).
      */

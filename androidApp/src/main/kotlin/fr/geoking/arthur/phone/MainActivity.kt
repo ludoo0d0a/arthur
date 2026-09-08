@@ -32,7 +32,8 @@ import fr.geoking.arthur.shared.debug.DebugLogger
 import fr.geoking.arthur.shared.domain.PremiumEntitlement
 import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.source.DeveloperSettings
-import fr.geoking.arthur.ui.components.FloatingDebugBar
+import fr.geoking.arthur.source.HttpCacheController
+import fr.geoking.arthur.ui.components.debug.DebugBarButton
 import fr.geoking.arthur.source.MuseumSearchSettings
 import fr.geoking.arthur.source.RotationSettings
 import fr.geoking.arthur.source.ScreensaverSettings
@@ -53,6 +54,7 @@ class MainActivity : ComponentActivity() {
     private val contentEngine: ContentEngine by inject()
     private val premium: PremiumEntitlement by inject()
     private val debugLogger: DebugLogger by inject()
+    private val httpCacheController: HttpCacheController by inject()
     private val purchases: PurchasesGateway by inject()
     private val customFractalStore: CustomFractalStore by inject()
     private val stockPhotoSettings: StockPhotoSettings by inject()
@@ -171,11 +173,12 @@ class MainActivity : ComponentActivity() {
                         }
 
                         if (verbose) {
-                            FloatingDebugBar(
+                            DebugBarButton(
                                 debugLogger = debugLogger,
+                                cacheController = httpCacheController,
                                 modifier = Modifier
-                                    .align(Alignment.BottomCenter)
-                                    .padding(bottom = 50.dp),
+                                    .align(Alignment.BottomEnd)
+                                    .padding(16.dp),
                             )
                         }
                     }

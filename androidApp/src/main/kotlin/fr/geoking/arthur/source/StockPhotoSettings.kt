@@ -57,6 +57,24 @@ class ArtworkImageCache(context: Context) {
     fun localPathOrNull(artworkId: String): String? =
         imageFile(artworkId).takeIf { it.exists() && it.length() > MIN_BYTES }?.absolutePath
 
+    fun downloadAndCache(
+        artworkId: String,
+        remoteUrl: String,
+        errorLogger: fr.geoking.arthur.shared.error.ErrorLogger? = null,
+        sourceId: String = "image_download",
+    ): File {
+        val target = imageFile(artworkId)
+        if (target.exists() && target.length() > MIN_BYTES) {
+            return target
+        }
+        return StillImageDownloader.downloadToFile(
+            url = remoteUrl,
+            targetFile = target,
+            errorLogger = errorLogger,
+            sourceId = sourceId,
+        )
+    }
+
     fun remember(artworks: List<Artwork>, category: String) {
         val byId = readLines().associateBy { it.substringBefore(SEP) }.toMutableMap()
         for (art in artworks) {

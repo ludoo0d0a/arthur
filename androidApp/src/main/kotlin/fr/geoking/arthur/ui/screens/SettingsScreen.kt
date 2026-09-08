@@ -135,6 +135,8 @@ fun SettingsScreen(
     showDeveloper: Boolean = BuildConfig.DEBUG || BuildConfig.DEBUG_DEV,
     simulatePremium: Boolean = true,
     onSimulatePremiumChange: (Boolean) -> Unit = {},
+    verbose: Boolean = false,
+    onVerboseChange: (Boolean) -> Unit = {},
     rotationIntervalMs: Long = AmbientAlbumArt.ROTATION_INTERVAL_MS,
     onRotationIntervalChange: (Long) -> Unit = {},
     onCheckForUpdate: (() -> Unit)? = null,
@@ -231,6 +233,8 @@ fun SettingsScreen(
                 SettingsScreenPage.Developer -> DeveloperContent(
                     simulatePremium = simulatePremium,
                     onSimulatePremiumChange = onSimulatePremiumChange,
+                    verbose = verbose,
+                    onVerboseChange = onVerboseChange,
                     onOpenErrorLog = { screenStack = screenStack + SettingsScreenPage.DeveloperErrorLog },
                 )
                 SettingsScreenPage.DeveloperErrorLog -> DeveloperErrorLogScreen(
@@ -389,6 +393,8 @@ private fun rotationIntervalLabel(ms: Long): String {
 private fun DeveloperContent(
     simulatePremium: Boolean,
     onSimulatePremiumChange: (Boolean) -> Unit,
+    verbose: Boolean = false,
+    onVerboseChange: (Boolean) -> Unit = {},
     onOpenErrorLog: () -> Unit = {},
 ) {
     Column(
@@ -425,6 +431,31 @@ private fun DeveloperContent(
                     checked = simulatePremium,
                     onCheckedChange = onSimulatePremiumChange,
                     modifier = Modifier.testTag("dev_simulate_premium"),
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+                    Text(
+                        text = stringResource(R.string.dev_verbose),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    Text(
+                        text = stringResource(R.string.dev_verbose_subtitle),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = verbose,
+                    onCheckedChange = onVerboseChange,
+                    modifier = Modifier.testTag("dev_verbose"),
                 )
             }
 

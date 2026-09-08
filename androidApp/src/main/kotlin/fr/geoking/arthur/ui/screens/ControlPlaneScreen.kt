@@ -54,10 +54,12 @@ import fr.geoking.arthur.shared.source.PixabayVideoSource
 import fr.geoking.arthur.shared.source.CoverrSource
 import fr.geoking.arthur.shared.source.StockPhotoCategory
 import fr.geoking.arthur.shared.source.UnsplashSource
+import fr.geoking.arthur.shared.debug.DebugLogger
 import fr.geoking.arthur.source.MuseumSearchSettings
 import fr.geoking.arthur.source.ScreensaverSettings
 import fr.geoking.arthur.source.StockPhotoSettings
 import fr.geoking.arthur.ui.components.ControlPlaneHeader
+import org.koin.core.context.GlobalContext
 import fr.geoking.arthur.ui.components.PackFamily
 import fr.geoking.arthur.ui.components.PackGrid
 import fr.geoking.arthur.ui.components.PackSelection
@@ -106,6 +108,10 @@ fun ControlPlaneScreen(
     val packCatalogCache = remember { mutableMapOf<String, List<Artwork>>() }
     val scope = rememberCoroutineScope()
 
+    val debugLogger = remember {
+        runCatching { GlobalContext.get().get<DebugLogger>() }.getOrNull()
+    }
+
     val defaultScreensaver by screensaverSettings?.defaultPack?.collectAsState()
         ?: remember { mutableStateOf(null) }
 
@@ -146,6 +152,7 @@ fun ControlPlaneScreen(
         syncSourceSettings()
         if (initialCatalog != null) return@LaunchedEffect
 
+        val startTime = System.currentTimeMillis()
         val stockOnly = contentEngine.catalog(
             PreparedRotation(
                 sourceIds = StockSourceIds.toList(),
@@ -167,6 +174,8 @@ fun ControlPlaneScreen(
                 artworkIds = emptyList(),
             ),
         )
+        val duration = System.currentTimeMillis() - startTime
+        debugLogger?.recordLoadDuration(duration)
     }
 
     // Prefetch the selected pack's rotation catalog so Start Ambient can skip the network wait.
@@ -174,6 +183,7 @@ fun ControlPlaneScreen(
         syncSourceSettings()
         val renewIds = selection.sourceIdsForAmbientLoad() ?: return@LaunchedEffect
         val key = selection.prefetchKey(museumKind, stockCategory)
+        val startTime = System.currentTimeMillis()
         val loaded = withContext(Dispatchers.IO) {
             contentEngine.catalog(
                 PreparedRotation(
@@ -182,6 +192,8 @@ fun ControlPlaneScreen(
                 ),
             )
         }
+        val duration = System.currentTimeMillis() - startTime
+        debugLogger?.recordLoadDuration(duration)
         packCatalogCache[key] = loaded
     }
 

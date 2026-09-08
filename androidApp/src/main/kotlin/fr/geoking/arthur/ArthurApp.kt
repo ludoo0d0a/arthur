@@ -7,8 +7,12 @@ import fr.geoking.arthur.billing.FakePurchasesGateway
 import fr.geoking.arthur.billing.PurchasesGateway
 import fr.geoking.arthur.billing.RevenueCatPremiumEntitlement
 import fr.geoking.arthur.fractal.CustomFractalStore
+import fr.geoking.arthur.shared.debug.DebugLogger
 import fr.geoking.arthur.shared.domain.PremiumEntitlement
 import fr.geoking.arthur.shared.engine.ContentEngine
+import fr.geoking.arthur.source.DebugInterceptor
+import fr.geoking.arthur.source.ForceCacheNetworkInterceptor
+import java.io.File
 import fr.geoking.arthur.shared.error.ErrorCategory
 import fr.geoking.arthur.shared.error.ErrorClassifier
 import fr.geoking.arthur.shared.error.ErrorLogger
@@ -74,6 +78,7 @@ private suspend fun safeHttpGet(
 ): String {
     return try {
         val response = client.get(url) {
+            header("X-Source-Id", sourceId)
             configure?.invoke(this)
         }
         val statusCode = response.status.value
@@ -93,6 +98,9 @@ private suspend fun safeHttpGet(
         }
         response.bodyAsText()
     } catch (e: Throwable) {
+        if (e is kotlinx.coroutines.CancellationException) {
+            throw e
+        }
         if (e !is ResponseException) {
             val category = ErrorClassifier.classify(null, e)
             errorLogger.log(
@@ -110,6 +118,7 @@ private suspend fun safeHttpGet(
 
 val appModule = module {
     single { ErrorLogger(clock = { System.currentTimeMillis() }) }
+    single { DebugLogger(clock = { System.currentTimeMillis() }) }
     single { FakePurchasesGateway(premium = false) }
     single<PurchasesGateway> { get<FakePurchasesGateway>() }
     single { DeveloperSettings(androidContext()) }
@@ -130,7 +139,20 @@ val appModule = module {
     single { StockPhotoSettings(androidContext()) }
     single { MuseumSearchSettings() }
     single { ArtworkImageCache(androidContext()) }
-    single { HttpClient(OkHttp) }
+    single {
+        val debugLogger = get<DebugLogger>()
+        val httpCacheDir = File(androidContext().cacheDir, "http_cache").also { it.mkdirs() }
+        val okHttpCache = okhttp3.Cache(httpCacheDir, 50 * 1024 * 1024L)
+        HttpClient(OkHttp) {
+            engine {
+                config {
+                    cache(okHttpCache)
+                    addInterceptor(DebugInterceptor(debugLogger))
+                    addNetworkInterceptor(ForceCacheNetworkInterceptor())
+                }
+            }
+        }
+    }
     single { BundledPackSource() }
     single { GenartSource() }
     single { FractalSource() }

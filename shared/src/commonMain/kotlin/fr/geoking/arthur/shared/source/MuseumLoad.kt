@@ -25,7 +25,11 @@ internal object MuseumLoad {
         val results = ArrayList<Artwork>(limit)
         for (target in targets) {
             // One failing target (timeout / 403 body) must not wipe siblings.
-            results.addAll(runCatching { loadTarget(target, perKind) }.getOrDefault(emptyList()))
+            results.addAll(
+                runCatching { loadTarget(target, perKind) }
+                    .onFailure { e -> if (e is kotlinx.coroutines.CancellationException) throw e }
+                    .getOrDefault(emptyList())
+            )
         }
         return RemoteSample.sample(results, limit, random)
     }

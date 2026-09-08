@@ -126,6 +126,14 @@ class FilterChipRowsTest {
     }
 
     @Test
+    fun videoTopic_includesPexelsUnsplashPixabayCoverr() {
+        assertEquals(
+            listOf("pexels-video", "unsplash", "pixabay-video", "coverr"),
+            VideoTopic.entries.map { it.sourceId },
+        )
+    }
+
+    @Test
     fun genartCategory_includesFractalKinds() {
         assertTrue(CategoryFilter.GENART.matches(ArtworkKind.Genart))
         assertTrue(CategoryFilter.GENART.matches(ArtworkKind.FractalPreset))

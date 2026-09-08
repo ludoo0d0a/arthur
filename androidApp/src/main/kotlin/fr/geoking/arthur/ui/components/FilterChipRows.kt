@@ -37,6 +37,7 @@ import fr.geoking.arthur.shared.source.MetSource
 import fr.geoking.arthur.shared.source.PexelsVideoSource
 import fr.geoking.arthur.shared.source.PixabayVideoSource
 import fr.geoking.arthur.shared.source.RijksmuseumSource
+import fr.geoking.arthur.shared.source.UnsplashSource
 import fr.geoking.arthur.shared.source.SmithsonianSource
 import fr.geoking.arthur.shared.source.SourceCapabilities
 import fr.geoking.arthur.shared.source.StockPhotoCategory
@@ -125,6 +126,7 @@ enum class VideoTopic(
     val testTagSuffix: String,
 ) {
     Pexels(PexelsVideoSource.ID, R.string.source_pexels_video, PexelsVideoSource.ID),
+    Unsplash(UnsplashSource.ID, R.string.source_unsplash, UnsplashSource.ID),
     Pixabay(PixabayVideoSource.ID, R.string.source_pixabay_video, PixabayVideoSource.ID),
     Coverr(CoverrSource.ID, R.string.source_coverr, CoverrSource.ID),
 }

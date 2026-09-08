@@ -171,9 +171,11 @@ private fun RemoteStillImage(
         mutableStateOf<android.graphics.Bitmap?>(null)
     }
     var hasFailed by remember(artworkId, localPath, remoteUrl) { mutableStateOf(false) }
+    var failureReason by remember(artworkId, localPath, remoteUrl) { mutableStateOf<String?>(null) }
 
     LaunchedEffect(artworkId, localPath, remoteUrl) {
         hasFailed = false
+        failureReason = null
         bitmapState = null
         val result = withContext(Dispatchers.IO) {
             val fromDisk = sequenceOf(
@@ -184,17 +186,19 @@ private fun RemoteStillImage(
             }
             if (fromDisk != null) return@withContext Result.success(fromDisk)
             val url = remoteUrl?.takeIf { it.isNotBlank() }
-                ?: return@withContext Result.failure(IllegalStateException("no image"))
+                ?: return@withContext Result.failure(IllegalStateException("No image URL provided"))
             runCatching {
-                val bytes = StillImageDownloader.downloadBytes(url)
-                imageCache.putImage(artworkId, bytes)
-                SafeBitmapDecoder.decodeByteArray(bytes)
-                    ?: error("decode failed")
+                val downloadedFile = imageCache.downloadAndCache(artworkId, url)
+                SafeBitmapDecoder.decodeFile(downloadedFile.absolutePath)
+                    ?: error("Failed to decode downloaded image file")
             }
         }
         result
             .onSuccess { bmp -> bitmapState = bmp }
-            .onFailure { hasFailed = true }
+            .onFailure { error ->
+                hasFailed = true
+                failureReason = error.message ?: error.toString()
+            }
     }
 
     val bmp = bitmapState
@@ -208,7 +212,12 @@ private fun RemoteStillImage(
             )
         }
         hasFailed -> {
-            StillArtworkPlaceholder(kind = kind, showWarning = true, modifier = modifier)
+            StillArtworkPlaceholder(
+                kind = kind,
+                showWarning = true,
+                errorDetail = failureReason,
+                modifier = modifier,
+            )
         }
         else -> {
             Box(modifier = modifier.fillMaxSize()) {
@@ -233,6 +242,7 @@ fun StillArtworkPlaceholder(
     kind: ArtworkKind,
     modifier: Modifier = Modifier,
     showWarning: Boolean = false,
+    errorDetail: String? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
     val visual = kind.visual()
@@ -274,6 +284,17 @@ fun StillArtworkPlaceholder(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = 4.dp),
                 )
+                if (!errorDetail.isNullOrBlank()) {
+                    Text(
+                        text = errorDetail,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = scheme.error,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .padding(top = 4.dp)
+                            .testTag("artwork_unavailable_reason"),
+                    )
+                }
             }
         }
     }

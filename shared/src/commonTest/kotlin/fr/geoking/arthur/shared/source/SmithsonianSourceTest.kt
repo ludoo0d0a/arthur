@@ -95,4 +95,22 @@ class SmithsonianSourceTest {
         assertTrue(url.contains("start=0"))
         assertFalse(url.contains("unit_code"))
     }
+
+    @Test
+    fun rethrowsCancellationExceptionWithoutLoggingError() = runBlocking {
+        val errorLogger = fr.geoking.arthur.shared.error.ErrorLogger()
+        val source = SmithsonianSource(
+            apiKey = "test-key",
+            httpGet = { throw kotlinx.coroutines.CancellationException("Scope left composition") },
+            random = ZeroRandom,
+            errorLogger = errorLogger,
+        )
+        try {
+            source.load()
+            kotlin.test.fail("Expected CancellationException to be thrown")
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            assertEquals("Scope left composition", e.message)
+        }
+        assertEquals(0, errorLogger.errors.value.size)
+    }
 }

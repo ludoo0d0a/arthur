@@ -101,4 +101,27 @@ class ArtworkImageCacheTest {
             .commit()
         assertEquals(StockPhotoCategory.Random, StockPhotoSettings(context).category)
     }
+
+    @Test
+    fun downloadAndCache_returnsExistingFileIfAlreadyPresent() {
+        val cache = ArtworkImageCache(context)
+        val artId = "test-art-123"
+        cache.putImage(artId, ByteArray(2_000) { 0x33 })
+
+        val file = cache.downloadAndCache(artId, "https://invalid-url-should-not-be-called.example")
+        assertTrue(file.exists())
+        assertEquals(2_000L, file.length())
+    }
+
+    @Test
+    fun downloadAndCache_throwsExceptionOnFailure() {
+        val cache = ArtworkImageCache(context)
+        val artId = "test-art-uncached"
+        try {
+            cache.downloadAndCache(artId, "http://127.0.0.1:1/nonexistent.jpg")
+            org.junit.Assert.fail("Expected exception on download failure")
+        } catch (e: Exception) {
+            assertTrue(e.message != null)
+        }
+    }
 }

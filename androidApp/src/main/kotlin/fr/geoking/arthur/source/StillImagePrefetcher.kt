@@ -14,7 +14,7 @@ object StillImagePrefetcher {
         withContext(Dispatchers.IO) {
             if (cache.hasImage(artwork.id)) return@withContext
             try {
-                cache.putImage(artwork.id, StillImageDownloader.downloadBytes(url))
+                cache.downloadAndCache(artwork.id, url)
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {

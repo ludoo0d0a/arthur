@@ -15,8 +15,8 @@ class SourceCapabilitiesTest {
         assertEquals(setOf(ArtworkKind.Photo), pexels.remoteSearchKinds)
 
         val unsplash = SourceCapabilities.support(UnsplashSource.ID)!!
-        assertEquals(setOf(ArtworkKind.Photo), unsplash.kinds)
-        assertEquals(setOf(ArtworkKind.Photo), unsplash.remoteSearchKinds)
+        assertEquals(setOf(ArtworkKind.Photo, ArtworkKind.Video), unsplash.kinds)
+        assertEquals(setOf(ArtworkKind.Photo, ArtworkKind.Video), unsplash.remoteSearchKinds)
 
         val pexelsVideo = SourceCapabilities.support(PexelsVideoSource.ID)!!
         assertEquals(setOf(ArtworkKind.Video), pexelsVideo.kinds)
@@ -79,10 +79,10 @@ class SourceCapabilitiesTest {
     }
 
     @Test
-    fun videoRemoteSearchIdsIncludeThreeVideoApis() {
+    fun videoRemoteSearchIdsIncludeVideoApis() {
         val ids = SourceCapabilities.sourceIdsWithRemoteSearch(ArtworkKind.Video)
         assertEquals(
-            setOf(PexelsVideoSource.ID, PixabayVideoSource.ID, CoverrSource.ID),
+            setOf(PexelsVideoSource.ID, UnsplashSource.ID, PixabayVideoSource.ID, CoverrSource.ID),
             ids.toSet(),
         )
     }

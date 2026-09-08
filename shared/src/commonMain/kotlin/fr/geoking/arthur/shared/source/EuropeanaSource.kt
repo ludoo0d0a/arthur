@@ -55,6 +55,7 @@ class EuropeanaSource(
                 RemoteSample.sample(page.items.mapNotNull { toArtwork(it, target) }, perKind, random)
             }
         }.onFailure { e ->
+            if (e is kotlinx.coroutines.CancellationException) throw e
             errorLogger?.log(
                 sourceId = id,
                 category = ErrorClassifier.classify(null, e),

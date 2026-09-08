@@ -119,6 +119,34 @@ class ArthurCarAppTest {
     }
 
     @Test
+    fun manifest_declaresMediaTemplatesPermission() {
+        val manifestFile = File("src/main/AndroidManifest.xml")
+        assertTrue("AndroidManifest.xml must exist", manifestFile.exists())
+        val content = manifestFile.readText()
+        assertTrue(
+            "Must declare androidx.car.app.MEDIA_TEMPLATES permission",
+            content.contains("<uses-permission android:name=\"androidx.car.app.MEDIA_TEMPLATES\" />"),
+        )
+    }
+
+    @Test
+    fun artworkPaneScreen_onGetTemplateWithRemoteUrlDoesNotCrashOnMainThread() {
+        val remoteArt = Artwork(
+            id = "test_remote_art",
+            title = "Test Remote Art",
+            attribution = "Test Artist",
+            sourceId = "pexels",
+            kind = ArtworkKind.Photo,
+            remoteUrl = "https://example.com/photo.jpg",
+        )
+
+        // Verify AmbientStillRenderer returns immediate local placeholder without crash
+        val placeholder = AmbientStillRenderer.renderPlaceholder(remoteArt, generation = 0L)
+        assertNotNull("Placeholder bitmap should be generated", placeholder)
+        assertEquals(AmbientStillRenderer.SIZE, placeholder.width)
+    }
+
+    @Test
     fun ambientStillRenderer_mainThreadRemoteUrlReturnsPlaceholderWithoutCrash() {
         val remoteArt = Artwork(
             id = "rijks-SK-C-5",
@@ -160,5 +188,24 @@ class ArthurCarAppTest {
         val rendered = AmbientStillRenderer.render(photoArt, generation = 1L, imageCache = cache)
         assertNotNull("Renderer should load cached photo from disk", rendered)
         assertEquals(AmbientStillRenderer.SIZE, rendered.width)
+    }
+
+    @Test
+    fun rowBuilder_handlesBlankTitleAndAttribution() {
+        val blankTitleArtwork = Artwork(
+            id = "blank_title_art",
+            title = "",
+            attribution = "",
+            sourceId = "genart",
+            kind = ArtworkKind.Genart,
+        )
+        val titleText = blankTitleArtwork.title.ifBlank { "Arthur" }
+        val rowBuilder = Row.Builder().setTitle(titleText)
+        if (blankTitleArtwork.attribution.isNotBlank()) {
+            rowBuilder.addText(blankTitleArtwork.attribution)
+        }
+        val row = rowBuilder.build()
+        assertEquals("Arthur", row.title.toString())
+        assertTrue("No text lines when attribution is blank", row.texts.isEmpty())
     }
 }

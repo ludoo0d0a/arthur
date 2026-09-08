@@ -26,9 +26,11 @@ import fr.geoking.arthur.billing.FakePurchasesGateway
 import fr.geoking.arthur.billing.PurchasesGateway
 import fr.geoking.arthur.fractal.CustomFractalStore
 import fr.geoking.arthur.phone.theme.ArthurTheme
+import fr.geoking.arthur.shared.debug.DebugLogger
 import fr.geoking.arthur.shared.domain.PremiumEntitlement
 import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.source.DeveloperSettings
+import fr.geoking.arthur.ui.components.FloatingDebugBar
 import fr.geoking.arthur.source.MuseumSearchSettings
 import fr.geoking.arthur.source.RotationSettings
 import fr.geoking.arthur.source.ScreensaverSettings
@@ -48,6 +50,7 @@ import org.koin.android.ext.android.inject
 class MainActivity : ComponentActivity() {
     private val contentEngine: ContentEngine by inject()
     private val premium: PremiumEntitlement by inject()
+    private val debugLogger: DebugLogger by inject()
     private val purchases: PurchasesGateway by inject()
     private val customFractalStore: CustomFractalStore by inject()
     private val stockPhotoSettings: StockPhotoSettings by inject()
@@ -88,6 +91,7 @@ class MainActivity : ComponentActivity() {
                         var showSettings by remember { mutableStateOf(false) }
                         var catalogEpoch by remember { mutableStateOf(0) }
                         val simulatePremium by developerSettings.simulatePremium.collectAsState()
+                        val verbose by developerSettings.verbose.collectAsState()
                         val rotationIntervalMs by rotationSettings.intervalMs.collectAsState()
                         val isPremium = premium.isPremium
                         // Custom fractal authoring needs touch; TV uses remote only.
@@ -99,6 +103,8 @@ class MainActivity : ComponentActivity() {
                                     showDeveloper = BuildConfig.DEBUG || BuildConfig.DEBUG_DEV,
                                     simulatePremium = simulatePremium,
                                     onSimulatePremiumChange = developerSettings::setSimulatePremium,
+                                    verbose = verbose,
+                                    onVerboseChange = developerSettings::setVerbose,
                                     rotationIntervalMs = rotationIntervalMs,
                                     onRotationIntervalChange = rotationSettings::setIntervalMs,
                                     onCheckForUpdate = {
@@ -159,6 +165,14 @@ class MainActivity : ComponentActivity() {
                                 modifier = Modifier
                                     .align(Alignment.TopCenter)
                                     .fillMaxWidth(),
+                            )
+                        }
+
+                        if (verbose) {
+                            FloatingDebugBar(
+                                debugLogger = debugLogger,
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter),
                             )
                         }
                     }

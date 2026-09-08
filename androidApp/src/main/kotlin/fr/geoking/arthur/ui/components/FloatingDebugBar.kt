@@ -51,6 +51,15 @@ fun FloatingDebugBar(
 ) {
     val stats by debugLogger.stats.collectAsState()
     var expanded by remember { mutableStateOf(false) }
+    var showOnlyMisses by remember { mutableStateOf(false) }
+
+    val displayedQueries = remember(stats.recentQueries, showOnlyMisses) {
+        if (showOnlyMisses) {
+            stats.recentQueries.filter { !it.isCached }
+        } else {
+            stats.recentQueries
+        }
+    }
 
     Surface(
         modifier = modifier
@@ -98,7 +107,7 @@ fun FloatingDebugBar(
 
                     if (stats.lastLoadDurationMs > 0) {
                         Text(
-                            text = "Load: ${stats.lastLoadDurationMs}ms",
+                            text = "Load time: ${stats.lastLoadDurationMs}ms",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color(0xFFFBBF24),
@@ -152,18 +161,48 @@ fun FloatingDebugBar(
                 exit = shrinkVertically(),
             ) {
                 Column(modifier = Modifier.padding(top = 8.dp)) {
-                    Text(
-                        text = "Recent Queries (${stats.recentQueries.size}):",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF94A3B8),
-                        fontFamily = FontFamily.Monospace,
-                        modifier = Modifier.padding(bottom = 4.dp),
-                    )
-
-                    if (stats.recentQueries.isEmpty()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         Text(
-                            text = "No queries executed yet.",
+                            text = if (showOnlyMisses) {
+                                "Recent Queries (${displayedQueries.size}/${stats.recentQueries.size} misses):"
+                            } else {
+                                "Recent Queries (${stats.recentQueries.size}):"
+                            },
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF94A3B8),
+                            fontFamily = FontFamily.Monospace,
+                        )
+
+                        Surface(
+                            color = if (showOnlyMisses) Color(0xFF991B1B) else Color(0xFF334155),
+                            shape = RoundedCornerShape(4.dp),
+                            modifier = Modifier.clickable { showOnlyMisses = !showOnlyMisses },
+                        ) {
+                            Text(
+                                text = if (showOnlyMisses) "Filter: Misses Only" else "Filter: All",
+                                fontSize = 10.sp,
+                                color = Color.White,
+                                fontFamily = FontFamily.Monospace,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            )
+                        }
+                    }
+
+                    if (displayedQueries.isEmpty()) {
+                        Text(
+                            text = if (showOnlyMisses && stats.recentQueries.isNotEmpty()) {
+                                "No cache miss queries found."
+                            } else {
+                                "No queries executed yet."
+                            },
                             fontSize = 11.sp,
                             color = Color.Gray,
                             fontFamily = FontFamily.Monospace,
@@ -175,7 +214,7 @@ fun FloatingDebugBar(
                                 .heightIn(max = 160.dp),
                             verticalArrangement = Arrangement.spacedBy(4.dp),
                         ) {
-                            items(stats.recentQueries, key = { it.id }) { item ->
+                            items(displayedQueries, key = { it.id }) { item ->
                                 QueryRow(item)
                             }
                         }

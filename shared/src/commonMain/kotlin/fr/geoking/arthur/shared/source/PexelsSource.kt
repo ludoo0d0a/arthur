@@ -26,12 +26,14 @@ class PexelsSource(
     override val id: String = ID
     override val displayName: String = "Pexels"
 
+    // Advances each load() call so "load more" pages forward instead of re-sampling.
+    private var pageCursor = 0
+
     override suspend fun load(): List<Artwork> {
         if (apiKey.isBlank()) return offlineFallback()
         val q = RemoteCategoryMapping.stockQuery(category(), RemoteProvider.Pexels)
-            ?: return emptyList()
         val art = runCatching {
-            val pageIndex = RemoteSample.randomPage(random = random)
+            val pageIndex = RemoteSample.nextPage(pageCursor++)
             val payload = RemoteSample.fetchWindow(
                 randomOffset = pageIndex,
                 firstOffset = 1,
@@ -78,7 +80,7 @@ class PexelsSource(
             query: String = RemoteCategoryMapping.stockQuery(
                 StockPhotoCategory.Nature,
                 RemoteProvider.Pexels,
-            )!!,
+            ),
             perPage: Int = DEFAULT_LIMIT,
             page: Int = 1,
         ): String =

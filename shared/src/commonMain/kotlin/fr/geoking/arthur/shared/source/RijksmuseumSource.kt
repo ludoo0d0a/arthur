@@ -30,16 +30,19 @@ class RijksmuseumSource(
     override val id: String = ID
     override val displayName: String = "Rijksmuseum"
 
+    // Rotates which MuseumSearchKind target this Source hydrates each load() call
+    // — defers the other target(s) to the next call instead of fetching them all now.
+    private var targetCursor = 0
+
     override suspend fun load(): List<Artwork> = runCatching {
         val searchTargets = searchTargetsFor(kind())
-        val perTypeLimit = (limit / searchTargets.size).coerceAtLeast(2)
+        if (searchTargets.isEmpty()) return@runCatching emptyList()
+        val (searchUrl, fallbackKind) = searchTargets[(targetCursor++).mod(searchTargets.size)]
+        val searchJson = httpGet(searchUrl)
+        val ids = RemoteSample.sample(parseSearchIds(searchJson), limit, random)
         val results = mutableListOf<Artwork>()
-        for ((searchUrl, fallbackKind) in searchTargets) {
-            val searchJson = runCatching { httpGet(searchUrl) }.getOrNull() ?: continue
-            val ids = RemoteSample.sample(parseSearchIds(searchJson), perTypeLimit, random)
-            for (objectId in ids) {
-                runCatching { loadArtwork(objectId, fallbackKind) }.getOrNull()?.let { results.add(it) }
-            }
+        for (objectId in ids) {
+            runCatching { loadArtwork(objectId, fallbackKind) }.getOrNull()?.let { results.add(it) }
         }
         RemoteSample.sample(results, limit, random)
     }.getOrDefault(emptyList())

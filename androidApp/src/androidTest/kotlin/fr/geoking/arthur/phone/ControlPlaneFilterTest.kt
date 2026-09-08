@@ -35,7 +35,7 @@ class ControlPlaneFilterTest {
 
     @Test
     fun genartPack_opensSubPacks_allSelected() {
-        var selection = PackSelection(PackFamily.Genart)
+        var selection = PackSelection(PackFamily.Genart, "random")
         composeRule.setContent {
             ArthurTheme {
                 ControlPlaneContent(
@@ -49,20 +49,20 @@ class ControlPlaneFilterTest {
             }
         }
 
-        composeRule.onNodeWithTag("pack_tile_genart_all").assertIsDisplayed()
+        composeRule.onNodeWithTag("pack_tile_genart_random").assertIsDisplayed()
         composeRule.onNodeWithTag("pack_tile_genart_nature").assertIsDisplayed()
         composeRule.onNodeWithTag("pack_tile_genart_weather").assertIsDisplayed()
         composeRule.onNodeWithTag("pack_tile_genart_abstract").assertIsDisplayed()
-        composeRule.onNodeWithTag("pack_tile_genart_all").assertIsSelected()
+        composeRule.onNodeWithTag("pack_tile_genart_random").assertIsSelected()
     }
 
     @Test
-    fun photoPack_showsTopicSubPacks() {
+    fun photoPack_showsTopicAndMuseumSubPacks() {
         setControlPlane(openedFamily = PackFamily.Photo, selection = PackSelection(PackFamily.Photo))
 
-        composeRule.onNodeWithTag("pack_tile_photo_all").assertIsDisplayed()
+        composeRule.onNodeWithTag("pack_tile_photo_random").assertIsDisplayed()
         composeRule.onNodeWithTag("pack_tile_photo_nature").assertIsDisplayed()
-        composeRule.onNodeWithTag("pack_tile_photo_suggestions").assertIsDisplayed()
+        composeRule.onNodeWithTag("pack_tile_photo_museum_met").assertIsDisplayed()
     }
 
     @Test
@@ -72,15 +72,14 @@ class ControlPlaneFilterTest {
             selection = PackSelection(PackFamily.Sculpture),
         )
 
-        composeRule.onNodeWithTag("pack_tile_sculpture_all").assertIsDisplayed()
+        composeRule.onNodeWithTag("pack_tile_sculpture_random").assertIsDisplayed()
         composeRule.onNodeWithTag("pack_tile_sculpture_met").assertIsDisplayed()
-        composeRule.onNodeWithTag("pack_tile_sculpture_suggestions").assertIsDisplayed()
     }
 
     @Test
     fun tapAlreadySelectedSubPack_startsAmbient() {
         var started = false
-        var selection = PackSelection(PackFamily.Genart)
+        var selection = PackSelection(PackFamily.Genart, "random")
         composeRule.setContent {
             ArthurTheme {
                 ControlPlaneContent(
@@ -94,7 +93,7 @@ class ControlPlaneFilterTest {
             }
         }
 
-        composeRule.onNodeWithTag("pack_tile_genart_all").performClick()
+        composeRule.onNodeWithTag("pack_tile_genart_random").performClick()
         composeRule.waitForIdle()
         assertTrue(started)
     }
@@ -130,7 +129,7 @@ class ControlPlaneFilterTest {
                 )
             }
         }
-        composeRule.onNodeWithTag("pack_tile_museum_all").assertIsDisplayed()
+        composeRule.onNodeWithTag("pack_tile_museum_random").assertIsDisplayed()
         composeRule.onNodeWithTag("pack_tile_museum_met").assertIsDisplayed()
         composeRule.onNodeWithTag("pack_tile_museum_europeana").assertIsDisplayed()
         composeRule.onNodeWithTag("pack_back").assertIsDisplayed()

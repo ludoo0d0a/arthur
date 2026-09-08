@@ -18,6 +18,10 @@ import kotlinx.serialization.json.Json
  * Blank [accessKey] uses [offlineFallback]. [httpGet] must send the Client-ID header.
  * Search query mapped via [RemoteCategoryMapping].
  * No native random: each [load] picks a random page and samples the hits.
+ *
+ * Unsplash supports both Photo and Video kinds — [kind] is a lambda (not a fixed value)
+ * so the same Source instance reports the right kind whether it's queried from the
+ * Photo or the Video family.
  */
 class UnsplashSource(
     private val httpGet: suspend (url: String) -> String,
@@ -27,17 +31,19 @@ class UnsplashSource(
     private val onLoaded: (List<Artwork>) -> Unit = {},
     private val limit: Int = DEFAULT_LIMIT,
     private val random: Random = Random.Default,
-    private val kind: ArtworkKind = ArtworkKind.Photo,
+    private val kind: () -> ArtworkKind = { ArtworkKind.Photo },
 ) : Source {
     override val id: String = ID
     override val displayName: String = "Unsplash"
 
+    // Advances each load() call so "load more" pages forward instead of re-sampling.
+    private var pageCursor = 0
+
     override suspend fun load(): List<Artwork> {
         if (accessKey.isBlank()) return offlineFallback()
         val q = RemoteCategoryMapping.stockQuery(category(), RemoteProvider.Unsplash)
-            ?: return emptyList()
         val art = runCatching {
-            val pageIndex = RemoteSample.randomPage(random = random)
+            val pageIndex = RemoteSample.nextPage(pageCursor++)
             val payload = RemoteSample.fetchWindow(
                 randomOffset = pageIndex,
                 firstOffset = 1,
@@ -63,7 +69,7 @@ class UnsplashSource(
                     title = title,
                     attribution = "$photographer / Unsplash",
                     sourceId = ID,
-                    kind = kind,
+                    kind = kind(),
                     remoteUrl = imageUrl,
                     description = description,
                     license = "Unsplash License",
@@ -90,7 +96,7 @@ class UnsplashSource(
             query: String = RemoteCategoryMapping.stockQuery(
                 StockPhotoCategory.Nature,
                 RemoteProvider.Unsplash,
-            )!!,
+            ),
             perPage: Int = DEFAULT_LIMIT,
             page: Int = 1,
         ): String =

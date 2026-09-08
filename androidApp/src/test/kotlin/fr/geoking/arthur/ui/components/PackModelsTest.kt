@@ -79,9 +79,9 @@ class PackModelsTest {
     )
 
     @Test
-    fun museumAll_includesMuseumSources_excludesBundled() {
+    fun museumRandom_includesMuseumSources_excludesBundled() {
         val pool = resolvePackPool(catalog, PackSelection(PackFamily.Museum))
-        assertEquals(listOf("met-1", "rijks-sculpt"), pool.map { it.id })
+        assertEquals(setOf("met-1", "rijks-sculpt"), pool.map { it.id }.toSet())
         assertFalse(pool.any { it.sourceId == BundledPackSource.ID })
     }
 
@@ -95,9 +95,9 @@ class PackModelsTest {
     }
 
     @Test
-    fun paintingAll_includesBundledAndMet() {
+    fun paintingRandom_includesMet_excludesBundled() {
         val pool = resolvePackPool(catalog, PackSelection(PackFamily.Painting))
-        assertEquals(listOf("met-1", "bundled-paint"), pool.map { it.id })
+        assertEquals(listOf("met-1"), pool.map { it.id })
     }
 
     @Test
@@ -115,17 +115,17 @@ class PackModelsTest {
     }
 
     @Test
-    fun genartAll_includesAllGenartKinds() {
+    fun genartRandom_includesAllGenartKinds() {
         val pool = resolvePackPool(catalog, PackSelection(PackFamily.Genart))
         assertEquals(
-            listOf(
+            setOf(
                 GenartSource.SNOW,
                 GenartSource.GRASS,
                 GenartSource.NEBULA,
                 GenartSource.BLOBS,
                 GenartSource.GRADIENT_MESH,
             ),
-            pool.map { it.id },
+            pool.map { it.id }.toSet(),
         )
     }
 
@@ -148,15 +148,15 @@ class PackModelsTest {
     }
 
     @Test
-    fun photoAll_includesPhotos() {
+    fun photoRandom_includesPhotos() {
         val pool = resolvePackPool(catalog, PackSelection(PackFamily.Photo))
         assertEquals(listOf("pexels-1"), pool.map { it.id })
     }
 
     @Test
-    fun subPackTiles_museumListsEveryInstitutionSource() {
+    fun subPackTiles_museumListsRandomThenEveryInstitutionSource() {
         val tiles = PackFamily.Museum.subPackTiles()
-        assertEquals("museum_all", tiles.first().testTagSuffix)
+        assertEquals("museum_random", tiles.first().testTagSuffix)
         val institutionSuffixes = MuseumTopic.entries
             .filter { it.sourceId != null }
             .map { "museum_${it.testTagSuffix}" }
@@ -170,15 +170,50 @@ class PackModelsTest {
     }
 
     @Test
-    fun paintingSubPacks_includeSuggestionsAndEveryMuseum() {
+    fun paintingSubPacks_noAllOrSuggestions_oneTilePerMuseumTopic() {
         val suffixes = PackFamily.Painting.subPackTiles().map { it.testTagSuffix }
-        assertTrue(suffixes.contains("painting_all"))
-        assertTrue(suffixes.contains("painting_suggestions"))
+        assertEquals("painting_random", suffixes.first())
+        assertFalse(suffixes.contains("painting_all"))
+        assertFalse(suffixes.any { it.contains("suggestions") })
         assertTrue(suffixes.contains("painting_europeana"))
-        assertEquals(
-            MuseumTopic.entries.size + 1, // All + every MuseumTopic
-            suffixes.size,
+        assertEquals(MuseumTopic.entries.size, suffixes.size)
+    }
+
+    @Test
+    fun photoSubPacks_includeMuseumInstitutionsAfterStockTopics() {
+        val tiles = PackFamily.Photo.subPackTiles()
+        val stockCount = StockPhotoCategory.entries.size
+        assertEquals("photo_random", tiles.first().testTagSuffix)
+        val museumTiles = tiles.drop(stockCount)
+        val expectedMuseumSuffixes = MuseumTopic.entries
+            .filter { it.sourceId != null }
+            .map { "photo_museum_${it.testTagSuffix}" }
+        assertEquals(expectedMuseumSuffixes, museumTiles.map { it.testTagSuffix })
+    }
+
+    @Test
+    fun photoMuseumPick_searchesOnlyThatMuseum() {
+        val selection = PackSelection(PackFamily.Photo, MuseumTopic.Met.testTagSuffix)
+        assertEquals(MuseumTopic.Met, selection.museumTopicOrNull())
+        assertEquals(null, selection.stockCategoryOrNull())
+        assertEquals(listOf(MetSource.ID), selection.sourceIdsForAmbientLoad())
+
+        val photoCatalog = listOf(
+            Artwork(
+                id = "met-photo",
+                title = "Met Photo",
+                sourceId = MetSource.ID,
+                kind = ArtworkKind.Photo,
+            ),
+            Artwork(
+                id = "pexels-1",
+                title = "Nature",
+                sourceId = PexelsSource.ID,
+                kind = ArtworkKind.Photo,
+            ),
         )
+        val pool = resolvePackPool(photoCatalog, selection)
+        assertEquals(listOf("met-photo"), pool.map { it.id })
     }
 
     @Test
@@ -218,9 +253,9 @@ class PackModelsTest {
     }
 
     @Test
-    fun sourceIdsForAmbientLoad_photoAll_includesStockAndMuseumPhotoSearch() {
+    fun sourceIdsForAmbientLoad_photoRandom_includesStockAndMuseumPhotoSearch_excludesBundled() {
         val ids = PackSelection(PackFamily.Photo).sourceIdsForAmbientLoad()!!
-        assertTrue(BundledPackSource.ID in ids)
+        assertFalse(BundledPackSource.ID in ids)
         assertTrue(PexelsSource.ID in ids)
         assertTrue(UnsplashSource.ID in ids)
         assertTrue(RijksmuseumSource.ID in ids)
@@ -243,7 +278,7 @@ class PackModelsTest {
     }
 
     @Test
-    fun sourceIdsForAmbientLoad_videoAll_threeVideoApis() {
+    fun sourceIdsForAmbientLoad_videoRandom_threeVideoApis() {
         val ids = PackSelection(PackFamily.Video).sourceIdsForAmbientLoad()!!
         assertEquals(
             setOf(PexelsVideoSource.ID, UnsplashSource.ID, PixabayVideoSource.ID, CoverrSource.ID),
@@ -286,12 +321,12 @@ class PackModelsTest {
     @Test
     fun videoSubPacks_listSourcesThenKeywords_excludeSuggestions() {
         val suffixes = PackFamily.Video.subPackTiles().map { it.testTagSuffix }
-        assertEquals("video_all", suffixes.first())
         val sourceSuffixes = VideoTopic.entries.map { "video_${it.testTagSuffix}" }
-        assertEquals(sourceSuffixes, suffixes.drop(1).take(VideoTopic.entries.size))
+        assertEquals(sourceSuffixes, suffixes.take(VideoTopic.entries.size))
         assertTrue("video_random" in suffixes)
         assertTrue("video_nature" in suffixes)
         assertFalse(suffixes.any { it.contains("suggestions") })
+        assertFalse(suffixes.any { it.contains("_all") })
     }
 
     @Test
@@ -353,18 +388,18 @@ class PackModelsTest {
     }
 
     @Test
-    fun sourceIdsForAmbientLoad_paintingAll_capabilityTaggedSources() {
+    fun sourceIdsForAmbientLoad_paintingRandom_capabilityTaggedSources_excludesBundled() {
         val ids = PackSelection(PackFamily.Painting).sourceIdsForAmbientLoad()!!
-        assertTrue(BundledPackSource.ID in ids)
+        assertFalse(BundledPackSource.ID in ids)
         assertTrue(MetSource.ID in ids)
         assertTrue(RijksmuseumSource.ID in ids)
         assertFalse(PexelsSource.ID in ids)
     }
 
     @Test
-    fun sourceIdsForAmbientLoad_sculptureAll_excludesPhotoOnlyAndStreetArt() {
+    fun sourceIdsForAmbientLoad_sculptureRandom_excludesPhotoOnlyAndStreetArtAndBundled() {
         val ids = PackSelection(PackFamily.Sculpture).sourceIdsForAmbientLoad()!!
-        assertTrue(BundledPackSource.ID in ids)
+        assertFalse(BundledPackSource.ID in ids)
         assertTrue(MetSource.ID in ids)
         assertFalse(PexelsSource.ID in ids)
         assertFalse(WikimediaStreetArtSource.ID in ids)

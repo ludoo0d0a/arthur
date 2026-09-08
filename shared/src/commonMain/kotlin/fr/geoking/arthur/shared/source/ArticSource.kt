@@ -24,11 +24,23 @@ class ArticSource(
     override val id: String = ID
     override val displayName: String = "Art Institute of Chicago"
 
+    // Rotates which MuseumSearchKind target this Source hydrates each load() call
+    // — defers the other target(s) to the next call instead of fetching them all now.
+    private var targetCursor = 0
+
+    // Advances each load() call so "load more" pages forward instead of re-sampling.
+    private var pageCursor = 0
+
     override suspend fun load(): List<Artwork> = runCatching {
-        MuseumLoad.acrossTargets(kind(), limit, random) { target, perKind ->
-            val pageIndex = RemoteSample.randomPage(
+        MuseumLoad.acrossTargets(
+            kind(),
+            limit,
+            random,
+            nextTargetIndex = { targetCursor++ },
+        ) { target, perKind ->
+            val pageIndex = RemoteSample.nextPage(
+                cursor = pageCursor++,
                 maxPage = RemoteSample.maxPageForHitWindow(),
-                random = random,
             )
             val payload = RemoteSample.fetchWindow(
                 randomOffset = pageIndex,

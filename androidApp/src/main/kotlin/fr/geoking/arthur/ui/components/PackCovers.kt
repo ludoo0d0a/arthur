@@ -8,7 +8,7 @@ import fr.geoking.arthur.shared.source.StockPhotoCategory
 object PackCovers {
     @DrawableRes
     fun museum(topic: MuseumTopic): Int = when (topic) {
-        MuseumTopic.Suggestions -> R.drawable.pack_museum
+        MuseumTopic.Random -> R.drawable.pack_museum
         MuseumTopic.Met -> R.drawable.pack_met
         MuseumTopic.Rijksmuseum -> R.drawable.pack_rijksmuseum
         MuseumTopic.Artic -> R.drawable.pack_artic
@@ -22,6 +22,7 @@ object PackCovers {
 
     @DrawableRes
     fun genart(topic: GenartTopic): Int = when (topic) {
+        GenartTopic.Random -> R.drawable.pack_genart
         GenartTopic.Nature -> R.drawable.pack_genart_nature
         GenartTopic.Weather -> R.drawable.pack_genart_weather
         GenartTopic.Planets -> R.drawable.pack_genart_planets

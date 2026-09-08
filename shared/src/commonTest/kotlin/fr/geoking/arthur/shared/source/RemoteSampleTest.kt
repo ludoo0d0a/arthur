@@ -31,4 +31,21 @@ class RemoteSampleTest {
         assertEquals(0, start % 20)
         assertTrue(start in 0..100)
     }
+
+    @Test
+    fun nextPageAdvancesForwardAndWraps() {
+        assertEquals(1, RemoteSample.nextPage(cursor = 0, maxPage = 3))
+        assertEquals(2, RemoteSample.nextPage(cursor = 1, maxPage = 3))
+        assertEquals(3, RemoteSample.nextPage(cursor = 2, maxPage = 3))
+        assertEquals(1, RemoteSample.nextPage(cursor = 3, maxPage = 3))
+    }
+
+    @Test
+    fun nextStartAdvancesForwardAlignedAndWraps() {
+        assertEquals(0, RemoteSample.nextStart(cursor = 0, pageSize = 20, maxStart = 60))
+        assertEquals(20, RemoteSample.nextStart(cursor = 1, pageSize = 20, maxStart = 60))
+        assertEquals(40, RemoteSample.nextStart(cursor = 2, pageSize = 20, maxStart = 60))
+        assertEquals(60, RemoteSample.nextStart(cursor = 3, pageSize = 20, maxStart = 60))
+        assertEquals(0, RemoteSample.nextStart(cursor = 4, pageSize = 20, maxStart = 60))
+    }
 }

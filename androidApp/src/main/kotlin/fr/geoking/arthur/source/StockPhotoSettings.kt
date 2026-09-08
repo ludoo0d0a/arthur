@@ -20,6 +20,13 @@ class StockPhotoSettings(context: Context) {
             prefs.edit().putString(KEY_CATEGORY, value.query).apply()
         }
 
+    /**
+     * In-memory content kind for multi-kind stock Sources (e.g. Unsplash supports both
+     * Photo and Video). Driven by Control Plane category chips; not persisted.
+     */
+    @Volatile
+    var contentKind: ArtworkKind = ArtworkKind.Photo
+
     companion object {
         private const val PREFS = "arthur_stock_photo"
         private const val KEY_CATEGORY = "category"

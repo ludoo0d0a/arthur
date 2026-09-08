@@ -75,21 +75,6 @@ class PexelsSourceTest {
     }
 
     @Test
-    fun suggestionsTopicSkipsRemoteSearch() = runBlocking {
-        var called = false
-        val source = PexelsSource(
-            apiKey = "test-key",
-            category = { StockPhotoCategory.Suggestions },
-            httpGet = {
-                called = true
-                error("should not call")
-            },
-        )
-        assertEquals(emptyList(), source.load())
-        assertEquals(false, called)
-    }
-
-    @Test
     fun skipsPhotosWithoutImageUrl() = runBlocking {
         val fixtures = mapOf(
             PexelsSource.searchUrl(perPage = RemoteSample.SEARCH_POOL) to """

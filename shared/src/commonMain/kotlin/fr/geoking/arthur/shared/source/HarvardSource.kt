@@ -29,6 +29,13 @@ class HarvardSource(
     override val id: String = ID
     override val displayName: String = "Harvard Art Museums"
 
+    // Rotates which MuseumSearchKind target this Source hydrates each load() call
+    // — defers the other target(s) to the next call instead of fetching them all now.
+    private var targetCursor = 0
+
+    // Advances each load() call so "load more" pages forward instead of re-sampling.
+    private var pageCursor = 0
+
     override suspend fun load(): List<Artwork> {
         if (apiKey.isBlank()) {
             errorLogger?.log(
@@ -39,8 +46,13 @@ class HarvardSource(
             return emptyList()
         }
         return runCatching {
-            MuseumLoad.acrossTargets(kind(), limit, random) { target, perKind ->
-                val pageIndex = RemoteSample.randomPage(random = random)
+            MuseumLoad.acrossTargets(
+                kind(),
+                limit,
+                random,
+                nextTargetIndex = { targetCursor++ },
+            ) { target, perKind ->
+                val pageIndex = RemoteSample.nextPage(pageCursor++)
                 val payload = RemoteSample.fetchWindow(
                     randomOffset = pageIndex,
                     firstOffset = 1,

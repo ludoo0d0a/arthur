@@ -26,7 +26,6 @@ class PixabayVideoSource(
     override suspend fun load(): List<Artwork> {
         if (apiKey.isBlank()) return offlineFallback()
         val q = RemoteCategoryMapping.stockQuery(category(), RemoteProvider.Pixabay)
-            ?: return emptyList()
         val art = runCatching {
             val page = json.decodeFromString<PixabayVideoSearchPage>(
                 httpGet(searchUrl(apiKey, q, limit)),
@@ -65,7 +64,7 @@ class PixabayVideoSource(
             query: String = RemoteCategoryMapping.stockQuery(
                 StockPhotoCategory.Nature,
                 RemoteProvider.Pixabay,
-            )!!,
+            ),
             perPage: Int = DEFAULT_LIMIT,
         ): String =
             "https://pixabay.com/api/videos/" +

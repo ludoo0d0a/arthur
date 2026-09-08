@@ -29,6 +29,13 @@ class SmithsonianSource(
     override val id: String = ID
     override val displayName: String = "Smithsonian"
 
+    // Rotates which MuseumSearchKind target this Source hydrates each load() call
+    // — defers the other target(s) to the next call instead of fetching them all now.
+    private var targetCursor = 0
+
+    // Advances each load() call so "load more" pages forward instead of re-sampling.
+    private var startCursor = 0
+
     override suspend fun load(): List<Artwork> {
         if (apiKey.isBlank()) {
             errorLogger?.log(
@@ -39,8 +46,13 @@ class SmithsonianSource(
             return emptyList()
         }
         return runCatching {
-            MuseumLoad.acrossTargets(kind(), limit, random) { target, perKind ->
-                val start = RemoteSample.randomStart(RemoteSample.SEARCH_POOL, random = random)
+            MuseumLoad.acrossTargets(
+                kind(),
+                limit,
+                random,
+                nextTargetIndex = { targetCursor++ },
+            ) { target, perKind ->
+                val start = RemoteSample.nextStart(startCursor++, RemoteSample.SEARCH_POOL)
                 val payload = RemoteSample.fetchWindow(
                     randomOffset = start,
                     firstOffset = 0,

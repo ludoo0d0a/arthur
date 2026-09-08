@@ -75,6 +75,7 @@ import fr.geoking.arthur.genart.engines.LakeEngine
 import fr.geoking.arthur.genart.engines.MossGrowthEngine
 import fr.geoking.arthur.genart.engines.RainOnGlassEngine
 import fr.geoking.arthur.genart.engines.ReedsEngine
+import fr.geoking.arthur.genart.engines.LowFreqNoiseFieldEngine
 import fr.geoking.arthur.genart.engines.RiversEngine
 import fr.geoking.arthur.genart.engines.RoadsEngine
 import fr.geoking.arthur.genart.engines.SoftCausticsEngine
@@ -154,6 +155,7 @@ import fr.geoking.arthur.genart.stills.GerstnerOceanStill
 import fr.geoking.arthur.genart.stills.LakeStill
 import fr.geoking.arthur.genart.stills.MossGrowthStill
 import fr.geoking.arthur.genart.stills.RainOnGlassStill
+import fr.geoking.arthur.genart.stills.LowFreqNoiseFieldStill
 import fr.geoking.arthur.genart.stills.ReedsStill
 import fr.geoking.arthur.genart.stills.RiversStill
 import fr.geoking.arthur.genart.stills.RoadsStill
@@ -1132,6 +1134,17 @@ object GenartRegistry {
             },
             renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
                 SoftCausticsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.LowFreqNoiseField,
+            stableId = "genart.lowfreqnoise",
+            title = "Low-Frequency Noise Field",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                LowFreqNoiseFieldEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                LowFreqNoiseFieldStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
             },
         ),
     )

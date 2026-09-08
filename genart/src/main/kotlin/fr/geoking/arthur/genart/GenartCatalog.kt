@@ -85,6 +85,7 @@ enum class GenartEngineId {
     SpiralGalaxy,
     DataHorizon,
     SoftCaustics,
+    LowFreqNoiseField,
 }
 
 enum class GenartQuality { Low, Medium, High }

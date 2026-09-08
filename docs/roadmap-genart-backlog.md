@@ -3,9 +3,9 @@
 Part of the [Genart roadmap](roadmap-genart.md) — see that doc for principles, the shipped-today
 summary, and where to look for rendering techniques ([roadmap-genart-architecture.md](roadmap-genart-architecture.md)).
 
-**Status: the original ideas backlog below is now fully shipped**, except one trivial parameter
-variant (marked below). Every category is complete. Next round should propose fresh ideas rather
-than draw from what's left here.
+**Status: the original ideas backlog below is now fully shipped.** Every category is complete,
+including the one parameter-variant item. Next round should propose fresh ideas rather than draw
+from what's left here.
 
 ### Weather
 
@@ -140,8 +140,10 @@ Extends the current genart family:
 - Silk folds — shipped as `genart.silk`
 - Gradient mesh — shipped as `genart.gradientmesh`
 - Arc mosaic — shipped as `genart.arcmosaic`
-- Low-frequency noise field (variant of soft noise field) — last open item in this backlog;
-  a parameter tweak of `genart.noisefield`, not a new mechanism
+- Low-frequency noise field (variant of soft noise field) — shipped as `genart.lowfreqnoise`:
+  fewer, larger, slower-breathing regions than Soft Noise Field, driven by the `loopedFbm` helper
+  (see [roadmap-genart-architecture.md](roadmap-genart-architecture.md)) instead of per-cell sine
+  wobble — reads as a genuinely large-scale field rather than a busier variant
 
 ### Cozy micro
 

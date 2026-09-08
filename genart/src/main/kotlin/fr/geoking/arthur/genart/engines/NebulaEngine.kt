@@ -20,12 +20,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
+import fr.geoking.arthur.genart.loopedFbm
 import fr.geoking.arthur.genart.phase01
 import fr.geoking.arthur.genart.qualityCount
 import fr.geoking.arthur.genart.seededRange
 import fr.geoking.arthur.genart.seededUnit
 import kotlin.math.PI
-import kotlin.math.sin
 
 /** Soft nebula color clouds drifting slowly across a deep sky. */
 @Composable
@@ -96,7 +96,8 @@ internal fun NebulaEngine(
             clouds.forEach { cloud ->
                 val x = phase01(cloud.x0 + time * cloud.speedX) * w
                 val y = phase01(cloud.y0 + time * cloud.speedY) * h
-                val pulse = 0.85f + 0.15f * sin(time * 2f * PI.toFloat() * cloud.pulseFreq + cloud.pulsePhase)
+                // Seamlessly-looping fbm instead of a pure sine — organic, non-repeating pulse.
+                val pulse = 0.85f + 0.15f * (loopedFbm(time, radius = 1.2f + cloud.pulseFreq, seedOffset = cloud.colorIndex * 619 + 71) * 2f - 1f)
                 val radius = cloud.radiusFrac * minDim * pulse
                 val base = TonalPalette.pick(paletteColors, cloud.colorIndex)
                 val tint = TonalPalette.brightness(base, brightness)

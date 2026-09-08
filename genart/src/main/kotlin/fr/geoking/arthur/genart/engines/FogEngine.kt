@@ -21,12 +21,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
+import fr.geoking.arthur.genart.loopedFbm
 import fr.geoking.arthur.genart.phase01
 import fr.geoking.arthur.genart.qualityCount
 import fr.geoking.arthur.genart.seededRange
 import fr.geoking.arthur.genart.seededUnit
-import kotlin.math.PI
-import kotlin.math.sin
 
 /** Soft fog banks drifting horizontally — low contrast, car-safe. */
 @Composable
@@ -80,7 +79,9 @@ internal fun FogEngine(
             val dim = if (isActive) 1f else 0.6f
             banks.forEach { bank ->
                 val x = phase01(bank.x0 + time * bank.speedMul) * w
-                val bob = sin(time * bank.bobFreq * 2f * PI.toFloat()) * bank.bobAmp * h
+                // Seamlessly-looping fbm instead of a pure sine — organic, non-repeating bob.
+                val bobNoise = loopedFbm(time, radius = 1.2f + bank.bobFreq, seedOffset = bank.colorIndex * 733 + 41) * 2f - 1f
+                val bob = bobNoise * bank.bobAmp * h
                 val y = bank.yFrac * h + bob
                 val rw = bank.widthFrac * w
                 val rh = bank.heightFrac * h

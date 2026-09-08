@@ -20,12 +20,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
+import fr.geoking.arthur.genart.loopedFbm
 import fr.geoking.arthur.genart.phase01
 import fr.geoking.arthur.genart.qualityCount
 import fr.geoking.arthur.genart.seededRange
 import fr.geoking.arthur.genart.seededUnit
 import kotlin.math.PI
-import kotlin.math.sin
 
 @Composable
 internal fun CloudsEngine(
@@ -96,8 +96,9 @@ internal fun CloudsEngine(
 
             clouds.forEach { cloud ->
                 val x = phase01(cloud.x0 + time * cloud.speedMul * driftScale) * w
-                val bob = sin(time * cloud.bobFreq * 2f * PI.toFloat() + cloud.bobPhase) *
-                    cloud.bobAmpFrac * h * driftScale
+                // Seamlessly-looping fbm instead of a pure sine — organic, non-repeating bob.
+                val bobNoise = loopedFbm(time, radius = 1.2f + cloud.bobFreq, seedOffset = cloud.colorIndex * 977 + 13) * 2f - 1f
+                val bob = bobNoise * cloud.bobAmpFrac * h * driftScale
                 val y = cloud.yFrac * h + bob
                 val base = TonalPalette.pick(paletteColors, cloud.colorIndex)
                 val tint = TonalPalette.brightness(base, brightness * 0.85f)

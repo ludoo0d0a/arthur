@@ -103,6 +103,7 @@ class GenartSource(
         const val SPIRAL_GALAXY = "genart.galaxy"
         const val DATA_HORIZON = "genart.datahorizon"
         const val SOFT_CAUSTICS = "genart.caustics"
+        const val LOW_FREQ_NOISE_FIELD = "genart.lowfreqnoise"
 
         fun defaultCatalog(): List<Artwork> = listOf(
             entry(PARTICLES, "Drifting Particles"),
@@ -189,6 +190,7 @@ class GenartSource(
             entry(SPIRAL_GALAXY, "Spiral Galaxy Drift"),
             entry(DATA_HORIZON, "Data Horizon"),
             entry(SOFT_CAUSTICS, "Soft Caustics"),
+            entry(LOW_FREQ_NOISE_FIELD, "Low-Frequency Noise Field"),
         )
 
         private fun entry(id: String, title: String) = Artwork(

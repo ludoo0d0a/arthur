@@ -21,7 +21,7 @@ Shipping an engine from the backlog means:
 
 `FreeTierLimits.maxGenart` / `StockPhotoSettings.MAX_GENART` (bumped 64 → 96 as the catalog
 reached 59 engines) are sized to "cover the full shipped catalog" — bump both together again
-once the count gets within ~5 of the ceiling.
+once the count gets within ~5 of the ceiling (catalog is at 85 as of this writing).
 
 ## Realism upgrades (rendering techniques)
 
@@ -37,10 +37,17 @@ effort/impact:
    background/star layer from a separately-blurred soft-shape layer in a `Box`); the still bakers
    for Storm additionally use `BlurMaskFilter` for a real blur on the software `Bitmap` canvas.
    Remaining candidates: Spiral galaxy core glow, Soft caustics.
-2. **Domain-warped noise (fbm)** — a small pure-Kotlin value-noise/fractal-Brownian-motion
-   helper (a few octaves of the existing `seededUnit`-style hash, offset and summed) to replace
-   pure-sine drift in Clouds, Fog, Nebula/Galaxy, Caustics. Reads as organic/non-repeating
-   instead of visibly periodic; no new dependency.
+2. **Domain-warped noise (fbm)** — **Done.** `NoiseUtils.kt` adds `valueNoise2D`/`fbm2D`/
+   `loopedFbm` (a few octaves of the existing `seededUnit`-style hash, offset and summed; no new
+   dependency). `loopedFbm(t, radius, octaves, seedOffset)` is the one to reach for in an
+   engine: it samples a fixed circle in 2D noise space so `t = 0` and `t = 1` land on the exact
+   same point, which is what makes it safe to drive with the same `RepeatMode.Restart` time
+   driver every engine already uses — plain `fbm2D(t * freq, 0f)` would NOT loop seamlessly and
+   would pop at the seam. Applied to Clouds' cloud bob, Fog's bank bob, and Nebula's cloud pulse
+   (each replaced a `sin(time * freq * 2π + phase)` term 1:1, same amplitude scale, now organic
+   and guaranteed seam-free) and to the new Low-Frequency Noise Field engine. Remaining
+   candidates: Soft Caustics' per-streak jitter (currently summed plain sines, not yet fbm),
+   Spiral Galaxy's core glow pulse.
 3. **Depth/parallax layering** — 2-3 Canvas layers at different scroll speeds *and* blur radii
    (near = sharp + fast, far = blurred + slow). Cheap realism boost for wind streaks, dunes,
    starfields, mountains, asteroids.

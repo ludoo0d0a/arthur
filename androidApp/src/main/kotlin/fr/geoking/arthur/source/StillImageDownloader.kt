@@ -17,6 +17,11 @@ object StillImageDownloader {
     private const val BUFFER_SIZE = 64 * 1024 // 64 KB chunk buffer
     private const val CHUNK_SIZE = 512 * 1024L // 512 KB chunk size for range requests
 
+    // A "still image" is a photo/artwork preview, not a raw asset — a source
+    // returning something far larger than this is misbehaving (seen: a 268 MB
+    // response that OOM'd the app when fully buffered downstream).
+    private const val MAX_IMAGE_BYTES = 25L * 1024 * 1024
+
     fun downloadToFile(
         url: String,
         targetFile: File,
@@ -68,6 +73,15 @@ object StillImageDownloader {
         errorLogger: ErrorLogger? = null,
         sourceId: String = "image_download",
     ): Boolean {
+        if (totalLength > MAX_IMAGE_BYTES) {
+            errorLogger?.log(
+                sourceId = sourceId,
+                category = ErrorClassifier.classify(null, null),
+                message = "Image too large ($totalLength bytes > $MAX_IMAGE_BYTES max)",
+                url = url,
+            )
+            return false
+        }
         val tempFile = File(targetFile.parentFile, "${targetFile.name}.tmp_${System.currentTimeMillis()}")
         try {
             targetFile.parentFile?.mkdirs()
@@ -144,11 +158,24 @@ object StillImageDownloader {
                 val msgDetails = if (responseMsg != null) " $responseMsg" else ""
                 throw java.io.IOException("HTTP $responseCode$msgDetails while downloading image")
             }
+            val declaredLength = connection.contentLengthLong
+            if (declaredLength > MAX_IMAGE_BYTES) {
+                throw java.io.IOException(
+                    "Image too large ($declaredLength bytes > $MAX_IMAGE_BYTES max) at $url",
+                )
+            }
             connection.inputStream.use { input ->
                 FileOutputStream(tempFile).use { output ->
                     val buffer = ByteArray(BUFFER_SIZE)
                     var bytesRead: Int
+                    var totalRead = 0L
                     while (input.read(buffer).also { bytesRead = it } != -1) {
+                        totalRead += bytesRead
+                        if (totalRead > MAX_IMAGE_BYTES) {
+                            throw java.io.IOException(
+                                "Image exceeded $MAX_IMAGE_BYTES byte limit while streaming from $url",
+                            )
+                        }
                         output.write(buffer, 0, bytesRead)
                     }
                 }

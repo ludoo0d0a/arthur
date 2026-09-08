@@ -5,7 +5,6 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.androidApplication)
-    alias(libs.plugins.kotlinAndroid)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.aboutlibraries.android)
 }
@@ -106,6 +105,16 @@ android {
     }
 }
 
+androidComponents {
+    // Always-increasing debug versionCode so local installs never collide with
+    // whatever versionCode is already on the device (e.g. a Play track build).
+    onVariants(selector().withBuildType("debug")) { variant ->
+        variant.outputs.forEach { output ->
+            output.versionCode.set((System.currentTimeMillis() / 1000).toInt())
+        }
+    }
+}
+
 kotlin {
     jvmToolchain(21)
 }
@@ -121,6 +130,7 @@ dependencies {
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.compose.foundation)
     implementation(libs.compose.material3)
+    implementation(libs.compose.material3.adaptive)
     implementation(libs.compose.material.icons.core)
     implementation(libs.koin.android)
     implementation(libs.androidx.media)

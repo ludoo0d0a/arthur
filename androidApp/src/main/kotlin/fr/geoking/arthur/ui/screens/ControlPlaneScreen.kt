@@ -473,6 +473,25 @@ private fun ControlPlanePreview() {
 
 @Preview(
     showBackground = true,
+    name = "Phone landscape packs",
+    device = "spec:width=800dp,height=360dp,dpi=420",
+)
+@Composable
+private fun ControlPlaneLandscapePreview() {
+    ArthurTheme {
+        ControlPlaneContent(
+            openedFamily = null,
+            selection = PackSelection(PackFamily.Museum),
+            onOpenFamily = {},
+            onSelectSubPack = {},
+            onBackToHome = {},
+            onStartAmbient = {},
+        )
+    }
+}
+
+@Preview(
+    showBackground = true,
     name = "TV control plane packs",
     device = "id:tv_1080p",
     uiMode = Configuration.UI_MODE_TYPE_TELEVISION,

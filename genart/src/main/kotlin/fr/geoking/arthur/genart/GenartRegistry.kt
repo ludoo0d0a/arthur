@@ -60,9 +60,34 @@ import fr.geoking.arthur.genart.engines.SunbeamsEngine
 import fr.geoking.arthur.genart.engines.SunshineEngine
 import fr.geoking.arthur.genart.engines.TonalGeometryEngine
 import fr.geoking.arthur.genart.engines.TunnelEngine
+import fr.geoking.arthur.genart.engines.AquariumEngine
+import fr.geoking.arthur.genart.engines.AsteroidsEngine
+import fr.geoking.arthur.genart.engines.CanyonDunesEngine
+import fr.geoking.arthur.genart.engines.CityLightsEngine
+import fr.geoking.arthur.genart.engines.ContinentsEngine
+import fr.geoking.arthur.genart.engines.DataHorizonEngine
+import fr.geoking.arthur.genart.engines.DayNightWashEngine
+import fr.geoking.arthur.genart.engines.DistantDinosaursEngine
+import fr.geoking.arthur.genart.engines.FieldsEngine
+import fr.geoking.arthur.genart.engines.FlowerEngine
+import fr.geoking.arthur.genart.engines.GerstnerOceanEngine
+import fr.geoking.arthur.genart.engines.LakeEngine
+import fr.geoking.arthur.genart.engines.MossGrowthEngine
+import fr.geoking.arthur.genart.engines.RainOnGlassEngine
+import fr.geoking.arthur.genart.engines.ReedsEngine
+import fr.geoking.arthur.genart.engines.RiversEngine
+import fr.geoking.arthur.genart.engines.RoadsEngine
+import fr.geoking.arthur.genart.engines.SoftCausticsEngine
+import fr.geoking.arthur.genart.engines.SoftWindStreaksEngine
+import fr.geoking.arthur.genart.engines.SpiralGalaxyEngine
+import fr.geoking.arthur.genart.engines.TerrariumDripEngine
+import fr.geoking.arthur.genart.engines.TreeEngine
+import fr.geoking.arthur.genart.engines.TumbleweedDriftEngine
 import fr.geoking.arthur.genart.engines.VoronoiWashEngine
 import fr.geoking.arthur.genart.engines.WarpStreakEngine
+import fr.geoking.arthur.genart.engines.WaterfallMistEngine
 import fr.geoking.arthur.genart.engines.WavesEngine
+import fr.geoking.arthur.genart.engines.WindChimeEngine
 import fr.geoking.arthur.genart.stills.AntTrailsStill
 import fr.geoking.arthur.genart.stills.ArcMosaicStill
 import fr.geoking.arthur.genart.stills.AuroraStill
@@ -115,9 +140,34 @@ import fr.geoking.arthur.genart.stills.SteamCurlStill
 import fr.geoking.arthur.genart.stills.StormStill
 import fr.geoking.arthur.genart.stills.SunbeamsStill
 import fr.geoking.arthur.genart.stills.SunshineStill
+import fr.geoking.arthur.genart.stills.AquariumStill
+import fr.geoking.arthur.genart.stills.AsteroidsStill
+import fr.geoking.arthur.genart.stills.CanyonDunesStill
+import fr.geoking.arthur.genart.stills.CityLightsStill
+import fr.geoking.arthur.genart.stills.ContinentsStill
+import fr.geoking.arthur.genart.stills.DataHorizonStill
+import fr.geoking.arthur.genart.stills.DayNightWashStill
+import fr.geoking.arthur.genart.stills.DistantDinosaursStill
+import fr.geoking.arthur.genart.stills.FieldsStill
+import fr.geoking.arthur.genart.stills.FlowerStill
+import fr.geoking.arthur.genart.stills.GerstnerOceanStill
+import fr.geoking.arthur.genart.stills.LakeStill
+import fr.geoking.arthur.genart.stills.MossGrowthStill
+import fr.geoking.arthur.genart.stills.RainOnGlassStill
+import fr.geoking.arthur.genart.stills.ReedsStill
+import fr.geoking.arthur.genart.stills.RiversStill
+import fr.geoking.arthur.genart.stills.RoadsStill
+import fr.geoking.arthur.genart.stills.SoftCausticsStill
+import fr.geoking.arthur.genart.stills.SoftWindStreaksStill
+import fr.geoking.arthur.genart.stills.SpiralGalaxyStill
+import fr.geoking.arthur.genart.stills.TerrariumDripStill
+import fr.geoking.arthur.genart.stills.TreeStill
+import fr.geoking.arthur.genart.stills.TumbleweedDriftStill
 import fr.geoking.arthur.genart.stills.VoronoiWashStill
 import fr.geoking.arthur.genart.stills.WarpStreakStill
+import fr.geoking.arthur.genart.stills.WaterfallMistStill
 import fr.geoking.arthur.genart.stills.WavesStill
+import fr.geoking.arthur.genart.stills.WindChimeStill
 
 /**
  * One live Composable + one baked-still renderer, registered under a stable id/title.
@@ -807,6 +857,281 @@ object GenartRegistry {
             },
             renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
                 InkInWaterStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.WindChime,
+            stableId = "genart.windchime",
+            title = "Wind Chime Silhouette",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                WindChimeEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                WindChimeStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.DayNightWash,
+            stableId = "genart.daynightwash",
+            title = "Soft Day-Night Wash",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                DayNightWashEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                DayNightWashStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.TumbleweedDrift,
+            stableId = "genart.tumbleweed",
+            title = "Tumbleweed Drift",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                TumbleweedDriftEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                TumbleweedDriftStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.DistantDinosaurs,
+            stableId = "genart.dinosaurs",
+            title = "Distant Dinosaur Silhouettes",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                DistantDinosaursEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                DistantDinosaursStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.CityLights,
+            stableId = "genart.citylights",
+            title = "City Night Lights",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                CityLightsEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                CityLightsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.MossGrowth,
+            stableId = "genart.moss",
+            title = "Moss Growth",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                MossGrowthEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                MossGrowthStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.TerrariumDrip,
+            stableId = "genart.terrariumdrip",
+            title = "Terrarium Drip",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                TerrariumDripEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                TerrariumDripStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.Aquarium,
+            stableId = "genart.aquarium",
+            title = "Aquarium",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                AquariumEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                AquariumStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.Fields,
+            stableId = "genart.fields",
+            title = "Soft Fields",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                FieldsEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                FieldsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.RainOnGlass,
+            stableId = "genart.rainonglass",
+            title = "Rain on Glass",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                RainOnGlassEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                RainOnGlassStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.Reeds,
+            stableId = "genart.reeds",
+            title = "Reeds",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                ReedsEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                ReedsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.CanyonDunes,
+            stableId = "genart.canyondunes",
+            title = "Canyon Dunes",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                CanyonDunesEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                CanyonDunesStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.Continents,
+            stableId = "genart.continents",
+            title = "Continents",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                ContinentsEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                ContinentsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.Roads,
+            stableId = "genart.roads",
+            title = "Roads",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                RoadsEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                RoadsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.Rivers,
+            stableId = "genart.rivers",
+            title = "Rivers",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                RiversEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                RiversStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.Tree,
+            stableId = "genart.tree",
+            title = "Tree in Wind",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                TreeEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                TreeStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.Flower,
+            stableId = "genart.flower",
+            title = "Flower Bloom",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                FlowerEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                FlowerStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.Lake,
+            stableId = "genart.lake",
+            title = "Lake Surface",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                LakeEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                LakeStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.Asteroids,
+            stableId = "genart.asteroids",
+            title = "Asteroids",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                AsteroidsEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                AsteroidsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.WaterfallMist,
+            stableId = "genart.waterfallmist",
+            title = "Waterfall Mist",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                WaterfallMistEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                WaterfallMistStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.SoftWindStreaks,
+            stableId = "genart.windstreaks",
+            title = "Soft Wind Streaks",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                SoftWindStreaksEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                SoftWindStreaksStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.GerstnerOcean,
+            stableId = "genart.oceanswell",
+            title = "Ocean Swell",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                GerstnerOceanEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                GerstnerOceanStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.SpiralGalaxy,
+            stableId = "genart.galaxy",
+            title = "Spiral Galaxy Drift",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                SpiralGalaxyEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                SpiralGalaxyStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.DataHorizon,
+            stableId = "genart.datahorizon",
+            title = "Data Horizon",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                DataHorizonEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                DataHorizonStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.SoftCaustics,
+            stableId = "genart.caustics",
+            title = "Soft Caustics",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                SoftCausticsEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                SoftCausticsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
             },
         ),
     )

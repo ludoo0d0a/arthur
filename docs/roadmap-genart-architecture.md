@@ -68,11 +68,35 @@ effort/impact:
 When shipping many engines at once, do the shared-file plumbing (steps 1, 3, 4 above) yourself
 single-threaded first, then hand each engine's Composable + still (step 2) to an independent
 agent/session that touches only those two new files — this avoids merge conflicts since nothing
-shared is edited concurrently. Two gotchas hit in practice:
+shared is edited concurrently. Gotchas hit in practice, roughly in order of how often they bite:
 
+- **Private top-level class name collisions are the #1 recurring failure.** Kotlin `private`
+  top-level classes are file-scoped for *accessibility* but not for their compiled class name —
+  two files in the same package each declaring `private data class Foo` collide at the JVM level
+  ("Redeclaration", plus confusing "Cannot access ... it is private in file" errors in whichever
+  file's declaration didn't win). This happened repeatedly across two 20+ engine batches
+  (`RippleSeed`, `BubbleSeed`, `FishSeed`, `PetalSeed`, `DuneLayerSeed`, `SandGrainSeed`, ...)
+  because independent agents each pick an obvious generic name (`RippleSeed`, `BlobSeed`, ...)
+  for their seed/data class without seeing sibling engines' choices. Prefix every such class
+  with the engine name (e.g. `LakeRippleSeed`, not `RippleSeed`) in the brief up front — cheaper
+  than fixing it after the fact. After a batch lands, `grep -rn "^private data class" engines/
+  stills/` and diff for duplicate class names before trusting a first compile attempt.
 - `Brush.radialGradient(colors = ..., colorStops = ...)` isn't a valid overload — use the
   vararg `Pair<Float, Color>` form: `Brush.radialGradient(0f to c1, 0.5f to c2, 1f to c3, ...)`.
-- Kotlin `private` top-level classes are file-scoped for *accessibility* but not for their
-  compiled class name — two files in the same package each declaring `private data class Foo`
-  collide at the JVM level ("Redeclaration"). Give each engine's private seed/data classes a
-  name unlikely to collide with another engine's (e.g. prefix with the engine name).
+- **This repo is used by multiple concurrent Claude Code sessions sharing one working
+  directory.** Another session can `git checkout` a different branch out from under you between
+  tool calls, silently swapping every file's on-disk content (edits then fail with confusing
+  "File does not exist" or apply against stale content) or refuse a `git checkout` back with
+  "local changes would be overwritten" (someone else's uncommitted WIP). If you notice files
+  reverting to old content mid-task, immediately check `git branch --show-current` / `git log
+  --oneline -3` before doing anything else — do NOT stash or discard what you find (a `git stash
+  list` may reveal your own lost edits safely preserved, or someone else's WIP you must not
+  touch). The reliable fix is `git worktree add /tmp/<name> main` and doing all remaining work
+  there — a worktree has its own working directory, isolated from whatever branch the shared
+  checkout is on, while still sharing the same `.git` (so stashes/branches/pushes are visible
+  from both). A fresh worktree needs its own `local.properties` (gitignored, holds
+  `sdk.dir`/API keys) copied over before Gradle will resolve the Android SDK.
+- macOS/BSD `sed -i ''` does **not** support `\b` word-boundary regex (that's a GNU/PCRE
+  extension) — a rename script using `s/\bFoo\b/Bar/g` silently matches nothing and leaves the
+  file unchanged. Use plain substring replacement instead when the identifier is distinctive
+  enough not to collide with a longer name, or use `\<...\>` (BSD's own boundary syntax) if not.

@@ -362,7 +362,6 @@ private fun PhoneControlPlaneContent(
                     tiles = PackFamily.entries.map { it.homeTile() },
                     selected = null,
                     onTileClick = { onOpenFamily(it.selection.family) },
-                    columns = 3,
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(
                         start = 20.dp,
@@ -392,7 +391,6 @@ private fun PhoneControlPlaneContent(
                             onSelectSubPack(tile.selection)
                         }
                     },
-                    columns = 3,
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(
                         start = 20.dp,
@@ -436,6 +434,25 @@ internal fun PackSubPackHeader(
 @Preview(showBackground = true, name = "Control plane packs")
 @Composable
 private fun ControlPlanePreview() {
+    ArthurTheme {
+        ControlPlaneContent(
+            openedFamily = null,
+            selection = PackSelection(PackFamily.Museum),
+            onOpenFamily = {},
+            onSelectSubPack = {},
+            onBackToHome = {},
+            onStartAmbient = {},
+        )
+    }
+}
+
+@Preview(
+    showBackground = true,
+    name = "Phone landscape packs",
+    device = "spec:width=800dp,height=360dp,dpi=420",
+)
+@Composable
+private fun ControlPlaneLandscapePreview() {
     ArthurTheme {
         ControlPlaneContent(
             openedFamily = null,

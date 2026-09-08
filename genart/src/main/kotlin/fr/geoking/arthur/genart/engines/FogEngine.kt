@@ -7,14 +7,18 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
 import fr.geoking.arthur.genart.phase01
@@ -60,42 +64,47 @@ internal fun FogEngine(
         ),
         label = "fog_t",
     )
-    Canvas(modifier = modifier) {
-        val w = size.width
-        val h = size.height
-        drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(Color(0xFF101820), Color(0xFF080C12)),
-            ),
-        )
-        val time = phase01(t)
-        val dim = if (isActive) 1f else 0.6f
-        banks.forEach { bank ->
-            val x = phase01(bank.x0 + time * bank.speedMul) * w
-            val bob = sin(time * bank.bobFreq * 2f * PI.toFloat()) * bank.bobAmp * h
-            val y = bank.yFrac * h + bob
-            val rw = bank.widthFrac * w
-            val rh = bank.heightFrac * h
-            val base = TonalPalette.mix(Color(0xFFD8E4F0), TonalPalette.pick(paletteColors, bank.colorIndex), 0.2f)
-            val tint = TonalPalette.brightness(base, brightness * 0.9f)
-            val alpha = bank.alphaBase * dim
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        TonalPalette.withAlpha(tint, alpha),
-                        Color.Transparent,
-                    ),
-                    center = Offset(x, y),
-                    radius = rw.coerceAtLeast(rh) * 0.65f,
+    Box(modifier = modifier) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            drawRect(
+                brush = Brush.verticalGradient(
+                    colors = listOf(Color(0xFF101820), Color(0xFF080C12)),
                 ),
-                radius = rw.coerceAtLeast(rh) * 0.65f,
-                center = Offset(x, y),
             )
-            drawOval(
-                color = TonalPalette.withAlpha(tint, alpha * 0.7f),
-                topLeft = Offset(x - rw * 0.5f, y - rh * 0.5f),
-                size = Size(rw, rh),
-            )
+        }
+        // Real gaussian blur on the fog banks — softer and less "ring-shaped" than gradient-only fog.
+        Canvas(modifier = Modifier.fillMaxSize().blur(22.dp)) {
+            val w = size.width
+            val h = size.height
+            val time = phase01(t)
+            val dim = if (isActive) 1f else 0.6f
+            banks.forEach { bank ->
+                val x = phase01(bank.x0 + time * bank.speedMul) * w
+                val bob = sin(time * bank.bobFreq * 2f * PI.toFloat()) * bank.bobAmp * h
+                val y = bank.yFrac * h + bob
+                val rw = bank.widthFrac * w
+                val rh = bank.heightFrac * h
+                val base = TonalPalette.mix(Color(0xFFD8E4F0), TonalPalette.pick(paletteColors, bank.colorIndex), 0.2f)
+                val tint = TonalPalette.brightness(base, brightness * 0.9f)
+                val alpha = bank.alphaBase * dim
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            TonalPalette.withAlpha(tint, alpha),
+                            Color.Transparent,
+                        ),
+                        center = Offset(x, y),
+                        radius = rw.coerceAtLeast(rh) * 0.65f,
+                    ),
+                    radius = rw.coerceAtLeast(rh) * 0.65f,
+                    center = Offset(x, y),
+                )
+                drawOval(
+                    color = TonalPalette.withAlpha(tint, alpha * 0.7f),
+                    topLeft = Offset(x - rw * 0.5f, y - rh * 0.5f),
+                    size = Size(rw, rh),
+                )
+            }
         }
     }
 }

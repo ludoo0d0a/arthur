@@ -10,6 +10,7 @@ import fr.geoking.arthur.shared.source.BundledPackSource
 import fr.geoking.arthur.shared.source.ClevelandSource
 import fr.geoking.arthur.shared.source.CoverrSource
 import fr.geoking.arthur.shared.source.CustomFractalSource
+import fr.geoking.arthur.shared.source.DeviantArtSource
 import fr.geoking.arthur.shared.source.EuropeanaSource
 import fr.geoking.arthur.shared.source.FractalSource
 import fr.geoking.arthur.shared.source.GenartSource
@@ -41,6 +42,7 @@ fun sourceLabelRes(sourceId: String): Int? = when (sourceId) {
     PixabayVideoSource.ID -> R.string.source_pixabay_video
     CoverrSource.ID -> R.string.source_coverr
     UnsplashSource.ID -> R.string.source_unsplash
+    DeviantArtSource.ID -> R.string.source_deviantart
     GenartSource.ID -> R.string.kind_genart
     FractalSource.ID -> R.string.kind_fractal
     CustomFractalSource.ID -> R.string.kind_custom_fractal
@@ -75,6 +77,7 @@ fun Artwork.authorForDisplay(sourceLabel: String): String {
 
 private val KnownAttributionSourceSuffixes = listOf(
     "Unsplash",
+    "DeviantArt",
     "Pexels",
     "Pixabay",
     "Coverr",

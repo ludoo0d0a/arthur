@@ -46,6 +46,7 @@ import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.shared.source.BundledPackSource
+import fr.geoking.arthur.shared.source.DeviantArtSource
 import fr.geoking.arthur.shared.source.MuseumSearchKind
 import fr.geoking.arthur.shared.source.PexelsSource
 import fr.geoking.arthur.shared.source.PexelsVideoSource
@@ -53,10 +54,12 @@ import fr.geoking.arthur.shared.source.PixabayVideoSource
 import fr.geoking.arthur.shared.source.CoverrSource
 import fr.geoking.arthur.shared.source.StockPhotoCategory
 import fr.geoking.arthur.shared.source.UnsplashSource
+import fr.geoking.arthur.shared.debug.DebugLogger
 import fr.geoking.arthur.source.MuseumSearchSettings
 import fr.geoking.arthur.source.ScreensaverSettings
 import fr.geoking.arthur.source.StockPhotoSettings
 import fr.geoking.arthur.ui.components.ControlPlaneHeader
+import org.koin.core.context.GlobalContext
 import fr.geoking.arthur.ui.components.PackFamily
 import fr.geoking.arthur.ui.components.PackGrid
 import fr.geoking.arthur.ui.components.PackSelection
@@ -68,6 +71,7 @@ import fr.geoking.arthur.ui.components.resolvePackPool
 import fr.geoking.arthur.ui.components.sourceIdsForAmbientLoad
 import fr.geoking.arthur.ui.components.stockCategoryOrNull
 import fr.geoking.arthur.ui.components.subPackTiles
+import fr.geoking.arthur.ui.components.videoSourceOrNull
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -76,6 +80,7 @@ private val StockSourceIds = setOf(
     BundledPackSource.ID,
     PexelsSource.ID,
     UnsplashSource.ID,
+    DeviantArtSource.ID,
 )
 
 private val VideoSourceIds = setOf(
@@ -103,12 +108,19 @@ fun ControlPlaneScreen(
     val packCatalogCache = remember { mutableMapOf<String, List<Artwork>>() }
     val scope = rememberCoroutineScope()
 
+    val debugLogger = remember {
+        runCatching { GlobalContext.get().get<DebugLogger>() }.getOrNull()
+    }
+
     val defaultScreensaver by screensaverSettings?.defaultPack?.collectAsState()
         ?: remember { mutableStateOf(null) }
 
     val stockCategory = selection.stockCategoryOrNull()
-        ?: stockPhotoSettings?.category
-        ?: StockPhotoCategory.Random
+        ?: if (selection.videoSourceOrNull() != null) {
+            StockPhotoCategory.Random
+        } else {
+            stockPhotoSettings?.category ?: StockPhotoCategory.Random
+        }
 
     val museumKind = when (selection.family) {
         PackFamily.Painting -> MuseumSearchKind.Painting
@@ -119,9 +131,16 @@ fun ControlPlaneScreen(
     }
 
     fun syncSourceSettings() {
-        selection.stockCategoryOrNull()?.let { topic ->
-            if (stockPhotoSettings != null) {
-                stockPhotoSettings.category = topic
+        when {
+            selection.stockCategoryOrNull() != null -> {
+                if (stockPhotoSettings != null) {
+                    stockPhotoSettings.category = stockCategory
+                }
+            }
+            selection.videoSourceOrNull() != null -> {
+                if (stockPhotoSettings != null) {
+                    stockPhotoSettings.category = StockPhotoCategory.Random
+                }
             }
         }
         if (museumSearchSettings != null) {
@@ -133,6 +152,7 @@ fun ControlPlaneScreen(
         syncSourceSettings()
         if (initialCatalog != null) return@LaunchedEffect
 
+        val startTime = System.currentTimeMillis()
         val stockOnly = contentEngine.catalog(
             PreparedRotation(
                 sourceIds = StockSourceIds.toList(),
@@ -154,6 +174,8 @@ fun ControlPlaneScreen(
                 artworkIds = emptyList(),
             ),
         )
+        val duration = System.currentTimeMillis() - startTime
+        debugLogger?.recordLoadDuration(duration)
     }
 
     // Prefetch the selected pack's rotation catalog so Start Ambient can skip the network wait.
@@ -161,6 +183,7 @@ fun ControlPlaneScreen(
         syncSourceSettings()
         val renewIds = selection.sourceIdsForAmbientLoad() ?: return@LaunchedEffect
         val key = selection.prefetchKey(museumKind, stockCategory)
+        val startTime = System.currentTimeMillis()
         val loaded = withContext(Dispatchers.IO) {
             contentEngine.catalog(
                 PreparedRotation(
@@ -169,6 +192,8 @@ fun ControlPlaneScreen(
                 ),
             )
         }
+        val duration = System.currentTimeMillis() - startTime
+        debugLogger?.recordLoadDuration(duration)
         packCatalogCache[key] = loaded
     }
 

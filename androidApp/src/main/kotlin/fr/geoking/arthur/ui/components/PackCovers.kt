@@ -44,6 +44,7 @@ object PackCovers {
     @DrawableRes
     fun video(topic: VideoTopic): Int = when (topic) {
         VideoTopic.Pexels -> R.drawable.pack_pexels
+        VideoTopic.Unsplash -> R.drawable.pack_unsplash
         VideoTopic.Pixabay -> R.drawable.pack_pixabay
         VideoTopic.Coverr -> R.drawable.pack_coverr
     }

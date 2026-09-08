@@ -45,6 +45,7 @@
     <string name="source_pixabay_video">Pixabay</string>
     <string name="source_coverr">Coverr</string>
     <string name="source_unsplash">Unsplash</string>
+    <string name="source_deviantart">DeviantArt</string>
     <string name="stock_topic_section">Thème photo</string>
     <string name="stock_topic_suggestions">Suggestions</string>
     <string name="stock_topic_random">Aléatoire</string>
@@ -120,6 +121,8 @@
     <string name="settings_developer_subtitle">Options de debug et outils de test</string>
     <string name="dev_simulate_premium">Simuler Premium</string>
     <string name="dev_simulate_premium_subtitle">Débloquer les fonctions Premium sans achat</string>
+    <string name="dev_verbose">Mode verbeux</string>
+    <string name="dev_verbose_subtitle">Afficher la barre flottante de métriques de debug et temps de requête</string>
     <string name="dev_errors_list">Journal d\'erreurs</string>
     <string name="dev_errors_list_subtitle">Erreurs réseau, auth et application collectées</string>
     <string name="dev_clear_errors">Tout effacer</string>

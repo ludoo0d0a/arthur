@@ -7,13 +7,17 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
 import fr.geoking.arthur.genart.phase01
@@ -69,40 +73,47 @@ internal fun NebulaEngine(
         ),
         label = "nebula_t",
     )
-    Canvas(modifier = modifier) {
-        val w = size.width
-        val h = size.height
-        val minDim = minOf(w, h)
-        drawRect(color = Color(0xFF030208))
-        stars.forEach { (sx, sy, a) ->
-            drawCircle(
-                color = Color.White.copy(alpha = a * 0.7f),
-                radius = 1f,
-                center = Offset(sx * w, sy * h),
-            )
+    Box(modifier = modifier) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+            drawRect(color = Color(0xFF030208))
+            stars.forEach { (sx, sy, a) ->
+                drawCircle(
+                    color = Color.White.copy(alpha = a * 0.7f),
+                    radius = 1f,
+                    center = Offset(sx * w, sy * h),
+                )
+            }
         }
-        val time = phase01(t)
-        val dim = if (isActive) 1f else 0.55f
-        clouds.forEach { cloud ->
-            val x = phase01(cloud.x0 + time * cloud.speedX) * w
-            val y = phase01(cloud.y0 + time * cloud.speedY) * h
-            val pulse = 0.85f + 0.15f * sin(time * 2f * PI.toFloat() * cloud.pulseFreq + cloud.pulsePhase)
-            val radius = cloud.radiusFrac * minDim * pulse
-            val base = TonalPalette.pick(paletteColors, cloud.colorIndex)
-            val tint = TonalPalette.brightness(base, brightness)
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        TonalPalette.withAlpha(tint, cloud.alphaBase * dim),
-                        TonalPalette.withAlpha(tint, cloud.alphaBase * 0.35f * dim),
-                        Color.Transparent,
+        // Real gaussian blur on the gas clouds only — keeps the star pinpoints crisp above.
+        Canvas(modifier = Modifier.fillMaxSize().blur(20.dp)) {
+            val w = size.width
+            val h = size.height
+            val minDim = minOf(w, h)
+            val time = phase01(t)
+            val dim = if (isActive) 1f else 0.55f
+            clouds.forEach { cloud ->
+                val x = phase01(cloud.x0 + time * cloud.speedX) * w
+                val y = phase01(cloud.y0 + time * cloud.speedY) * h
+                val pulse = 0.85f + 0.15f * sin(time * 2f * PI.toFloat() * cloud.pulseFreq + cloud.pulsePhase)
+                val radius = cloud.radiusFrac * minDim * pulse
+                val base = TonalPalette.pick(paletteColors, cloud.colorIndex)
+                val tint = TonalPalette.brightness(base, brightness)
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            TonalPalette.withAlpha(tint, cloud.alphaBase * dim),
+                            TonalPalette.withAlpha(tint, cloud.alphaBase * 0.35f * dim),
+                            Color.Transparent,
+                        ),
+                        center = Offset(x, y),
+                        radius = radius,
                     ),
-                    center = Offset(x, y),
                     radius = radius,
-                ),
-                radius = radius,
-                center = Offset(x, y),
-            )
+                    center = Offset(x, y),
+                )
+            }
         }
     }
 }

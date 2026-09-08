@@ -48,6 +48,9 @@ class GenartCatalogTest {
         assertEquals(GenartEngineId.SilkFolds, GenartCatalog.engineForId("genart.silk"))
         assertEquals(GenartEngineId.GradientMesh, GenartCatalog.engineForId("genart.gradientmesh"))
         assertEquals(GenartEngineId.ArcMosaic, GenartCatalog.engineForId("genart.arcmosaic"))
+        assertEquals(GenartEngineId.Storm, GenartCatalog.engineForId("genart.storm"))
+        assertEquals(GenartEngineId.StarField, GenartCatalog.engineForId("genart.starfield"))
+        assertEquals(GenartEngineId.SolarSystem, GenartCatalog.engineForId("genart.solarsystem"))
     }
 
     @Test
@@ -87,5 +90,8 @@ class GenartCatalogTest {
         assertEquals("Silk Folds", GenartCatalog.entries().first { it.id == "genart.silk" }.title)
         assertEquals("Gradient Mesh", GenartCatalog.entries().first { it.id == "genart.gradientmesh" }.title)
         assertEquals("Arc Mosaic", GenartCatalog.entries().first { it.id == "genart.arcmosaic" }.title)
+        assertEquals("Soft Storm", GenartCatalog.entries().first { it.id == "genart.storm" }.title)
+        assertEquals("Star Field Parallax", GenartCatalog.entries().first { it.id == "genart.starfield" }.title)
+        assertEquals("Solar System", GenartCatalog.entries().first { it.id == "genart.solarsystem" }.title)
     }
 }

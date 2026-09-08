@@ -83,21 +83,25 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
         }
         sessionToken = session.sessionToken
         scope.launch {
-            catalog = withContext(Dispatchers.IO) {
-                contentEngine.catalog(
-                    PreparedRotation(
-                        sourceIds = emptyList(),
-                        artworkIds = emptyList(),
-                    ),
-                )
+            runCatching {
+                catalog = withContext(Dispatchers.IO) {
+                    runCatching {
+                        contentEngine.catalog(
+                            PreparedRotation(
+                                sourceIds = emptyList(),
+                                artworkIds = emptyList(),
+                            ),
+                        )
+                    }.getOrDefault(emptyList())
+                }
+                notifyChildrenChanged(ROOT)
+                for (sourceId in ArthurMediaBrowse.rootSourceIds(catalog)) {
+                    notifyChildrenChanged(ArthurMediaBrowse.folderId(sourceId))
+                }
+                current = resolveAmbientArtwork(catalog, null)
+                current?.let { publishArtwork(it) }
+                setPlaying(true)
             }
-            notifyChildrenChanged(ROOT)
-            for (sourceId in ArthurMediaBrowse.rootSourceIds(catalog)) {
-                notifyChildrenChanged(ArthurMediaBrowse.folderId(sourceId))
-            }
-            current = resolveAmbientArtwork(catalog, null)
-            current?.let { publishArtwork(it) }
-            setPlaying(true)
         }
     }
 
@@ -153,51 +157,55 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
             }
         }
         val uri = AmbientAlbumArt.contentUri(packageName, art.id, gen).toString()
-        session.setMetadata(
-            MediaMetadataCompat.Builder()
-                .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, art.id)
-                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, art.title)
-                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE, art.title)
-                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, art.attribution)
-                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, art.attribution)
-                .putString(
-                    MediaMetadataCompat.METADATA_KEY_GENRE,
-                    if (art.isGenerative) "generative" else art.kind.name,
-                )
-                .putString(MediaMetadataCompat.METADATA_KEY_ART_URI, uri)
-                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, uri)
-                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON_URI, uri)
-                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, rotationSettings.intervalMs.value)
-                .build(),
-        )
-        val pool = rotationPool()
-        session.setQueue(
-            pool.mapIndexed { index, item ->
-                val icon = AmbientAlbumArt.contentUri(packageName, item.id, 0L)
-                val desc = MediaDescriptionCompat.Builder()
-                    .setMediaId(item.id)
-                    .setTitle(item.title)
-                    .setSubtitle(item.attribution)
-                    .setIconUri(icon)
-                    .build()
-                MediaSessionCompat.QueueItem(desc, index.toLong())
-            },
-        )
-        session.setQueueTitle(getString(R.string.ambient_title))
+        runCatching {
+            session.setMetadata(
+                MediaMetadataCompat.Builder()
+                    .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, art.id)
+                    .putString(MediaMetadataCompat.METADATA_KEY_TITLE, art.title)
+                    .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE, art.title)
+                    .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, art.attribution)
+                    .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, art.attribution)
+                    .putString(
+                        MediaMetadataCompat.METADATA_KEY_GENRE,
+                        if (art.isGenerative) "generative" else art.kind.name,
+                    )
+                    .putString(MediaMetadataCompat.METADATA_KEY_ART_URI, uri)
+                    .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, uri)
+                    .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON_URI, uri)
+                    .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, rotationSettings.intervalMs.value)
+                    .build(),
+            )
+            val pool = rotationPool()
+            session.setQueue(
+                pool.mapIndexed { index, item ->
+                    val icon = AmbientAlbumArt.contentUri(packageName, item.id, 0L)
+                    val desc = MediaDescriptionCompat.Builder()
+                        .setMediaId(item.id)
+                        .setTitle(item.title)
+                        .setSubtitle(item.attribution)
+                        .setIconUri(icon)
+                        .build()
+                    MediaSessionCompat.QueueItem(desc, index.toLong())
+                },
+            )
+            session.setQueueTitle(getString(R.string.ambient_title))
+        }
     }
 
     private fun publishPlayback(state: Int) {
-        session.setPlaybackState(
-            PlaybackStateCompat.Builder()
-                .setActions(
-                    PlaybackStateCompat.ACTION_PLAY or
-                        PlaybackStateCompat.ACTION_PAUSE or
-                        PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
-                        PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS,
-                )
-                .setState(state, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 1f)
-                .build(),
-        )
+        runCatching {
+            session.setPlaybackState(
+                PlaybackStateCompat.Builder()
+                    .setActions(
+                        PlaybackStateCompat.ACTION_PLAY or
+                            PlaybackStateCompat.ACTION_PAUSE or
+                            PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
+                            PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS,
+                    )
+                    .setState(state, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 1f)
+                    .build(),
+            )
+        }
     }
 
     override fun onGetRoot(
@@ -247,9 +255,9 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
     }
 
     override fun onDestroy() {
-        rotationJob?.cancel()
-        scope.cancel()
-        session.release()
+        runCatching { rotationJob?.cancel() }
+        runCatching { scope.cancel() }
+        runCatching { session.release() }
         super.onDestroy()
     }
 

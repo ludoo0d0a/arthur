@@ -101,11 +101,13 @@ class ArtworkPaneScreen(carContext: CarContext) : Screen(carContext), KoinCompon
                     contentEngine.catalog(PreparedRotation(emptyList(), emptyList()))
                 }.getOrDefault(emptyList())
             }
-            current = resolveAmbientArtwork(catalog, null)
-            loaded = true
-            scheduleAsyncRender()
-            invalidate()
-            if (isPlaying) startRotation()
+            runCatching {
+                current = resolveAmbientArtwork(catalog, null)
+                loaded = true
+                scheduleAsyncRender()
+                invalidate()
+                if (isPlaying) startRotation()
+            }
         }
     }
 
@@ -170,7 +172,7 @@ class ArtworkPaneScreen(carContext: CarContext) : Screen(carContext), KoinCompon
     override fun onGetTemplate(): Template {
         return try {
             buildPaneTemplate()
-        } catch (e: RuntimeException) {
+        } catch (e: Throwable) {
             val message = (e.message ?: carContext.getString(R.string.car_error_generic)).take(500)
             MessageTemplate.Builder(message)
                 .setTitle(carContext.getString(R.string.app_name))
@@ -202,16 +204,16 @@ class ArtworkPaneScreen(carContext: CarContext) : Screen(carContext), KoinCompon
                 renderedBitmap!!
             } else {
                 scheduleAsyncRender()
-                AmbientStillRenderer.render(art, generation, imageCache)
+                AmbientStillRenderer.renderPlaceholder(art, generation)
             }
             val carIcon = CarIcon.Builder(IconCompat.createWithBitmap(bitmap)).build()
-            paneBuilder.addRow(
-                Row.Builder()
-                    .setTitle(art.title)
-                    .addText(art.attribution)
-                    .setImage(carIcon, Row.IMAGE_TYPE_LARGE)
-                    .build(),
-            )
+            val rowBuilder = Row.Builder()
+                .setTitle(art.title.ifBlank { carContext.getString(R.string.app_name) })
+            if (art.attribution.isNotBlank()) {
+                rowBuilder.addText(art.attribution)
+            }
+            rowBuilder.setImage(carIcon, Row.IMAGE_TYPE_LARGE)
+            paneBuilder.addRow(rowBuilder.build())
         } else {
             paneBuilder.addRow(
                 Row.Builder()

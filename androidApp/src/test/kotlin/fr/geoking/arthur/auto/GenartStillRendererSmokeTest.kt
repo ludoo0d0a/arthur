@@ -90,6 +90,9 @@ class GenartStillRendererSmokeTest {
             "genart.cherryblossoms",
             "genart.ribbons",
             "genart.nebula",
+            "genart.storm",
+            "genart.starfield",
+            "genart.solarsystem",
         )
         val checksums = ids.map { id ->
             val bitmap = bake(id, 5L)

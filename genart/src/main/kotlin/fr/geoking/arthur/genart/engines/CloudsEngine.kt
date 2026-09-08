@@ -7,13 +7,17 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
 import fr.geoking.arthur.genart.phase01
@@ -72,48 +76,51 @@ internal fun CloudsEngine(
     val driftScale = if (isActive) 1f else 0.35f
     val alphaScale = if (isActive) 1f else 0.65f
 
-    Canvas(modifier = modifier) {
-        val w = size.width
-        val h = size.height
+    Box(modifier = modifier) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val skyTop = TonalPalette.brightness(TonalPalette.pick(paletteColors, 0), brightness * 0.45f)
+            val skyMid = TonalPalette.brightness(TonalPalette.pick(paletteColors, 1), brightness * 0.28f)
+            val skyBot = Color(0xFF0A1018)
+            drawRect(
+                brush = Brush.verticalGradient(
+                    colors = listOf(skyTop, skyMid, skyBot),
+                ),
+            )
+        }
+        // Real gaussian blur on the puffs only (no-ops below API 31, keeping the prior look there).
+        Canvas(modifier = Modifier.fillMaxSize().blur(16.dp)) {
+            val w = size.width
+            val h = size.height
+            val time = phase01(t)
+            val minDim = w.coerceAtMost(h)
 
-        val skyTop = TonalPalette.brightness(TonalPalette.pick(paletteColors, 0), brightness * 0.45f)
-        val skyMid = TonalPalette.brightness(TonalPalette.pick(paletteColors, 1), brightness * 0.28f)
-        val skyBot = Color(0xFF0A1018)
-        drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(skyTop, skyMid, skyBot),
-            ),
-        )
+            clouds.forEach { cloud ->
+                val x = phase01(cloud.x0 + time * cloud.speedMul * driftScale) * w
+                val bob = sin(time * cloud.bobFreq * 2f * PI.toFloat() + cloud.bobPhase) *
+                    cloud.bobAmpFrac * h * driftScale
+                val y = cloud.yFrac * h + bob
+                val base = TonalPalette.pick(paletteColors, cloud.colorIndex)
+                val tint = TonalPalette.brightness(base, brightness * 0.85f)
+                val cloudWhite = Color(0xFFE8EEF5)
 
-        val time = phase01(t)
-        val minDim = w.coerceAtMost(h)
+                cloud.puffs.forEach { puff ->
+                    val cx = x + puff.dx * cloud.scale * minDim * 0.55f
+                    val cy = y + puff.dy * cloud.scale * minDim * 0.35f
+                    val radius = puff.radiusFrac * cloud.scale * minDim * 0.22f
+                    val haloAlpha = 0.10f * alphaScale * brightness.coerceAtMost(1.1f)
+                    val coreAlpha = 0.22f * alphaScale * brightness.coerceAtMost(1.1f)
 
-        clouds.forEach { cloud ->
-            val x = phase01(cloud.x0 + time * cloud.speedMul * driftScale) * w
-            val bob = sin(time * cloud.bobFreq * 2f * PI.toFloat() + cloud.bobPhase) *
-                cloud.bobAmpFrac * h * driftScale
-            val y = cloud.yFrac * h + bob
-            val base = TonalPalette.pick(paletteColors, cloud.colorIndex)
-            val tint = TonalPalette.brightness(base, brightness * 0.85f)
-            val cloudWhite = Color(0xFFE8EEF5)
-
-            cloud.puffs.forEach { puff ->
-                val cx = x + puff.dx * cloud.scale * minDim * 0.55f
-                val cy = y + puff.dy * cloud.scale * minDim * 0.35f
-                val radius = puff.radiusFrac * cloud.scale * minDim * 0.22f
-                val haloAlpha = 0.10f * alphaScale * brightness.coerceAtMost(1.1f)
-                val coreAlpha = 0.22f * alphaScale * brightness.coerceAtMost(1.1f)
-
-                drawCircle(
-                    color = TonalPalette.withAlpha(tint, haloAlpha),
-                    radius = radius * 1.45f,
-                    center = Offset(cx, cy),
-                )
-                drawCircle(
-                    color = TonalPalette.withAlpha(cloudWhite, coreAlpha),
-                    radius = radius,
-                    center = Offset(cx, cy),
-                )
+                    drawCircle(
+                        color = TonalPalette.withAlpha(tint, haloAlpha),
+                        radius = radius * 1.45f,
+                        center = Offset(cx, cy),
+                    )
+                    drawCircle(
+                        color = TonalPalette.withAlpha(cloudWhite, coreAlpha),
+                        radius = radius,
+                        center = Offset(cx, cy),
+                    )
+                }
             }
         }
     }

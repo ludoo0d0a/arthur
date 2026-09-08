@@ -37,7 +37,8 @@ class MetSource(
     }.getOrDefault(emptyList())
 
     private suspend fun loadArtwork(objectId: Int, searchKind: MuseumSearchKind): Artwork? {
-        val obj = json.decodeFromString<MetObject>(httpGet(objectUrl(objectId)))
+        val payload = runCatching { httpGet(objectUrl(objectId)) }.getOrNull() ?: return null
+        val obj = runCatching { json.decodeFromString<MetObject>(payload) }.getOrNull() ?: return null
         val imageUrl = obj.primaryImage?.takeIf { it.isNotBlank() }
             ?: obj.primaryImageSmall?.takeIf { it.isNotBlank() }
             ?: return null

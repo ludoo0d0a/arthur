@@ -18,6 +18,7 @@ enum class RemoteProvider {
     Harvard,
     Smithsonian,
     Louvre,
+    DeviantArt,
 }
 
 /**
@@ -68,6 +69,7 @@ object RemoteCategoryMapping {
             RemoteProvider.Pixabay -> pixabayStockQuery(resolved)
             RemoteProvider.Coverr -> coverrStockQuery(resolved)
             RemoteProvider.Unsplash -> unsplashStockQuery(resolved)
+            RemoteProvider.DeviantArt -> deviantArtStockQuery(resolved)
             else -> resolved.query
         }
     }
@@ -154,6 +156,22 @@ object RemoteCategoryMapping {
         StockPhotoCategory.Architecture -> "architecture building"
         StockPhotoCategory.Sky -> "sky clouds"
         StockPhotoCategory.StreetArt -> "street art mural graffiti"
+    }
+
+    // --- Stock: DeviantArt Browse tags (single alphanumeric word, no spaces) ---
+
+    private fun deviantArtStockQuery(category: StockPhotoCategory): String = when (category) {
+        StockPhotoCategory.Suggestions,
+        StockPhotoCategory.Random,
+        -> category.query
+        StockPhotoCategory.Nature -> "nature"
+        StockPhotoCategory.City -> "cityscape"
+        StockPhotoCategory.Ocean -> "ocean"
+        StockPhotoCategory.Mountains -> "mountains"
+        StockPhotoCategory.Abstract -> "abstract"
+        StockPhotoCategory.Architecture -> "architecture"
+        StockPhotoCategory.Sky -> "sky"
+        StockPhotoCategory.StreetArt -> "streetart"
     }
 
     // --- Museum: Met Collection API (`q` + `medium`) ---

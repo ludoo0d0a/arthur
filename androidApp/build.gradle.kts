@@ -59,6 +59,8 @@ android {
         buildConfigField("String", "EUROPEANA_API_KEY", "\"${secret("EUROPEANA_API_KEY")}\"")
         buildConfigField("String", "HARVARD_API_KEY", "\"${secret("HARVARD_API_KEY")}\"")
         buildConfigField("String", "SMITHSONIAN_API_KEY", "\"${secret("SMITHSONIAN_API_KEY")}\"")
+        buildConfigField("String", "DEVIANTART_CLIENT_ID", "\"${secret("DEVIANTART_CLIENT_ID")}\"")
+        buildConfigField("String", "DEVIANTART_CLIENT_SECRET", "\"${secret("DEVIANTART_CLIENT_SECRET")}\"")
         // Opt-in developer UI on non-debug builds (local.properties / CI: DEBUG_DEV=true).
         buildConfigField("boolean", "DEBUG_DEV", secretFlag("DEBUG_DEV").toString())
         val buildDate = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())

@@ -7,8 +7,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,8 +18,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.unit.Dp
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -55,9 +63,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -82,6 +93,31 @@ private const val WebsiteUrl = "https://arthur.geoking.fr"
 private const val PrivacyUrl = "https://arthur.geoking.fr/privacy.html"
 private const val TermsUrl = "https://arthur.geoking.fr/terms.html"
 
+fun Modifier.verticalScrollbar(
+    state: LazyListState,
+    width: Dp = 4.dp,
+    color: Color = Color.Gray,
+): Modifier = drawWithContent {
+    drawContent()
+    val firstVisibleElementIndex = state.layoutInfo.visibleItemsInfo.firstOrNull()?.index ?: return@drawWithContent
+    val totalItemsCount = state.layoutInfo.totalItemsCount
+    if (totalItemsCount == 0) return@drawWithContent
+
+    val visibleItemsCount = state.layoutInfo.visibleItemsInfo.size
+    if (visibleItemsCount >= totalItemsCount) return@drawWithContent
+
+    val elementHeight = size.height / totalItemsCount
+    val scrollbarOffsetY = firstVisibleElementIndex * elementHeight
+    val scrollbarHeight = visibleItemsCount * elementHeight
+
+    drawRoundRect(
+        color = color,
+        topLeft = Offset(size.width - width.toPx(), scrollbarOffsetY),
+        size = Size(width.toPx(), scrollbarHeight),
+        cornerRadius = CornerRadius(width.toPx() / 2, width.toPx() / 2),
+    )
+}
+
 enum class SettingsScreenPage {
     Main,
     RotationInterval,
@@ -99,6 +135,8 @@ fun SettingsScreen(
     showDeveloper: Boolean = BuildConfig.DEBUG || BuildConfig.DEBUG_DEV,
     simulatePremium: Boolean = true,
     onSimulatePremiumChange: (Boolean) -> Unit = {},
+    verbose: Boolean = false,
+    onVerboseChange: (Boolean) -> Unit = {},
     rotationIntervalMs: Long = AmbientAlbumArt.ROTATION_INTERVAL_MS,
     onRotationIntervalChange: (Long) -> Unit = {},
     onCheckForUpdate: (() -> Unit)? = null,
@@ -195,6 +233,8 @@ fun SettingsScreen(
                 SettingsScreenPage.Developer -> DeveloperContent(
                     simulatePremium = simulatePremium,
                     onSimulatePremiumChange = onSimulatePremiumChange,
+                    verbose = verbose,
+                    onVerboseChange = onVerboseChange,
                     onOpenErrorLog = { screenStack = screenStack + SettingsScreenPage.DeveloperErrorLog },
                 )
                 SettingsScreenPage.DeveloperErrorLog -> DeveloperErrorLogScreen(
@@ -353,6 +393,8 @@ private fun rotationIntervalLabel(ms: Long): String {
 private fun DeveloperContent(
     simulatePremium: Boolean,
     onSimulatePremiumChange: (Boolean) -> Unit,
+    verbose: Boolean = false,
+    onVerboseChange: (Boolean) -> Unit = {},
     onOpenErrorLog: () -> Unit = {},
 ) {
     Column(
@@ -392,6 +434,31 @@ private fun DeveloperContent(
                 )
             }
 
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+                    Text(
+                        text = stringResource(R.string.dev_verbose),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    Text(
+                        text = stringResource(R.string.dev_verbose_subtitle),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = verbose,
+                    onCheckedChange = onVerboseChange,
+                    modifier = Modifier.testTag("dev_verbose"),
+                )
+            }
+
             SettingsItem(
                 label = stringResource(R.string.dev_errors_list),
                 value = stringResource(R.string.dev_errors_list_subtitle),
@@ -402,7 +469,6 @@ private fun DeveloperContent(
 }
 
 @Composable
-@OptIn(ExperimentalLayoutApi::class)
 fun DeveloperErrorLogScreen(
     errorLogger: ErrorLogger,
 ) {
@@ -457,18 +523,23 @@ fun DeveloperErrorLogScreen(
             }
         }
 
-        // Category Filter Chips
-        FlowRow(
+        // Category Filter Chips (Single Row)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             FilterChip(
+                modifier = Modifier.testTag("chip_category_all"),
                 selected = selectedCategory == null,
                 onClick = { selectedCategory = null },
                 label = { Text("All Categories") },
             )
             ErrorCategory.entries.forEach { cat ->
                 FilterChip(
+                    modifier = Modifier.testTag("chip_category_${cat.name}"),
                     selected = selectedCategory == cat,
                     onClick = {
                         selectedCategory = if (selectedCategory == cat) null else cat
@@ -478,11 +549,14 @@ fun DeveloperErrorLogScreen(
             }
         }
 
-        // Source Filter Chips
+        // Source Filter Chips (Single Row)
         if (sources.isNotEmpty()) {
-            FlowRow(
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 FilterChip(
                     selected = selectedSource == null,
@@ -491,6 +565,7 @@ fun DeveloperErrorLogScreen(
                 )
                 sources.forEach { src ->
                     FilterChip(
+                        modifier = Modifier.testTag("chip_source_$src"),
                         selected = selectedSource.equals(src, ignoreCase = true),
                         onClick = {
                             selectedSource = if (selectedSource.equals(src, ignoreCase = true)) null else src
@@ -515,8 +590,12 @@ fun DeveloperErrorLogScreen(
                 )
             }
         } else {
+            val listState = rememberLazyListState()
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
+                state = listState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScrollbar(listState, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(filteredErrors, key = { it.id }) { item ->
@@ -530,16 +609,32 @@ fun DeveloperErrorLogScreen(
 @Composable
 private fun ErrorItemCard(item: ErrorItem) {
     var expanded by remember { mutableStateOf(false) }
+    val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
+    val copiedMessage = stringResource(R.string.dev_error_copied)
+
     val formattedTime = remember(item.timestamp) {
         if (item.timestamp > 0) {
             SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date(item.timestamp))
         } else ""
     }
 
+    val fullCopyText = remember(item, formattedTime) {
+        buildString {
+            append("[${item.category.name}] Source: ${item.sourceId}")
+            if (item.statusCode != null) append(" (HTTP ${item.statusCode})")
+            if (formattedTime.isNotBlank()) append(" @ $formattedTime")
+            append("\nMessage: ${item.message}")
+            if (!item.url.isNullOrBlank()) append("\nURL: ${item.url}")
+            if (!item.details.isNullOrBlank()) append("\nDetails:\n${item.details}")
+        }
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { expanded = !expanded },
+            .clickable { expanded = !expanded }
+            .testTag("error_card_${item.id}"),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
         ),
@@ -596,12 +691,33 @@ private fun ErrorItemCard(item: ErrorItem) {
                     }
                 }
 
-                if (formattedTime.isNotBlank()) {
-                    Text(
-                        text = formattedTime,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    if (formattedTime.isNotBlank()) {
+                        Text(
+                            text = formattedTime,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    IconButton(
+                        onClick = {
+                            clipboardManager.setText(AnnotatedString(fullCopyText))
+                            Toast.makeText(context, copiedMessage, Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier
+                            .size(32.dp)
+                            .testTag("btn_copy_error_${item.id}"),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Share,
+                            contentDescription = stringResource(R.string.dev_copy_error),
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
 

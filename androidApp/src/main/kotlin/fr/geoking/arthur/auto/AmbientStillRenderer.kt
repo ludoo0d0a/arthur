@@ -51,6 +51,7 @@ object AmbientStillRenderer {
         val bitmap = Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         val seed = artwork.id.hashCode().toLong() xor (generation * 0x9E3779B9L)
+        var errorReason: String? = null
         runCatching {
             when {
                 artwork.kind == ArtworkKind.Genart -> drawGenart(canvas, artwork.id, generation)
@@ -58,14 +59,22 @@ object AmbientStillRenderer {
                     drawCustomFractal(canvas, artwork.id, generation)
                 artwork.isGenerative -> drawFractalField(canvas, artwork.id, seed)
                 !artwork.localPath.isNullOrBlank() || !artwork.remoteUrl.isNullOrBlank() -> {
-                    val drawn = drawStillImage(canvas, artwork.id, artwork.localPath, artwork.remoteUrl, imageCache)
-                    if (!drawn) drawStillPlaceholder(canvas, seed, isError = true)
+                    val (drawn, reason) = drawStillImageWithResult(canvas, artwork.id, artwork.localPath, artwork.remoteUrl, imageCache)
+                    if (!drawn) drawStillPlaceholder(canvas, seed, isError = true, errorReason = reason)
                 }
                 else -> drawStillPlaceholder(canvas, seed, isError = true)
             }
-        }.onFailure {
-            drawStillPlaceholder(canvas, seed, isError = true)
+        }.onFailure { e ->
+            drawStillPlaceholder(canvas, seed, isError = true, errorReason = e.message)
         }
+        return bitmap
+    }
+
+    fun renderPlaceholder(artwork: Artwork, generation: Long): Bitmap {
+        val bitmap = Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val seed = artwork.id.hashCode().toLong() xor (generation * 0x9E3779B9L)
+        drawStillPlaceholder(canvas, seed, isError = false)
         return bitmap
     }
 
@@ -92,13 +101,13 @@ object AmbientStillRenderer {
         else -> ArtworkKind.Photo
     }
 
-    private fun drawStillImage(
+    private fun drawStillImageWithResult(
         canvas: Canvas,
         artworkId: String,
         localPath: String?,
         remoteUrl: String?,
         imageCache: ArtworkImageCache?,
-    ): Boolean {
+    ): Pair<Boolean, String?> {
         // 1. Check local path
         val fromFile = localPath?.takeIf { it.isNotBlank() }?.let { path ->
             SafeBitmapDecoder.decodeFile(path, SafeBitmapDecoder.AMBIENT_STILL_MAX_SIDE)
@@ -106,7 +115,7 @@ object AmbientStillRenderer {
         if (fromFile != null) {
             drawBitmapCover(canvas, fromFile)
             fromFile.recycle()
-            return true
+            return Pair(true, null)
         }
 
         // 2. Check disk cache
@@ -116,29 +125,41 @@ object AmbientStillRenderer {
             if (fromCache != null) {
                 drawBitmapCover(canvas, fromCache)
                 fromCache.recycle()
-                return true
+                return Pair(true, null)
             }
         }
 
-        val url = remoteUrl?.takeIf { it.isNotBlank() } ?: return false
+        val url = remoteUrl?.takeIf { it.isNotBlank() } ?: return Pair(false, "No image URL provided")
 
         // 3. Do not execute network requests on the main thread
         if (Looper.myLooper() == Looper.getMainLooper()) {
-            return false
+            return Pair(false, "Download skipped on main thread")
         }
 
         // 4. Download on background thread
-        return runCatching {
-            val bytes = StillImageDownloader.downloadBytes(url)
-            imageCache?.putImage(artworkId, bytes)
-            val bmp = SafeBitmapDecoder.decodeByteArray(
-                bytes,
+        return try {
+            val file = if (imageCache != null) {
+                imageCache.downloadAndCache(artworkId, url)
+            } else {
+                val tempFile = File.createTempFile("ambient_still_", ".tmp")
+                try {
+                    StillImageDownloader.downloadToFile(url, tempFile)
+                } catch (e: Throwable) {
+                    tempFile.delete()
+                    throw e
+                }
+            }
+
+            val bmp = SafeBitmapDecoder.decodeFile(
+                file.absolutePath,
                 SafeBitmapDecoder.AMBIENT_STILL_MAX_SIDE,
-            ) ?: return false
+            ) ?: throw java.io.IOException("Failed to decode image file")
             drawBitmapCover(canvas, bmp)
             bmp.recycle()
-            true
-        }.getOrDefault(false)
+            Pair(true, null)
+        } catch (e: Throwable) {
+            Pair(false, e.message ?: e.toString())
+        }
     }
 
     private fun drawBitmapCover(canvas: Canvas, bmp: Bitmap) {
@@ -159,7 +180,12 @@ object AmbientStillRenderer {
         )
     }
 
-    private fun drawStillPlaceholder(canvas: Canvas, seed: Long, isError: Boolean = false) {
+    private fun drawStillPlaceholder(
+        canvas: Canvas,
+        seed: Long,
+        isError: Boolean = false,
+        errorReason: String? = null,
+    ) {
         val rnd = Random(seed)
         val c1 = Color.rgb(12 + rnd.nextInt(20), 16 + rnd.nextInt(24), 32 + rnd.nextInt(40))
         val c2 = Color.rgb(8, 10, 24)
@@ -189,7 +215,15 @@ object AmbientStillRenderer {
                 textSize = 28f
                 textAlign = Paint.Align.CENTER
             }
-            canvas.drawText("Artwork unavailable", SIZE * 0.5f, SIZE * 0.50f, textPaint)
+            canvas.drawText("Artwork unavailable", SIZE * 0.5f, SIZE * 0.48f, textPaint)
+            if (!errorReason.isNullOrBlank()) {
+                val detailPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = Color.argb(180, 255, 180, 180)
+                    textSize = 20f
+                    textAlign = Paint.Align.CENTER
+                }
+                canvas.drawText(errorReason, SIZE * 0.5f, SIZE * 0.54f, detailPaint)
+            }
         }
     }
 

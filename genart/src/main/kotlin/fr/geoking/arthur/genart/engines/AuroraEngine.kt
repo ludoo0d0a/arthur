@@ -7,15 +7,19 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Fill
+import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
 import fr.geoking.arthur.genart.phase01
@@ -70,84 +74,91 @@ internal fun AuroraEngine(
         ),
         label = "aurora_t",
     )
-    Canvas(modifier = modifier) {
-        val w = size.width
-        val h = size.height
-        drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(Color(0xFF040A1A), Color(0xFF000000)),
-            ),
-        )
-        stars.forEach { star ->
-            drawCircle(
-                color = Color.White.copy(alpha = star.alpha * 0.9f),
-                radius = star.radius,
-                center = Offset(star.xFrac * w, star.yFrac * h),
-            )
-        }
-        val timeAngle = phase01(t) * 2f * PI.toFloat()
-        val activeFactor = if (isActive) 1f else 0.55f
-        val segments = 32
-        ribbons.forEach { ribbon ->
-            val freqPerPixel = ribbon.cycles * 2f * PI.toFloat() / w.coerceAtLeast(1f)
-            val amplitudePx = ribbon.amplitudeFrac * h * activeFactor
-            val baseYPx = ribbon.baseYFrac * h
-            val thicknessPx = ribbon.thicknessFrac * h
-            val ribbonTime = timeAngle * ribbon.speedMul
-
-            val topPoints = ArrayList<Offset>(segments + 1)
-            val bottomPoints = ArrayList<Offset>(segments + 1)
-            for (k in 0..segments) {
-                val x = (k / segments.toFloat()) * w
-                val topY = baseYPx + amplitudePx * sin(x * freqPerPixel + ribbonTime + ribbon.phaseOffset)
-                topPoints.add(Offset(x, topY))
-                val bottomY = baseYPx + thicknessPx +
-                    amplitudePx * sin(
-                        x * freqPerPixel + ribbonTime + ribbon.phaseOffset + ribbon.bottomPhaseShift,
-                    )
-                bottomPoints.add(Offset(x, bottomY))
-            }
-
-            val path = Path()
-            path.moveTo(topPoints[0].x, topPoints[0].y)
-            for (k in 1 until topPoints.size) {
-                val prev = topPoints[k - 1]
-                val curr = topPoints[k]
-                val midX = (prev.x + curr.x) / 2f
-                val midY = (prev.y + curr.y) / 2f
-                path.quadraticBezierTo(prev.x, prev.y, midX, midY)
-            }
-            path.lineTo(topPoints.last().x, topPoints.last().y)
-            path.lineTo(bottomPoints.last().x, bottomPoints.last().y)
-            val bottomReversed = bottomPoints.asReversed()
-            for (k in 1 until bottomReversed.size) {
-                val prev = bottomReversed[k - 1]
-                val curr = bottomReversed[k]
-                val midX = (prev.x + curr.x) / 2f
-                val midY = (prev.y + curr.y) / 2f
-                path.quadraticBezierTo(prev.x, prev.y, midX, midY)
-            }
-            path.lineTo(bottomReversed.last().x, bottomReversed.last().y)
-            path.close()
-
-            val baseColor = TonalPalette.brightness(
-                TonalPalette.pick(paletteColors, ribbon.colorIndex),
-                brightness,
-            )
-            val alpha = seededRange(ribbon.colorIndex * 89 + 31, 0.15f, 0.35f) * activeFactor
-            val glowColor = TonalPalette.withAlpha(baseColor, alpha)
-            val topExtent = (baseYPx - amplitudePx).coerceAtLeast(0f)
-            val bottomExtent = (baseYPx + thicknessPx + amplitudePx).coerceAtMost(h)
-
-            drawPath(
-                path = path,
+    Box(modifier = modifier) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+            drawRect(
                 brush = Brush.verticalGradient(
-                    colors = listOf(glowColor, Color.Transparent),
-                    startY = topExtent,
-                    endY = bottomExtent,
+                    colors = listOf(Color(0xFF040A1A), Color(0xFF000000)),
                 ),
-                style = Fill,
             )
+            stars.forEach { star ->
+                drawCircle(
+                    color = Color.White.copy(alpha = star.alpha * 0.9f),
+                    radius = star.radius,
+                    center = Offset(star.xFrac * w, star.yFrac * h),
+                )
+            }
+        }
+        // Real gaussian blur on the ribbons only — keeps the star pinpoints crisp above.
+        Canvas(modifier = Modifier.fillMaxSize().blur(12.dp)) {
+            val w = size.width
+            val h = size.height
+            val timeAngle = phase01(t) * 2f * PI.toFloat()
+            val activeFactor = if (isActive) 1f else 0.55f
+            val segments = 32
+            ribbons.forEach { ribbon ->
+                val freqPerPixel = ribbon.cycles * 2f * PI.toFloat() / w.coerceAtLeast(1f)
+                val amplitudePx = ribbon.amplitudeFrac * h * activeFactor
+                val baseYPx = ribbon.baseYFrac * h
+                val thicknessPx = ribbon.thicknessFrac * h
+                val ribbonTime = timeAngle * ribbon.speedMul
+
+                val topPoints = ArrayList<Offset>(segments + 1)
+                val bottomPoints = ArrayList<Offset>(segments + 1)
+                for (k in 0..segments) {
+                    val x = (k / segments.toFloat()) * w
+                    val topY = baseYPx + amplitudePx * sin(x * freqPerPixel + ribbonTime + ribbon.phaseOffset)
+                    topPoints.add(Offset(x, topY))
+                    val bottomY = baseYPx + thicknessPx +
+                        amplitudePx * sin(
+                            x * freqPerPixel + ribbonTime + ribbon.phaseOffset + ribbon.bottomPhaseShift,
+                        )
+                    bottomPoints.add(Offset(x, bottomY))
+                }
+
+                val path = Path()
+                path.moveTo(topPoints[0].x, topPoints[0].y)
+                for (k in 1 until topPoints.size) {
+                    val prev = topPoints[k - 1]
+                    val curr = topPoints[k]
+                    val midX = (prev.x + curr.x) / 2f
+                    val midY = (prev.y + curr.y) / 2f
+                    path.quadraticBezierTo(prev.x, prev.y, midX, midY)
+                }
+                path.lineTo(topPoints.last().x, topPoints.last().y)
+                path.lineTo(bottomPoints.last().x, bottomPoints.last().y)
+                val bottomReversed = bottomPoints.asReversed()
+                for (k in 1 until bottomReversed.size) {
+                    val prev = bottomReversed[k - 1]
+                    val curr = bottomReversed[k]
+                    val midX = (prev.x + curr.x) / 2f
+                    val midY = (prev.y + curr.y) / 2f
+                    path.quadraticBezierTo(prev.x, prev.y, midX, midY)
+                }
+                path.lineTo(bottomReversed.last().x, bottomReversed.last().y)
+                path.close()
+
+                val baseColor = TonalPalette.brightness(
+                    TonalPalette.pick(paletteColors, ribbon.colorIndex),
+                    brightness,
+                )
+                val alpha = seededRange(ribbon.colorIndex * 89 + 31, 0.15f, 0.35f) * activeFactor
+                val glowColor = TonalPalette.withAlpha(baseColor, alpha)
+                val topExtent = (baseYPx - amplitudePx).coerceAtLeast(0f)
+                val bottomExtent = (baseYPx + thicknessPx + amplitudePx).coerceAtMost(h)
+
+                drawPath(
+                    path = path,
+                    brush = Brush.verticalGradient(
+                        colors = listOf(glowColor, Color.Transparent),
+                        startY = topExtent,
+                        endY = bottomExtent,
+                    ),
+                    style = Fill,
+                )
+            }
         }
     }
 }

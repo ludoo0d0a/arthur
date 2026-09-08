@@ -55,6 +55,54 @@ class GenartSource(
         const val SILK = "genart.silk"
         const val GRADIENT_MESH = "genart.gradientmesh"
         const val ARC_MOSAIC = "genart.arcmosaic"
+        const val STORM = "genart.storm"
+        const val STAR_FIELD = "genart.starfield"
+        const val SOLAR_SYSTEM = "genart.solarsystem"
+        const val CANDLE_EMBER = "genart.candleember"
+        const val RAINBOW = "genart.rainbow"
+        const val SMOG = "genart.smog"
+        const val SMOKE = "genart.smoke"
+        const val HEAT_HAZE = "genart.heathaze"
+        const val SUNSHINE = "genart.sunshine"
+        const val LIGHT_DRIZZLE = "genart.lightdrizzle"
+        const val STEAM_CURL = "genart.steamcurl"
+        const val DRIFTING_POLLEN = "genart.pollen"
+        const val LANDSLIDE_DUST = "genart.landslidedust"
+        const val PEBBLE_SHORE_WASH = "genart.pebbleshore"
+        const val FROST_CRYSTALS = "genart.frostcrystals"
+        const val ION_TRAIL = "genart.iontrail"
+        const val ANT_TRAILS = "genart.anttrails"
+        const val SLEEPING_PET = "genart.sleepingpet"
+        const val WARP_STREAK = "genart.warpstreak"
+        const val SPACE_STATION_DRIFT = "genart.spacestation"
+        const val MOONLIGHT_RIPPLES = "genart.moonlightripples"
+        const val ECLIPSE_CORONA = "genart.eclipsecorona"
+        const val INK_IN_WATER = "genart.inkinwater"
+        const val WIND_CHIME = "genart.windchime"
+        const val DAY_NIGHT_WASH = "genart.daynightwash"
+        const val TUMBLEWEED_DRIFT = "genart.tumbleweed"
+        const val DISTANT_DINOSAURS = "genart.dinosaurs"
+        const val CITY_LIGHTS = "genart.citylights"
+        const val MOSS_GROWTH = "genart.moss"
+        const val TERRARIUM_DRIP = "genart.terrariumdrip"
+        const val AQUARIUM = "genart.aquarium"
+        const val FIELDS = "genart.fields"
+        const val RAIN_ON_GLASS = "genart.rainonglass"
+        const val REEDS = "genart.reeds"
+        const val CANYON_DUNES = "genart.canyondunes"
+        const val CONTINENTS = "genart.continents"
+        const val ROADS = "genart.roads"
+        const val RIVERS = "genart.rivers"
+        const val TREE = "genart.tree"
+        const val FLOWER = "genart.flower"
+        const val LAKE = "genart.lake"
+        const val ASTEROIDS = "genart.asteroids"
+        const val WATERFALL_MIST = "genart.waterfallmist"
+        const val SOFT_WIND_STREAKS = "genart.windstreaks"
+        const val GERSTNER_OCEAN = "genart.oceanswell"
+        const val SPIRAL_GALAXY = "genart.galaxy"
+        const val DATA_HORIZON = "genart.datahorizon"
+        const val SOFT_CAUSTICS = "genart.caustics"
 
         fun defaultCatalog(): List<Artwork> = listOf(
             entry(PARTICLES, "Drifting Particles"),
@@ -93,6 +141,54 @@ class GenartSource(
             entry(SILK, "Silk Folds"),
             entry(GRADIENT_MESH, "Gradient Mesh"),
             entry(ARC_MOSAIC, "Arc Mosaic"),
+            entry(STORM, "Soft Storm"),
+            entry(STAR_FIELD, "Star Field Parallax"),
+            entry(SOLAR_SYSTEM, "Solar System"),
+            entry(CANDLE_EMBER, "Candle Ember"),
+            entry(RAINBOW, "Soft Rainbow"),
+            entry(SMOG, "Soft Smog"),
+            entry(SMOKE, "Rising Smoke"),
+            entry(HEAT_HAZE, "Heat Haze"),
+            entry(SUNSHINE, "Soft Sunshine"),
+            entry(LIGHT_DRIZZLE, "Light Drizzle"),
+            entry(STEAM_CURL, "Steam Curl"),
+            entry(DRIFTING_POLLEN, "Drifting Pollen"),
+            entry(LANDSLIDE_DUST, "Soft Landslide Dust"),
+            entry(PEBBLE_SHORE_WASH, "Pebble Shore Wash"),
+            entry(FROST_CRYSTALS, "First Frost Crystals"),
+            entry(ION_TRAIL, "Ion Trail"),
+            entry(ANT_TRAILS, "Ant Trails"),
+            entry(SLEEPING_PET, "Sleeping Pet Outline"),
+            entry(WARP_STREAK, "Warp Streak"),
+            entry(SPACE_STATION_DRIFT, "Space Station Drift"),
+            entry(MOONLIGHT_RIPPLES, "Moonlight Ripples"),
+            entry(ECLIPSE_CORONA, "Eclipse Corona"),
+            entry(INK_IN_WATER, "Ink in Water"),
+            entry(WIND_CHIME, "Wind Chime Silhouette"),
+            entry(DAY_NIGHT_WASH, "Soft Day-Night Wash"),
+            entry(TUMBLEWEED_DRIFT, "Tumbleweed Drift"),
+            entry(DISTANT_DINOSAURS, "Distant Dinosaur Silhouettes"),
+            entry(CITY_LIGHTS, "City Night Lights"),
+            entry(MOSS_GROWTH, "Moss Growth"),
+            entry(TERRARIUM_DRIP, "Terrarium Drip"),
+            entry(AQUARIUM, "Aquarium"),
+            entry(FIELDS, "Soft Fields"),
+            entry(RAIN_ON_GLASS, "Rain on Glass"),
+            entry(REEDS, "Reeds"),
+            entry(CANYON_DUNES, "Canyon Dunes"),
+            entry(CONTINENTS, "Continents"),
+            entry(ROADS, "Roads"),
+            entry(RIVERS, "Rivers"),
+            entry(TREE, "Tree in Wind"),
+            entry(FLOWER, "Flower Bloom"),
+            entry(LAKE, "Lake Surface"),
+            entry(ASTEROIDS, "Asteroids"),
+            entry(WATERFALL_MIST, "Waterfall Mist"),
+            entry(SOFT_WIND_STREAKS, "Soft Wind Streaks"),
+            entry(GERSTNER_OCEAN, "Ocean Swell"),
+            entry(SPIRAL_GALAXY, "Spiral Galaxy Drift"),
+            entry(DATA_HORIZON, "Data Horizon"),
+            entry(SOFT_CAUSTICS, "Soft Caustics"),
         )
 
         private fun entry(id: String, title: String) = Artwork(

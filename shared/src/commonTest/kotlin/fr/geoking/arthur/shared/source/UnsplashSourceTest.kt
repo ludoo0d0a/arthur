@@ -43,6 +43,33 @@ class UnsplashSourceTest {
             art[0].remoteUrl,
         )
         assertEquals(UnsplashSource.ID, art[0].sourceId)
+        assertEquals(fr.geoking.arthur.shared.domain.ArtworkKind.Photo, art[0].kind)
+    }
+
+    @Test
+    fun loadsArtworkWithVideoKind() = runBlocking {
+        val fixtures = mapOf(
+            UnsplashSource.searchUrl(perPage = RemoteSample.SEARCH_POOL) to """
+                {
+                  "results": [
+                    {
+                      "id": "video123",
+                      "description": "Video clip",
+                      "urls": { "regular": "https://images.unsplash.com/photo-vid" }
+                    }
+                  ]
+                }
+            """.trimIndent(),
+        )
+        val source = UnsplashSource(
+            accessKey = "test-key",
+            httpGet = { url -> fixtures.getValue(url) },
+            random = ZeroRandom,
+            kind = fr.geoking.arthur.shared.domain.ArtworkKind.Video,
+        )
+        val art = source.load()
+        assertEquals(1, art.size)
+        assertEquals(fr.geoking.arthur.shared.domain.ArtworkKind.Video, art[0].kind)
     }
 
     @Test

@@ -1,12 +1,27 @@
 # Pack Navigation Flows, Queries, and Fallbacks Architecture
 
-This document details the navigation flows, API endpoints, query parameters, sampling strategies, and fallback mechanisms for all Ambient Art Packs in Arthur.
+This document details the navigation flows, screen-by-screen API triggers,
+endpoints, query parameters, sampling strategies, caching, and fallback
+mechanisms for all Ambient Art Packs in Arthur.
 
 ---
 
 ## 1. Pack System Overview & Architecture
 
 Arthur organizes ambient content into Spotify-style **Pack Families** on the Control Plane grid. Each family contains **Sub-Packs** (specific topics, institutions, or keywords).
+
+There is no `NavHost` — screen switching is a plain state machine
+(`remember { mutableStateOf(...) }`) in
+[MainActivity.kt](../androidApp/src/main/kotlin/fr/geoking/arthur/phone/MainActivity.kt)
+and
+[ControlPlaneScreen.kt](../androidApp/src/main/kotlin/fr/geoking/arthur/ui/screens/ControlPlaneScreen.kt).
+Every network call funnels through one facade, `ContentEngine.catalog(PreparedRotation)`
+([ContentEngine.kt](../shared/src/commonMain/kotlin/fr/geoking/arthur/shared/engine/ContentEngine.kt)),
+which fans out to `Source.load()` for each provider whose id is in
+`PreparedRotation.sourceIds` (empty list = every registered source). All calls
+are plain HTTP `GET`, JSON, over a shared Ktor/OkHttp client
+([ArthurApp.kt](../androidApp/src/main/kotlin/fr/geoking/arthur/ArthurApp.kt)) — there
+is no POST/PUT/DELETE anywhere in the packs feature.
 
 ### Top-Level Pack Families (`PackFamily`)
 
@@ -21,11 +36,124 @@ Arthur organizes ambient content into Spotify-style **Pack Families** on the Con
 
 ---
 
-## 2. Museum Pack Flows & Query Parameters
+## 2. Navigation Tree
+
+```
+MainActivity
+ └── ControlPlaneScreen
+      ├── Home grid (no family opened): 6 tiles
+      │    Museum · Genart · Photo · Video · Sculpture · Painting
+      │
+      ├── Sub-pack grid (family opened): "All" + one tile per topic
+      │    Museum    -> All + 9 institutions
+      │    Painting  -> All + Suggestions + 9 institutions
+      │    Sculpture -> All + Suggestions + 9 institutions
+      │    Photo     -> All + Suggestions + 8 keyword topics
+      │    Video     -> All + 4 providers + keyword topics
+      │    Genart    -> All + 7 procedural topics (local only, no network)
+      │
+      │    Tapping an already-selected tile (or TV OK) -> Start Ambient
+      │
+      ├── Genart > Custom -> "Create custom fractal" -> CustomFractalEditorScreen
+      │    (local-only fractal editor, no network calls)
+      │
+      └── Start Ambient -> AmbientActivity
+           └── AmbientScreenContent (fullscreen rotation)
+                └── "..." details button -> ArtworkDetailScreen
+                     (no network calls; "Open source page" opens an
+                     external browser Intent, not an in-app API call)
+```
+
+---
+
+## 3. Screen-by-Screen API Calls
+
+### 3.1 ControlPlaneScreen — Home grid
+
+File: [ControlPlaneScreen.kt:151-179](../androidApp/src/main/kotlin/fr/geoking/arthur/ui/screens/ControlPlaneScreen.kt)
+
+On first composition (`LaunchedEffect`), if no catalog was passed in, three
+prefetch calls fire to warm the UI:
+
+1. `ContentEngine.catalog(sourceIds = StockSourceIds)` — `bundled`, `pexels`, `unsplash`, `deviantart`
+2. `ContentEngine.catalog(sourceIds = VideoSourceIds)` — `pexels-video`, `pixabay-video`, `coverr`
+3. `ContentEngine.catalog(sourceIds = emptyList())` — every registered source (all 9 museum APIs + all stock/video APIs + bundled + genart)
+
+So simply opening the home grid can, in the worst case, hit **every external
+provider** listed in section 5. Tapping a family tile only changes local
+state — no call.
+
+### 3.2 ControlPlaneScreen — Sub-pack grid
+
+Same file, [ControlPlaneScreen.kt:182-198](../androidApp/src/main/kotlin/fr/geoking/arthur/ui/screens/ControlPlaneScreen.kt):
+
+- **On every sub-pack selection** (tapping a tile, or focusing one on TV):
+  `selection.sourceIdsForAmbientLoad()` (in
+  [PackModels.kt:285-310](../androidApp/src/main/kotlin/fr/geoking/arthur/ui/components/PackModels.kt))
+  resolves the exact provider id(s) for that topic, then prefetches
+  `ContentEngine.catalog(PreparedRotation(sourceIds = renewIds))` on
+  `Dispatchers.IO` and caches the result in-memory
+  (`packCatalogCache`, keyed by family+sub-pack+kind).
+- **On Start Ambient** (tapping the already-selected tile / TV OK): reuses the
+  cached result if present, otherwise re-issues the same `ContentEngine.catalog()`
+  call, then hands the result to `AmbientActivity`.
+
+Which sources fire per sub-pack:
+
+| Family / sub-pack | Sources queried |
+|---|---|
+| Museum → All | Met, Rijksmuseum, Artic, Cleveland, Europeana, Harvard, Smithsonian, Louvre, Wikimedia Street Art |
+| Museum → one institution | that single source |
+| Painting/Sculpture → All | `bundled` + the 9 museum sources filtered to that kind |
+| Painting/Sculpture → Suggestions | `bundled` only — **no network** |
+| Painting/Sculpture → one institution | that single source |
+| Photo → Suggestions | `bundled` only — **no network** |
+| Photo → All/Random | `bundled` + Pexels + Unsplash + DeviantArt + Met |
+| Photo → keyword topic (Nature, City, Ocean, Mountains, Abstract, Architecture, Sky, StreetArt) | Pexels + Unsplash + DeviantArt + Met |
+| Video → All/keyword topic | Pexels Video + Pixabay Video + Coverr |
+| Video → one provider tile | that single source |
+| Genart → All/any topic (incl. Custom) | **no network** — in-memory procedural sources only |
+
+### 3.3 AmbientActivity → AmbientScreenContent
+
+File: [AmbientActivity.kt:62-103](../androidApp/src/main/kotlin/fr/geoking/arthur/tv/AmbientActivity.kt), [AmbientScreen.kt:162-180](../androidApp/src/main/kotlin/fr/geoking/arthur/ui/screens/AmbientScreen.kt)
+
+- **On activity create**:
+  - Rotating pool (from Control Plane): reuses the pool handed off in-process
+    via `AmbientRotationLaunch`; only calls `ContentEngine.catalog(emptyList())`
+    (every source) if that handoff is empty.
+  - Pinned single artwork: always calls `ContentEngine.catalog(emptyList())`
+    to refresh a live `remoteUrl` for that one artwork.
+- **On pool exhaustion** (every artwork in the pool has been shown once):
+  re-issues `ContentEngine.catalog(sourceIds = <same sources selected in Control Plane>)`
+  to fetch a fresh random sample ("renew").
+- **On each artwork display**: `StillImagePrefetcher.ensureCached()` does a
+  plain GET of the artwork's `remoteUrl` (current + neighboring pool items),
+  writing to a disk image cache. Video artworks skip this — ExoPlayer streams
+  `remoteUrl` directly.
+- Rotation timer advance and swipe/D-pad navigation are pure local index math
+  — no network calls.
+
+### 3.4 ArtworkDetailScreen
+
+File: [ArtworkDetailScreen.kt](../androidApp/src/main/kotlin/fr/geoking/arthur/ui/screens/ArtworkDetailScreen.kt)
+
+No network calls — all fields come from the already-loaded `Artwork` model.
+"Open source page" opens the system browser via `Intent.ACTION_VIEW`, which is
+not an in-app API call.
+
+### 3.5 Genart → Custom → CustomFractalEditorScreen
+
+`CustomFractalSource.load()` reads/writes purely local storage
+(`CustomFractalStore`) — no network calls anywhere in this branch.
+
+---
+
+## 4. Museum Pack Flows & Query Parameters
 
 When a user selects a Museum, Painting, or Sculpture pack, `sourceIdsForAmbientLoad()` determines which sources to query.
 
-### 2.1 "All" & "Random" Flow Logic
+### 4.1 "All" & "Random" Flow Logic
 
 - **`museum/all` / `painting/all` / `sculpture/all`**:
   - `sourceIdsForAmbientLoad()` returns all active museum source IDs (`MuseumSourceIds`).
@@ -37,7 +165,7 @@ When a user selects a Museum, Painting, or Sculpture pack, `sourceIdsForAmbientL
 
 ---
 
-### 2.2 Museum Source Query Parameter Details
+### 4.2 Museum Source Query Parameter Details
 
 #### 1. The Met (`met`)
 - **Source Class**: `MetSource`
@@ -129,6 +257,7 @@ When a user selects a Museum, Painting, or Sculpture pack, `sourceIdsForAmbientL
   - `wskey`: API key (`EUROPEANA_API_KEY`).
 - **Example Query**:
   `https://api.europeana.eu/record/v2/search.json?query=painting&theme=art&reusability=open&media=true&qf=TYPE%3AIMAGE&rows=20&start=1&profile=standard&wskey={key}`
+- **Header note**: `X-Api-Key` header is preferred over the `wskey` query param when both are wired up (see `ArthurApp.kt`).
 
 #### 8. Musée du Louvre (`louvre`)
 - **Source Class**: `LouvreSource`
@@ -150,14 +279,15 @@ When a user selects a Museum, Painting, or Sculpture pack, `sourceIdsForAmbientL
   - `format`: `json`.
   - `formatversion`: `2`.
 - **Filtering**: Filters out non-open licenses (rejects `NC` and `ND` licenses; keeps `PD`, `CC0`, `CC BY`, `CC BY-SA`).
+- **Header note**: sends a custom `User-Agent` (see `ArthurApp.kt`).
 
 ---
 
-## 3. Photo Pack Flows & Query Parameters
+## 5. Photo Pack Flows & Query Parameters
 
 Selecting the **Photo** pack family routes search across stock photo providers, community platforms, museum photography collections, and bundled local packs.
 
-### 3.1 Photo Topics & Query Mapping (`StockPhotoCategory`)
+### 5.1 Photo Topics & Query Mapping (`StockPhotoCategory`)
 
 | Sub-Pack Topic | Test Tag / Query | Unsplash `query` | Pexels `query` | DeviantArt `tag` | Met `q` / `medium` |
 |---|---|---|---|---|---|
@@ -174,7 +304,7 @@ Selecting the **Photo** pack family routes search across stock photo providers, 
 
 ---
 
-### 3.2 Photo Provider Query Parameters
+### 5.2 Photo Provider Query Parameters
 
 #### 1. Unsplash (`unsplash`)
 - **Source Class**: `UnsplashSource`
@@ -215,22 +345,38 @@ Selecting the **Photo** pack family routes search across stock photo providers, 
 
 ---
 
-## 4. Video & Genart Pack Flows
+## 6. Video & Genart Pack Flows
 
-### 4.1 Video Packs (`video`)
+### 6.1 Video Packs (`video`)
 - **Providers**: Pexels Video (`pexels-video`), Pixabay Video (`pixabay-video`), Coverr (`coverr`).
 - **Parameters**:
   - **Pexels Video**: `GET https://api.pexels.com/v1/videos/search?query={q}&orientation=landscape&per_page=20`
   - **Pixabay Video**: `GET https://pixabay.com/api/videos/?key={key}&q={q}&video_type=film&safesearch=true&per_page=20`
   - **Coverr**: `GET https://api.coverr.co/videos?query={q}&urls=true&page_size=20&sort=popular` (Header: `Authorization: Bearer {apiKey}`).
+- **Response shape highlights**: Pexels Video (`videos[].video_files[]`, picked by `quality == "hd"` else largest resolution); Pixabay Video (`hits[].videos.medium/large/small/tiny.url`); Coverr (`hits[].urls.mp4`, `is_vertical` filtered out).
+- **No disk cache for video streams** — ExoPlayer plays `remoteUrl` directly; only whatever ExoPlayer/OkHttp buffers in memory.
 
-### 4.2 Genart Packs (`genart`)
+### 6.2 Genart Packs (`genart`)
 - **Providers**: `GenartSource` (`genart`), `FractalSource` (`fractal`), `CustomFractalSource` (`custom_fractal`).
 - **Flow**: Operates entirely in-memory using Multiplatform Canvas rendering shaders and math routines (Julia/Mandelbrot sets, Voronoi, particle fields, perlin noise). Does not issue HTTP network calls.
 
 ---
 
-## 5. Why Some Features / APIs Are Not Yet Implemented & Rely on Fallbacks
+## 7. Caching Behavior
+
+1. **HTTP-level cache (OkHttp)**: 50 MB disk cache at `cacheDir/http_cache`, configured in `ArthurApp.kt`. A custom `ForceCacheNetworkInterceptor` (`DebugInterceptor.kt`) rewrites successful GET responses lacking `no-store` to `Cache-Control: public, max-age=3600`, i.e. it force-caches API JSON responses for 1 hour even if the origin sent no/short cache headers.
+2. **Debug/telemetry interceptor**: `DebugInterceptor` records every request's source id (via `X-Source-Id` header or URL-sniffing), duration, cache-hit flag, and status code into `DebugLogger` — surfaced in the in-app `FloatingDebugBar` when verbose/developer mode is on.
+3. **Artwork image disk cache**: `ArtworkImageCache` (`StockPhotoSettings.kt`) stores downloaded still images at `cacheDir/artwork/<sanitized-artwork-id>.img`, plus a flat-file "catalog" index (SharedPreferences) mapping id → title/attribution/sourceId/kind/remoteUrl/category/lastAccess. This backs:
+   - **Offline fallback** for Pexels/Unsplash/DeviantArt (`offlineFallback = { cache.loadCachedStock(...) }` in `ArthurApp.kt`): when the API key is blank or the live call returns nothing, previously-cached stock images for that category are served instead.
+   - **Genart "bake" cache**: `rememberGenart`/`loadCachedGenart`, LRU-capped at 96 entries (`MAX_GENART`), used to serve pre-rendered generative frames (e.g. for Android Auto) without re-running the Canvas engine.
+   - **Ambient prefetch**: `StillImagePrefetcher.ensureCached()` warms this same cache for the current + neighboring pool artworks so swiping/rotating doesn't block on network.
+4. **In-memory prefetch cache**: `ControlPlaneScreen`'s local `packCatalogCache: MutableMap<String, List<Artwork>>` holds the last `ContentEngine.catalog()` result per sub-pack for the lifetime of the composable so "Start Ambient" doesn't re-fetch if the user just opened that sub-pack.
+5. **Cross-Activity handoff (not a cache, but avoids a refetch)**: `AmbientRotationLaunch` is a static in-process holder passing the already-fetched pool + `renewSourceIds` from `ControlPlaneScreen` into `AmbientActivity` without re-querying.
+6. **Free-tier gating acts after caching**: `ContentEngine.applyGates()`/`fairStillSample()` round-robins across sources and caps `FractalPreset`/`Genart`/other-stills counts for non-premium users — this happens in-memory after all sources have already returned data, so it doesn't reduce the number of API calls made, only what's shown/pooled.
+
+---
+
+## 8. Why Some Features / APIs Are Not Yet Implemented & Rely on Fallbacks
 
 Several pack queries and sub-categories rely on fallbacks or curated subsets rather than direct live search APIs.
 

@@ -119,6 +119,17 @@ class ArthurCarAppTest {
     }
 
     @Test
+    fun manifest_declaresMediaTemplatesPermission() {
+        val manifestFile = File("src/main/AndroidManifest.xml")
+        assertTrue("AndroidManifest.xml must exist", manifestFile.exists())
+        val content = manifestFile.readText()
+        assertTrue(
+            "Must declare androidx.car.app.MEDIA_TEMPLATES permission",
+            content.contains("<uses-permission android:name=\"androidx.car.app.MEDIA_TEMPLATES\" />"),
+        )
+    }
+
+    @Test
     fun artworkPaneScreen_onGetTemplateWithRemoteUrlDoesNotCrashOnMainThread() {
         val remoteArt = Artwork(
             id = "test_remote_art",

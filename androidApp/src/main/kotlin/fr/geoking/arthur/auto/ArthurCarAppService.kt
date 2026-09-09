@@ -103,11 +103,11 @@ class ArtworkPaneScreen(carContext: CarContext) : Screen(carContext), KoinCompon
             }
             runCatching {
                 current = resolveAmbientArtwork(catalog, null)
-                loaded = true
                 scheduleAsyncRender()
-                invalidate()
                 if (isPlaying) startRotation()
             }
+            loaded = true
+            invalidate()
         }
     }
 

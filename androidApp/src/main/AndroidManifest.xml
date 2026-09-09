@@ -71,6 +71,7 @@
             <intent-filter>
                 <action android:name="androidx.car.app.CarAppService" />
                 <category android:name="androidx.car.app.category.MEDIA" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </service>
 

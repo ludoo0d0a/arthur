@@ -130,6 +130,17 @@ class ArthurCarAppTest {
     }
 
     @Test
+    fun manifest_declaresDefaultCategoryForCarAppService() {
+        val manifestFile = File("src/main/AndroidManifest.xml")
+        assertTrue("AndroidManifest.xml must exist", manifestFile.exists())
+        val content = manifestFile.readText()
+        assertTrue(
+            "CarAppService must declare android.intent.category.DEFAULT category",
+            content.contains("<category android:name=\"android.intent.category.DEFAULT\" />"),
+        )
+    }
+
+    @Test
     fun artworkPaneScreen_onGetTemplateWithRemoteUrlDoesNotCrashOnMainThread() {
         val remoteArt = Artwork(
             id = "test_remote_art",

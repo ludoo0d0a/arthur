@@ -22,14 +22,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Arthur">
 
-        <!-- Required by androidx.car.app: without this, the host's getAppInfo()
-             call throws IllegalArgumentException and shows a generic "app
-             encountered an unexpected error" screen instead of binding.
-             Level 1 covers the templates Arthur uses (Pane, Message, Header,
-             Action, ActionStrip). -->
+        <!-- Required by androidx.car.app: Media apps must specify a Car API Level
+             of at least 8 per Play Console requirement. -->
         <meta-data
             android:name="androidx.car.app.minCarApiLevel"
-            android:value="1" />
+            android:value="8" />
 
         <activity
             android:name=".phone.MainActivity"

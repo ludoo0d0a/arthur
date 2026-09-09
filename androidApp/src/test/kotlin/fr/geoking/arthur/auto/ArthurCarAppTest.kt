@@ -141,6 +141,18 @@ class ArthurCarAppTest {
     }
 
     @Test
+    fun manifest_declaresMinCarApiLevelOfAtLeastEight() {
+        val manifestFile = File("src/main/AndroidManifest.xml")
+        assertTrue("AndroidManifest.xml must exist", manifestFile.exists())
+        val content = manifestFile.readText()
+        val match = Regex("""<meta-data\s+android:name="androidx\.car\.app\.minCarApiLevel"\s+android:value="(\d+)"\s*/>""")
+            .find(content)
+        assertNotNull("minCarApiLevel meta-data should be declared in AndroidManifest.xml", match)
+        val level = match!!.groupValues[1].toInt()
+        assertTrue("Media apps must specify a minCarApiLevel of at least 8 (found $level)", level >= 8)
+    }
+
+    @Test
     fun artworkPaneScreen_onGetTemplateWithRemoteUrlDoesNotCrashOnMainThread() {
         val remoteArt = Artwork(
             id = "test_remote_art",

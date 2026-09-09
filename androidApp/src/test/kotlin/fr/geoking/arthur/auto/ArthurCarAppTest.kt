@@ -41,6 +41,49 @@ class ArthurCarAppTest {
     }
 
     @Test
+    fun session_onCreateScreen_returnsPackSelectionScreen() {
+        val context = org.robolectric.RuntimeEnvironment.getApplication()
+        val service = ArthurCarAppService()
+        val session = service.onCreateSession()
+        val intent = android.content.Intent()
+        val screen = session.onCreateScreen(intent)
+        assertNotNull(screen)
+        assertTrue(screen is PackSelectionScreen)
+    }
+
+    @Test
+    fun packSelectionScreen_buildsGridTemplate() {
+        val owner = object : androidx.lifecycle.LifecycleOwner {
+            override val lifecycle = androidx.lifecycle.LifecycleRegistry(this)
+        }
+        val carContext = androidx.car.app.CarContext.create(owner.lifecycle)
+        attachBaseContext(carContext, org.robolectric.RuntimeEnvironment.getApplication())
+        val screen = PackSelectionScreen(carContext)
+        val template = screen.onGetTemplate()
+        assertNotNull(template)
+        assertTrue(template is androidx.car.app.model.GridTemplate)
+    }
+
+    @Test
+    fun subPackSelectionScreen_buildsGridTemplate() {
+        val owner = object : androidx.lifecycle.LifecycleOwner {
+            override val lifecycle = androidx.lifecycle.LifecycleRegistry(this)
+        }
+        val carContext = androidx.car.app.CarContext.create(owner.lifecycle)
+        attachBaseContext(carContext, org.robolectric.RuntimeEnvironment.getApplication())
+        val screen = SubPackSelectionScreen(carContext, fr.geoking.arthur.ui.components.PackFamily.Museum)
+        val template = screen.onGetTemplate()
+        assertNotNull(template)
+        assertTrue(template is androidx.car.app.model.GridTemplate)
+    }
+
+    private fun attachBaseContext(contextWrapper: android.content.ContextWrapper, base: android.content.Context) {
+        val method = android.content.ContextWrapper::class.java.getDeclaredMethod("attachBaseContext", android.content.Context::class.java)
+        method.isAccessible = true
+        method.invoke(contextWrapper, base)
+    }
+
+    @Test
     fun paneTemplate_supportsLargeImageType() {
         val artwork = Artwork(
             id = "genart.particles",

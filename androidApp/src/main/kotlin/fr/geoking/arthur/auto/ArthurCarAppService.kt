@@ -9,7 +9,10 @@ import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarIcon
+import androidx.car.app.model.GridItem
+import androidx.car.app.model.GridTemplate
 import androidx.car.app.model.Header
+import androidx.car.app.model.ItemList
 import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Pane
 import androidx.car.app.model.PaneTemplate
@@ -26,6 +29,10 @@ import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.source.ArtworkImageCache
 import fr.geoking.arthur.source.RotationSettings
+import fr.geoking.arthur.ui.components.PackFamily
+import fr.geoking.arthur.ui.components.PackSelection
+import fr.geoking.arthur.ui.components.resolvePackPool
+import fr.geoking.arthur.ui.components.subPackTiles
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -60,11 +67,103 @@ class ArthurCarAppService : CarAppService() {
 
 class ArthurCarSession : Session() {
     override fun onCreateScreen(intent: Intent): Screen {
-        return ArtworkPaneScreen(carContext)
+        return PackSelectionScreen(carContext)
     }
 }
 
-class ArtworkPaneScreen(carContext: CarContext) : Screen(carContext), KoinComponent {
+/**
+ * Screen displaying the available pack families on the Android Auto dashboard.
+ */
+class PackSelectionScreen(carContext: CarContext) : Screen(carContext) {
+    override fun onGetTemplate(): Template {
+        val gridLimit = try {
+            carContext.getCarService(ConstraintManager::class.java)
+                ?.getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_GRID) ?: 6
+        } catch (_: Exception) {
+            6
+        }
+
+        val gridBuilder = ItemList.Builder()
+        val families = PackFamily.entries.take(gridLimit)
+
+        families.forEach { family ->
+            val carIcon = CarIcon.Builder(
+                IconCompat.createWithResource(carContext, family.coverRes),
+            ).build()
+
+            val item = GridItem.Builder()
+                .setTitle(carContext.getString(family.titleRes))
+                .setImage(carIcon, GridItem.IMAGE_TYPE_LARGE)
+                .setOnClickListener {
+                    screenManager.push(SubPackSelectionScreen(carContext, family))
+                }
+                .build()
+
+            gridBuilder.addItem(item)
+        }
+
+        val header = Header.Builder()
+            .setTitle(carContext.getString(R.string.packs_section))
+            .setStartHeaderAction(Action.APP_ICON)
+            .build()
+
+        return GridTemplate.Builder()
+            .setHeader(header)
+            .setSingleList(gridBuilder.build())
+            .build()
+    }
+}
+
+/**
+ * Screen displaying the sub-packs / topics for a given [PackFamily].
+ */
+class SubPackSelectionScreen(
+    carContext: CarContext,
+    val family: PackFamily,
+) : Screen(carContext) {
+    override fun onGetTemplate(): Template {
+        val gridLimit = try {
+            carContext.getCarService(ConstraintManager::class.java)
+                ?.getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_GRID) ?: 12
+        } catch (_: Exception) {
+            12
+        }
+
+        val gridBuilder = ItemList.Builder()
+        val tiles = family.subPackTiles().take(gridLimit)
+
+        tiles.forEach { tile ->
+            val carIcon = CarIcon.Builder(
+                IconCompat.createWithResource(carContext, tile.coverRes),
+            ).build()
+
+            val item = GridItem.Builder()
+                .setTitle(carContext.getString(tile.titleRes))
+                .setImage(carIcon, GridItem.IMAGE_TYPE_LARGE)
+                .setOnClickListener {
+                    screenManager.push(ArtworkPaneScreen(carContext, tile.selection))
+                }
+                .build()
+
+            gridBuilder.addItem(item)
+        }
+
+        val header = Header.Builder()
+            .setTitle(carContext.getString(family.titleRes))
+            .setStartHeaderAction(Action.BACK)
+            .build()
+
+        return GridTemplate.Builder()
+            .setHeader(header)
+            .setSingleList(gridBuilder.build())
+            .build()
+    }
+}
+
+class ArtworkPaneScreen(
+    carContext: CarContext,
+    val packSelection: PackSelection = PackSelection(PackFamily.Museum),
+) : Screen(carContext), KoinComponent {
     private val contentEngine: ContentEngine by inject()
     private val rotationSettings: RotationSettings by inject()
     private val imageCache: ArtworkImageCache by inject()
@@ -96,11 +195,12 @@ class ArtworkPaneScreen(carContext: CarContext) : Screen(carContext), KoinCompon
             },
         )
         scope.launch {
-            catalog = withContext(Dispatchers.IO) {
+            val fullCatalog = withContext(Dispatchers.IO) {
                 runCatching {
                     contentEngine.catalog(PreparedRotation(emptyList(), emptyList()))
                 }.getOrDefault(emptyList())
             }
+            catalog = resolvePackPool(fullCatalog, packSelection).ifEmpty { fullCatalog }
             runCatching {
                 current = resolveAmbientArtwork(catalog, null)
                 scheduleAsyncRender()
@@ -197,8 +297,8 @@ class ArtworkPaneScreen(carContext: CarContext) : Screen(carContext), KoinCompon
 
     private fun buildPaneTemplate(): Template {
         val header = Header.Builder()
-            .setTitle(carContext.getString(R.string.app_name))
-            .setStartHeaderAction(Action.APP_ICON)
+            .setTitle(carContext.getString(packSelection.family.titleRes))
+            .setStartHeaderAction(Action.BACK)
             .build()
 
         if (!loaded) {
@@ -282,7 +382,7 @@ class ArtworkPaneScreen(carContext: CarContext) : Screen(carContext), KoinCompon
     private fun paneRowLimit(): Int {
         return try {
             carContext.getCarService(ConstraintManager::class.java)
-                .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_PANE)
+                ?.getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_PANE) ?: 4
         } catch (_: Exception) {
             4
         }

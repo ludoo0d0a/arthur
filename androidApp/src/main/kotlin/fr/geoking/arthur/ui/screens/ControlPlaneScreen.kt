@@ -179,6 +179,7 @@ fun ControlPlaneScreen(
         openedFamily = openedFamily,
         selection = selection,
         startingAmbient = startingAmbient,
+        catalog = catalog,
         onOpenFamily = { family ->
             openedFamily = family
             // "random" is every family's default sub-pack — every Random tile shares this
@@ -242,6 +243,7 @@ fun ControlPlaneContent(
     onBackToHome: () -> Unit,
     onStartAmbient: () -> Unit,
     modifier: Modifier = Modifier,
+    catalog: List<Artwork> = emptyList(),
     startingAmbient: Boolean = false,
     onCreateCustomFractal: (() -> Unit)? = null,
     onOpenSettings: (() -> Unit)? = null,
@@ -263,6 +265,7 @@ fun ControlPlaneContent(
                 onBackToHome = onBackToHome,
                 onStartAmbient = onStartAmbient,
                 modifier = Modifier.fillMaxSize(),
+                catalog = catalog,
                 onOpenSettings = onOpenSettings,
                 defaultScreensaverSelection = defaultScreensaverSelection,
                 onSetDefaultScreensaver = onSetDefaultScreensaver,
@@ -276,6 +279,7 @@ fun ControlPlaneContent(
                 onBackToHome = onBackToHome,
                 onStartAmbient = onStartAmbient,
                 modifier = Modifier.fillMaxSize(),
+                catalog = catalog,
                 onCreateCustomFractal = onCreateCustomFractal,
                 onOpenSettings = onOpenSettings,
             )
@@ -304,6 +308,7 @@ private fun PhoneControlPlaneContent(
     onBackToHome: () -> Unit,
     onStartAmbient: () -> Unit,
     modifier: Modifier = Modifier,
+    catalog: List<Artwork> = emptyList(),
     onCreateCustomFractal: (() -> Unit)? = null,
     onOpenSettings: (() -> Unit)? = null,
 ) {
@@ -364,7 +369,7 @@ private fun PhoneControlPlaneContent(
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
                 )
                 PackGrid(
-                    tiles = PackFamily.entries.map { it.homeTile() },
+                    tiles = PackFamily.entries.map { it.homeTile(catalog) },
                     selected = null,
                     onTileClick = { onOpenFamily(it.selection.family) },
                     modifier = Modifier.weight(1f),
@@ -387,7 +392,7 @@ private fun PhoneControlPlaneContent(
                     }
                 }
                 PackGrid(
-                    tiles = openedFamily.subPackTiles(),
+                    tiles = openedFamily.subPackTiles(catalog),
                     selected = selection,
                     onTileClick = { tile: PackTile ->
                         if (tile.selection == selection) {

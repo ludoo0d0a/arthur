@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.R
+import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.ui.components.ControlPlaneHeader
 import fr.geoking.arthur.ui.components.PackFamily
 import fr.geoking.arthur.ui.components.PackGrid
@@ -37,6 +38,7 @@ fun TvControlPlaneContent(
     onBackToHome: () -> Unit,
     onStartAmbient: () -> Unit,
     modifier: Modifier = Modifier,
+    catalog: List<Artwork> = emptyList(),
     onOpenSettings: (() -> Unit)? = null,
     defaultScreensaverSelection: PackSelection? = null,
     onSetDefaultScreensaver: ((PackSelection) -> Unit)? = null,
@@ -77,7 +79,7 @@ fun TvControlPlaneContent(
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
                 PackGrid(
-                    tiles = PackFamily.entries.map { it.homeTile() },
+                    tiles = PackFamily.entries.map { it.homeTile(catalog) },
                     selected = null,
                     onTileClick = { onOpenFamily(it.selection.family) },
                     modifier = Modifier.weight(1f),
@@ -92,7 +94,7 @@ fun TvControlPlaneContent(
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
                 PackGrid(
-                    tiles = openedFamily.subPackTiles(),
+                    tiles = openedFamily.subPackTiles(catalog),
                     selected = selection,
                     onTileClick = { onStartAmbient() },
                     onTileLongClick = { tile ->

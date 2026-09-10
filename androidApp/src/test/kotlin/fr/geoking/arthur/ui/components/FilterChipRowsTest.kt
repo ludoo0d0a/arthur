@@ -199,6 +199,15 @@ class FilterChipRowsTest {
     }
 
     @Test
+    fun genartTapet_showsTapetEngines() {
+        val filtered = catalog.filterByCategoryAndSources(
+            CategoryFilter.GENART,
+            genartTopic = GenartTopic.Tapet,
+        )
+        assertEquals(listOf(GenartSource.BLOBS), filtered.map { it.id })
+    }
+
+    @Test
     fun resolve_abstractWithHits_keepsSubfilters() {
         val resolved = resolveCategoryCatalog(
             catalog = catalog,

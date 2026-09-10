@@ -41,6 +41,14 @@ object PackCovers {
         else -> R.drawable.pack_photo
     }
 
+    /** Themed official logo marks for photo providers. */
+    @DrawableRes
+    fun photoTopic(topic: PhotoTopic): Int = when (topic) {
+        PhotoTopic.Pexels -> R.drawable.pack_pexels
+        PhotoTopic.Unsplash -> R.drawable.pack_unsplash
+        PhotoTopic.DeviantArt -> R.drawable.pack_photo
+    }
+
     /** Themed official logo marks (gold-on-dark, same treatment as museum packs). */
     @DrawableRes
     fun video(topic: VideoTopic): Int = when (topic) {

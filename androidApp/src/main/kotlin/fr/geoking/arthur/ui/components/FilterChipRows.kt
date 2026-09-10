@@ -83,6 +83,7 @@ enum class GenartTopic(
     val testTagSuffix: String,
 ) {
     Random(R.string.stock_topic_random, "random"),
+    Tapet(R.string.genart_topic_tapet, "tapet"),
     Fractal(R.string.genart_topic_fractal, "fractal"),
     Custom(R.string.genart_topic_custom, "custom"),
     Abstract(R.string.genart_topic_abstract, "abstract"),
@@ -215,6 +216,7 @@ fun List<Artwork>.canLoadMoreCatalog(visibleCount: Int): Boolean =
 
 fun matchesGenartTopic(art: Artwork, topic: GenartTopic): Boolean = when (topic) {
     GenartTopic.Random -> true
+    GenartTopic.Tapet -> art.id in GENART_TAPET_IDS
     GenartTopic.Fractal -> art.kind == ArtworkKind.FractalPreset
     GenartTopic.Custom -> art.kind == ArtworkKind.CustomFractal
     GenartTopic.Abstract -> art.id in GENART_ABSTRACT_IDS
@@ -223,6 +225,17 @@ fun matchesGenartTopic(art: Artwork, topic: GenartTopic): Boolean = when (topic)
     GenartTopic.Geometry -> art.id in GENART_GEOMETRY_IDS
     GenartTopic.Planets -> art.id in GENART_PLANETS_IDS
 }
+
+private val GENART_TAPET_IDS = setOf(
+    GenartSource.GRADIENT_MESH,
+    GenartSource.BLOBS,
+    GenartSource.VORONOI,
+    GenartSource.SILK,
+    GenartSource.ARC_MOSAIC,
+    GenartSource.RIBBONS,
+    GenartSource.NOISE_FIELD,
+    GenartSource.LOW_FREQ_NOISE_FIELD,
+)
 
 private val GENART_WEATHER_IDS = setOf(
     GenartSource.SNOW,

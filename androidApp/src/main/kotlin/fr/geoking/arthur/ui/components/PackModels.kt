@@ -40,6 +40,7 @@ data class PackTile(
     @get:DrawableRes val coverRes: Int,
     val selection: PackSelection,
     val testTagSuffix: String,
+    val itemCount: Int? = null,
 )
 
 /**
@@ -52,6 +53,7 @@ private val MuseumInstitutionTopics: List<MuseumTopic> =
 /** Genart sub-pack order for the grid ([GenartTopic.Random] leads). */
 private val GenartSubTopics = listOf(
     GenartTopic.Random,
+    GenartTopic.Tapet,
     GenartTopic.Nature,
     GenartTopic.Weather,
     GenartTopic.Planets,
@@ -61,15 +63,18 @@ private val GenartSubTopics = listOf(
     GenartTopic.Custom,
 )
 
-fun PackFamily.homeTile(): PackTile = PackTile(
+fun PackFamily.homeTile(catalog: List<Artwork> = emptyList()): PackTile = PackTile(
     id = "family_${testTagSuffix}",
     titleRes = titleRes,
     coverRes = coverRes,
     selection = PackSelection(this),
     testTagSuffix = testTagSuffix,
+    itemCount = if (this == PackFamily.Genart && catalog.isNotEmpty()) {
+        resolvePackPool(catalog, PackSelection(PackFamily.Genart)).size
+    } else null,
 )
 
-fun PackFamily.subPackTiles(): List<PackTile> = when (this) {
+fun PackFamily.subPackTiles(catalog: List<Artwork> = emptyList()): List<PackTile> = when (this) {
     PackFamily.Museum -> MuseumTopic.entries.map { topic ->
         PackTile(
             id = "sub_museum_${topic.testTagSuffix}",
@@ -80,12 +85,14 @@ fun PackFamily.subPackTiles(): List<PackTile> = when (this) {
         )
     }
     PackFamily.Genart -> GenartSubTopics.map { topic ->
+        val selection = PackSelection(PackFamily.Genart, topic.testTagSuffix)
         PackTile(
             id = "sub_genart_${topic.testTagSuffix}",
             titleRes = topic.labelRes,
             coverRes = PackCovers.genart(topic),
-            selection = PackSelection(PackFamily.Genart, topic.testTagSuffix),
+            selection = selection,
             testTagSuffix = "genart_${topic.testTagSuffix}",
+            itemCount = if (catalog.isNotEmpty()) resolvePackPool(catalog, selection).size else null,
         )
     }
     PackFamily.Photo -> {

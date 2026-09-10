@@ -307,12 +307,28 @@ fun AmbientScreenContent(
             )
         }
         if (shouldRotate && ambientActive) {
-            AmbientRotationProgress(
-                progress = { progress.value },
+            val currentIndex = remember(shown?.id, rotatePool) {
+                val idx = rotatePool.indexOfFirst { it.id == shown?.id }
+                if (idx < 0) 1 else idx + 1
+            }
+            val totalCount = rotatePool.size
+            Column(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(28.dp),
-            )
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Text(
+                    text = "$currentIndex / $totalCount",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color.White.copy(alpha = 0.9f),
+                    modifier = Modifier.testTag("ambient_counter"),
+                )
+                AmbientRotationProgress(
+                    progress = { progress.value },
+                )
+            }
         }
         // Above artwork chrome, below details button so ⋯ stays tappable.
         if (shouldRotate && !isTelevision) {

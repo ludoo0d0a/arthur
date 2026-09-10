@@ -142,9 +142,22 @@ class PackModelsTest {
     }
 
     @Test
-    fun genartSubPacks_includeAbstract() {
+    fun genartSubPacks_includeAbstractAndTapet() {
         val suffixes = PackFamily.Genart.subPackTiles().map { it.testTagSuffix }
         assertTrue(suffixes.contains("genart_abstract"))
+        assertTrue(suffixes.contains("genart_tapet"))
+    }
+
+    @Test
+    fun genartItemCounts_computedWhenCatalogProvided() {
+        val homeTile = PackFamily.Genart.homeTile(catalog)
+        assertEquals(5, homeTile.itemCount)
+
+        val subTiles = PackFamily.Genart.subPackTiles(catalog)
+        val tapetTile = subTiles.first { it.testTagSuffix == "genart_tapet" }
+        assertEquals(2, tapetTile.itemCount)
+        val weatherTile = subTiles.first { it.testTagSuffix == "genart_weather" }
+        assertEquals(1, weatherTile.itemCount)
     }
 
     @Test

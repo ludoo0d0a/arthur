@@ -229,8 +229,14 @@ fun PackCoverTile(
                 )
             }
         }
+        val baseTitle = stringResource(tile.titleRes)
+        val displayTitle = if (tile.itemCount != null) {
+            "$baseTitle (${tile.itemCount})"
+        } else {
+            baseTitle
+        }
         Text(
-            text = stringResource(tile.titleRes),
+            text = displayTitle,
             style = MaterialTheme.typography.titleSmall,
             color = if (highlight) scheme.primary else scheme.onBackground,
             maxLines = 2,

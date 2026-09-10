@@ -23,6 +23,7 @@ object PackCovers {
     @DrawableRes
     fun genart(topic: GenartTopic): Int = when (topic) {
         GenartTopic.Random -> R.drawable.pack_genart
+        GenartTopic.Tapet -> R.drawable.pack_genart_abstract
         GenartTopic.Nature -> R.drawable.pack_genart_nature
         GenartTopic.Weather -> R.drawable.pack_genart_weather
         GenartTopic.Planets -> R.drawable.pack_genart_planets

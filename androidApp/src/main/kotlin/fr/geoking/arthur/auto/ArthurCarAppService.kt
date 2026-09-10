@@ -214,19 +214,24 @@ class ArtworkPaneScreen(carContext: CarContext) : Screen(carContext), KoinCompon
         val rowLimit = paneRowLimit()
 
         if (art != null && rowLimit > 0) {
-            val bitmap = if (art.id == renderedArtId && generation == renderedGen && renderedBitmap != null) {
-                renderedBitmap!!
-            } else {
+            val hasFreshRender = art.id == renderedArtId && generation == renderedGen && renderedBitmap != null
+            if (!hasFreshRender) {
                 scheduleAsyncRender()
-                AmbientStillRenderer.renderPlaceholder(art, generation)
             }
-            val carIcon = CarIcon.Builder(IconCompat.createWithBitmap(bitmap)).build()
             val rowBuilder = Row.Builder()
                 .setTitle(art.title.ifBlank { carContext.getString(R.string.app_name) })
             if (art.attribution.isNotBlank()) {
                 rowBuilder.addText(art.attribution)
             }
-            rowBuilder.setImage(carIcon, Row.IMAGE_TYPE_LARGE)
+            // The big picture is best-effort: if rendering/encoding it fails, the row still
+            // shows title/attribution instead of falling back to the whole error template.
+            val bigPicture = runCatching {
+                val bitmap = if (hasFreshRender) renderedBitmap!! else AmbientStillRenderer.renderPlaceholder(art, generation)
+                CarIcon.Builder(IconCompat.createWithBitmap(bitmap)).build()
+            }.getOrNull()
+            if (bigPicture != null) {
+                rowBuilder.setImage(bigPicture, Row.IMAGE_TYPE_LARGE)
+            }
             paneBuilder.addRow(rowBuilder.build())
         } else {
             paneBuilder.addRow(

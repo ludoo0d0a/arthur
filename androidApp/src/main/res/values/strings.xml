@@ -6,6 +6,7 @@
     <string name="preview_label">Preview: %1$s</string>
     <string name="artwork_unavailable">Artwork unavailable</string>
     <string name="artwork_unavailable_detail">Failed to load picture. Please check your network connection or try again.</string>
+    <string name="retry">Retry</string>
     <string name="ambient_title">Ambient</string>
     <string name="ambient_artwork_details">Artwork details</string>
     <string name="ambient_rotation_progress">Time until next artwork</string>

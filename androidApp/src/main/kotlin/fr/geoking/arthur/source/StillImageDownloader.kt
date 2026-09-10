@@ -22,46 +22,104 @@ object StillImageDownloader {
     // response that OOM'd the app when fully buffered downstream).
     private const val MAX_IMAGE_BYTES = 25L * 1024 * 1024
 
+    private const val DEFAULT_MAX_RETRIES = 3
+    private const val INITIAL_BACKOFF_MS = 1_000L
+
+    /** Checks if an exception or response code indicates a non-retryable permanent error. */
+    fun isNonRetryable(statusCode: Int?, throwable: Throwable?): Boolean {
+        if (statusCode in setOf(400, 401, 403, 404, 405, 410, 413, 414, 415, 422)) {
+            return true
+        }
+        val msg = throwable?.message.orEmpty().lowercase()
+        if (msg.contains("image too large") || msg.contains("exceeded 25mb") || msg.contains("limit while streaming")) {
+            return true
+        }
+        return false
+    }
+
+    private inline fun <T> runWithRetry(
+        url: String,
+        maxRetries: Int = DEFAULT_MAX_RETRIES,
+        initialDelayMs: Long = INITIAL_BACKOFF_MS,
+        errorLogger: ErrorLogger? = null,
+        sourceId: String = "image_download",
+        block: (onResponseCode: (Int) -> Unit) -> T,
+    ): T {
+        var attempt = 0
+        var currentDelay = initialDelayMs
+        var lastResponseCode: Int? = null
+
+        while (true) {
+            attempt++
+            lastResponseCode = null
+            try {
+                return block { code -> lastResponseCode = code }
+            } catch (e: Throwable) {
+                val statusCode = lastResponseCode
+                val nonRetryable = isNonRetryable(statusCode, e)
+
+                if (nonRetryable || attempt >= maxRetries) {
+                    val category = ErrorClassifier.classify(statusCode, e)
+                    errorLogger?.log(
+                        sourceId = sourceId,
+                        category = category,
+                        message = e.message ?: "Failed to download image",
+                        details = e.stackTraceToString().take(300),
+                        url = url,
+                        statusCode = statusCode,
+                        throwable = e,
+                    )
+                    throw e
+                }
+
+                try {
+                    Thread.sleep(currentDelay)
+                } catch (interrupted: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                    throw e
+                }
+                currentDelay *= 2
+            }
+        }
+    }
+
     fun downloadToFile(
         url: String,
         targetFile: File,
         errorLogger: ErrorLogger? = null,
         sourceId: String = "image_download",
+        maxRetries: Int = DEFAULT_MAX_RETRIES,
+        initialDelayMs: Long = INITIAL_BACKOFF_MS,
     ): File {
-        val tempFile = File(targetFile.parentFile, "${targetFile.name}.tmp_${System.currentTimeMillis()}")
-        var responseCode: Int? = null
-        try {
-            targetFile.parentFile?.mkdirs()
+        return runWithRetry(
+            url = url,
+            maxRetries = maxRetries,
+            initialDelayMs = initialDelayMs,
+            errorLogger = errorLogger,
+            sourceId = sourceId,
+        ) { onResponseCode ->
+            val tempFile = File(targetFile.parentFile, "${targetFile.name}.tmp_${System.currentTimeMillis()}")
+            try {
+                targetFile.parentFile?.mkdirs()
 
-            downloadSingleStream(url, tempFile) { code ->
-                responseCode = code
-            }
+                downloadSingleStream(url, tempFile, onResponseCode)
 
-            if (!tempFile.exists() || tempFile.length() == 0L) {
-                throw java.io.IOException("Downloaded file is empty or missing")
-            }
+                if (!tempFile.exists() || tempFile.length() == 0L) {
+                    throw java.io.IOException("Downloaded file is empty or missing")
+                }
 
-            if (targetFile.exists()) {
-                targetFile.delete()
-            }
-            if (!tempFile.renameTo(targetFile)) {
-                tempFile.copyTo(targetFile, overwrite = true)
+                if (targetFile.exists()) {
+                    targetFile.delete()
+                }
+                if (!tempFile.renameTo(targetFile)) {
+                    tempFile.copyTo(targetFile, overwrite = true)
+                    tempFile.delete()
+                }
+                targetFile
+            } catch (e: Throwable) {
                 tempFile.delete()
+                throw e
             }
-            return targetFile
-        } catch (e: Throwable) {
-            tempFile.delete()
-            val category = ErrorClassifier.classify(responseCode, e)
-            errorLogger?.log(
-                sourceId = sourceId,
-                category = category,
-                message = e.message ?: "Failed to download image",
-                details = e.stackTraceToString().take(300),
-                url = url,
-                statusCode = responseCode,
-                throwable = e,
-            )
-            throw e
         }
     }
 

@@ -37,8 +37,8 @@ object SourceCapabilities {
             remoteSearchKinds = setOf(ArtworkKind.Photo, ArtworkKind.Video),
         ),
         DeviantArtSource.ID to SourceContentSupport(
-            kinds = setOf(ArtworkKind.Painting),
-            remoteSearchKinds = setOf(ArtworkKind.Painting),
+            kinds = setOf(ArtworkKind.Photo, ArtworkKind.Painting),
+            remoteSearchKinds = setOf(ArtworkKind.Photo, ArtworkKind.Painting),
         ),
         PexelsVideoSource.ID to SourceContentSupport(
             kinds = setOf(ArtworkKind.Video),

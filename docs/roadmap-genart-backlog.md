@@ -207,3 +207,57 @@ detail, stays inside the calm/car-safe principles above:
   (distant glow pulses fading over ~7s, capped alpha add, no hard flash); an actual strobe stays
   parked by design, not just unbuilt
 - Anything that fights “relax” on Auto / TV Ambient
+
+## Inspirative Genart Algorithms & Libraries (External Reference Research)
+
+Curated research and proposal catalog derived from generative art showcases and reference hubs:
+- **Espiralito Gallery** ([espiralito.com/gallery](https://www.espiralito.com/gallery/)): Deterministic spiral geometry, multi-fold rotational symmetry, and parametric path modulation.
+- **Latent Box Collections** ([latentbox.com/en/docs/collections](https://latentbox.com/en/docs/collections)): Index of generative algorithms, bio-inspired simulations, and creative coding tools.
+- **genart.dev Gallery** ([genart.dev/gallery](https://genart.dev/gallery)): Cross-engine generative sketches spanning Canvas 2D, p5.js, Three.js, SVG, and GLSL shaders.
+
+### Key Generative Art Algorithms & Math Models
+
+1. **Rotational Symmetry & Multi-Spiral Geometry**
+   - *Concept*: $N$-fold rotational symmetry (3-fold to 13-fold) combined with Archimedean, Fermat, or logarithmic spiral coordinate transforms.
+   - *Techniques*: Dynamic stroke-width tapering, wave-distortion warping, and dual-spiral phase offsets.
+   - *Applicability to Arthur*: High-density radial Mandalas (`genart.spiralmandala`) with subtle rotation and breathing stroke widths.
+
+2. **Bio-Inspired Simulation & Morphogenesis**
+   - *Slime Mould / Physarum Transport Networks*: Agent-based particles leaving chemoattractant trails that diffuse and decay, forming biological transport graphs.
+   - *Differential Growth / Lichen Expansion*: Node chains that grow, insert vertices, and repel adjacent segments to simulate organic lichen edges and coral growth.
+   - *Reaction-Diffusion Systems (Gray-Scott model)*: Chemical reaction equations producing leopard spots, labyrinthine coral patterns, and zebra stripes.
+   - *Starling Murmuration / Advanced Boids*: Flocking rules with density regulation, velocity alignment, and predator-evasion waves for ambient flock dynamics.
+
+3. **Computational Geometry & Tiling**
+   - *Delaunay Triangulation & Voronoi Diagrams*: Dynamic point sets connected into adaptive polygonal meshes or cell washes.
+   - *Penrose & Aperiodic Tilings*: Non-repeating geometric patterns driven by golden-ratio subdivisions.
+
+4. **Flow Fields, Dynamical Systems & Phase Space**
+   - *Noise-Driven Vector Fields*: Particles moving along Perlin/Simplex noise fields with variable stroke density, color blending, and alpha accumulation.
+   - *Chaotic Attractors & Phase Space*: Clifford, De Jong, and Lorenz attractor differential equations rendered as dense particle trajectories.
+
+5. **Analog & Tactile Media Emulation**
+   - *Watercolor Wash & Wet-on-Wet Diffusion*: Pigment dispersion, water bleeding, and edge-darkening polygon washes.
+   - *Hatching & Charcoal Gestures*: Dynamic directional line-hatching for shading and organic stroke momentum physics.
+   - *Hydraulic Erosion*: Particle-based water drops eroding heightmaps to create procedural ridges and alluvial fan landforms.
+
+### Creative Coding Libraries & Ecosystems
+
+- **2D Canvas & Web Frameworks**:
+  - `p5.js` / `Processing`: Foundation for web/desktop creative coding, noise fields, and agent behavior.
+  - `Paper.js`: Vector graphics scripting, path manipulation, and curve smoothing.
+- **3D, GPU Shaders & Native Frameworks**:
+  - `Three.js` / `WebGL` / `WebGPU`: Web-based 3D mesh generation, shaders, and particle engines.
+  - `openFrameworks` (C++) / `glChAoS.P`: High-performance GPU particle solvers for 3D chaotic attractors.
+  - `AGSL (Android Graphics Shading Language)`: Android API 33+ runtime shaders for real-time fluid and noise effects.
+- **Node-Based & Parametric Systems**:
+  - `TouchDesigner`, `VVVV`, `Notch`: Real-time node-based visual programming for installations and generative art.
+  - `Houdini` / `Grasshopper` (Rhino): Procedural geometry generation, node-based procedural modeling, and simulation pipelines.
+
+### Proposed Future Engine Concepts for Arthur (`:genart`)
+
+- `genart.spiralmandala` — *Spiral Mandala*: Multi-fold rotational symmetry pentagons/hexagons with breathing stroke width tapering and dual-spiral rotation.
+- `genart.slimegrowth` — *Slime Mold Network*: Soft Physarum Polycephalum transport network filaments slowly spreading and reorganizing.
+- `genart.differentialgrowth` — *Lichen Rim*: Expanding organic ribbon loop with self-repelling vertices, creating detailed lichen/coral-like folds.
+- `genart.wetwash` — *Watercolor Landscape*: Soft bleeding pigment patches accumulating into misty hill silhouettes.
+- `genart.hatching` — *Charcoal Hatching*: Dynamic directional line strokes shading soft geometric contours with organic charcoal physics.

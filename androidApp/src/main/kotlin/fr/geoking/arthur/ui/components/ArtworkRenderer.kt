@@ -1,5 +1,6 @@
 package fr.geoking.arthur.ui.components
 
+import android.os.Build
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -20,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -204,12 +206,42 @@ private fun RemoteStillImage(
     val bmp = bitmapState
     when {
         bmp != null && !hasFailed -> {
-            Image(
-                bitmap = bmp.asImageBitmap(),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = modifier.fillMaxSize().testTag("artwork_remote_image"),
-            )
+            val imageBitmap = remember(bmp) { bmp.asImageBitmap() }
+            Box(
+                modifier = modifier
+                    .fillMaxSize()
+                    .testTag("artwork_remote_image_container"),
+                contentAlignment = Alignment.Center,
+            ) {
+                Image(
+                    bitmap = imageBitmap,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .then(
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                Modifier.blur(25.dp)
+                            } else {
+                                Modifier
+                            },
+                        )
+                        .testTag("artwork_remote_image_bg"),
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.25f)),
+                )
+                Image(
+                    bitmap = imageBitmap,
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .testTag("artwork_remote_image"),
+                )
+            }
         }
         hasFailed -> {
             StillArtworkPlaceholder(

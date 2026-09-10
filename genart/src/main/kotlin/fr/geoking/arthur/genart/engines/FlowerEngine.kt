@@ -43,7 +43,7 @@ internal fun FlowerEngine(
     speed: Float,
     modifier: Modifier = Modifier,
 ) {
-    val petalCount = qualityCount(quality, low = 5, medium = 6, high = 6)
+    val petalCount = qualityCount(quality, low = 6, medium = 8, high = 10)
     val petals = remember(petalCount) {
         List(petalCount) { i ->
             FlowerPetalSeed(
@@ -94,7 +94,7 @@ internal fun FlowerEngine(
 
         val baseX = w * 0.5f
         val baseY = h * 0.92f
-        val stemHeight = h * 0.5f
+        val stemHeight = h * 0.65f
         val tipX = baseX + sin(swayAngle) * stemHeight
         val tipY = baseY - cos(swayAngle) * stemHeight
         val controlX = baseX + sin(swayAngle) * stemHeight * 0.55f

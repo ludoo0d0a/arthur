@@ -32,7 +32,9 @@ import fr.geoking.arthur.shared.source.EuropeanaSource
 import fr.geoking.arthur.shared.source.GenartSource
 import fr.geoking.arthur.shared.source.HarvardSource
 import fr.geoking.arthur.shared.source.LouvreSource
+import fr.geoking.arthur.shared.source.DeviantArtSource
 import fr.geoking.arthur.shared.source.MetSource
+import fr.geoking.arthur.shared.source.PexelsSource
 import fr.geoking.arthur.shared.source.PexelsVideoSource
 import fr.geoking.arthur.shared.source.PixabayVideoSource
 import fr.geoking.arthur.shared.source.RijksmuseumSource
@@ -123,6 +125,19 @@ enum class MuseumTopic(
             entries.mapNotNull { it.sourceId }.toSet()
         }
     }
+}
+
+/**
+ * Photo pack Source tiles — one Remote Source each (same role as [MuseumTopic] institutions).
+ */
+enum class PhotoTopic(
+    val sourceId: String,
+    @get:StringRes val labelRes: Int,
+    val testTagSuffix: String,
+) {
+    Pexels(PexelsSource.ID, R.string.source_pexels_video, PexelsSource.ID),
+    Unsplash(UnsplashSource.ID, R.string.source_unsplash, UnsplashSource.ID),
+    DeviantArt(DeviantArtSource.ID, R.string.source_deviantart, DeviantArtSource.ID),
 }
 
 /**
@@ -310,6 +325,9 @@ fun matchesMuseumTopic(art: Artwork, museumTopic: MuseumTopic): Boolean =
         MuseumTopic.Random -> art.sourceId in MuseumTopic.institutionSourceIds
         else -> art.sourceId == museumTopic.sourceId
     }
+
+fun matchesPhotoSource(art: Artwork, photoTopic: PhotoTopic): Boolean =
+    art.sourceId == photoTopic.sourceId
 
 fun matchesVideoSource(art: Artwork, videoTopic: VideoTopic): Boolean =
     art.sourceId == videoTopic.sourceId

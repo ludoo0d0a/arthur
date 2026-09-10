@@ -1,6 +1,7 @@
 package fr.geoking.arthur.source
 
 import fr.geoking.arthur.BuildConfig
+import fr.geoking.arthur.shared.source.DeviantArtSource
 import fr.geoking.arthur.shared.source.PexelsSource
 import fr.geoking.arthur.shared.source.UnsplashSource
 import io.ktor.client.HttpClient
@@ -97,6 +98,32 @@ class StockPhotoSourceE2eTest {
         assertImageBytes(bytes, label = "Unsplash ${sample.id}")
         val out = writeSample("${sample.id}.jpg", bytes)
         println("Unsplash sample → ${out.absolutePath} (${bytes.size} bytes)")
+    }
+
+    @Test
+    fun deviantart_loadsCatalogAndDownloadsSampleImage() = runBlocking {
+        val clientId = BuildConfig.DEVIANTART_CLIENT_ID
+        val clientSecret = BuildConfig.DEVIANTART_CLIENT_SECRET
+        assumeTrue(
+            "DEVIANTART credentials missing in local.properties / CI secrets",
+            clientId.isNotBlank() && clientSecret.isNotBlank(),
+        )
+
+        val source = DeviantArtSource(
+            clientId = clientId,
+            clientSecret = clientSecret,
+            limit = 2,
+            httpGet = { url -> client.get(url).bodyAsText() },
+        )
+        val art = source.load()
+        assertTrue("DeviantArt catalog empty", art.isNotEmpty())
+        val sample = art.first()
+        assertTrue("DeviantArt remoteUrl missing for ${sample.id}", !sample.remoteUrl.isNullOrBlank())
+
+        val bytes = client.get(sample.remoteUrl!!).bodyAsBytes()
+        assertImageBytes(bytes, label = "DeviantArt ${sample.id}")
+        val out = writeSample("${sample.id}.jpg", bytes)
+        println("DeviantArt sample → ${out.absolutePath} (${bytes.size} bytes)")
     }
 
     private fun writeSample(name: String, bytes: ByteArray): File {

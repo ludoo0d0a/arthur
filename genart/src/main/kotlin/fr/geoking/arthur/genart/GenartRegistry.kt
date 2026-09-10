@@ -207,7 +207,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Particles,
             stableId = "genart.particles",
-            title = "Drifting Particles",
+            title = "#1 - Drifting Particles",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 ParticlesEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -226,7 +226,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Pseudo3D,
             stableId = "genart.pseudo3d",
-            title = "Wire Lattice",
+            title = "#2 - Wire Lattice",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 Pseudo3DEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -237,7 +237,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.SoftShadows,
             stableId = "genart.softshadows",
-            title = "Soft Shadows",
+            title = "#3 - Soft Shadows",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 SoftShadowsEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -248,7 +248,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Tunnel,
             stableId = "genart.tunnel",
-            title = "Vanishing Tunnel",
+            title = "#4 - Vanishing Tunnel",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 TunnelEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -259,7 +259,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.TonalGeometry,
             stableId = "genart.tonalgeometry",
-            title = "Tonal Geometry",
+            title = "#5 - Tonal Geometry",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 TonalGeometryEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -270,7 +270,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Sphere,
             stableId = "genart.sphere",
-            title = "Orbiting Sphere",
+            title = "#6 - Orbiting Sphere",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 SphereEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -281,7 +281,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Waves,
             stableId = "genart.waves",
-            title = "Layered Waves",
+            title = "#7 - Layered Waves",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 WavesEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -292,7 +292,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Micro,
             stableId = "genart.micro",
-            title = "Volumetric Rays",
+            title = "#8 - Volumetric Rays",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 MicroEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -303,7 +303,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Snow,
             stableId = "genart.snow",
-            title = "Falling Snow",
+            title = "#9 - Falling Snow",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 SnowEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -314,7 +314,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Grass,
             stableId = "genart.grass",
-            title = "Grass in Wind",
+            title = "#10 - Grass in Wind",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 GrassEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -325,7 +325,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.BirdFlock,
             stableId = "genart.birdflock",
-            title = "Bird Flock",
+            title = "#11 - Bird Flock",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 BirdFlockEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -336,7 +336,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Mountains,
             stableId = "genart.mountains",
-            title = "Layered Mountains",
+            title = "#12 - Layered Mountains",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 MountainsEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -347,7 +347,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Aurora,
             stableId = "genart.aurora",
-            title = "Aurora Ribbons",
+            title = "#13 - Aurora Ribbons",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 AuroraEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -358,7 +358,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.PondRipples,
             stableId = "genart.pondripples",
-            title = "Pond Ripples",
+            title = "#14 - Pond Ripples",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 PondRipplesEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -369,7 +369,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.FallingLeaves,
             stableId = "genart.fallingleaves",
-            title = "Falling Leaves",
+            title = "#15 - Falling Leaves",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 FallingLeavesEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -380,7 +380,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.BreathCircles,
             stableId = "genart.breathcircles",
-            title = "Breath Circles",
+            title = "#16 - Breath Circles",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 BreathCirclesEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -391,7 +391,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.FireEmbers,
             stableId = "genart.fireembers",
-            title = "Fireplace Embers",
+            title = "#17 - Fireplace Embers",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 FireEmbersEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -402,7 +402,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Dunes,
             stableId = "genart.dunes",
-            title = "Wind-Blown Dunes",
+            title = "#18 - Wind-Blown Dunes",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 DunesEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -413,7 +413,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Constellation,
             stableId = "genart.constellation",
-            title = "Constellation Twinkle",
+            title = "#19 - Constellation Twinkle",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 ConstellationEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -424,7 +424,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Clouds,
             stableId = "genart.clouds",
-            title = "Drifting Clouds",
+            title = "#20 - Drifting Clouds",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 CloudsEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -435,7 +435,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Rain,
             stableId = "genart.rain",
-            title = "Soft Rain",
+            title = "#21 - Soft Rain",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 RainEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -446,7 +446,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Fog,
             stableId = "genart.fog",
-            title = "Soft Fog",
+            title = "#22 - Soft Fog",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 FogEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -457,7 +457,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.FishSchool,
             stableId = "genart.fishschool",
-            title = "School of Fish",
+            title = "#23 - School of Fish",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 FishSchoolEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -468,7 +468,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Fireflies,
             stableId = "genart.fireflies",
-            title = "Fireflies",
+            title = "#24 - Fireflies",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 FirefliesEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -479,7 +479,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Sunbeams,
             stableId = "genart.sunbeams",
-            title = "Sunbeams Through Haze",
+            title = "#25 - Sunbeams Through Haze",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 SunbeamsEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -490,7 +490,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Meteors,
             stableId = "genart.meteors",
-            title = "Sparse Meteors",
+            title = "#26 - Sparse Meteors",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 MeteorsEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -501,7 +501,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Bubbles,
             stableId = "genart.bubbles",
-            title = "Rising Bubbles",
+            title = "#27 - Rising Bubbles",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 BubblesEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -512,7 +512,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.CherryBlossoms,
             stableId = "genart.cherryblossoms",
-            title = "Cherry Blossom Petals",
+            title = "#28 - Cherry Blossom Petals",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 CherryBlossomsEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -523,7 +523,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.SoftRibbons,
             stableId = "genart.ribbons",
-            title = "Soft Ribbons",
+            title = "#29 - Soft Ribbons",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 SoftRibbonsEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -534,7 +534,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Nebula,
             stableId = "genart.nebula",
-            title = "Nebula Drift",
+            title = "#30 - Nebula Drift",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 NebulaEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -545,7 +545,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.MorphingBlobs,
             stableId = "genart.blobs",
-            title = "Morphing Blobs",
+            title = "#31 - Morphing Blobs",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 MorphingBlobsEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -556,7 +556,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.SoftNoiseField,
             stableId = "genart.noisefield",
-            title = "Soft Noise Field",
+            title = "#32 - Soft Noise Field",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 SoftNoiseFieldEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -567,7 +567,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.VoronoiWash,
             stableId = "genart.voronoi",
-            title = "Voronoi Wash",
+            title = "#33 - Voronoi Wash",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 VoronoiWashEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -578,7 +578,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.SilkFolds,
             stableId = "genart.silk",
-            title = "Silk Folds",
+            title = "#34 - Silk Folds",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 SilkFoldsEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -589,7 +589,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.GradientMesh,
             stableId = "genart.gradientmesh",
-            title = "Gradient Mesh",
+            title = "#35 - Gradient Mesh",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 GradientMeshEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -600,7 +600,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.ArcMosaic,
             stableId = "genart.arcmosaic",
-            title = "Arc Mosaic",
+            title = "#36 - Arc Mosaic",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 ArcMosaicEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -611,7 +611,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Storm,
             stableId = "genart.storm",
-            title = "Soft Storm",
+            title = "#37 - Soft Storm",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 StormEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -622,7 +622,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.StarField,
             stableId = "genart.starfield",
-            title = "Star Field Parallax",
+            title = "#38 - Star Field Parallax",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 StarFieldEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -633,7 +633,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.SolarSystem,
             stableId = "genart.solarsystem",
-            title = "Solar System",
+            title = "#39 - Solar System",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 SolarSystemEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -644,7 +644,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.CandleEmber,
             stableId = "genart.candleember",
-            title = "Candle Ember",
+            title = "#40 - Candle Ember",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 CandleEmberEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -655,7 +655,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Rainbow,
             stableId = "genart.rainbow",
-            title = "Soft Rainbow",
+            title = "#41 - Soft Rainbow",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 RainbowEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -666,7 +666,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Smog,
             stableId = "genart.smog",
-            title = "Soft Smog",
+            title = "#42 - Soft Smog",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 SmogEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -677,7 +677,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Smoke,
             stableId = "genart.smoke",
-            title = "Rising Smoke",
+            title = "#43 - Rising Smoke",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 SmokeEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -688,7 +688,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.HeatHaze,
             stableId = "genart.heathaze",
-            title = "Heat Haze",
+            title = "#44 - Heat Haze",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 HeatHazeEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -699,7 +699,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Sunshine,
             stableId = "genart.sunshine",
-            title = "Soft Sunshine",
+            title = "#45 - Soft Sunshine",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 SunshineEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -710,7 +710,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.LightDrizzle,
             stableId = "genart.lightdrizzle",
-            title = "Light Drizzle",
+            title = "#46 - Light Drizzle",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 LightDrizzleEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -721,7 +721,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.SteamCurl,
             stableId = "genart.steamcurl",
-            title = "Steam Curl",
+            title = "#47 - Steam Curl",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 SteamCurlEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -732,7 +732,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.DriftingPollen,
             stableId = "genart.pollen",
-            title = "Drifting Pollen",
+            title = "#48 - Drifting Pollen",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 DriftingPollenEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -743,7 +743,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.LandslideDust,
             stableId = "genart.landslidedust",
-            title = "Soft Landslide Dust",
+            title = "#49 - Soft Landslide Dust",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 LandslideDustEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -754,7 +754,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.PebbleShoreWash,
             stableId = "genart.pebbleshore",
-            title = "Pebble Shore Wash",
+            title = "#50 - Pebble Shore Wash",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 PebbleShoreWashEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -765,7 +765,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.FrostCrystals,
             stableId = "genart.frostcrystals",
-            title = "First Frost Crystals",
+            title = "#51 - First Frost Crystals",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 FrostCrystalsEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -776,7 +776,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.IonTrail,
             stableId = "genart.iontrail",
-            title = "Ion Trail",
+            title = "#52 - Ion Trail",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 IonTrailEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -787,7 +787,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.AntTrails,
             stableId = "genart.anttrails",
-            title = "Ant Trails",
+            title = "#53 - Ant Trails",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 AntTrailsEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -798,7 +798,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.SleepingPet,
             stableId = "genart.sleepingpet",
-            title = "Sleeping Pet Outline",
+            title = "#54 - Sleeping Pet Outline",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 SleepingPetEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -809,7 +809,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.WarpStreak,
             stableId = "genart.warpstreak",
-            title = "Warp Streak",
+            title = "#55 - Warp Streak",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 WarpStreakEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -820,7 +820,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.SpaceStationDrift,
             stableId = "genart.spacestation",
-            title = "Space Station Drift",
+            title = "#56 - Space Station Drift",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 SpaceStationDriftEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -831,7 +831,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.MoonlightRipples,
             stableId = "genart.moonlightripples",
-            title = "Moonlight Ripples",
+            title = "#57 - Moonlight Ripples",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 MoonlightRipplesEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -842,7 +842,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.EclipseCorona,
             stableId = "genart.eclipsecorona",
-            title = "Eclipse Corona",
+            title = "#58 - Eclipse Corona",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 EclipseCoronaEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -853,7 +853,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.InkInWater,
             stableId = "genart.inkinwater",
-            title = "Ink in Water",
+            title = "#59 - Ink in Water",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 InkInWaterEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -864,7 +864,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.WindChime,
             stableId = "genart.windchime",
-            title = "Wind Chime Silhouette",
+            title = "#60 - Wind Chime Silhouette",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 WindChimeEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -875,7 +875,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.DayNightWash,
             stableId = "genart.daynightwash",
-            title = "Soft Day-Night Wash",
+            title = "#61 - Soft Day-Night Wash",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 DayNightWashEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -886,7 +886,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.TumbleweedDrift,
             stableId = "genart.tumbleweed",
-            title = "Tumbleweed Drift",
+            title = "#62 - Tumbleweed Drift",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 TumbleweedDriftEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -897,7 +897,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.DistantDinosaurs,
             stableId = "genart.dinosaurs",
-            title = "Distant Dinosaur Silhouettes",
+            title = "#63 - Distant Dinosaur Silhouettes",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 DistantDinosaursEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -908,7 +908,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.CityLights,
             stableId = "genart.citylights",
-            title = "City Night Lights",
+            title = "#64 - City Night Lights",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 CityLightsEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -919,7 +919,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.MossGrowth,
             stableId = "genart.moss",
-            title = "Moss Growth",
+            title = "#65 - Moss Growth",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 MossGrowthEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -930,7 +930,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.TerrariumDrip,
             stableId = "genart.terrariumdrip",
-            title = "Terrarium Drip",
+            title = "#66 - Terrarium Drip",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 TerrariumDripEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -941,7 +941,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Aquarium,
             stableId = "genart.aquarium",
-            title = "Aquarium",
+            title = "#67 - Aquarium",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 AquariumEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -952,7 +952,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Fields,
             stableId = "genart.fields",
-            title = "Soft Fields",
+            title = "#68 - Soft Fields",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 FieldsEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -963,7 +963,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.RainOnGlass,
             stableId = "genart.rainonglass",
-            title = "Rain on Glass",
+            title = "#69 - Rain on Glass",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 RainOnGlassEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -974,7 +974,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Reeds,
             stableId = "genart.reeds",
-            title = "Reeds",
+            title = "#70 - Reeds",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 ReedsEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -985,7 +985,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.CanyonDunes,
             stableId = "genart.canyondunes",
-            title = "Canyon Dunes",
+            title = "#71 - Canyon Dunes",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 CanyonDunesEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -996,7 +996,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Continents,
             stableId = "genart.continents",
-            title = "Continents",
+            title = "#72 - Continents",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 ContinentsEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -1007,7 +1007,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Roads,
             stableId = "genart.roads",
-            title = "Roads",
+            title = "#73 - Roads",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 RoadsEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -1018,7 +1018,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Rivers,
             stableId = "genart.rivers",
-            title = "Rivers",
+            title = "#74 - Rivers",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 RiversEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -1029,7 +1029,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Tree,
             stableId = "genart.tree",
-            title = "Tree in Wind",
+            title = "#75 - Tree in Wind",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 TreeEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -1040,7 +1040,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Flower,
             stableId = "genart.flower",
-            title = "Flower Bloom",
+            title = "#76 - Flower Bloom",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 FlowerEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -1051,7 +1051,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Lake,
             stableId = "genart.lake",
-            title = "Lake Surface",
+            title = "#77 - Lake Surface",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 LakeEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -1062,7 +1062,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.Asteroids,
             stableId = "genart.asteroids",
-            title = "Asteroids",
+            title = "#78 - Asteroids",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 AsteroidsEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -1073,7 +1073,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.WaterfallMist,
             stableId = "genart.waterfallmist",
-            title = "Waterfall Mist",
+            title = "#79 - Waterfall Mist",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 WaterfallMistEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -1084,7 +1084,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.SoftWindStreaks,
             stableId = "genart.windstreaks",
-            title = "Soft Wind Streaks",
+            title = "#80 - Soft Wind Streaks",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 SoftWindStreaksEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -1095,7 +1095,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.GerstnerOcean,
             stableId = "genart.oceanswell",
-            title = "Ocean Swell",
+            title = "#81 - Ocean Swell",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 GerstnerOceanEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -1106,7 +1106,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.SpiralGalaxy,
             stableId = "genart.galaxy",
-            title = "Spiral Galaxy Drift",
+            title = "#82 - Spiral Galaxy Drift",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 SpiralGalaxyEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -1117,7 +1117,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.DataHorizon,
             stableId = "genart.datahorizon",
-            title = "Data Horizon",
+            title = "#83 - Data Horizon",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 DataHorizonEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -1128,7 +1128,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.SoftCaustics,
             stableId = "genart.caustics",
-            title = "Soft Caustics",
+            title = "#84 - Soft Caustics",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 SoftCausticsEngine(isActive, palette, quality, brightness, speed, modifier)
             },
@@ -1139,7 +1139,7 @@ object GenartRegistry {
         GenartEngineDescriptor(
             id = GenartEngineId.LowFreqNoiseField,
             stableId = "genart.lowfreqnoise",
-            title = "Low-Frequency Noise Field",
+            title = "#85 - Low-Frequency Noise Field",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 LowFreqNoiseFieldEngine(isActive, palette, quality, brightness, speed, modifier)
             },

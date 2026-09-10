@@ -26,7 +26,11 @@ object PackCovers {
         GenartTopic.Tapet -> R.drawable.pack_genart_abstract
         GenartTopic.Nature -> R.drawable.pack_genart_nature
         GenartTopic.Weather -> R.drawable.pack_genart_weather
+        GenartTopic.Water -> R.drawable.pack_genart_nature
+        GenartTopic.Life -> R.drawable.pack_genart_nature
+        GenartTopic.Earth -> R.drawable.pack_genart_nature
         GenartTopic.Planets -> R.drawable.pack_genart_planets
+        GenartTopic.SciFi -> R.drawable.pack_genart_geometry
         GenartTopic.Abstract -> R.drawable.pack_genart_abstract
         GenartTopic.Geometry -> R.drawable.pack_genart_geometry
         GenartTopic.Fractal -> R.drawable.pack_genart_fractal

@@ -70,6 +70,35 @@ class LouvreSourceTest {
     }
 
     @Test
+    fun cachesHydratedObjectsAcrossLoads() = runBlocking {
+        val ark = "cl010062370"
+        val fixtures = mapOf(
+            LouvreSource.objectUrl(ark) to """
+                {
+                  "arkId": "$ark",
+                  "title": "La Joconde",
+                  "creator": [{ "label": "Léonard de Vinci" }],
+                  "image": [
+                    { "urlImage": "https://collections.louvre.fr/media/cache/large/joconde.jpg", "position": 0 }
+                  ]
+                }
+            """.trimIndent(),
+        )
+        var callCount = 0
+        val source = LouvreSource(
+            httpGet = { url ->
+                callCount++
+                fixtures.getValue(url)
+            },
+            arkIds = { listOf(ark) },
+            random = ZeroRandom,
+        )
+        source.load()
+        source.load()
+        assertEquals(1, callCount)
+    }
+
+    @Test
     fun rethrowsCancellationException() = runBlocking {
         val source = LouvreSource(
             httpGet = { throw kotlinx.coroutines.CancellationException("Scope left composition") },

@@ -34,15 +34,29 @@ class RijksmuseumSource(
     // — defers the other target(s) to the next call instead of fetching them all now.
     private var targetCursor = 0
 
+    // Per-target `next.id` page cursor: advances forward through search results
+    // instead of re-fetching the same first-page window on every load().
+    private val nextPageUrls = mutableMapOf<Int, String>()
+
+    // Avoids re-running the (possibly multi-hop) object+image hydration chain for an
+    // objectId this Source instance has already resolved successfully.
+    private val hydratedCache = mutableMapOf<String, Artwork>()
+
     override suspend fun load(): List<Artwork> = runCatching {
         val searchTargets = searchTargetsFor(kind())
         if (searchTargets.isEmpty()) return@runCatching emptyList()
-        val (searchUrl, fallbackKind) = searchTargets[(targetCursor++).mod(searchTargets.size)]
+        val targetIndex = (targetCursor++).mod(searchTargets.size)
+        val (baseSearchUrl, fallbackKind) = searchTargets[targetIndex]
+        val searchUrl = nextPageUrls[targetIndex] ?: baseSearchUrl
         val searchJson = httpGet(searchUrl)
+        nextPageUrls[targetIndex] = parseNextPageUrl(searchJson) ?: baseSearchUrl
         val ids = RemoteSample.sample(parseSearchIds(searchJson), limit, random)
         val results = mutableListOf<Artwork>()
         for (objectId in ids) {
-            runCatching { loadArtwork(objectId, fallbackKind) }.getOrNull()?.let { results.add(it) }
+            val artwork = hydratedCache[objectId]
+                ?: runCatching { loadArtwork(objectId, fallbackKind) }.getOrNull()
+                    ?.also { hydratedCache[objectId] = it }
+            artwork?.let { results.add(it) }
         }
         RemoteSample.sample(results, limit, random)
     }.getOrDefault(emptyList())
@@ -176,6 +190,10 @@ class RijksmuseumSource(
             return page.orderedItems.mapNotNull { it.id }
         }
 
+        /** `next.id` page-token URL from a search response, or null on the last page. */
+        internal fun parseNextPageUrl(payload: String): String? =
+            runCatching { json.decodeFromString<LinkedArtSearchPage>(payload).next?.id }.getOrNull()
+
         private fun httpUrl(value: String?): String? =
             value?.takeIf { it.startsWith("http://") || it.startsWith("https://") }
 
@@ -216,6 +234,7 @@ class RijksmuseumSource(
 @Serializable
 internal data class LinkedArtSearchPage(
     val orderedItems: List<LinkedArtRef> = emptyList(),
+    val next: LinkedArtRef? = null,
 )
 
 @Serializable

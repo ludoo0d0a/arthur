@@ -148,6 +148,34 @@ class WikimediaStreetArtSourceTest {
     }
 
     @Test
+    fun advancesToGcmContinueTokenOnSecondLoad() = runBlocking {
+        val firstUrl = WikimediaStreetArtSource.searchUrl()
+        val secondUrl = WikimediaStreetArtSource.searchUrl(
+            continuation = WikimediaContinuation(gcmcontinue = "page|012345", continueParam = "gcmcontinue||"),
+        )
+        val requestedUrls = mutableListOf<String>()
+        val fixtures = mapOf(
+            firstUrl to """
+                {
+                  "continue": { "gcmcontinue": "page|012345", "continue": "gcmcontinue||" },
+                  "query": { "pages": [] }
+                }
+            """.trimIndent(),
+            secondUrl to """{ "query": { "pages": [] } }""",
+        )
+        val source = WikimediaStreetArtSource(
+            httpGet = { url ->
+                requestedUrls.add(url)
+                fixtures.getValue(url)
+            },
+            random = ZeroRandom,
+        )
+        source.load()
+        source.load()
+        assertEquals(listOf(firstUrl, secondUrl), requestedUrls)
+    }
+
+    @Test
     fun openLicenseHelpers() {
         assertTrue(WikimediaStreetArtSource.isOpenLicense("CC BY 2.0"))
         assertTrue(WikimediaStreetArtSource.isOpenLicense("CC BY-SA 4.0"))

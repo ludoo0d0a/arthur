@@ -153,4 +153,105 @@ class RijksmuseumSourceTest {
             ids,
         )
     }
+
+    @Test
+    fun cachesHydratedObjectsAcrossLoads() = runBlocking {
+        val objectUrl = "https://id.rijksmuseum.nl/200100988"
+        val fixtures = mapOf(
+            RijksmuseumSource.SEARCH_URL to """
+                {
+                  "orderedItems": [
+                    { "id": "$objectUrl", "type": "HumanMadeObject" }
+                  ]
+                }
+            """.trimIndent(),
+            objectUrl to """
+                {
+                  "id": "$objectUrl",
+                  "type": "HumanMadeObject",
+                  "identified_by": [
+                    { "type": "Name", "content": "Misty Sea" },
+                    {
+                      "type": "Identifier",
+                      "content": "SK-C-1726",
+                      "classified_as": [
+                        { "id": "https://id.rijksmuseum.nl/22015218", "type": "Type" }
+                      ]
+                    }
+                  ],
+                  "representation": [
+                    { "id": "https://lh3.googleusercontent.com/test-image.jpg" }
+                  ]
+                }
+            """.trimIndent(),
+        )
+        val callCounts = mutableMapOf<String, Int>()
+        val source = RijksmuseumSource(
+            httpGet = { url ->
+                callCounts[url] = (callCounts[url] ?: 0) + 1
+                fixtures.getValue(url)
+            },
+            kind = { MuseumSearchKind.Painting },
+            random = ZeroRandom,
+        )
+        source.load()
+        source.load()
+        assertEquals(2, callCounts[RijksmuseumSource.SEARCH_URL])
+        assertEquals(1, callCounts[objectUrl])
+    }
+
+    @Test
+    fun advancesToNextPageUrlOnSecondLoad() = runBlocking {
+        val page2Url =
+            "https://data.rijksmuseum.nl/search/collection?type=sculpture&imageAvailable=true&page=2"
+        val requestedUrls = mutableListOf<String>()
+        val fixtures = mapOf(
+            RijksmuseumSource.SEARCH_SCULPTURE_URL to """
+                { "orderedItems": [], "next": { "id": "$page2Url" } }
+            """.trimIndent(),
+            page2Url to """{"orderedItems":[]}""",
+        )
+        val source = RijksmuseumSource(
+            httpGet = { url ->
+                requestedUrls.add(url)
+                fixtures.getValue(url)
+            },
+            kind = { MuseumSearchKind.Sculpture },
+            random = ZeroRandom,
+        )
+        source.load()
+        source.load()
+        assertEquals(
+            listOf(RijksmuseumSource.SEARCH_SCULPTURE_URL, page2Url),
+            requestedUrls,
+        )
+    }
+
+    @Test
+    fun wrapsBackToBaseUrlWhenNextIsAbsent() = runBlocking {
+        val page2Url =
+            "https://data.rijksmuseum.nl/search/collection?type=sculpture&imageAvailable=true&page=2"
+        val requestedUrls = mutableListOf<String>()
+        val fixtures = mapOf(
+            RijksmuseumSource.SEARCH_SCULPTURE_URL to """
+                { "orderedItems": [], "next": { "id": "$page2Url" } }
+            """.trimIndent(),
+            page2Url to """{"orderedItems":[]}""",
+        )
+        val source = RijksmuseumSource(
+            httpGet = { url ->
+                requestedUrls.add(url)
+                fixtures.getValue(url)
+            },
+            kind = { MuseumSearchKind.Sculpture },
+            random = ZeroRandom,
+        )
+        source.load() // page 1 -> has next -> page 2
+        source.load() // page 2 -> no next -> wraps back to page 1
+        source.load() // page 1 again
+        assertEquals(
+            listOf(RijksmuseumSource.SEARCH_SCULPTURE_URL, page2Url, RijksmuseumSource.SEARCH_SCULPTURE_URL),
+            requestedUrls,
+        )
+    }
 }

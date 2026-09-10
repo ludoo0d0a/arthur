@@ -151,6 +151,35 @@ class MetSourceTest {
     }
 
     @Test
+    fun cachesHydratedObjectsAcrossLoads() = runBlocking {
+        val objectId = 436121
+        val fixtures = mapOf(
+            MetSource.SEARCH_URL to """{"total":1,"objectIDs":[$objectId]}""",
+            MetSource.objectUrl(objectId) to """
+                {
+                  "objectID": $objectId,
+                  "isPublicDomain": true,
+                  "title": "Wheat Field with Cypresses",
+                  "artistDisplayName": "Vincent van Gogh",
+                  "primaryImage": "https://images.metmuseum.org/CRDImages/ep/original/DT1567.jpg"
+                }
+            """.trimIndent(),
+        )
+        val callCounts = mutableMapOf<String, Int>()
+        val source = MetSource(
+            httpGet = { url ->
+                callCounts[url] = (callCounts[url] ?: 0) + 1
+                fixtures.getValue(url)
+            },
+            random = ZeroRandom,
+        )
+        source.load()
+        source.load()
+        assertEquals(2, callCounts[MetSource.SEARCH_URL])
+        assertEquals(1, callCounts[MetSource.objectUrl(objectId)])
+    }
+
+    @Test
     fun loadsSculptureKindFromCategoryQuery() = runBlocking {
         val objectId = 200668
         val fixtures = mapOf(

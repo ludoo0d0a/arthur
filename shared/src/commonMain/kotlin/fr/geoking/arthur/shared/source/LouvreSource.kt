@@ -30,6 +30,10 @@ class LouvreSource(
     // — defers the other target(s) to the next call instead of fetching them all now.
     private var targetCursor = 0
 
+    // The curated ARK lists are small and static, so once every id has been hydrated
+    // once, later load() calls for the same kind need no network calls at all.
+    private val hydratedCache = mutableMapOf<String, Artwork>()
+
     override suspend fun load(): List<Artwork> = runCatching {
         MuseumLoad.acrossTargets(
             kind(),
@@ -39,9 +43,11 @@ class LouvreSource(
         ) { target, perKind ->
             val selected = RemoteSample.sample(arkIds(target), perKind, random)
             selected.mapNotNull { arkId ->
-                val payload = httpGet(objectUrl(arkId))
-                val record = json.decodeFromString<LouvreRecord>(payload)
-                toArtwork(record, target)
+                hydratedCache[arkId] ?: run {
+                    val payload = httpGet(objectUrl(arkId))
+                    val record = json.decodeFromString<LouvreRecord>(payload)
+                    toArtwork(record, target)?.also { hydratedCache[arkId] = it }
+                }
             }
         }
     }.onFailure { e ->

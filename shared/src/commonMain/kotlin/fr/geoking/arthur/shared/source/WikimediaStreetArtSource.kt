@@ -4,6 +4,7 @@ import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.Source
 import kotlin.random.Random
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -23,9 +24,17 @@ class WikimediaStreetArtSource(
     override val id: String = ID
     override val displayName: String = "Wikimedia Street Art"
 
+    // MediaWiki's own continuation token: walks forward through Category:Street_art
+    // across successive load() calls instead of always re-fetching the same window.
+    // Reset to null (start of the category) once the last page is reached.
+    private var continuation: WikimediaContinuation? = null
+
     override suspend fun load(): List<Artwork> = runCatching {
-        val payload = httpGet(searchUrl(limit = limit.coerceAtLeast(1) * FETCH_MULTIPLIER))
+        val payload = httpGet(
+            searchUrl(limit = limit.coerceAtLeast(1) * FETCH_MULTIPLIER, continuation = continuation),
+        )
         val response = json.decodeFromString<WikimediaQueryResponse>(payload)
+        continuation = response.continueToken
         val mapped = response.query?.pages.orEmpty().mapNotNull { toArtwork(it) }
         RemoteSample.sample(mapped, limit, random)
     }.getOrDefault(emptyList())
@@ -68,14 +77,20 @@ class WikimediaStreetArtSource(
         fun searchUrl(
             limit: Int = DEFAULT_LIMIT * FETCH_MULTIPLIER,
             category: String = CATEGORY,
+            continuation: WikimediaContinuation? = null,
         ): String {
             val encodedCategory = category.replace(" ", "_")
+            val continueParams = buildString {
+                continuation?.gcmcontinue?.let { append("&gcmcontinue=$it") }
+                continuation?.continueParam?.let { append("&continue=$it") }
+            }
             return "https://commons.wikimedia.org/w/api.php" +
                 "?action=query" +
                 "&generator=categorymembers" +
                 "&gcmtitle=$encodedCategory" +
                 "&gcmtype=file" +
                 "&gcmlimit=$limit" +
+                continueParams +
                 "&prop=imageinfo" +
                 "&iiprop=url|extmetadata|mime" +
                 "&iiurlwidth=$THUMB_WIDTH" +
@@ -126,6 +141,13 @@ class WikimediaStreetArtSource(
 @Serializable
 internal data class WikimediaQueryResponse(
     val query: WikimediaQuery? = null,
+    @SerialName("continue") val continueToken: WikimediaContinuation? = null,
+)
+
+@Serializable
+data class WikimediaContinuation(
+    val gcmcontinue: String? = null,
+    @SerialName("continue") val continueParam: String? = null,
 )
 
 @Serializable

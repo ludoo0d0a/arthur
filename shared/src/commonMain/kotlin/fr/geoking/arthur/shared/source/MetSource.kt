@@ -30,6 +30,11 @@ class MetSource(
     // — defers the other target(s) to the next call instead of fetching them all now.
     private var targetCursor = 0
 
+    // Met's search endpoint has no page/offset param — it always returns the same full
+    // ID list, so repeated random samples frequently overlap. Caching resolved objects
+    // avoids re-running the per-object hydration call for ids seen before.
+    private val hydratedCache = mutableMapOf<Int, Artwork>()
+
     override suspend fun load(): List<Artwork> = runCatching {
         MuseumLoad.acrossTargets(
             kind(),
@@ -40,7 +45,9 @@ class MetSource(
             val searchJson = httpGet(searchUrl(target))
             val ids = RemoteSample.sample(parseSearchIds(searchJson), perKind, random)
             ids.mapNotNull { objectId ->
-                runCatching { loadArtwork(objectId, target) }.getOrNull()
+                hydratedCache[objectId]
+                    ?: runCatching { loadArtwork(objectId, target) }.getOrNull()
+                        ?.also { hydratedCache[objectId] = it }
             }
         }
     }.getOrDefault(emptyList())

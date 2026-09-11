@@ -35,7 +35,9 @@ class MetSource(
     // avoids re-running the per-object hydration call for ids seen before.
     private val hydratedCache = mutableMapOf<Int, Artwork>()
 
-    override suspend fun load(): List<Artwork> = runCatching {
+    override suspend fun load(): List<Artwork> = load(limit = limit)
+
+    override suspend fun load(limit: Int): List<Artwork> = runCatching {
         MuseumLoad.acrossTargets(
             kind(),
             limit,

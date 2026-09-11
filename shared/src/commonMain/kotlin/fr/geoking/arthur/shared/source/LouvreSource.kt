@@ -34,7 +34,9 @@ class LouvreSource(
     // once, later load() calls for the same kind need no network calls at all.
     private val hydratedCache = mutableMapOf<String, Artwork>()
 
-    override suspend fun load(): List<Artwork> = runCatching {
+    override suspend fun load(): List<Artwork> = load(limit = limit)
+
+    override suspend fun load(limit: Int): List<Artwork> = runCatching {
         MuseumLoad.acrossTargets(
             kind(),
             limit,

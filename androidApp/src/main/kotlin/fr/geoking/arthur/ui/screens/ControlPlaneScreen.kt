@@ -46,6 +46,7 @@ import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
+import fr.geoking.arthur.shared.source.BundledPackSource
 import fr.geoking.arthur.shared.source.CustomFractalSource
 import fr.geoking.arthur.shared.source.FractalSource
 import fr.geoking.arthur.shared.source.GenartSource
@@ -55,6 +56,7 @@ import fr.geoking.arthur.shared.debug.DebugLogger
 import fr.geoking.arthur.source.MuseumSearchSettings
 import fr.geoking.arthur.source.ScreensaverSettings
 import fr.geoking.arthur.source.StockPhotoSettings
+import fr.geoking.arthur.source.rememberArtworkImageCache
 import fr.geoking.arthur.ui.components.ControlPlaneHeader
 import org.koin.core.context.GlobalContext
 import fr.geoking.arthur.ui.components.PackFamily
@@ -89,8 +91,8 @@ fun ControlPlaneScreen(
     var catalog by remember { mutableStateOf(initialCatalog.orEmpty()) }
     var openedFamily by remember { mutableStateOf<PackFamily?>(null) }
     var selection by remember { mutableStateOf(PackSelection(PackFamily.Museum)) }
-    var startingAmbient by remember { mutableStateOf(false) }
     val packCatalogCache = remember { mutableMapOf<String, List<Artwork>>() }
+    val imageCache = rememberArtworkImageCache()
     val scope = rememberCoroutineScope()
 
     val debugLogger = remember {
@@ -178,7 +180,6 @@ fun ControlPlaneScreen(
     ControlPlaneContent(
         openedFamily = openedFamily,
         selection = selection,
-        startingAmbient = startingAmbient,
         catalog = catalog,
         onOpenFamily = { family ->
             openedFamily = family
@@ -189,37 +190,33 @@ fun ControlPlaneScreen(
         onSelectSubPack = { selection = it },
         onBackToHome = { openedFamily = null },
         onStartAmbient = {
-            if (startingAmbient) return@ControlPlaneContent
-            scope.launch {
-                startingAmbient = true
-                try {
-                    syncSourceSettings()
-                    val renewIds = selection.sourceIdsForAmbientLoad()
-                    val prefetchKey = selection.prefetchKey(museumKind, stockCategory)
-                    val loaded = if (renewIds != null) {
-                        packCatalogCache[prefetchKey] ?: withContext(Dispatchers.IO) {
-                            contentEngine.catalog(
-                                PreparedRotation(
-                                    sourceIds = renewIds,
-                                    artworkIds = emptyList(),
-                                ),
-                            )
-                        }.also { packCatalogCache[prefetchKey] = it }
-                    } else {
-                        catalog
-                    }
-                    val pool = resolvePackPool(loaded, selection)
-                    val chosen = pool.randomOrNull()
-                        ?: if (selection.allowsGenerativeAmbientFallback()) {
-                            resolveAmbientArtwork(catalog, artworkId = null)
+            syncSourceSettings()
+            val renewIds = selection.sourceIdsForAmbientLoad()
+            val prefetchKey = selection.prefetchKey(museumKind, stockCategory)
+            val cachedPool = packCatalogCache[prefetchKey]
+                ?: imageCache.loadCachedArtworks(renewIds)
+                    .ifEmpty {
+                        if (selection.allowsGenerativeAmbientFallback()) {
+                            catalog
                         } else {
-                            null
+                            BundledPackSource.defaultPack().filter { art ->
+                                when (selection.family) {
+                                    PackFamily.Painting -> art.kind == ArtworkKind.Painting
+                                    PackFamily.Sculpture -> art.kind == ArtworkKind.Sculpture
+                                    PackFamily.Photo -> art.kind == ArtworkKind.Photo
+                                    else -> true
+                                }
+                            }
                         }
-                    onStartAmbient(chosen, pool, renewIds)
-                } finally {
-                    startingAmbient = false
+                    }
+            val pool = resolvePackPool(cachedPool, selection)
+            val chosen = pool.randomOrNull()
+                ?: if (selection.allowsGenerativeAmbientFallback()) {
+                    resolveAmbientArtwork(catalog, artworkId = null)
+                } else {
+                    null
                 }
-            }
+            onStartAmbient(chosen, pool, renewIds)
         },
         modifier = modifier,
         onCreateCustomFractal = onCreateCustomFractal,
@@ -283,17 +280,6 @@ fun ControlPlaneContent(
                 onCreateCustomFractal = onCreateCustomFractal,
                 onOpenSettings = onOpenSettings,
             )
-        }
-        if (startingAmbient) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.35f))
-                    .testTag("starting_ambient_loader"),
-                contentAlignment = Alignment.Center,
-            ) {
-                CircularProgressIndicator()
-            }
         }
     }
 }

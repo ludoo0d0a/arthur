@@ -2,9 +2,12 @@ package fr.geoking.arthur.ui.screens
 
 import android.content.res.Configuration
 import android.os.Build
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -98,6 +101,7 @@ fun AmbientScreenContent(
     artwork: Artwork? = null,
     rotationPool: List<Artwork> = emptyList(),
     isActive: Boolean = true,
+    isLoading: Boolean = false,
     intervalMs: Long = AmbientAlbumArt.ROTATION_INTERVAL_MS,
     onNeedRenewPool: (() -> Unit)? = null,
 ) {
@@ -363,6 +367,31 @@ fun AmbientScreenContent(
                         }
                     },
             )
+        }
+        AnimatedVisibility(
+            visible = isLoading,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .statusBarsPadding()
+                .padding(16.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .background(Color.Black.copy(alpha = 0.25f), CircleShape)
+                    .padding(4.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .testTag("discrete_ambient_loader"),
+                    color = Color.White.copy(alpha = 0.85f),
+                    strokeWidth = 2.dp,
+                )
+            }
         }
         if (canOpenDetails) {
             AmbientDetailsButton(

@@ -42,7 +42,9 @@ class RijksmuseumSource(
     // objectId this Source instance has already resolved successfully.
     private val hydratedCache = mutableMapOf<String, Artwork>()
 
-    override suspend fun load(): List<Artwork> = runCatching {
+    override suspend fun load(): List<Artwork> = load(limit = limit)
+
+    override suspend fun load(limit: Int): List<Artwork> = runCatching {
         val searchTargets = searchTargetsFor(kind())
         if (searchTargets.isEmpty()) return@runCatching emptyList()
         val targetIndex = (targetCursor++).mod(searchTargets.size)

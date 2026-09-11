@@ -90,6 +90,14 @@ class ArtworkImageCache(context: Context) {
         writeAll(byId.values)
     }
 
+    fun rememberArtworks(artworks: List<Artwork>) {
+        val byId = readLines().associateBy { it.substringBefore(SEP) }.toMutableMap()
+        for (art in artworks) {
+            byId[art.id] = encode(art, category = art.sourceId, lastAccess = now())
+        }
+        writeAll(byId.values)
+    }
+
     /** Bake / touch a genart still; keeps at most [MAX_GENART] genart entries (LRU). */
     fun rememberGenart(artwork: Artwork) {
         require(artwork.kind == ArtworkKind.Genart || artwork.sourceId == GenartSource.ID)
@@ -139,6 +147,15 @@ class ArtworkImageCache(context: Context) {
             .sortedByDescending { it.lastAccess }
             .take(MAX_GENART)
             .mapNotNull { it.toArtworkOrNull() }
+
+    /**
+     * Retrieve cached items that already have bytes on disk matching optional [sourceIds] and [kind].
+     */
+    fun loadCachedArtworks(sourceIds: List<String>? = null, kind: ArtworkKind? = null): List<Artwork> =
+        decodeEntries()
+            .filter { entry -> sourceIds.isNullOrEmpty() || entry.sourceId in sourceIds }
+            .mapNotNull { it.toArtworkOrNull() }
+            .filter { art -> kind == null || art.kind == kind }
 
     private fun trimGenartLocked(byId: MutableMap<String, String>) {
         val genartIds = byId.values.mapNotNull { line ->

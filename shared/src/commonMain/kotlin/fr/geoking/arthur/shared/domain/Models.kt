@@ -78,6 +78,7 @@ interface Source {
     val id: String
     val displayName: String
     suspend fun load(): List<Artwork>
+    suspend fun load(limit: Int): List<Artwork> = load()
 }
 
 /** Paid unlock gate — adapters (RevenueCat) live on Android. */

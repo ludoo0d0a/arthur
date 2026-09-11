@@ -57,43 +57,70 @@ class AmbientActivity : ComponentActivity() {
             ArthurTheme {
                 var artwork by remember { mutableStateOf(requested) }
                 var rotationPool by remember { mutableStateOf(stashedPool) }
+                var isLoading by remember { mutableStateOf(false) }
                 val intervalMs by rotationSettings.intervalMs.collectAsState()
                 val scope = rememberCoroutineScope()
                 LaunchedEffect(requested?.id, rotate) {
-                    val loaded = withContext(Dispatchers.IO) {
-                        if (rotate) {
-                            loadRotatingAmbient(contentEngine, requested, stashedPool)
-                        } else {
-                            val pinned = loadPinnedAmbient(contentEngine, requested)
-                            emptyList<Artwork>() to pinned
+                    if (!rotate) {
+                        val pinned = withContext(Dispatchers.IO) {
+                            loadPinnedAmbient(contentEngine, requested)
+                        }
+                        artwork = pinned
+                        return@LaunchedEffect
+                    }
+                    val initialLoaded = withContext(Dispatchers.IO) {
+                        loadRotatingAmbient(contentEngine, requested, stashedPool)
+                    }
+                    if (initialLoaded.first.isNotEmpty()) {
+                        rotationPool = initialLoaded.first
+                    }
+                    if (artwork == null) {
+                        artwork = initialLoaded.second
+                    }
+                    val renewIds = AmbientRotationLaunch.renewSourceIds
+                    if (renewIds != null) {
+                        isLoading = true
+                        try {
+                            contentEngine.catalogFlow(
+                                PreparedRotation(sourceIds = renewIds, artworkIds = emptyList()),
+                            ).collect { emitted ->
+                                if (emitted.isNotEmpty()) {
+                                    rotationPool = emitted
+                                    if (artwork == null) {
+                                        artwork = emitted.randomOrNull()
+                                    }
+                                    AmbientRotationLaunch.prepare(emitted, renewIds)
+                                }
+                            }
+                        } finally {
+                            isLoading = false
                         }
                     }
-                    if (rotate && loaded.first.isNotEmpty()) {
-                        rotationPool = loaded.first
-                    }
-                    artwork = loaded.second
                 }
                 AmbientScreenContent(
                     title = artwork?.title ?: fallbackTitle,
                     artwork = artwork,
                     rotationPool = if (rotate) rotationPool else emptyList(),
+                    isActive = true,
+                    isLoading = isLoading,
                     intervalMs = intervalMs,
                     onNeedRenewPool = if (rotate) {
                         {
                             val ids = AmbientRotationLaunch.renewSourceIds
                             if (ids != null) {
                                 scope.launch {
-                                    val fresh = withContext(Dispatchers.IO) {
-                                        contentEngine.catalog(
-                                            PreparedRotation(
-                                                sourceIds = ids,
-                                                artworkIds = emptyList(),
-                                            ),
-                                        )
-                                    }
-                                    if (fresh.size >= 2) {
-                                        rotationPool = fresh
-                                        AmbientRotationLaunch.prepare(fresh, ids)
+                                    isLoading = true
+                                    try {
+                                        contentEngine.catalogFlow(
+                                            PreparedRotation(sourceIds = ids, artworkIds = emptyList()),
+                                        ).collect { emitted ->
+                                            if (emitted.size >= 2) {
+                                                rotationPool = emitted
+                                                AmbientRotationLaunch.prepare(emitted, ids)
+                                            }
+                                        }
+                                    } finally {
+                                        isLoading = false
                                     }
                                 }
                             }

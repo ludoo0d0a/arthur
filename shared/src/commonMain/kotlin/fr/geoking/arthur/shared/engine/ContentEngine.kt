@@ -9,6 +9,14 @@ import fr.geoking.arthur.shared.domain.PremiumEntitlement
 import fr.geoking.arthur.shared.domain.Source
 import fr.geoking.arthur.shared.domain.isGenerative
 import fr.geoking.arthur.shared.source.BundledPackSource
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.launch
+import kotlin.math.ceil
 
 /**
  * Aggregates Sources into an Ambient Rotation, applying free-tier caps and Premium gates.
@@ -18,33 +26,72 @@ class ContentEngine(
     private val entitlement: PremiumEntitlement,
     private val limits: FreeTierLimits = FreeTierLimits(),
 ) {
-    suspend fun resolve(prepared: PreparedRotation): AmbientRotation {
+    private fun calculatePerSourceLimit(sourceCount: Int): Int? =
+        if (sourceCount > 1) maxOf(3, ceil(limits.maxPhotoArtwork.toDouble() / sourceCount).toInt()) else null
+
+    suspend fun resolve(prepared: PreparedRotation): AmbientRotation = coroutineScope {
         val selectedSources = sources.filter { it.id in prepared.sourceIds }
-        val loaded = selectedSources.flatMap { source ->
-            try {
-                source.load()
-            } catch (e: Throwable) {
-                if (e is kotlinx.coroutines.CancellationException) throw e
-                emptyList()
+        val perSourceLimit = calculatePerSourceLimit(selectedSources.size)
+        val loaded = selectedSources.map { source ->
+            async {
+                try {
+                    if (perSourceLimit != null) source.load(perSourceLimit) else source.load()
+                } catch (e: Throwable) {
+                    if (e is CancellationException) throw e
+                    emptyList()
+                }
             }
-        }
+        }.awaitAll().flatten()
         val byId = loaded.associateBy { it.id }
         val ordered = prepared.artworkIds.mapNotNull { byId[it] }
             .ifEmpty { loaded }
-        return AmbientRotation(artworkIds = applyGates(ordered).map { it.id })
+        AmbientRotation(artworkIds = applyGates(ordered).map { it.id })
     }
 
-    suspend fun catalog(prepared: PreparedRotation): List<Artwork> {
+    suspend fun catalog(prepared: PreparedRotation): List<Artwork> = coroutineScope {
         val selectedSources = sources.filter { it.id in prepared.sourceIds.ifEmpty { sources.map { s -> s.id } } }
-        val loaded = selectedSources.flatMap { source ->
-            try {
-                source.load()
-            } catch (e: Throwable) {
-                if (e is kotlinx.coroutines.CancellationException) throw e
-                emptyList()
+        val perSourceLimit = calculatePerSourceLimit(selectedSources.size)
+        val loaded = selectedSources.map { source ->
+            async {
+                try {
+                    if (perSourceLimit != null) source.load(perSourceLimit) else source.load()
+                } catch (e: Throwable) {
+                    if (e is CancellationException) throw e
+                    emptyList()
+                }
+            }
+        }.awaitAll().flatten()
+        applyGates(loaded)
+    }
+
+    fun catalogFlow(prepared: PreparedRotation): Flow<List<Artwork>> = channelFlow {
+        val selectedSources = sources.filter { it.id in prepared.sourceIds.ifEmpty { sources.map { s -> s.id } } }
+        if (selectedSources.isEmpty()) {
+            send(emptyList())
+            return@channelFlow
+        }
+        val perSourceLimit = calculatePerSourceLimit(selectedSources.size)
+        val accumulated = mutableListOf<Artwork>()
+        val lock = Any()
+        coroutineScope {
+            selectedSources.forEach { source ->
+                launch {
+                    val loaded = try {
+                        if (perSourceLimit != null) source.load(perSourceLimit) else source.load()
+                    } catch (e: Throwable) {
+                        if (e is CancellationException) throw e
+                        emptyList()
+                    }
+                    if (loaded.isNotEmpty()) {
+                        val gated = synchronized(lock) {
+                            accumulated.addAll(loaded)
+                            applyGates(accumulated.toList())
+                        }
+                        send(gated)
+                    }
+                }
             }
         }
-        return applyGates(loaded)
     }
 
     private fun applyGates(artworks: List<Artwork>): List<Artwork> {

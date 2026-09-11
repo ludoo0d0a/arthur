@@ -1,12 +1,18 @@
 package fr.geoking.arthur.ui.components
 
+import android.os.Build
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -15,11 +21,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -167,13 +175,14 @@ private fun RemoteStillImage(
     modifier: Modifier = Modifier,
 ) {
     val imageCache = rememberArtworkImageCache()
+    var retryCount by remember(artworkId, localPath, remoteUrl) { mutableIntStateOf(0) }
     var bitmapState by remember(artworkId, localPath, remoteUrl) {
         mutableStateOf<android.graphics.Bitmap?>(null)
     }
     var hasFailed by remember(artworkId, localPath, remoteUrl) { mutableStateOf(false) }
     var failureReason by remember(artworkId, localPath, remoteUrl) { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(artworkId, localPath, remoteUrl) {
+    LaunchedEffect(artworkId, localPath, remoteUrl, retryCount) {
         hasFailed = false
         failureReason = null
         bitmapState = null
@@ -204,18 +213,49 @@ private fun RemoteStillImage(
     val bmp = bitmapState
     when {
         bmp != null && !hasFailed -> {
-            Image(
-                bitmap = bmp.asImageBitmap(),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = modifier.fillMaxSize().testTag("artwork_remote_image"),
-            )
+            val imageBitmap = remember(bmp) { bmp.asImageBitmap() }
+            Box(
+                modifier = modifier
+                    .fillMaxSize()
+                    .testTag("artwork_remote_image_container"),
+                contentAlignment = Alignment.Center,
+            ) {
+                Image(
+                    bitmap = imageBitmap,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .then(
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                Modifier.blur(25.dp)
+                            } else {
+                                Modifier
+                            },
+                        )
+                        .testTag("artwork_remote_image_bg"),
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.25f)),
+                )
+                Image(
+                    bitmap = imageBitmap,
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .testTag("artwork_remote_image"),
+                )
+            }
         }
         hasFailed -> {
             StillArtworkPlaceholder(
                 kind = kind,
                 showWarning = true,
                 errorDetail = failureReason,
+                onRetry = { retryCount++ },
                 modifier = modifier,
             )
         }
@@ -243,6 +283,7 @@ fun StillArtworkPlaceholder(
     modifier: Modifier = Modifier,
     showWarning: Boolean = false,
     errorDetail: String? = null,
+    onRetry: (() -> Unit)? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
     val visual = kind.visual()
@@ -294,6 +335,23 @@ fun StillArtworkPlaceholder(
                             .padding(top = 4.dp)
                             .testTag("artwork_unavailable_reason"),
                     )
+                }
+                if (onRetry != null) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = onRetry,
+                        modifier = Modifier.testTag("artwork_retry_button"),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Refresh,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Text(
+                            text = stringResource(R.string.retry),
+                            modifier = Modifier.padding(start = 8.dp),
+                        )
+                    }
                 }
             }
         }

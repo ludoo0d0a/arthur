@@ -71,6 +71,11 @@
     <string name="genart_topic_weather">Météo</string>
     <string name="genart_topic_geometry">Géométrie</string>
     <string name="genart_topic_planets">Planètes</string>
+    <string name="genart_topic_tapet">Tapet</string>
+    <string name="genart_topic_water">Eau</string>
+    <string name="genart_topic_life">Vivant</string>
+    <string name="genart_topic_earth">Terre</string>
+    <string name="genart_topic_scifi">Sci-Fi</string>
     <string name="custom_fractal_create">Créer une fractale perso</string>
     <string name="custom_fractal_title">Fractale perso</string>
     <string name="custom_fractal_hint">%1$d points · besoin de %2$d–%3$d</string>

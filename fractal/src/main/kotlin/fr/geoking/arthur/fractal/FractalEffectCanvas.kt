@@ -31,19 +31,30 @@ enum class FractalColorIntensity { Low, Medium, High }
 
 /** Rich multi-stop palette for smooth escape-time gradients. */
 private val DefaultPalette = listOf(
+    Color(0xFF060919),
     Color(0xFF0B1026),
+    Color(0xFF131843),
     Color(0xFF1B1F5C),
+    Color(0xFF252A75),
     Color(0xFF2E3A8C),
+    Color(0xFF2142B2),
     Color(0xFF1D4ED8),
+    Color(0xFF0284C7),
     Color(0xFF0EA5E9),
+    Color(0xFF06B6D4),
     Color(0xFF22D3EE),
+    Color(0xFF38BDF8),
     Color(0xFF67E8F9),
+    Color(0xFF818CF8),
     Color(0xFFA78BFA),
     Color(0xFFC084FC),
+    Color(0xFFE879F9),
     Color(0xFFF472B6),
     Color(0xFFFB7185),
+    Color(0xFFF87171),
     Color(0xFFFBBF24),
     Color(0xFFFDE68A),
+    Color(0xFFFEF08A),
     Color(0xFFFFF7ED),
 )
 
@@ -135,20 +146,20 @@ fun FractalEffectCanvas(
         }
 
         val gridSize = when (quality) {
-            FractalQuality.Low -> 64
-            FractalQuality.Medium -> 96
-            FractalQuality.High -> 128
+            FractalQuality.Low -> 128
+            FractalQuality.Medium -> 216
+            FractalQuality.High -> 320
         }
         val maxIter = when (quality) {
-            FractalQuality.Low -> 96
-            FractalQuality.Medium -> 180
-            FractalQuality.High -> 320
+            FractalQuality.Low -> 160
+            FractalQuality.Medium -> 320
+            FractalQuality.High -> 512
         }
 
         val cellW = w / gridSize
         val cellH = h / gridSize
-        // Visible range in complex plane: smaller as zoom increases
-        val halfSpan = 2f / zoom
+        // Visible range in complex plane: slightly wider span so fractals fill full screen
+        val halfSpan = 2.2f / zoom
 
         // Deep atmospheric backdrop
         drawRect(

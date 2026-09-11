@@ -193,9 +193,18 @@ class FilterChipRowsTest {
             genartTopic = GenartTopic.Abstract,
         )
         assertEquals(
-            listOf(GenartSource.BLOBS, GenartSource.BREATH_CIRCLES),
+            listOf(GenartSource.PARTICLES, GenartSource.BLOBS, GenartSource.BREATH_CIRCLES),
             filtered.map { it.id },
         )
+    }
+
+    @Test
+    fun genartTapet_showsTapetEngines() {
+        val filtered = catalog.filterByCategoryAndSources(
+            CategoryFilter.GENART,
+            genartTopic = GenartTopic.Tapet,
+        )
+        assertEquals(listOf(GenartSource.BLOBS), filtered.map { it.id })
     }
 
     @Test
@@ -207,7 +216,7 @@ class FilterChipRowsTest {
         )
         assertTrue(resolved.showSubfilters)
         assertEquals(
-            listOf(GenartSource.BLOBS, GenartSource.BREATH_CIRCLES),
+            listOf(GenartSource.PARTICLES, GenartSource.BLOBS, GenartSource.BREATH_CIRCLES),
             resolved.items.map { it.id },
         )
     }
@@ -313,6 +322,28 @@ class FilterChipRowsTest {
         )
         assertTrue(resolved.showSubfilters)
         assertEquals(listOf("bundled-3"), resolved.items.map { it.id })
+    }
+
+    @Test
+    fun allGenartsInDefaultCatalog_matchedByAtLeastOneCategoryPackAndRandomMatchesAll() {
+        val fullGenartCatalog = GenartSource.defaultCatalog()
+        val categoryTopics = GenartTopic.entries.filter {
+            it != GenartTopic.Random && it != GenartTopic.Fractal && it != GenartTopic.Custom
+        }
+
+        for (art in fullGenartCatalog) {
+            val matchedTopics = categoryTopics.filter { topic ->
+                matchesGenartTopic(art, topic)
+            }
+            assertTrue(
+                "Genart artwork ${art.id} (${art.title}) should belong to at least one category pack topic",
+                matchedTopics.isNotEmpty(),
+            )
+            assertTrue(
+                "GenartTopic.Random should match artwork ${art.id}",
+                matchesGenartTopic(art, GenartTopic.Random),
+            )
+        }
     }
 
     @Test

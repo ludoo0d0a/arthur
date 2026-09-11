@@ -71,7 +71,7 @@ fun CustomFractalEffectCanvas(
         )
         val w = size.width
         val h = size.height
-        val baseStroke = (minOf(w, h) * 0.0045f).coerceIn(1.2f, 3.5f)
+        val baseStroke = (minOf(w, h) * 0.006f).coerceIn(1.8f, 5f)
         for (stroke in strokes) {
             if (stroke.points.size < 2) continue
             val c0 = palette[stroke.colorIndex % palette.size]

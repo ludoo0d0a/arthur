@@ -32,7 +32,9 @@ import fr.geoking.arthur.shared.source.EuropeanaSource
 import fr.geoking.arthur.shared.source.GenartSource
 import fr.geoking.arthur.shared.source.HarvardSource
 import fr.geoking.arthur.shared.source.LouvreSource
+import fr.geoking.arthur.shared.source.DeviantArtSource
 import fr.geoking.arthur.shared.source.MetSource
+import fr.geoking.arthur.shared.source.PexelsSource
 import fr.geoking.arthur.shared.source.PexelsVideoSource
 import fr.geoking.arthur.shared.source.PixabayVideoSource
 import fr.geoking.arthur.shared.source.RijksmuseumSource
@@ -83,13 +85,18 @@ enum class GenartTopic(
     val testTagSuffix: String,
 ) {
     Random(R.string.stock_topic_random, "random"),
-    Fractal(R.string.genart_topic_fractal, "fractal"),
-    Custom(R.string.genart_topic_custom, "custom"),
-    Abstract(R.string.genart_topic_abstract, "abstract"),
+    Tapet(R.string.genart_topic_tapet, "tapet"),
     Nature(R.string.genart_topic_nature, "nature"),
     Weather(R.string.genart_topic_weather, "weather"),
-    Geometry(R.string.genart_topic_geometry, "geometry"),
+    Water(R.string.genart_topic_water, "water"),
+    Life(R.string.genart_topic_life, "life"),
+    Earth(R.string.genart_topic_earth, "earth"),
     Planets(R.string.genart_topic_planets, "planets"),
+    SciFi(R.string.genart_topic_scifi, "scifi"),
+    Abstract(R.string.genart_topic_abstract, "abstract"),
+    Geometry(R.string.genart_topic_geometry, "geometry"),
+    Fractal(R.string.genart_topic_fractal, "fractal"),
+    Custom(R.string.genart_topic_custom, "custom"),
 }
 
 /**
@@ -123,6 +130,19 @@ enum class MuseumTopic(
             entries.mapNotNull { it.sourceId }.toSet()
         }
     }
+}
+
+/**
+ * Photo pack Source tiles — one Remote Source each (same role as [MuseumTopic] institutions).
+ */
+enum class PhotoTopic(
+    val sourceId: String,
+    @get:StringRes val labelRes: Int,
+    val testTagSuffix: String,
+) {
+    Pexels(PexelsSource.ID, R.string.source_pexels_video, PexelsSource.ID),
+    Unsplash(UnsplashSource.ID, R.string.source_unsplash, UnsplashSource.ID),
+    DeviantArt(DeviantArtSource.ID, R.string.source_deviantart, DeviantArtSource.ID),
 }
 
 /**
@@ -215,14 +235,31 @@ fun List<Artwork>.canLoadMoreCatalog(visibleCount: Int): Boolean =
 
 fun matchesGenartTopic(art: Artwork, topic: GenartTopic): Boolean = when (topic) {
     GenartTopic.Random -> true
-    GenartTopic.Fractal -> art.kind == ArtworkKind.FractalPreset
-    GenartTopic.Custom -> art.kind == ArtworkKind.CustomFractal
-    GenartTopic.Abstract -> art.id in GENART_ABSTRACT_IDS
+    GenartTopic.Tapet -> art.id in GENART_TAPET_IDS
     GenartTopic.Nature -> art.id in GENART_NATURE_IDS
     GenartTopic.Weather -> art.id in GENART_WEATHER_IDS
-    GenartTopic.Geometry -> art.id in GENART_GEOMETRY_IDS
+    GenartTopic.Water -> art.id in GENART_WATER_IDS
+    GenartTopic.Life -> art.id in GENART_LIFE_IDS
+    GenartTopic.Earth -> art.id in GENART_EARTH_IDS
     GenartTopic.Planets -> art.id in GENART_PLANETS_IDS
+    GenartTopic.SciFi -> art.id in GENART_SCIFI_IDS
+    GenartTopic.Abstract -> art.id in GENART_ABSTRACT_IDS
+    GenartTopic.Geometry -> art.id in GENART_GEOMETRY_IDS
+    GenartTopic.Fractal -> art.kind == ArtworkKind.FractalPreset
+    GenartTopic.Custom -> art.kind == ArtworkKind.CustomFractal
 }
+
+private val GENART_TAPET_IDS = setOf(
+    GenartSource.GRADIENT_MESH,
+    GenartSource.BLOBS,
+    GenartSource.VORONOI,
+    GenartSource.SILK,
+    GenartSource.ARC_MOSAIC,
+    GenartSource.RIBBONS,
+    GenartSource.NOISE_FIELD,
+    GenartSource.LOW_FREQ_NOISE_FIELD,
+    GenartSource.TONAL_GEOMETRY,
+)
 
 private val GENART_WEATHER_IDS = setOf(
     GenartSource.SNOW,
@@ -231,6 +268,20 @@ private val GENART_WEATHER_IDS = setOf(
     GenartSource.RAIN,
     GenartSource.FOG,
     GenartSource.SUNBEAMS,
+    GenartSource.STORM,
+    GenartSource.LIGHT_DRIZZLE,
+    GenartSource.RAINBOW,
+    GenartSource.SMOG,
+    GenartSource.SMOKE,
+    GenartSource.HEAT_HAZE,
+    GenartSource.SUNSHINE,
+    GenartSource.STEAM_CURL,
+    GenartSource.RAIN_ON_GLASS,
+    GenartSource.WATERFALL_MIST,
+    GenartSource.SOFT_WIND_STREAKS,
+    GenartSource.DAY_NIGHT_WASH,
+    GenartSource.FROST_CRYSTALS,
+    GenartSource.ECLIPSE_CORONA,
 )
 
 private val GENART_NATURE_IDS = setOf(
@@ -246,6 +297,101 @@ private val GENART_NATURE_IDS = setOf(
     GenartSource.BUBBLES,
     GenartSource.CHERRY_BLOSSOMS,
     GenartSource.WAVES,
+    GenartSource.TREE,
+    GenartSource.FLOWER,
+    GenartSource.LAKE,
+    GenartSource.FIELDS,
+    GenartSource.REEDS,
+    GenartSource.MOSS_GROWTH,
+    GenartSource.RIVERS,
+    GenartSource.CANYON_DUNES,
+    GenartSource.DRIFTING_POLLEN,
+    GenartSource.WIND_CHIME,
+)
+
+private val GENART_WATER_IDS = setOf(
+    GenartSource.WAVES,
+    GenartSource.POND_RIPPLES,
+    GenartSource.RAIN,
+    GenartSource.FISH_SCHOOL,
+    GenartSource.BUBBLES,
+    GenartSource.LIGHT_DRIZZLE,
+    GenartSource.PEBBLE_SHORE_WASH,
+    GenartSource.FROST_CRYSTALS,
+    GenartSource.MOONLIGHT_RIPPLES,
+    GenartSource.INK_IN_WATER,
+    GenartSource.TERRARIUM_DRIP,
+    GenartSource.AQUARIUM,
+    GenartSource.RAIN_ON_GLASS,
+    GenartSource.REEDS,
+    GenartSource.RIVERS,
+    GenartSource.LAKE,
+    GenartSource.WATERFALL_MIST,
+    GenartSource.GERSTNER_OCEAN,
+    GenartSource.SOFT_CAUSTICS,
+)
+
+private val GENART_LIFE_IDS = setOf(
+    GenartSource.BIRD_FLOCK,
+    GenartSource.FISH_SCHOOL,
+    GenartSource.FIREFLIES,
+    GenartSource.ANT_TRAILS,
+    GenartSource.SLEEPING_PET,
+    GenartSource.DISTANT_DINOSAURS,
+    GenartSource.MOSS_GROWTH,
+    GenartSource.TERRARIUM_DRIP,
+    GenartSource.AQUARIUM,
+    GenartSource.TREE,
+    GenartSource.FLOWER,
+    GenartSource.CHERRY_BLOSSOMS,
+    GenartSource.DRIFTING_POLLEN,
+    GenartSource.CANDLE_EMBER,
+    GenartSource.WIND_CHIME,
+)
+
+private val GENART_EARTH_IDS = setOf(
+    GenartSource.GRASS,
+    GenartSource.MOUNTAINS,
+    GenartSource.FIRE_EMBERS,
+    GenartSource.DUNES,
+    GenartSource.HEAT_HAZE,
+    GenartSource.LANDSLIDE_DUST,
+    GenartSource.PEBBLE_SHORE_WASH,
+    GenartSource.TUMBLEWEED_DRIFT,
+    GenartSource.DISTANT_DINOSAURS,
+    GenartSource.MOSS_GROWTH,
+    GenartSource.FIELDS,
+    GenartSource.CANYON_DUNES,
+    GenartSource.CONTINENTS,
+)
+
+private val GENART_PLANETS_IDS = setOf(
+    GenartSource.SPHERE,
+    GenartSource.CONSTELLATION,
+    GenartSource.METEORS,
+    GenartSource.NEBULA,
+    GenartSource.STAR_FIELD,
+    GenartSource.SOLAR_SYSTEM,
+    GenartSource.ECLIPSE_CORONA,
+    GenartSource.SPACE_STATION_DRIFT,
+    GenartSource.SPIRAL_GALAXY,
+    GenartSource.ASTEROIDS,
+    GenartSource.CONTINENTS,
+)
+
+private val GENART_SCIFI_IDS = setOf(
+    GenartSource.PSEUDO3D,
+    GenartSource.TUNNEL,
+    GenartSource.STAR_FIELD,
+    GenartSource.SOLAR_SYSTEM,
+    GenartSource.ION_TRAIL,
+    GenartSource.WARP_STREAK,
+    GenartSource.SPACE_STATION_DRIFT,
+    GenartSource.CITY_LIGHTS,
+    GenartSource.ROADS,
+    GenartSource.ASTEROIDS,
+    GenartSource.SPIRAL_GALAXY,
+    GenartSource.DATA_HORIZON,
 )
 
 private val GENART_ABSTRACT_IDS = setOf(
@@ -257,6 +403,11 @@ private val GENART_ABSTRACT_IDS = setOf(
     GenartSource.SILK,
     GenartSource.GRADIENT_MESH,
     GenartSource.ARC_MOSAIC,
+    GenartSource.LOW_FREQ_NOISE_FIELD,
+    GenartSource.INK_IN_WATER,
+    GenartSource.SOFT_SHADOWS,
+    GenartSource.PARTICLES,
+    GenartSource.SOFT_CAUSTICS,
 )
 
 private val GENART_GEOMETRY_IDS = setOf(
@@ -266,13 +417,12 @@ private val GENART_GEOMETRY_IDS = setOf(
     GenartSource.TUNNEL,
     GenartSource.TONAL_GEOMETRY,
     GenartSource.MICRO,
-)
-
-private val GENART_PLANETS_IDS = setOf(
+    GenartSource.ROADS,
+    GenartSource.ARC_MOSAIC,
     GenartSource.SPHERE,
-    GenartSource.CONSTELLATION,
-    GenartSource.METEORS,
-    GenartSource.NEBULA,
+    GenartSource.CITY_LIGHTS,
+    GenartSource.DATA_HORIZON,
+    GenartSource.WARP_STREAK,
 )
 
 /** Random / other topics = remote photo search across capable Sources. */
@@ -310,6 +460,9 @@ fun matchesMuseumTopic(art: Artwork, museumTopic: MuseumTopic): Boolean =
         MuseumTopic.Random -> art.sourceId in MuseumTopic.institutionSourceIds
         else -> art.sourceId == museumTopic.sourceId
     }
+
+fun matchesPhotoSource(art: Artwork, photoTopic: PhotoTopic): Boolean =
+    art.sourceId == photoTopic.sourceId
 
 fun matchesVideoSource(art: Artwork, videoTopic: VideoTopic): Boolean =
     art.sourceId == videoTopic.sourceId

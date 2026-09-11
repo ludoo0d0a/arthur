@@ -47,6 +47,74 @@ class StillImageDownloaderTest {
     }
 
     @Test
+    fun downloadToFile_failsFast_onHttp404_withoutRetrying() {
+        val server = MockWebServer()
+        server.enqueue(MockResponse.Builder().code(404).build())
+        server.start()
+
+        val targetFile = File.createTempFile("test_file_fast_404_", ".img")
+        try {
+            val url = server.url("/missing.jpg").toString()
+            try {
+                StillImageDownloader.downloadToFile(url, targetFile, maxRetries = 3, initialDelayMs = 10L)
+                org.junit.Assert.fail("Expected IOException")
+            } catch (e: java.io.IOException) {
+                assertTrue(e.message?.contains("HTTP 404") == true)
+            }
+            assertEquals(1, server.requestCount)
+        } finally {
+            targetFile.delete()
+            server.close()
+        }
+    }
+
+    @Test
+    fun downloadToFile_retriesOnTransientServerError_andSucceeds() {
+        val server = MockWebServer()
+        server.enqueue(MockResponse.Builder().code(503).build())
+        server.enqueue(MockResponse.Builder().code(200).body("recovered-content").build())
+        server.start()
+
+        val targetFile = File.createTempFile("test_file_retry_503_", ".img")
+        try {
+            val url = server.url("/transient.jpg").toString()
+            val result = StillImageDownloader.downloadToFile(url, targetFile, maxRetries = 3, initialDelayMs = 10L)
+
+            assertEquals(targetFile.absolutePath, result.absolutePath)
+            assertTrue(targetFile.exists())
+            assertEquals("recovered-content", targetFile.readText())
+            assertEquals(2, server.requestCount)
+        } finally {
+            targetFile.delete()
+            server.close()
+        }
+    }
+
+    @Test
+    fun downloadToFile_throwsAfterMaxRetriesExceeded() {
+        val server = MockWebServer()
+        server.enqueue(MockResponse.Builder().code(500).build())
+        server.enqueue(MockResponse.Builder().code(500).build())
+        server.enqueue(MockResponse.Builder().code(500).build())
+        server.start()
+
+        val targetFile = File.createTempFile("test_file_max_retry_", ".img")
+        try {
+            val url = server.url("/always500.jpg").toString()
+            try {
+                StillImageDownloader.downloadToFile(url, targetFile, maxRetries = 3, initialDelayMs = 10L)
+                org.junit.Assert.fail("Expected IOException")
+            } catch (e: java.io.IOException) {
+                assertTrue(e.message?.contains("HTTP 500") == true)
+            }
+            assertEquals(3, server.requestCount)
+        } finally {
+            targetFile.delete()
+            server.close()
+        }
+    }
+
+    @Test
     fun downloadToFile_throwsIOExceptionWithHttpStatusCode_whenHttpError() {
         val server = MockWebServer()
         server.enqueue(MockResponse.Builder().code(404).build())

@@ -142,9 +142,22 @@ class PackModelsTest {
     }
 
     @Test
-    fun genartSubPacks_includeAbstract() {
+    fun genartSubPacks_includeAbstractAndTapet() {
         val suffixes = PackFamily.Genart.subPackTiles().map { it.testTagSuffix }
         assertTrue(suffixes.contains("genart_abstract"))
+        assertTrue(suffixes.contains("genart_tapet"))
+    }
+
+    @Test
+    fun genartItemCounts_computedWhenCatalogProvided() {
+        val homeTile = PackFamily.Genart.homeTile(catalog)
+        assertEquals(5, homeTile.itemCount)
+
+        val subTiles = PackFamily.Genart.subPackTiles(catalog)
+        val tapetTile = subTiles.first { it.testTagSuffix == "genart_tapet" }
+        assertEquals(2, tapetTile.itemCount)
+        val weatherTile = subTiles.first { it.testTagSuffix == "genart_weather" }
+        assertEquals(1, weatherTile.itemCount)
     }
 
     @Test
@@ -180,15 +193,45 @@ class PackModelsTest {
     }
 
     @Test
-    fun photoSubPacks_includeMuseumInstitutionsAfterStockTopics() {
+    fun photoSubPacks_includeProviderSourcesBeforeStockTopicsAndMuseums() {
         val tiles = PackFamily.Photo.subPackTiles()
-        val stockCount = StockPhotoCategory.entries.size
-        assertEquals("photo_random", tiles.first().testTagSuffix)
-        val museumTiles = tiles.drop(stockCount)
+        val providerCount = PhotoTopic.entries.size
+        val expectedProviderSuffixes = PhotoTopic.entries.map { "photo_${it.testTagSuffix}" }
+        assertEquals(expectedProviderSuffixes, tiles.take(providerCount).map { it.testTagSuffix })
+
+        val stockTiles = tiles.drop(providerCount).take(StockPhotoCategory.entries.size)
+        assertEquals("photo_random", stockTiles.first().testTagSuffix)
+
+        val museumTiles = tiles.drop(providerCount + StockPhotoCategory.entries.size)
         val expectedMuseumSuffixes = MuseumTopic.entries
             .filter { it.sourceId != null }
             .map { "photo_museum_${it.testTagSuffix}" }
         assertEquals(expectedMuseumSuffixes, museumTiles.map { it.testTagSuffix })
+    }
+
+    @Test
+    fun photoProviderPick_searchesOnlyThatProvider() {
+        val selection = PackSelection(PackFamily.Photo, PhotoTopic.Pexels.testTagSuffix)
+        assertEquals(PhotoTopic.Pexels, selection.photoSourceOrNull())
+        assertEquals(null, selection.stockCategoryOrNull())
+        assertEquals(listOf(PexelsSource.ID), selection.sourceIdsForAmbientLoad())
+
+        val photoCatalog = listOf(
+            Artwork(
+                id = "pexels-photo",
+                title = "Pexels Photo",
+                sourceId = PexelsSource.ID,
+                kind = ArtworkKind.Photo,
+            ),
+            Artwork(
+                id = "unsplash-photo",
+                title = "Unsplash Photo",
+                sourceId = UnsplashSource.ID,
+                kind = ArtworkKind.Photo,
+            ),
+        )
+        val pool = resolvePackPool(photoCatalog, selection)
+        assertEquals(listOf("pexels-photo"), pool.map { it.id })
     }
 
     @Test
@@ -305,6 +348,17 @@ class PackModelsTest {
             VideoTopic.Pexels.testTagSuffix,
         ).sourceIdsForAmbientLoad()
         assertEquals(listOf(PexelsVideoSource.ID), ids)
+    }
+
+    @Test
+    fun sourceIdsForAmbientLoad_everyPhotoProvider() {
+        for (topic in PhotoTopic.entries) {
+            val ids = PackSelection(
+                PackFamily.Photo,
+                topic.testTagSuffix,
+            ).sourceIdsForAmbientLoad()
+            assertEquals(listOf(topic.sourceId), ids)
+        }
     }
 
     @Test

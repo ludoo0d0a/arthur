@@ -33,7 +33,7 @@ internal fun ParticlesEngine(
     speed: Float,
     modifier: Modifier = Modifier,
 ) {
-    val count = qualityCount(quality, low = 28, medium = 56, high = 96)
+    val count = qualityCount(quality, low = 48, medium = 96, high = 160)
     val particles = remember(count) {
         List(count) { i ->
             ParticleSeed(
@@ -75,7 +75,7 @@ internal fun ParticlesEngine(
             val y = ((driftY % 1f) + 1f) % 1f * h
             val base = TonalPalette.pick(paletteColors, p.colorIndex)
             val color = TonalPalette.brightness(base, brightness)
-            val trailSteps = if (isActive) 4 else 2
+            val trailSteps = if (isActive) 6 else 3
             for (s in trailSteps downTo 1) {
                 val back = s / trailSteps.toFloat()
                 val tx = x - p.vx * w * 0.08f * back * p.trail

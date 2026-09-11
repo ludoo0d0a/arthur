@@ -73,14 +73,14 @@ object CustomFractalEngine {
     ): List<FractalStroke> {
         val p = params.normalized()
         val depth = when (quality) {
-            CustomFractalQuality.Low -> 2
-            CustomFractalQuality.Medium -> 3
-            CustomFractalQuality.High -> 4
+            CustomFractalQuality.Low -> 3
+            CustomFractalQuality.Medium -> 4
+            CustomFractalQuality.High -> 5
         }
         val samples = when (quality) {
-            CustomFractalQuality.Low -> 12
-            CustomFractalQuality.Medium -> 18
-            CustomFractalQuality.High -> 28
+            CustomFractalQuality.Low -> 16
+            CustomFractalQuality.Medium -> 24
+            CustomFractalQuality.High -> 36
         }
         val rnd = Random(seed(p))
         val anchors = morphAnchors(p, t.mod(1f), rnd)

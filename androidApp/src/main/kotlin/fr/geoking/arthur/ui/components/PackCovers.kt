@@ -23,9 +23,14 @@ object PackCovers {
     @DrawableRes
     fun genart(topic: GenartTopic): Int = when (topic) {
         GenartTopic.Random -> R.drawable.pack_genart
+        GenartTopic.Tapet -> R.drawable.pack_genart_abstract
         GenartTopic.Nature -> R.drawable.pack_genart_nature
         GenartTopic.Weather -> R.drawable.pack_genart_weather
+        GenartTopic.Water -> R.drawable.pack_genart_nature
+        GenartTopic.Life -> R.drawable.pack_genart_nature
+        GenartTopic.Earth -> R.drawable.pack_genart_nature
         GenartTopic.Planets -> R.drawable.pack_genart_planets
+        GenartTopic.SciFi -> R.drawable.pack_genart_geometry
         GenartTopic.Abstract -> R.drawable.pack_genart_abstract
         GenartTopic.Geometry -> R.drawable.pack_genart_geometry
         GenartTopic.Fractal -> R.drawable.pack_genart_fractal
@@ -39,6 +44,14 @@ object PackCovers {
         StockPhotoCategory.City -> R.drawable.pack_photo_city
         StockPhotoCategory.Sky -> R.drawable.pack_photo_sky
         else -> R.drawable.pack_photo
+    }
+
+    /** Themed official logo marks for photo providers. */
+    @DrawableRes
+    fun photoTopic(topic: PhotoTopic): Int = when (topic) {
+        PhotoTopic.Pexels -> R.drawable.pack_pexels
+        PhotoTopic.Unsplash -> R.drawable.pack_unsplash
+        PhotoTopic.DeviantArt -> R.drawable.pack_photo
     }
 
     /** Themed official logo marks (gold-on-dark, same treatment as museum packs). */

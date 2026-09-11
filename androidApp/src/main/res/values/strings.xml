@@ -6,6 +6,7 @@
     <string name="preview_label">Preview: %1$s</string>
     <string name="artwork_unavailable">Artwork unavailable</string>
     <string name="artwork_unavailable_detail">Failed to load picture. Please check your network connection or try again.</string>
+    <string name="retry">Retry</string>
     <string name="ambient_title">Ambient</string>
     <string name="ambient_artwork_details">Artwork details</string>
     <string name="ambient_rotation_progress">Time until next artwork</string>
@@ -71,6 +72,11 @@
     <string name="genart_topic_weather">Weather</string>
     <string name="genart_topic_geometry">Geometry</string>
     <string name="genart_topic_planets">Planets</string>
+    <string name="genart_topic_tapet">Tapet</string>
+    <string name="genart_topic_water">Water</string>
+    <string name="genart_topic_life">Life</string>
+    <string name="genart_topic_earth">Earth</string>
+    <string name="genart_topic_scifi">Sci-Fi</string>
     <string name="custom_fractal_create">Create custom fractal</string>
     <string name="custom_fractal_title">Custom Fractal</string>
     <string name="custom_fractal_hint">%1$d points · need %2$d–%3$d</string>

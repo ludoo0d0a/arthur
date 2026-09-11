@@ -36,6 +36,7 @@ class DeviantArtSource(
     private val clientId: String,
     private val clientSecret: String,
     private val category: () -> StockPhotoCategory = { StockPhotoCategory.Nature },
+    private val kind: () -> ArtworkKind = { ArtworkKind.Photo },
     private val offlineFallback: () -> List<Artwork> = { emptyList() },
     private val onLoaded: (List<Artwork>) -> Unit = {},
     private val limit: Int = DEFAULT_LIMIT,
@@ -49,7 +50,14 @@ class DeviantArtSource(
     private var startCursor = 0
 
     override suspend fun load(): List<Artwork> {
-        if (clientId.isBlank() || clientSecret.isBlank()) return offlineFallback()
+        if (clientId.isBlank() || clientSecret.isBlank()) {
+            errorLogger?.log(
+                sourceId = id,
+                category = ErrorCategory.Authentication,
+                message = "API client credentials for $displayName are missing or blank",
+            )
+            return offlineFallback()
+        }
         val tag = RemoteCategoryMapping.stockQuery(category(), RemoteProvider.DeviantArt)
         val art = runCatching {
             val token = json.decodeFromString<DeviantArtToken>(
@@ -66,6 +74,7 @@ class DeviantArtSource(
                 if (d.isMature == true) return@mapNotNull null
                 val imageUrl = d.content?.src?.takeIf { it.isNotBlank() }
                     ?: d.preview?.src?.takeIf { it.isNotBlank() }
+                    ?: d.thumbs?.firstOrNull { it.src?.isNotBlank() == true }?.src
                     ?: return@mapNotNull null
                 val deviationId = d.deviationid?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
                 val author = d.author?.username?.takeIf { it.isNotBlank() } ?: "DeviantArt"
@@ -74,7 +83,7 @@ class DeviantArtSource(
                     title = d.title?.takeIf { it.isNotBlank() } ?: "DeviantArt $deviationId",
                     attribution = "$author / DeviantArt",
                     sourceId = ID,
-                    kind = ArtworkKind.Painting,
+                    kind = kind(),
                     remoteUrl = imageUrl,
                     license = "DeviantArt — verify reuse rights before redistribution",
                     externalUrl = d.url?.takeIf { it.isNotBlank() },
@@ -139,6 +148,7 @@ internal data class DeviantArtDeviation(
     val author: DeviantArtAuthor? = null,
     val content: DeviantArtMedia? = null,
     val preview: DeviantArtMedia? = null,
+    val thumbs: List<DeviantArtMedia>? = null,
     @SerialName("is_mature")
     val isMature: Boolean? = null,
 )

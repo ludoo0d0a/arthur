@@ -108,6 +108,7 @@ class ArthurCarAppTest {
 
         // Host: Pane actions ≤ 2 — keep a single primary play/pause action.
         val pane = Pane.Builder()
+            .setImage(carIcon)
             .addRow(row)
             .addAction(
                 Action.Builder()
@@ -149,6 +150,7 @@ class ArthurCarAppTest {
 
         assertNotNull(paneTemplate)
         assertEquals(1, paneTemplate.pane.rows.size)
+        assertNotNull(paneTemplate.pane.image)
         assertNotNull(paneTemplate.pane.rows[0].image)
         assertEquals(1, paneTemplate.pane.actions.size)
     }

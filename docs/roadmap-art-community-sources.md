@@ -24,27 +24,26 @@ Status: `idea` until a `Source` ships (then move to **Shipped**).
 
 ### Prefer next (images + free/registerable access)
 
-- **Openverse** ([api.openverse.org](https://api.openverse.org/)) — Creative Commons / public-domain
-  aggregator (includes Flickr, Wikimedia, museum sets, and more) with an explicit `license` field
-  per result and no key for search. Best license-safety fit in this category — prefer this over
-  scattered single-platform CC search where possible.
-- **Flickr** ([REST API](https://www.flickr.com/services/api/)) — `flickr.photos.search` with
-  `license=` filter (CC0/CC BY/CC BY-SA only) and free API key; huge community photography corpus,
-  well-documented image size URLs.
-- **Behance** (Adobe) — `api.behance.net` v2 exists but new API key registration has been closed /
-  unreliable for new apps; revisit if Adobe reopens it. No documented per-project license facet.
-- **Pixiv** — large illustration community; API is unofficial / reverse-engineered (no public
-  developer program), ToS explicitly restricts scraping and third-party redistribution. Treat as
-  blocked, not just backlog, unless that changes.
+| Source | API doc | API key | Limitation | Pagination |
+|--------|---------|---------|------------|------------|
+| **Openverse** | [api.openverse.org](https://api.openverse.org/) | None for search | CC / public-domain aggregator (includes Flickr, Wikimedia, museum sets); explicit `license` field per result — best license-safety fit in this category, prefer over scattered single-platform CC search | `page` + `page_size` (offset paging) |
+| **Pixabay** (images) | [pixabay.com/api/docs](https://pixabay.com/api/docs/) | Free, instant, self-serve | Official/supported; 100 req/60s per key; results must be cached ≥24h per ToS; images under Pixabay's own "Content License" (free for most commercial/personal use, **not** CC0 — redistributing the raw API dataset itself is disallowed) | `page` (default 1) + `per_page` (3–200, default 20), offset paging |
+| **Flickr** | [flickr.com/services/api](https://www.flickr.com/services/api/) `flickr.photos.search` | Free (Flickr/Yahoo account); non-commercial is self-serve/instant, commercial use needs a separate Flickr-reviewed request | Official/supported; 3,600 queries/hour per key; filter `license=` to CC0/CC BY/CC BY-SA only — per-photo license varies wildly otherwise, must read the `license` field per result | `page` + `per_page` (max ~500/page; geo/bbox queries capped at 250/page) |
+| **Wikimedia Commons** (general browse, distinct from the street-art-scoped connector — [ADR 0008](../adr/0008-rijksmuseum-then-met.md)) | [MediaWiki API](https://www.mediawiki.org/wiki/API:Search) / `commons.wikimedia.org/w/api.php` | None for read/search; send a descriptive `User-Agent` | Official/supported; no hard published anon rate limit but must back off on `ratelimited` + serialize requests; per-file license varies (many CC-BY-SA/PD but not universal) — check each file's license field | Cursor-style `continue`/`srcontinue` token in the response, loop until absent (not page numbers) |
+| **Pexafy** | [docs.pexafy.com](https://docs.pexafy.com/) | Free self-serve signup, no card required on the free plan | Small/independent third-party meta-search aggregator layering over ~9 stock sources (Unsplash, Pexels, Pixabay, etc.), not affiliated with any of them; per-photo licensing actually depends on the origin source despite the aggregator's blanket "free to use" claim — low-confidence/unverified longevity, sanity-check with a live call before relying on it | Cursor-based (per their docs) |
+| **Behance** (Adobe) | historically `api.behance.net` / behance.net/dev | New key issuance appears closed since a 2023–2024 Adobe "technical migration"; no committed relaunch date on adobe.io | Not officially supported at present; content is all-rights-reserved (portfolio site, not stock/CC); revisit if Adobe reopens it | Undocumented in current (closed) state |
+| **Pixiv** — large illustration community; API is unofficial / reverse-engineered (no public developer program), ToS explicitly restricts scraping and third-party redistribution. Treat as blocked, not just backlog, unless that changes. | — | — | — | — |
 
 ### Weak / blocked
 
-- **ArtStation** — no public read API; a project JSON endpoint (`/projects/{id}.json`) exists but
-  is undocumented and has been rate-limited / blocked for bulk/anonymous use. No license facet.
-- **Saatchi Art / Artsy** — commercial marketplaces (sell original art); no open browse API, and
-  reuse of listed artwork images is explicitly for sales purposes only.
-- **500px** — API access has been closed to new third-party developers since 2018.
-- **Ello** — no public API for content browsing.
+| Source | API doc | API key | Limitation | Pagination |
+|--------|---------|---------|------------|------------|
+| **ArtStation** | None — no official public API/developer portal; third-party wrappers scrape undocumented internal JSON (e.g. `/projects/{id}.json`) | N/A, no registration exists | Unofficial/reverse-engineered, can break without notice, likely against ToS for automated scraping/redistribution; content is all-rights-reserved by default | Undocumented, varies by scraped endpoint |
+| **Dribbble** | [developer.dribbble.com/v2](https://developer.dribbble.com/v2/) | OAuth app registration is nominally open (`dribbble.com/account/applications/new`) | The only documented listing endpoint is `GET /user/shots` (the *authenticated user's own* shots) — **no general search/browse endpoint** in the public v2 API; broader read access needs Dribbble partner approval (case-by-case, not self-serve); shots are all-rights-reserved | `page` + `per_page` (up to 100, not honored by every endpoint); Link-header paging recommended |
+| **500px** | [legacy docs (deprecated)](https://github.com/500px/legacy-api-documentation) | Closed to new developers since June 2018; only path back in is emailing `sales@500px.com` for paid/enterprise access | Unofficial for practical purposes; no confirmed reopening of self-serve access | N/A without an enterprise arrangement (legacy docs describe `page`/`rpp`) |
+| **Imgur** | [apidocs.imgur.com](https://apidocs.imgur.com/) | Free, self-serve OAuth app registration (`api.imgur.com/oauth2/addclient`); no approval needed for anonymous/free tier | Officially supported; free tier commonly cited around 12,500 req/day (credit-based, check `X-RateLimit` headers); content is user-uploaded with mixed/mostly-absent licensing, ToS restricts bulk scraping/redistribution | `page` param on most plural endpoints (~50/page typical); `/gallery` endpoints don't support `perPage`; `/album/{id}/images` isn't paged at all |
+| **Saatchi Art / Artsy** | Artsy: [developers.artsy.net](https://developers.artsy.net/) (legacy REST v1; register a client app for `client_id`/`client_secret`, exchange for an `xapp_token`). Saatchi Art: no open browse API | Free but approval-style app registration (not fully anonymous/instant) | Commercial marketplaces (sell original art); Artsy's terms scope images to non-commercial/educational display, not general free-image stock; Saatchi Art reuse of listed artwork is explicitly for sales purposes only | Artsy: standard REST `page`/`size` params |
+| **Ello** | None — no public API for content browsing | N/A | Blocked | N/A |
 
 ### Explicitly out of scope (for now)
 

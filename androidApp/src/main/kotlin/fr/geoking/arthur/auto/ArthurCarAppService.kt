@@ -331,6 +331,7 @@ class ArtworkPaneScreen(
             }.getOrNull()
             if (bigPicture != null) {
                 rowBuilder.setImage(bigPicture, Row.IMAGE_TYPE_LARGE)
+                paneBuilder.setImage(bigPicture)
             }
             paneBuilder.addRow(rowBuilder.build())
         } else {

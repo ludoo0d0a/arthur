@@ -52,7 +52,7 @@ class ArthurCarAppTest {
     }
 
     @Test
-    fun packSelectionScreen_buildsGridTemplate() {
+    fun packSelectionScreen_buildsGridTemplateWithLargeItems() {
         val owner = object : androidx.lifecycle.LifecycleOwner {
             override val lifecycle = androidx.lifecycle.LifecycleRegistry(this)
         }
@@ -62,10 +62,12 @@ class ArthurCarAppTest {
         val template = screen.onGetTemplate()
         assertNotNull(template)
         assertTrue(template is androidx.car.app.model.GridTemplate)
+        val gridTemplate = template as androidx.car.app.model.GridTemplate
+        assertEquals(androidx.car.app.model.GridTemplate.ITEM_SIZE_LARGE, gridTemplate.itemSize)
     }
 
     @Test
-    fun subPackSelectionScreen_buildsGridTemplate() {
+    fun subPackSelectionScreen_buildsGridTemplateWithLargeItems() {
         val owner = object : androidx.lifecycle.LifecycleOwner {
             override val lifecycle = androidx.lifecycle.LifecycleRegistry(this)
         }
@@ -75,6 +77,8 @@ class ArthurCarAppTest {
         val template = screen.onGetTemplate()
         assertNotNull(template)
         assertTrue(template is androidx.car.app.model.GridTemplate)
+        val gridTemplate = template as androidx.car.app.model.GridTemplate
+        assertEquals(androidx.car.app.model.GridTemplate.ITEM_SIZE_LARGE, gridTemplate.itemSize)
     }
 
     private fun attachBaseContext(contextWrapper: android.content.ContextWrapper, base: android.content.Context) {

@@ -9,8 +9,13 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /** Pure mapping tests for Media browse ids and album-art helpers (no device). */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class ArthurMediaMappingTest {
     @Test
     fun rootId_isStable() {
@@ -96,7 +101,7 @@ class ArthurMediaMappingTest {
 
     @Test
     fun browse_contentStyleConstants_matchAaGridAndList() {
-        // Host content-style hints (MediaConstants) — list folders, grid playable previews.
+        // Host content-style hints (MediaConstants) — grid folders and grid playable previews.
         assertEquals(1, MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM)
         assertEquals(2, MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM)
         assertEquals(
@@ -106,6 +111,26 @@ class ArthurMediaMappingTest {
         assertEquals(
             "android.media.browse.CONTENT_STYLE_PLAYABLE_HINT",
             MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_PLAYABLE,
+        )
+
+        val rootBundle = ArthurMediaBrowse.rootExtras()
+        assertEquals(
+            MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+            rootBundle.getInt(MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_BROWSABLE),
+        )
+        assertEquals(
+            MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+            rootBundle.getInt(MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_PLAYABLE),
+        )
+
+        val gridBundle = ArthurMediaBrowse.previewGridExtras()
+        assertEquals(
+            MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+            gridBundle.getInt(MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_BROWSABLE),
+        )
+        assertEquals(
+            MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+            gridBundle.getInt(MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_PLAYABLE),
         )
     }
 

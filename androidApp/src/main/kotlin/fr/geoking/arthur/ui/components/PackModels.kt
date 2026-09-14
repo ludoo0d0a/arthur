@@ -172,23 +172,34 @@ fun PackFamily.subPackTiles(catalog: List<Artwork> = emptyList()): List<PackTile
     }
 }
 
-fun resolvePackPool(catalog: List<Artwork>, selection: PackSelection): List<Artwork> =
-    when (selection.family) {
+fun resolvePackPool(catalog: List<Artwork>, selection: PackSelection): List<Artwork> {
+    val isRandom = when (selection.family) {
+        PackFamily.Museum -> (selection.museumTopicOrNull() ?: MuseumTopic.Random) == MuseumTopic.Random
+        PackFamily.Genart -> (selection.genartTopicOrNull() ?: GenartTopic.Random) == GenartTopic.Random
+        PackFamily.Photo -> (selection.stockCategoryOrNull() ?: StockPhotoCategory.Random) == StockPhotoCategory.Random
+        PackFamily.Video -> (selection.stockCategoryOrNull() ?: StockPhotoCategory.Random) == StockPhotoCategory.Random
+        PackFamily.Sculpture -> (selection.museumTopicOrNull() ?: MuseumTopic.Random) == MuseumTopic.Random
+        PackFamily.Painting -> (selection.museumTopicOrNull() ?: MuseumTopic.Random) == MuseumTopic.Random
+    }
+
+    if (isRandom) {
+        return catalog.shuffled()
+    }
+
+    return when (selection.family) {
         PackFamily.Museum -> {
             val topic = selection.museumTopicOrNull() ?: MuseumTopic.Random
             val museumKinds = catalog.filter { art ->
                 art.kind == ArtworkKind.Painting || art.kind == ArtworkKind.Sculpture
             }
-            val pool = museumKinds.filter { matchesMuseumTopic(it, topic) }
-            if (topic == MuseumTopic.Random) pool.shuffled() else pool
+            museumKinds.filter { matchesMuseumTopic(it, topic) }
         }
         PackFamily.Genart -> {
             val topic = selection.genartTopicOrNull() ?: GenartTopic.Random
-            val pool = catalog.filterByCategoryAndSources(
+            catalog.filterByCategoryAndSources(
                 category = CategoryFilter.GENART,
                 genartTopic = topic,
             )
-            if (topic == GenartTopic.Random) pool.shuffled() else pool
         }
         PackFamily.Photo -> {
             val photoSource = selection.photoSourceOrNull()
@@ -204,11 +215,10 @@ fun resolvePackPool(catalog: List<Artwork>, selection: PackSelection): List<Artw
                     }
                 } else {
                     val topic = selection.stockCategoryOrNull() ?: StockPhotoCategory.Random
-                    val pool = catalog.filterByCategoryAndSources(
+                    catalog.filterByCategoryAndSources(
                         category = CategoryFilter.PHOTO,
                         stockCategory = topic,
                     )
-                    if (topic == StockPhotoCategory.Random) pool.shuffled() else pool
                 }
             }
         }
@@ -220,30 +230,28 @@ fun resolvePackPool(catalog: List<Artwork>, selection: PackSelection): List<Artw
                 }
             } else {
                 val topic = selection.stockCategoryOrNull() ?: StockPhotoCategory.Random
-                val pool = catalog.filterByCategoryAndSources(
+                catalog.filterByCategoryAndSources(
                     category = CategoryFilter.VIDEO,
                     stockCategory = topic,
                 )
-                if (topic == StockPhotoCategory.Random) pool.shuffled() else pool
             }
         }
         PackFamily.Sculpture -> {
             val topic = selection.museumTopicOrNull() ?: MuseumTopic.Random
-            val pool = catalog.filterByCategoryAndSources(
+            catalog.filterByCategoryAndSources(
                 category = CategoryFilter.SCULPTURE,
                 museumTopic = topic,
             )
-            if (topic == MuseumTopic.Random) pool.shuffled() else pool
         }
         PackFamily.Painting -> {
             val topic = selection.museumTopicOrNull() ?: MuseumTopic.Random
-            val pool = catalog.filterByCategoryAndSources(
+            catalog.filterByCategoryAndSources(
                 category = CategoryFilter.PAINTING,
                 museumTopic = topic,
             )
-            if (topic == MuseumTopic.Random) pool.shuffled() else pool
         }
     }
+}
 
 fun PackSelection.stockCategoryOrNull(): StockPhotoCategory? =
     if (subId == null) {

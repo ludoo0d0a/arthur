@@ -76,6 +76,12 @@ import fr.geoking.arthur.genart.engines.MossGrowthEngine
 import fr.geoking.arthur.genart.engines.RainOnGlassEngine
 import fr.geoking.arthur.genart.engines.ReedsEngine
 import fr.geoking.arthur.genart.engines.LowFreqNoiseFieldEngine
+import fr.geoking.arthur.genart.engines.GradientWavesEngine
+import fr.geoking.arthur.genart.engines.PrismBokehEngine
+import fr.geoking.arthur.genart.engines.ConicalVortexEngine
+import fr.geoking.arthur.genart.engines.GlassTilesEngine
+import fr.geoking.arthur.genart.engines.ChromaticBlobsEngine
+import fr.geoking.arthur.genart.engines.TopoGradientsEngine
 import fr.geoking.arthur.genart.engines.RiversEngine
 import fr.geoking.arthur.genart.engines.RoadsEngine
 import fr.geoking.arthur.genart.engines.SoftCausticsEngine
@@ -157,6 +163,12 @@ import fr.geoking.arthur.genart.stills.MossGrowthStill
 import fr.geoking.arthur.genart.stills.RainOnGlassStill
 import fr.geoking.arthur.genart.stills.LowFreqNoiseFieldStill
 import fr.geoking.arthur.genart.stills.ReedsStill
+import fr.geoking.arthur.genart.stills.GradientWavesStill
+import fr.geoking.arthur.genart.stills.PrismBokehStill
+import fr.geoking.arthur.genart.stills.ConicalVortexStill
+import fr.geoking.arthur.genart.stills.GlassTilesStill
+import fr.geoking.arthur.genart.stills.ChromaticBlobsStill
+import fr.geoking.arthur.genart.stills.TopoGradientsStill
 import fr.geoking.arthur.genart.stills.RiversStill
 import fr.geoking.arthur.genart.stills.RoadsStill
 import fr.geoking.arthur.genart.stills.SoftCausticsStill
@@ -1145,6 +1157,72 @@ object GenartRegistry {
             },
             renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
                 LowFreqNoiseFieldStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.GradientWaves,
+            stableId = "genart.gradientwaves",
+            title = "#86 - Gradient Waves",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                GradientWavesEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                GradientWavesStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.PrismBokeh,
+            stableId = "genart.prismbokeh",
+            title = "#87 - Prism Bokeh",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                PrismBokehEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                PrismBokehStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.ConicalVortex,
+            stableId = "genart.conicalvortex",
+            title = "#88 - Conical Vortex",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                ConicalVortexEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                ConicalVortexStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.GlassTiles,
+            stableId = "genart.glasstiles",
+            title = "#89 - Glass Tiles",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                GlassTilesEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                GlassTilesStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.ChromaticBlobs,
+            stableId = "genart.chromaticblobs",
+            title = "#90 - Chromatic Blobs",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                ChromaticBlobsEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                ChromaticBlobsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.TopoGradients,
+            stableId = "genart.topogradients",
+            title = "#91 - Topo Gradients",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                TopoGradientsEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                TopoGradientsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
             },
         ),
     )

@@ -51,6 +51,12 @@ class GenartCatalogTest {
         assertEquals(GenartEngineId.Storm, GenartCatalog.engineForId("genart.storm"))
         assertEquals(GenartEngineId.StarField, GenartCatalog.engineForId("genart.starfield"))
         assertEquals(GenartEngineId.SolarSystem, GenartCatalog.engineForId("genart.solarsystem"))
+        assertEquals(GenartEngineId.GradientWaves, GenartCatalog.engineForId("genart.gradientwaves"))
+        assertEquals(GenartEngineId.PrismBokeh, GenartCatalog.engineForId("genart.prismbokeh"))
+        assertEquals(GenartEngineId.ConicalVortex, GenartCatalog.engineForId("genart.conicalvortex"))
+        assertEquals(GenartEngineId.GlassTiles, GenartCatalog.engineForId("genart.glasstiles"))
+        assertEquals(GenartEngineId.ChromaticBlobs, GenartCatalog.engineForId("genart.chromaticblobs"))
+        assertEquals(GenartEngineId.TopoGradients, GenartCatalog.engineForId("genart.topogradients"))
     }
 
     @Test

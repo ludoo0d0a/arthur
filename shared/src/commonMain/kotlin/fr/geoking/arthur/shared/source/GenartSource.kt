@@ -104,6 +104,12 @@ class GenartSource(
         const val DATA_HORIZON = "genart.datahorizon"
         const val SOFT_CAUSTICS = "genart.caustics"
         const val LOW_FREQ_NOISE_FIELD = "genart.lowfreqnoise"
+        const val GRADIENT_WAVES = "genart.gradientwaves"
+        const val PRISM_BOKEH = "genart.prismbokeh"
+        const val CONICAL_VORTEX = "genart.conicalvortex"
+        const val GLASS_TILES = "genart.glasstiles"
+        const val CHROMATIC_BLOBS = "genart.chromaticblobs"
+        const val TOPO_GRADIENTS = "genart.topogradients"
 
         fun defaultCatalog(): List<Artwork> = listOf(
             entry(PARTICLES, "#1 - Drifting Particles"),
@@ -191,6 +197,12 @@ class GenartSource(
             entry(DATA_HORIZON, "#83 - Data Horizon"),
             entry(SOFT_CAUSTICS, "#84 - Soft Caustics"),
             entry(LOW_FREQ_NOISE_FIELD, "#85 - Low-Frequency Noise Field"),
+            entry(GRADIENT_WAVES, "#86 - Gradient Waves"),
+            entry(PRISM_BOKEH, "#87 - Prism Bokeh"),
+            entry(CONICAL_VORTEX, "#88 - Conical Vortex"),
+            entry(GLASS_TILES, "#89 - Glass Tiles"),
+            entry(CHROMATIC_BLOBS, "#90 - Chromatic Blobs"),
+            entry(TOPO_GRADIENTS, "#91 - Topo Gradients"),
         )
 
         private fun entry(id: String, title: String) = Artwork(

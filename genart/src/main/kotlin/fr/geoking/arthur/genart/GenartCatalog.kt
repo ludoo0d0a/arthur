@@ -86,6 +86,12 @@ enum class GenartEngineId {
     DataHorizon,
     SoftCaustics,
     LowFreqNoiseField,
+    GradientWaves,
+    PrismBokeh,
+    ConicalVortex,
+    GlassTiles,
+    ChromaticBlobs,
+    TopoGradients,
 }
 
 enum class GenartQuality { Low, Medium, High }

@@ -317,8 +317,10 @@ val appModule = module {
         val cache = get<ArtworkImageCache>()
         val errorLogger = get<ErrorLogger>()
         DeviantArtSource(
-            clientId = clientId,
-            clientSecret = clientSecret,
+            clientId = { clientId },
+            clientSecret = { clientSecret },
+            username = { settings.deviantArtUsername },
+            password = { settings.deviantArtPassword },
             category = { settings.category },
             offlineFallback = {
                 cache.loadCachedStock(settings.category, DeviantArtSource.ID)

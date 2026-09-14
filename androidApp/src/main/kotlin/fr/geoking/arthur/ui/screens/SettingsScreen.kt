@@ -53,6 +53,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -121,6 +122,7 @@ fun Modifier.verticalScrollbar(
 enum class SettingsScreenPage {
     Main,
     RotationInterval,
+    DeviantArtCredentials,
     About,
     Licenses,
     Developer,
@@ -139,6 +141,10 @@ fun SettingsScreen(
     onVerboseChange: (Boolean) -> Unit = {},
     rotationIntervalMs: Long = AmbientAlbumArt.ROTATION_INTERVAL_MS,
     onRotationIntervalChange: (Long) -> Unit = {},
+    deviantArtUsername: String = "",
+    onDeviantArtUsernameChange: (String) -> Unit = {},
+    deviantArtPassword: String = "",
+    onDeviantArtPasswordChange: (String) -> Unit = {},
     onCheckForUpdate: (() -> Unit)? = null,
     initialScreenStack: List<SettingsScreenPage>? = null,
     onInitialRouteConsumed: () -> Unit = {},
@@ -226,6 +232,12 @@ fun SettingsScreen(
                     selectedMs = rotationIntervalMs,
                     onSelect = onRotationIntervalChange,
                 )
+                SettingsScreenPage.DeviantArtCredentials -> DeviantArtCredentialsContent(
+                    username = deviantArtUsername,
+                    password = deviantArtPassword,
+                    onUsernameChange = onDeviantArtUsernameChange,
+                    onPasswordChange = onDeviantArtPasswordChange,
+                )
                 SettingsScreenPage.About -> AboutContent(
                     onOpenLicenses = { screenStack = screenStack + SettingsScreenPage.Licenses },
                 )
@@ -307,6 +319,10 @@ private fun MainMenu(
                 label = stringResource(R.string.screen_rotation_interval),
                 value = rotationIntervalLabel(rotationIntervalMs),
                 onClick = { onNavigate(SettingsScreenPage.RotationInterval) },
+            )
+            SettingsItem(
+                label = "DeviantArt Credentials",
+                onClick = { onNavigate(SettingsScreenPage.DeviantArtCredentials) },
             )
             if (onCheckForUpdate != null) {
                 SettingsItem(
@@ -935,6 +951,48 @@ private fun SettingsItem(
         },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
     )
+}
+
+@Composable
+private fun DeviantArtCredentialsContent(
+    username: String,
+    password: String,
+    onUsernameChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = "DeviantArt API Credentials",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = "Enter your DeviantArt account details to use the password grant type. If left blank, the app will use the default client credentials.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(
+            value = username,
+            onValueChange = onUsernameChange,
+            label = { Text("Username") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        OutlinedTextField(
+            value = password,
+            onValueChange = onPasswordChange,
+            label = { Text("Password") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+    }
 }
 
 @Preview(showBackground = true, name = "Settings")

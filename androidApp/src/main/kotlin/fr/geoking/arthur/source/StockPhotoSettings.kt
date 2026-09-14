@@ -20,6 +20,18 @@ class StockPhotoSettings(context: Context) {
             prefs.edit().putString(KEY_CATEGORY, value.query).apply()
         }
 
+    var deviantArtUsername: String
+        get() = prefs.getString(KEY_DEVIANTART_USERNAME, "").orEmpty()
+        set(value) {
+            prefs.edit().putString(KEY_DEVIANTART_USERNAME, value).apply()
+        }
+
+    var deviantArtPassword: String
+        get() = prefs.getString(KEY_DEVIANTART_PASSWORD, "").orEmpty()
+        set(value) {
+            prefs.edit().putString(KEY_DEVIANTART_PASSWORD, value).apply()
+        }
+
     /**
      * In-memory content kind for multi-kind stock Sources (e.g. Unsplash supports both
      * Photo and Video). Driven by Control Plane category chips; not persisted.
@@ -30,6 +42,8 @@ class StockPhotoSettings(context: Context) {
     companion object {
         private const val PREFS = "arthur_stock_photo"
         private const val KEY_CATEGORY = "category"
+        private const val KEY_DEVIANTART_USERNAME = "deviantart_username"
+        private const val KEY_DEVIANTART_PASSWORD = "deviantart_password"
     }
 }
 

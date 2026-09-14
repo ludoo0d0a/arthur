@@ -51,6 +51,8 @@ class GenartCatalogTest {
         assertEquals(GenartEngineId.Storm, GenartCatalog.engineForId("genart.storm"))
         assertEquals(GenartEngineId.StarField, GenartCatalog.engineForId("genart.starfield"))
         assertEquals(GenartEngineId.SolarSystem, GenartCatalog.engineForId("genart.solarsystem"))
+        assertEquals(GenartEngineId.LowFreqNoiseField, GenartCatalog.engineForId("genart.lowfreqnoise"))
+        assertEquals(GenartEngineId.Fire, GenartCatalog.engineForId("genart.fire"))
     }
 
     @Test
@@ -93,5 +95,7 @@ class GenartCatalogTest {
         assertEquals("#37 - Soft Storm", GenartCatalog.entries().first { it.id == "genart.storm" }.title)
         assertEquals("#38 - Star Field Parallax", GenartCatalog.entries().first { it.id == "genart.starfield" }.title)
         assertEquals("#39 - Solar System", GenartCatalog.entries().first { it.id == "genart.solarsystem" }.title)
+        assertEquals("#85 - Low-Frequency Noise Field", GenartCatalog.entries().first { it.id == "genart.lowfreqnoise" }.title)
+        assertEquals("#86 - Wildfire", GenartCatalog.entries().first { it.id == "genart.fire" }.title)
     }
 }

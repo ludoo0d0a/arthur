@@ -45,13 +45,24 @@ fun TvControlPlaneContent(
 ) {
     val scheme = MaterialTheme.colorScheme
     val firstTileFocus = remember { FocusRequester() }
+    val selectedTileFocus = remember { FocusRequester() }
 
     BackHandler(enabled = openedFamily != null) {
         onBackToHome()
     }
 
     LaunchedEffect(openedFamily) {
-        firstTileFocus.requestFocus()
+        val targetSelection = if (openedFamily == null) {
+            PackSelection(selection.family)
+        } else {
+            if (selection.family == openedFamily) selection else null
+        }
+
+        if (targetSelection != null) {
+            selectedTileFocus.requestFocus()
+        } else {
+            firstTileFocus.requestFocus()
+        }
     }
 
     Column(
@@ -85,6 +96,7 @@ fun TvControlPlaneContent(
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(bottom = 24.dp),
                     firstTileFocusRequester = firstTileFocus,
+                    selectedTileFocusRequester = selectedTileFocus,
                 )
             } else {
                 Text(
@@ -104,6 +116,7 @@ fun TvControlPlaneContent(
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(bottom = 24.dp),
                     firstTileFocusRequester = firstTileFocus,
+                    selectedTileFocusRequester = selectedTileFocus,
                     selectOnFocus = true,
                     onTileFocused = { onSelectSubPack(it.selection) },
                 )

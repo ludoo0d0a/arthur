@@ -54,11 +54,11 @@ object ArthurMediaBrowse {
 
     fun isFolder(mediaId: String): Boolean = mediaId.startsWith(FOLDER_PREFIX)
 
-    /** Root extras: category folders as list; playable artwork as grid (previews). */
+    /** Root extras: category folders and playable artwork as grid (previews) with large icons. */
     fun rootExtras(): Bundle = Bundle().apply {
         putInt(
             MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_BROWSABLE,
-            MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM,
+            MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
         )
         putInt(
             MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_PLAYABLE,
@@ -66,7 +66,7 @@ object ArthurMediaBrowse {
         )
     }
 
-    /** Genart / fractal folders: force grid playables so still previews dominate. */
+    /** Genart / fractal folders: force grid browsables & playables so still previews dominate. */
     fun previewGridExtras(): Bundle = Bundle().apply {
         putInt(
             MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_PLAYABLE,
@@ -74,7 +74,7 @@ object ArthurMediaBrowse {
         )
         putInt(
             MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_BROWSABLE,
-            MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM,
+            MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
         )
     }
 

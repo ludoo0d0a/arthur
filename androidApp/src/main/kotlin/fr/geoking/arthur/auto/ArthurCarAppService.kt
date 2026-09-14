@@ -110,6 +110,7 @@ class PackSelectionScreen(carContext: CarContext) : Screen(carContext) {
         return GridTemplate.Builder()
             .setHeader(header)
             .setSingleList(gridBuilder.build())
+            .setItemSize(GridTemplate.ITEM_SIZE_LARGE)
             .build()
     }
 }
@@ -156,6 +157,7 @@ class SubPackSelectionScreen(
         return GridTemplate.Builder()
             .setHeader(header)
             .setSingleList(gridBuilder.build())
+            .setItemSize(GridTemplate.ITEM_SIZE_LARGE)
             .build()
     }
 }

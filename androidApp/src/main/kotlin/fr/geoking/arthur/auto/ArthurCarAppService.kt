@@ -84,7 +84,9 @@ class PackSelectionScreen(carContext: CarContext) : Screen(carContext) {
         }
 
         val gridBuilder = ItemList.Builder()
-        val families = PackFamily.entries.take(gridLimit)
+        val families = PackFamily.entries
+            .filter { it != PackFamily.Video }
+            .take(gridLimit)
 
         families.forEach { family ->
             val carIcon = CarIcon.Builder(

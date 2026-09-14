@@ -33,8 +33,10 @@ import kotlinx.serialization.json.Json
  */
 class DeviantArtSource(
     private val httpGet: suspend (url: String) -> String,
-    private val clientId: String,
-    private val clientSecret: String,
+    private val clientId: () -> String,
+    private val clientSecret: () -> String,
+    private val username: () -> String = { "" },
+    private val password: () -> String = { "" },
     private val category: () -> StockPhotoCategory = { StockPhotoCategory.Nature },
     private val kind: () -> ArtworkKind = { ArtworkKind.Photo },
     private val offlineFallback: () -> List<Artwork> = { emptyList() },
@@ -50,7 +52,9 @@ class DeviantArtSource(
     private var startCursor = 0
 
     override suspend fun load(): List<Artwork> {
-        if (clientId.isBlank() || clientSecret.isBlank()) {
+        val id = clientId()
+        val secret = clientSecret()
+        if (id.isBlank() || secret.isBlank()) {
             errorLogger?.log(
                 sourceId = id,
                 category = ErrorCategory.Authentication,
@@ -61,7 +65,7 @@ class DeviantArtSource(
         val tag = RemoteCategoryMapping.stockQuery(category(), RemoteProvider.DeviantArt)
         val art = runCatching {
             val token = json.decodeFromString<DeviantArtToken>(
-                httpGet(tokenUrl(clientId, clientSecret)),
+                httpGet(tokenUrl(id, secret, username(), password())),
             ).accessToken?.takeIf { it.isNotBlank() } ?: return@runCatching emptyList()
             val offset = RemoteSample.nextStart(startCursor++, pageSize = RemoteSample.SEARCH_POOL)
             val payload = RemoteSample.fetchWindow(
@@ -113,9 +117,16 @@ class DeviantArtSource(
 
         private val json = Json { ignoreUnknownKeys = true }
 
-        fun tokenUrl(clientId: String, clientSecret: String): String =
-            "https://www.deviantart.com/oauth2/token" +
-                "?grant_type=client_credentials&client_id=$clientId&client_secret=$clientSecret"
+        fun tokenUrl(clientId: String, clientSecret: String, username: String, password: String): String {
+            val grantType = if (username.isNotBlank() && password.isNotBlank()) "password" else "client_credentials"
+            val authParams = if (grantType == "password") {
+                "&username=$username&password=$password"
+            } else {
+                ""
+            }
+            return "https://www.deviantart.com/oauth2/token" +
+                "?grant_type=$grantType&client_id=$clientId&client_secret=$clientSecret$authParams"
+        }
 
         fun browseUrl(
             tag: String,

@@ -111,6 +111,10 @@ class MainActivity : ComponentActivity() {
                                     onVerboseChange = developerSettings::setVerbose,
                                     rotationIntervalMs = rotationIntervalMs,
                                     onRotationIntervalChange = rotationSettings::setIntervalMs,
+                                    deviantArtUsername = stockPhotoSettings.deviantArtUsername,
+                                    onDeviantArtUsernameChange = { stockPhotoSettings.deviantArtUsername = it },
+                                    deviantArtPassword = stockPhotoSettings.deviantArtPassword,
+                                    onDeviantArtPasswordChange = { stockPhotoSettings.deviantArtPassword = it },
                                     onCheckForUpdate = {
                                         inAppUpdateHelper.checkForUpdate(manual = true)
                                     },

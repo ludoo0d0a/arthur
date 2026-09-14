@@ -18,6 +18,7 @@ import fr.geoking.arthur.genart.engines.DriftingPollenEngine
 import fr.geoking.arthur.genart.engines.DunesEngine
 import fr.geoking.arthur.genart.engines.EclipseCoronaEngine
 import fr.geoking.arthur.genart.engines.FallingLeavesEngine
+import fr.geoking.arthur.genart.engines.FireEngine
 import fr.geoking.arthur.genart.engines.FireEmbersEngine
 import fr.geoking.arthur.genart.engines.FirefliesEngine
 import fr.geoking.arthur.genart.engines.FishSchoolEngine
@@ -105,6 +106,7 @@ import fr.geoking.arthur.genart.stills.EclipseCoronaStill
 import fr.geoking.arthur.genart.stills.FallingLeavesStill
 import fr.geoking.arthur.genart.stills.FireEmbersStill
 import fr.geoking.arthur.genart.stills.FirefliesStill
+import fr.geoking.arthur.genart.stills.FireStill
 import fr.geoking.arthur.genart.stills.FishSchoolStill
 import fr.geoking.arthur.genart.stills.FogStill
 import fr.geoking.arthur.genart.stills.FrostCrystalsStill
@@ -1145,6 +1147,17 @@ object GenartRegistry {
             },
             renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
                 LowFreqNoiseFieldStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.Fire,
+            stableId = "genart.fire",
+            title = "#86 - Wildfire",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                FireEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                FireStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
             },
         ),
     )

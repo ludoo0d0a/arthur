@@ -256,6 +256,7 @@ fun PackGrid(
     onTileLongClick: ((PackTile) -> Unit)? = null,
     contentPadding: PaddingValues = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
     firstTileFocusRequester: FocusRequester? = null,
+    selectedTileFocusRequester: FocusRequester? = null,
     selectOnFocus: Boolean = false,
     onTileFocused: ((PackTile) -> Unit)? = null,
 ) {
@@ -289,7 +290,11 @@ fun PackGrid(
                     selected = selected == tile.selection,
                     onClick = { onTileClick(tile) },
                     onLongClick = onTileLongClick?.let { longClick -> { longClick(tile) } },
-                    focusRequester = if (tile == tiles.firstOrNull()) firstTileFocusRequester else null,
+                    focusRequester = when {
+                        tile == tiles.firstOrNull() -> firstTileFocusRequester
+                        selected != null && tile.selection == selected -> selectedTileFocusRequester
+                        else -> null
+                    },
                     selectOnFocus = selectOnFocus,
                     onFocusSelect = onTileFocused?.let { focused -> { focused(tile) } },
                     maxCoverSize = layout.maxCoverSize,

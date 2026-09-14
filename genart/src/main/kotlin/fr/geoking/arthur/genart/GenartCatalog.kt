@@ -86,6 +86,7 @@ enum class GenartEngineId {
     DataHorizon,
     SoftCaustics,
     LowFreqNoiseField,
+    Fire,
 }
 
 enum class GenartQuality { Low, Medium, High }

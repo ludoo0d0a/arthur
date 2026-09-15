@@ -78,9 +78,9 @@ class PackSelectionScreen(carContext: CarContext) : Screen(carContext) {
     override fun onGetTemplate(): Template {
         val gridLimit = try {
             carContext.getCarService(ConstraintManager::class.java)
-                ?.getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_GRID) ?: 6
+                ?.getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_GRID) ?: 4
         } catch (_: Exception) {
-            6
+            4
         }
 
         val gridBuilder = ItemList.Builder()
@@ -127,9 +127,9 @@ class SubPackSelectionScreen(
     override fun onGetTemplate(): Template {
         val gridLimit = try {
             carContext.getCarService(ConstraintManager::class.java)
-                ?.getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_GRID) ?: 12
+                ?.getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_GRID) ?: 6
         } catch (_: Exception) {
-            12
+            6
         }
 
         val gridBuilder = ItemList.Builder()

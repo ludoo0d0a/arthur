@@ -43,6 +43,7 @@ object StillImageDownloader {
         initialDelayMs: Long = INITIAL_BACKOFF_MS,
         errorLogger: ErrorLogger? = null,
         sourceId: String = "image_download",
+        artworkId: String? = null,
         block: (onResponseCode: (Int) -> Unit) -> T,
     ): T {
         var attempt = 0
@@ -64,6 +65,7 @@ object StillImageDownloader {
                         sourceId = sourceId,
                         category = category,
                         message = e.message ?: "Failed to download image",
+                        artworkId = artworkId,
                         details = e.stackTraceToString().take(300),
                         url = url,
                         statusCode = statusCode,
@@ -88,6 +90,7 @@ object StillImageDownloader {
         targetFile: File,
         errorLogger: ErrorLogger? = null,
         sourceId: String = "image_download",
+        artworkId: String? = null,
         maxRetries: Int = DEFAULT_MAX_RETRIES,
         initialDelayMs: Long = INITIAL_BACKOFF_MS,
     ): File {
@@ -97,6 +100,7 @@ object StillImageDownloader {
             initialDelayMs = initialDelayMs,
             errorLogger = errorLogger,
             sourceId = sourceId,
+            artworkId = artworkId,
         ) { onResponseCode ->
             val tempFile = File(targetFile.parentFile, "${targetFile.name}.tmp_${System.currentTimeMillis()}")
             try {
@@ -130,12 +134,14 @@ object StillImageDownloader {
         totalLength: Long,
         errorLogger: ErrorLogger? = null,
         sourceId: String = "image_download",
+        artworkId: String? = null,
     ): Boolean {
         if (totalLength > MAX_IMAGE_BYTES) {
             errorLogger?.log(
                 sourceId = sourceId,
                 category = ErrorClassifier.classify(null, null),
                 message = "Image too large ($totalLength bytes > $MAX_IMAGE_BYTES max)",
+                artworkId = artworkId,
                 url = url,
             )
             return false
@@ -188,6 +194,7 @@ object StillImageDownloader {
                 sourceId = sourceId,
                 category = ErrorClassifier.classify(null, e),
                 message = e.message ?: "Chunk download failed",
+                artworkId = artworkId,
                 url = url,
                 throwable = e,
             )
@@ -247,10 +254,11 @@ object StillImageDownloader {
         url: String,
         errorLogger: ErrorLogger? = null,
         sourceId: String = "image_download",
+        artworkId: String? = null,
     ): ByteArray {
         val tempFile = File.createTempFile("still_dl_", ".tmp")
         try {
-            downloadToFile(url, tempFile, errorLogger, sourceId)
+            downloadToFile(url, tempFile, errorLogger, sourceId, artworkId)
             return tempFile.readBytes()
         } finally {
             tempFile.delete()

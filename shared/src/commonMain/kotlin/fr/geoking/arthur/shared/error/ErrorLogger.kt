@@ -17,6 +17,7 @@ data class ErrorItem(
     val id: String,
     val timestamp: Long,
     val sourceId: String,
+    val artworkId: String? = null,
     val category: ErrorCategory,
     val message: String,
     val details: String? = null,
@@ -35,6 +36,7 @@ class ErrorLogger(
         sourceId: String,
         category: ErrorCategory,
         message: String,
+        artworkId: String? = null,
         details: String? = null,
         url: String? = null,
         statusCode: Int? = null,
@@ -50,6 +52,7 @@ class ErrorLogger(
             id = "${now}_${_errors.value.size}_${(0..9999).random()}",
             timestamp = now,
             sourceId = sourceId,
+            artworkId = artworkId,
             category = category,
             message = message,
             details = extraDetails,
@@ -60,6 +63,10 @@ class ErrorLogger(
         _errors.update { current ->
             (listOf(item) + current).take(maxCapacity)
         }
+    }
+
+    fun getLastErrorForArtwork(artworkId: String): ErrorItem? {
+        return _errors.value.firstOrNull { it.artworkId == artworkId }
     }
 
     fun clearAll() {

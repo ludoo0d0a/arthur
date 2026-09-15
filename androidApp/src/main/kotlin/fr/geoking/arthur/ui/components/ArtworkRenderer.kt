@@ -25,6 +25,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -50,8 +51,10 @@ import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.source.FractalSource
 import fr.geoking.arthur.source.SafeBitmapDecoder
+import fr.geoking.arthur.source.DeveloperSettings
 import fr.geoking.arthur.source.StillImageDownloader
 import fr.geoking.arthur.source.rememberArtworkImageCache
+import fr.geoking.arthur.shared.error.ErrorLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -175,6 +178,9 @@ private fun RemoteStillImage(
     modifier: Modifier = Modifier,
 ) {
     val imageCache = rememberArtworkImageCache()
+    val developerSettings = remember { GlobalContext.get().get<DeveloperSettings>() }
+    val errorLogger = remember { GlobalContext.get().get<ErrorLogger>() }
+    val isVerbose by developerSettings.verbose.collectAsState()
     var retryCount by remember(artworkId, localPath, remoteUrl) { mutableIntStateOf(0) }
     var bitmapState by remember(artworkId, localPath, remoteUrl) {
         mutableStateOf<android.graphics.Bitmap?>(null)
@@ -251,10 +257,22 @@ private fun RemoteStillImage(
             }
         }
         hasFailed -> {
+            val finalReason = remember(hasFailed, failureReason, isVerbose) {
+                if (isVerbose) {
+                    val detailedError = errorLogger.getLastErrorForArtwork(artworkId)
+                    if (detailedError != null) {
+                        "HTTP ${detailedError.statusCode ?: "Unknown"}: ${detailedError.url ?: "No URL"}"
+                    } else {
+                        failureReason
+                    }
+                } else {
+                    failureReason
+                }
+            }
             StillArtworkPlaceholder(
                 kind = kind,
                 showWarning = true,
-                errorDetail = failureReason,
+                errorDetail = finalReason,
                 onRetry = { retryCount++ },
                 modifier = modifier,
             )

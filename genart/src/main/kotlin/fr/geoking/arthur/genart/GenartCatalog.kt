@@ -87,6 +87,8 @@ enum class GenartEngineId {
     SoftCaustics,
     LowFreqNoiseField,
     Fire,
+    PaperCutPack,
+    DiamondWeave,
 }
 
 enum class GenartQuality { Low, Medium, High }

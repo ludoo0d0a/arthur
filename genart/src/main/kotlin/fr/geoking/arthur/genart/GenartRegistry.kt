@@ -68,12 +68,14 @@ import fr.geoking.arthur.genart.engines.CityLightsEngine
 import fr.geoking.arthur.genart.engines.ContinentsEngine
 import fr.geoking.arthur.genart.engines.DataHorizonEngine
 import fr.geoking.arthur.genart.engines.DayNightWashEngine
+import fr.geoking.arthur.genart.engines.DiamondWeaveEngine
 import fr.geoking.arthur.genart.engines.DistantDinosaursEngine
 import fr.geoking.arthur.genart.engines.FieldsEngine
 import fr.geoking.arthur.genart.engines.FlowerEngine
 import fr.geoking.arthur.genart.engines.GerstnerOceanEngine
 import fr.geoking.arthur.genart.engines.LakeEngine
 import fr.geoking.arthur.genart.engines.MossGrowthEngine
+import fr.geoking.arthur.genart.engines.PaperCutPackEngine
 import fr.geoking.arthur.genart.engines.RainOnGlassEngine
 import fr.geoking.arthur.genart.engines.ReedsEngine
 import fr.geoking.arthur.genart.engines.LowFreqNoiseFieldEngine
@@ -150,12 +152,14 @@ import fr.geoking.arthur.genart.stills.CityLightsStill
 import fr.geoking.arthur.genart.stills.ContinentsStill
 import fr.geoking.arthur.genart.stills.DataHorizonStill
 import fr.geoking.arthur.genart.stills.DayNightWashStill
+import fr.geoking.arthur.genart.stills.DiamondWeaveStill
 import fr.geoking.arthur.genart.stills.DistantDinosaursStill
 import fr.geoking.arthur.genart.stills.FieldsStill
 import fr.geoking.arthur.genart.stills.FlowerStill
 import fr.geoking.arthur.genart.stills.GerstnerOceanStill
 import fr.geoking.arthur.genart.stills.LakeStill
 import fr.geoking.arthur.genart.stills.MossGrowthStill
+import fr.geoking.arthur.genart.stills.PaperCutPackStill
 import fr.geoking.arthur.genart.stills.RainOnGlassStill
 import fr.geoking.arthur.genart.stills.LowFreqNoiseFieldStill
 import fr.geoking.arthur.genart.stills.ReedsStill
@@ -1158,6 +1162,28 @@ object GenartRegistry {
             },
             renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
                 FireStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.PaperCutPack,
+            stableId = "genart.papercut",
+            title = "#87 - Paper-Cut Pack",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                PaperCutPackEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                PaperCutPackStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.DiamondWeave,
+            stableId = "genart.diamondweave",
+            title = "#88 - Diamond Weave",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                DiamondWeaveEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                DiamondWeaveStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
             },
         ),
     )

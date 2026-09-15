@@ -104,6 +104,9 @@ class GenartSource(
         const val DATA_HORIZON = "genart.datahorizon"
         const val SOFT_CAUSTICS = "genart.caustics"
         const val LOW_FREQ_NOISE_FIELD = "genart.lowfreqnoise"
+        const val FIRE = "genart.fire"
+        const val PAPER_CUT_PACK = "genart.papercut"
+        const val DIAMOND_WEAVE = "genart.diamondweave"
 
         fun defaultCatalog(): List<Artwork> = listOf(
             entry(PARTICLES, "#1 - Drifting Particles"),
@@ -191,6 +194,9 @@ class GenartSource(
             entry(DATA_HORIZON, "#83 - Data Horizon"),
             entry(SOFT_CAUSTICS, "#84 - Soft Caustics"),
             entry(LOW_FREQ_NOISE_FIELD, "#85 - Low-Frequency Noise Field"),
+            entry(FIRE, "#86 - Wildfire"),
+            entry(PAPER_CUT_PACK, "#87 - Paper-Cut Pack"),
+            entry(DIAMOND_WEAVE, "#88 - Diamond Weave"),
         )
 
         private fun entry(id: String, title: String) = Artwork(

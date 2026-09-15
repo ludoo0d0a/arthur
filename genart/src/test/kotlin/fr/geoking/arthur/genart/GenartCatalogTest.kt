@@ -53,6 +53,8 @@ class GenartCatalogTest {
         assertEquals(GenartEngineId.SolarSystem, GenartCatalog.engineForId("genart.solarsystem"))
         assertEquals(GenartEngineId.LowFreqNoiseField, GenartCatalog.engineForId("genart.lowfreqnoise"))
         assertEquals(GenartEngineId.Fire, GenartCatalog.engineForId("genart.fire"))
+        assertEquals(GenartEngineId.PaperCutPack, GenartCatalog.engineForId("genart.papercut"))
+        assertEquals(GenartEngineId.DiamondWeave, GenartCatalog.engineForId("genart.diamondweave"))
     }
 
     @Test
@@ -97,5 +99,7 @@ class GenartCatalogTest {
         assertEquals("#39 - Solar System", GenartCatalog.entries().first { it.id == "genart.solarsystem" }.title)
         assertEquals("#85 - Low-Frequency Noise Field", GenartCatalog.entries().first { it.id == "genart.lowfreqnoise" }.title)
         assertEquals("#86 - Wildfire", GenartCatalog.entries().first { it.id == "genart.fire" }.title)
+        assertEquals("#87 - Paper-Cut Pack", GenartCatalog.entries().first { it.id == "genart.papercut" }.title)
+        assertEquals("#88 - Diamond Weave", GenartCatalog.entries().first { it.id == "genart.diamondweave" }.title)
     }
 }

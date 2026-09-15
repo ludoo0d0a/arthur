@@ -104,6 +104,12 @@ class GenartSource(
         const val DATA_HORIZON = "genart.datahorizon"
         const val SOFT_CAUSTICS = "genart.caustics"
         const val LOW_FREQ_NOISE_FIELD = "genart.lowfreqnoise"
+        const val CHROMATIC_BLOBS = "genart.chromaticblobs"
+        const val PRISMATIC_SHADOWS = "genart.prismaticshadows"
+        const val AURORA_WASH = "genart.aurorawash"
+        const val VORTEX_GLOW = "genart.vortexglow"
+        const val SPECTRAL_FOLDS = "genart.spectralfolds"
+        const val HALO_ECLIPSE = "genart.haloeclipse"
 
         fun defaultCatalog(): List<Artwork> = listOf(
             entry(PARTICLES, "#1 - Drifting Particles"),
@@ -191,6 +197,12 @@ class GenartSource(
             entry(DATA_HORIZON, "#83 - Data Horizon"),
             entry(SOFT_CAUSTICS, "#84 - Soft Caustics"),
             entry(LOW_FREQ_NOISE_FIELD, "#85 - Low-Frequency Noise Field"),
+            entry(CHROMATIC_BLOBS, "#87 - Chromatic Blobs"),
+            entry(PRISMATIC_SHADOWS, "#88 - Prismatic Shadows"),
+            entry(AURORA_WASH, "#89 - Aurora Wash"),
+            entry(VORTEX_GLOW, "#90 - Vortex Glow"),
+            entry(SPECTRAL_FOLDS, "#91 - Spectral Folds"),
+            entry(HALO_ECLIPSE, "#92 - Halo Eclipse"),
         )
 
         private fun entry(id: String, title: String) = Artwork(

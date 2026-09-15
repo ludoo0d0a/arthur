@@ -5,6 +5,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import fr.geoking.arthur.genart.engines.AntTrailsEngine
+import fr.geoking.arthur.genart.engines.AuroraWashEngine
+import fr.geoking.arthur.genart.engines.ChromaticBlobsEngine
+import fr.geoking.arthur.genart.engines.HaloEclipseEngine
+import fr.geoking.arthur.genart.engines.PrismaticShadowsEngine
+import fr.geoking.arthur.genart.engines.SpectralFoldsEngine
+import fr.geoking.arthur.genart.engines.VortexGlowEngine
 import fr.geoking.arthur.genart.engines.ArcMosaicEngine
 import fr.geoking.arthur.genart.engines.AuroraEngine
 import fr.geoking.arthur.genart.engines.BirdFlockEngine
@@ -91,6 +97,12 @@ import fr.geoking.arthur.genart.engines.WaterfallMistEngine
 import fr.geoking.arthur.genart.engines.WavesEngine
 import fr.geoking.arthur.genart.engines.WindChimeEngine
 import fr.geoking.arthur.genart.stills.AntTrailsStill
+import fr.geoking.arthur.genart.stills.AuroraWashStill
+import fr.geoking.arthur.genart.stills.ChromaticBlobsStill
+import fr.geoking.arthur.genart.stills.HaloEclipseStill
+import fr.geoking.arthur.genart.stills.PrismaticShadowsStill
+import fr.geoking.arthur.genart.stills.SpectralFoldsStill
+import fr.geoking.arthur.genart.stills.VortexGlowStill
 import fr.geoking.arthur.genart.stills.ArcMosaicStill
 import fr.geoking.arthur.genart.stills.AuroraStill
 import fr.geoking.arthur.genart.stills.BirdFlockStill
@@ -1158,6 +1170,72 @@ object GenartRegistry {
             },
             renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
                 FireStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.ChromaticBlobs,
+            stableId = "genart.chromaticblobs",
+            title = "#87 - Chromatic Blobs",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                ChromaticBlobsEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                ChromaticBlobsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.PrismaticShadows,
+            stableId = "genart.prismaticshadows",
+            title = "#88 - Prismatic Shadows",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                PrismaticShadowsEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                PrismaticShadowsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.AuroraWash,
+            stableId = "genart.aurorawash",
+            title = "#89 - Aurora Wash",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                AuroraWashEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                AuroraWashStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.VortexGlow,
+            stableId = "genart.vortexglow",
+            title = "#90 - Vortex Glow",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                VortexGlowEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                VortexGlowStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.SpectralFolds,
+            stableId = "genart.spectralfolds",
+            title = "#91 - Spectral Folds",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                SpectralFoldsEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                SpectralFoldsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.HaloEclipse,
+            stableId = "genart.haloeclipse",
+            title = "#92 - Halo Eclipse",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                HaloEclipseEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                HaloEclipseStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
             },
         ),
     )

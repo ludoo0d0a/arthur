@@ -53,6 +53,12 @@ class GenartCatalogTest {
         assertEquals(GenartEngineId.SolarSystem, GenartCatalog.engineForId("genart.solarsystem"))
         assertEquals(GenartEngineId.LowFreqNoiseField, GenartCatalog.engineForId("genart.lowfreqnoise"))
         assertEquals(GenartEngineId.Fire, GenartCatalog.engineForId("genart.fire"))
+        assertEquals(GenartEngineId.ChromaticBlobs, GenartCatalog.engineForId("genart.chromaticblobs"))
+        assertEquals(GenartEngineId.PrismaticShadows, GenartCatalog.engineForId("genart.prismaticshadows"))
+        assertEquals(GenartEngineId.AuroraWash, GenartCatalog.engineForId("genart.aurorawash"))
+        assertEquals(GenartEngineId.VortexGlow, GenartCatalog.engineForId("genart.vortexglow"))
+        assertEquals(GenartEngineId.SpectralFolds, GenartCatalog.engineForId("genart.spectralfolds"))
+        assertEquals(GenartEngineId.HaloEclipse, GenartCatalog.engineForId("genart.haloeclipse"))
     }
 
     @Test
@@ -97,5 +103,11 @@ class GenartCatalogTest {
         assertEquals("#39 - Solar System", GenartCatalog.entries().first { it.id == "genart.solarsystem" }.title)
         assertEquals("#85 - Low-Frequency Noise Field", GenartCatalog.entries().first { it.id == "genart.lowfreqnoise" }.title)
         assertEquals("#86 - Wildfire", GenartCatalog.entries().first { it.id == "genart.fire" }.title)
+        assertEquals("#87 - Chromatic Blobs", GenartCatalog.entries().first { it.id == "genart.chromaticblobs" }.title)
+        assertEquals("#88 - Prismatic Shadows", GenartCatalog.entries().first { it.id == "genart.prismaticshadows" }.title)
+        assertEquals("#89 - Aurora Wash", GenartCatalog.entries().first { it.id == "genart.aurorawash" }.title)
+        assertEquals("#90 - Vortex Glow", GenartCatalog.entries().first { it.id == "genart.vortexglow" }.title)
+        assertEquals("#91 - Spectral Folds", GenartCatalog.entries().first { it.id == "genart.spectralfolds" }.title)
+        assertEquals("#92 - Halo Eclipse", GenartCatalog.entries().first { it.id == "genart.haloeclipse" }.title)
     }
 }

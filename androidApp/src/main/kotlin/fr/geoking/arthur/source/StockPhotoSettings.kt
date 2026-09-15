@@ -93,6 +93,7 @@ class ArtworkImageCache(context: Context) {
             targetFile = target,
             errorLogger = errorLogger,
             sourceId = sourceId,
+            artworkId = artworkId,
         )
     }
 

@@ -87,6 +87,12 @@ enum class GenartEngineId {
     SoftCaustics,
     LowFreqNoiseField,
     Fire,
+    ChromaticBlobs,
+    PrismaticShadows,
+    AuroraWash,
+    VortexGlow,
+    SpectralFolds,
+    HaloEclipse,
 }
 
 enum class GenartQuality { Low, Medium, High }

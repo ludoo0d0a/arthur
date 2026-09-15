@@ -183,6 +183,7 @@ fun SettingsScreen(
                             SettingsScreenPage.Main -> stringResource(R.string.screen_settings)
                             SettingsScreenPage.RotationInterval ->
                                 stringResource(R.string.screen_rotation_interval)
+                            SettingsScreenPage.DeviantArtCredentials -> "DeviantArt Credentials"
                             SettingsScreenPage.About -> stringResource(R.string.screen_about)
                             SettingsScreenPage.Licenses -> stringResource(R.string.screen_licenses)
                             SettingsScreenPage.Developer -> stringResource(R.string.screen_developer)

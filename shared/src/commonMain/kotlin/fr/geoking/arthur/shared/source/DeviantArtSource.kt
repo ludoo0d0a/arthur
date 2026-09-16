@@ -52,11 +52,11 @@ class DeviantArtSource(
     private var startCursor = 0
 
     override suspend fun load(): List<Artwork> {
-        val id = clientId()
+        val cId = clientId()
         val secret = clientSecret()
-        if (id.isBlank() || secret.isBlank()) {
+        if (cId.isBlank() || secret.isBlank()) {
             errorLogger?.log(
-                sourceId = id,
+                sourceId = ID,
                 category = ErrorCategory.Authentication,
                 message = "API client credentials for $displayName are missing or blank",
             )
@@ -65,7 +65,7 @@ class DeviantArtSource(
         val tag = RemoteCategoryMapping.stockQuery(category(), RemoteProvider.DeviantArt)
         val art = runCatching {
             val token = json.decodeFromString<DeviantArtToken>(
-                httpGet(tokenUrl(id, secret, username(), password())),
+                httpGet(tokenUrl(cId, secret, username(), password())),
             ).accessToken?.takeIf { it.isNotBlank() } ?: return@runCatching emptyList()
             val offset = RemoteSample.nextStart(startCursor++, pageSize = RemoteSample.SEARCH_POOL)
             val payload = RemoteSample.fetchWindow(
@@ -97,7 +97,7 @@ class DeviantArtSource(
         }.onFailure { e ->
             if (e is kotlinx.coroutines.CancellationException) throw e
             errorLogger?.log(
-                sourceId = id,
+                sourceId = ID,
                 category = ErrorClassifier.classify(null, e),
                 message = "Failed to load $displayName catalog",
                 details = e.stackTraceToString().take(300),

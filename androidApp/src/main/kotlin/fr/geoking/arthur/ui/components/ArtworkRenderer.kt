@@ -55,6 +55,7 @@ import fr.geoking.arthur.source.DeveloperSettings
 import fr.geoking.arthur.source.StillImageDownloader
 import fr.geoking.arthur.source.rememberArtworkImageCache
 import fr.geoking.arthur.shared.error.ErrorLogger
+import org.koin.core.context.GlobalContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -178,9 +179,13 @@ private fun RemoteStillImage(
     modifier: Modifier = Modifier,
 ) {
     val imageCache = rememberArtworkImageCache()
-    val developerSettings = remember { GlobalContext.get().get<DeveloperSettings>() }
-    val errorLogger = remember { GlobalContext.get().get<ErrorLogger>() }
-    val isVerbose by developerSettings.verbose.collectAsState()
+    val developerSettings = remember {
+        runCatching { GlobalContext.get().get<DeveloperSettings>() }.getOrNull()
+    }
+    val errorLogger = remember {
+        runCatching { GlobalContext.get().get<ErrorLogger>() }.getOrNull()
+    }
+    val isVerbose = developerSettings?.verbose?.collectAsState()?.value ?: false
     var retryCount by remember(artworkId, localPath, remoteUrl) { mutableIntStateOf(0) }
     var bitmapState by remember(artworkId, localPath, remoteUrl) {
         mutableStateOf<android.graphics.Bitmap?>(null)
@@ -259,7 +264,7 @@ private fun RemoteStillImage(
         hasFailed -> {
             val finalReason = remember(hasFailed, failureReason, isVerbose) {
                 if (isVerbose) {
-                    val detailedError = errorLogger.getLastErrorForArtwork(artworkId)
+                    val detailedError = errorLogger?.getLastErrorForArtwork(artworkId)
                     if (detailedError != null) {
                         "HTTP ${detailedError.statusCode ?: "Unknown"}: ${detailedError.url ?: "No URL"}"
                     } else {

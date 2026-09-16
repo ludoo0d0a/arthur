@@ -259,6 +259,8 @@ private val GENART_TAPET_IDS = setOf(
     GenartSource.NOISE_FIELD,
     GenartSource.LOW_FREQ_NOISE_FIELD,
     GenartSource.TONAL_GEOMETRY,
+    GenartSource.PAPER_CUT_PACK,
+    GenartSource.DIAMOND_WEAVE,
 )
 
 private val GENART_WEATHER_IDS = setOf(
@@ -408,6 +410,8 @@ private val GENART_ABSTRACT_IDS = setOf(
     GenartSource.SOFT_SHADOWS,
     GenartSource.PARTICLES,
     GenartSource.SOFT_CAUSTICS,
+    GenartSource.PAPER_CUT_PACK,
+    GenartSource.DIAMOND_WEAVE,
 )
 
 private val GENART_GEOMETRY_IDS = setOf(
@@ -423,6 +427,7 @@ private val GENART_GEOMETRY_IDS = setOf(
     GenartSource.CITY_LIGHTS,
     GenartSource.DATA_HORIZON,
     GenartSource.WARP_STREAK,
+    GenartSource.DIAMOND_WEAVE,
 )
 
 /** Random / other topics = remote photo search across capable Sources. */

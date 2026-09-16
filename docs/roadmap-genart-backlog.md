@@ -144,6 +144,10 @@ Extends the current genart family:
   fewer, larger, slower-breathing regions than Soft Noise Field, driven by the `loopedFbm` helper
   (see [roadmap-genart-architecture.md](roadmap-genart-architecture.md)) instead of per-cell sine
   wobble — reads as a genuinely large-scale field rather than a busier variant
+- Paper-cut pack — shipped as `genart.papercut`: dense stacked capsules/blobs with drop shadows
+  and palette mixing (Tapet packed-shape wallpaper picture)
+- Diamond weave — shipped as `genart.diamondweave`: staggered rhombus grid with split-shade
+  folded-paper bevels (Tapet Havana-style geometric picture)
 
 ### Cozy micro
 

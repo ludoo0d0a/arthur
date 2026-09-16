@@ -59,6 +59,8 @@ class GenartCatalogTest {
         assertEquals(GenartEngineId.VortexGlow, GenartCatalog.engineForId("genart.vortexglow"))
         assertEquals(GenartEngineId.SpectralFolds, GenartCatalog.engineForId("genart.spectralfolds"))
         assertEquals(GenartEngineId.HaloEclipse, GenartCatalog.engineForId("genart.haloeclipse"))
+        assertEquals(GenartEngineId.PaperCutPack, GenartCatalog.engineForId("genart.papercut"))
+        assertEquals(GenartEngineId.DiamondWeave, GenartCatalog.engineForId("genart.diamondweave"))
     }
 
     @Test
@@ -109,5 +111,7 @@ class GenartCatalogTest {
         assertEquals("#90 - Vortex Glow", GenartCatalog.entries().first { it.id == "genart.vortexglow" }.title)
         assertEquals("#91 - Spectral Folds", GenartCatalog.entries().first { it.id == "genart.spectralfolds" }.title)
         assertEquals("#92 - Halo Eclipse", GenartCatalog.entries().first { it.id == "genart.haloeclipse" }.title)
+        assertEquals("#87 - Paper-Cut Pack", GenartCatalog.entries().first { it.id == "genart.papercut" }.title)
+        assertEquals("#88 - Diamond Weave", GenartCatalog.entries().first { it.id == "genart.diamondweave" }.title)
     }
 }

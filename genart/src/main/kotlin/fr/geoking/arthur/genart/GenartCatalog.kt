@@ -93,6 +93,8 @@ enum class GenartEngineId {
     VortexGlow,
     SpectralFolds,
     HaloEclipse,
+    PaperCutPack,
+    DiamondWeave,
 }
 
 enum class GenartQuality { Low, Medium, High }

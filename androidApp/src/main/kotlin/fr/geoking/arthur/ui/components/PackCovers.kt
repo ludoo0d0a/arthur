@@ -42,8 +42,12 @@ object PackCovers {
         StockPhotoCategory.Nature -> R.drawable.pack_photo_nature
         StockPhotoCategory.Ocean -> R.drawable.pack_photo_ocean
         StockPhotoCategory.City -> R.drawable.pack_photo_city
+        StockPhotoCategory.Mountains -> R.drawable.pack_photo_mountains
         StockPhotoCategory.Sky -> R.drawable.pack_photo_sky
-        else -> R.drawable.pack_photo
+        StockPhotoCategory.Abstract -> R.drawable.pack_photo_abstract
+        StockPhotoCategory.Architecture -> R.drawable.pack_photo_architecture
+        StockPhotoCategory.StreetArt -> R.drawable.pack_photo_streetart
+        StockPhotoCategory.Random -> R.drawable.pack_photo
     }
 
     /** Themed official logo marks for photo providers. */

@@ -110,6 +110,9 @@ class GenartSource(
         const val VORTEX_GLOW = "genart.vortexglow"
         const val SPECTRAL_FOLDS = "genart.spectralfolds"
         const val HALO_ECLIPSE = "genart.haloeclipse"
+        const val FIRE = "genart.fire"
+        const val PAPER_CUT_PACK = "genart.papercut"
+        const val DIAMOND_WEAVE = "genart.diamondweave"
 
         fun defaultCatalog(): List<Artwork> = listOf(
             entry(PARTICLES, "#1 - Drifting Particles"),
@@ -203,6 +206,9 @@ class GenartSource(
             entry(VORTEX_GLOW, "#90 - Vortex Glow"),
             entry(SPECTRAL_FOLDS, "#91 - Spectral Folds"),
             entry(HALO_ECLIPSE, "#92 - Halo Eclipse"),
+            entry(FIRE, "#86 - Wildfire"),
+            entry(PAPER_CUT_PACK, "#87 - Paper-Cut Pack"),
+            entry(DIAMOND_WEAVE, "#88 - Diamond Weave"),
         )
 
         private fun entry(id: String, title: String) = Artwork(

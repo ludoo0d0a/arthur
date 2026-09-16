@@ -110,8 +110,8 @@ class StockPhotoSourceE2eTest {
         )
 
         val source = DeviantArtSource(
-            clientId = clientId,
-            clientSecret = clientSecret,
+            clientId = { clientId },
+            clientSecret = { clientSecret },
             limit = 2,
             httpGet = { url -> client.get(url).bodyAsText() },
         )

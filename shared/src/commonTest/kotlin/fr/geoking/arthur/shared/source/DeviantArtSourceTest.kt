@@ -8,7 +8,7 @@ class DeviantArtSourceTest {
     @Test
     fun loadsArtworkFromDeviantArtFixtures() = runBlocking {
         val fixtures = mapOf(
-            DeviantArtSource.tokenUrl("client-id", "client-secret") to """
+            DeviantArtSource.tokenUrl("client-id", "client-secret", "", "") to """
                 { "access_token": "token-abc" }
             """.trimIndent(),
             DeviantArtSource.browseUrl("nature", "token-abc", RemoteSample.SEARCH_POOL, 0) to """
@@ -27,8 +27,8 @@ class DeviantArtSourceTest {
             """.trimIndent(),
         )
         val source = DeviantArtSource(
-            clientId = "client-id",
-            clientSecret = "client-secret",
+            clientId = { "client-id" },
+            clientSecret = { "client-secret" },
             httpGet = { url -> fixtures.getValue(url) },
             random = ZeroRandom,
         )
@@ -52,7 +52,7 @@ class DeviantArtSourceTest {
     @Test
     fun fallbackToThumbsWhenContentAndPreviewAreMissing() = runBlocking {
         val fixtures = mapOf(
-            DeviantArtSource.tokenUrl("client-id", "client-secret") to """
+            DeviantArtSource.tokenUrl("client-id", "client-secret", "", "") to """
                 { "access_token": "token-abc" }
             """.trimIndent(),
             DeviantArtSource.browseUrl("nature", "token-abc", RemoteSample.SEARCH_POOL, 0) to """
@@ -71,8 +71,8 @@ class DeviantArtSourceTest {
             """.trimIndent(),
         )
         val source = DeviantArtSource(
-            clientId = "client-id",
-            clientSecret = "client-secret",
+            clientId = { "client-id" },
+            clientSecret = { "client-secret" },
             httpGet = { url -> fixtures.getValue(url) },
             random = ZeroRandom,
         )
@@ -85,8 +85,8 @@ class DeviantArtSourceTest {
     fun blankCredentialsLogAuthenticationError() = runBlocking {
         val errorLogger = fr.geoking.arthur.shared.error.ErrorLogger { 0L }
         val source = DeviantArtSource(
-            clientId = "",
-            clientSecret = "secret",
+            clientId = { "" },
+            clientSecret = { "secret" },
             httpGet = { error("should not call") },
             errorLogger = errorLogger,
         )
@@ -110,8 +110,8 @@ class DeviantArtSourceTest {
             ),
         )
         val source = DeviantArtSource(
-            clientId = " ",
-            clientSecret = "client-secret",
+            clientId = { " " },
+            clientSecret = { "client-secret" },
             offlineFallback = { cached },
             httpGet = {
                 called = true
@@ -125,7 +125,7 @@ class DeviantArtSourceTest {
     @Test
     fun skipsMatureContent() = runBlocking {
         val fixtures = mapOf(
-            DeviantArtSource.tokenUrl("client-id", "client-secret") to """
+            DeviantArtSource.tokenUrl("client-id", "client-secret", "", "") to """
                 { "access_token": "token-abc" }
             """.trimIndent(),
             DeviantArtSource.browseUrl("nature", "token-abc", RemoteSample.SEARCH_POOL, 0) to """
@@ -142,8 +142,8 @@ class DeviantArtSourceTest {
             """.trimIndent(),
         )
         val source = DeviantArtSource(
-            clientId = "client-id",
-            clientSecret = "client-secret",
+            clientId = { "client-id" },
+            clientSecret = { "client-secret" },
             httpGet = { url -> fixtures.getValue(url) },
             random = ZeroRandom,
         )

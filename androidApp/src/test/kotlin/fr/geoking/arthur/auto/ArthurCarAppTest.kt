@@ -52,7 +52,7 @@ class ArthurCarAppTest {
     }
 
     @Test
-    fun packSelectionScreen_buildsGridTemplateWithLargeItems() {
+    fun packSelectionScreen_buildsSectionedGridWithExtraLargeItems() {
         val owner = object : androidx.lifecycle.LifecycleOwner {
             override val lifecycle = androidx.lifecycle.LifecycleRegistry(this)
         }
@@ -61,13 +61,25 @@ class ArthurCarAppTest {
         val screen = PackSelectionScreen(carContext)
         val template = screen.onGetTemplate()
         assertNotNull(template)
-        assertTrue(template is androidx.car.app.model.GridTemplate)
-        val gridTemplate = template as androidx.car.app.model.GridTemplate
-        assertEquals(androidx.car.app.model.GridTemplate.ITEM_SIZE_LARGE, gridTemplate.itemSize)
+        assertTrue(template is androidx.car.app.model.SectionedItemTemplate)
+        val sectioned = template as androidx.car.app.model.SectionedItemTemplate
+        assertEquals(1, sectioned.sections.size)
+        val section = sectioned.sections[0]
+        assertTrue(section is androidx.car.app.model.GridSection)
+        val gridSection = section as androidx.car.app.model.GridSection
+        assertEquals(
+            androidx.car.app.model.GridSection.ITEM_SIZE_EXTRA_LARGE,
+            gridSection.itemSize,
+        )
+        assertTrue(
+            "Home grid should be hard-capped at $MAX_HOME_GRID_ITEMS",
+            gridSection.itemsDelegate.size <= MAX_HOME_GRID_ITEMS,
+        )
+        assertTrue(gridSection.itemsDelegate.size > 0)
     }
 
     @Test
-    fun subPackSelectionScreen_buildsGridTemplateWithLargeItems() {
+    fun subPackSelectionScreen_buildsSectionedGridWithExtraLargeItems() {
         val owner = object : androidx.lifecycle.LifecycleOwner {
             override val lifecycle = androidx.lifecycle.LifecycleRegistry(this)
         }
@@ -76,9 +88,35 @@ class ArthurCarAppTest {
         val screen = SubPackSelectionScreen(carContext, fr.geoking.arthur.ui.components.PackFamily.Museum)
         val template = screen.onGetTemplate()
         assertNotNull(template)
-        assertTrue(template is androidx.car.app.model.GridTemplate)
-        val gridTemplate = template as androidx.car.app.model.GridTemplate
-        assertEquals(androidx.car.app.model.GridTemplate.ITEM_SIZE_LARGE, gridTemplate.itemSize)
+        assertTrue(template is androidx.car.app.model.SectionedItemTemplate)
+        val sectioned = template as androidx.car.app.model.SectionedItemTemplate
+        assertEquals(1, sectioned.sections.size)
+        val section = sectioned.sections[0]
+        assertTrue(section is androidx.car.app.model.GridSection)
+        val gridSection = section as androidx.car.app.model.GridSection
+        assertEquals(
+            androidx.car.app.model.GridSection.ITEM_SIZE_EXTRA_LARGE,
+            gridSection.itemSize,
+        )
+        assertTrue(
+            "Sub-pack grid should be hard-capped at $MAX_SUB_GRID_ITEMS",
+            gridSection.itemsDelegate.size <= MAX_SUB_GRID_ITEMS,
+        )
+        assertTrue(gridSection.itemsDelegate.size > 0)
+    }
+
+    @Test
+    fun gridContentLimit_hardCapsBelowHostLimit() {
+        val owner = object : androidx.lifecycle.LifecycleOwner {
+            override val lifecycle = androidx.lifecycle.LifecycleRegistry(this)
+        }
+        val carContext = androidx.car.app.CarContext.create(owner.lifecycle)
+        attachBaseContext(carContext, org.robolectric.RuntimeEnvironment.getApplication())
+        // When ConstraintManager is unavailable under Robolectric, fallback equals maxItems;
+        // minOf still enforces the hard cap.
+        assertEquals(MAX_HOME_GRID_ITEMS, gridContentLimit(carContext, MAX_HOME_GRID_ITEMS))
+        assertEquals(MAX_SUB_GRID_ITEMS, gridContentLimit(carContext, MAX_SUB_GRID_ITEMS))
+        assertEquals(3, gridContentLimit(carContext, 3))
     }
 
     private fun attachBaseContext(contextWrapper: android.content.ContextWrapper, base: android.content.Context) {

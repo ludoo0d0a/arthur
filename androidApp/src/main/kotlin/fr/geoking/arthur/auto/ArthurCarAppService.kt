@@ -1,24 +1,30 @@
 package fr.geoking.arthur.auto
 
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import androidx.annotation.DrawableRes
+import androidx.annotation.OptIn
 import androidx.car.app.CarAppService
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.Session
+import androidx.car.app.annotations.ExperimentalCarApi
 import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarIcon
 import androidx.car.app.model.GridItem
-import androidx.car.app.model.GridTemplate
+import androidx.car.app.model.GridSection
 import androidx.car.app.model.Header
-import androidx.car.app.model.ItemList
 import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Pane
 import androidx.car.app.model.PaneTemplate
 import androidx.car.app.model.Row
+import androidx.car.app.model.SectionedItemTemplate
 import androidx.car.app.model.Template
 import androidx.car.app.validation.HostValidator
+import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -45,6 +51,61 @@ import kotlinx.coroutines.withContext
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
+/** Hard caps so host content limits cannot densify the Spotify-style dashboard. */
+internal const val MAX_HOME_GRID_ITEMS = 5
+internal const val MAX_SUB_GRID_ITEMS = 6
+
+private const val COVER_ICON_SIZE_PX = 512
+
+internal fun gridContentLimit(carContext: CarContext, maxItems: Int): Int {
+    val hostLimit = try {
+        carContext.getCarService(ConstraintManager::class.java)
+            ?.getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_GRID) ?: maxItems
+    } catch (_: Exception) {
+        maxItems
+    }
+    return minOf(hostLimit, maxItems)
+}
+
+internal fun coverCarIcon(carContext: CarContext, @DrawableRes coverRes: Int): CarIcon {
+    val bitmap = decodeCoverBitmap(carContext, coverRes)
+    val icon = if (bitmap != null) {
+        IconCompat.createWithBitmap(bitmap)
+    } else {
+        IconCompat.createWithResource(carContext, coverRes)
+    }
+    return CarIcon.Builder(icon).build()
+}
+
+private fun decodeCoverBitmap(carContext: CarContext, @DrawableRes coverRes: Int): Bitmap? {
+    return runCatching {
+        val drawable = ContextCompat.getDrawable(carContext, coverRes) ?: return null
+        val bitmap = Bitmap.createBitmap(COVER_ICON_SIZE_PX, COVER_ICON_SIZE_PX, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        drawable.setBounds(0, 0, COVER_ICON_SIZE_PX, COVER_ICON_SIZE_PX)
+        drawable.draw(canvas)
+        bitmap
+    }.getOrNull()
+}
+
+private fun carErrorTemplate(carContext: CarContext, e: Throwable): Template {
+    val detail = e.message?.take(300)?.takeIf { it.isNotBlank() }
+    val message = buildString {
+        append(e::class.simpleName ?: carContext.getString(R.string.car_error_generic))
+        if (detail != null) {
+            append(": ")
+            append(detail)
+        }
+    }.take(500)
+    val logo = CarIcon.Builder(IconCompat.createWithResource(carContext, R.mipmap.ic_launcher)).build()
+    return MessageTemplate.Builder(message)
+        .setTitle(carContext.getString(R.string.app_name))
+        .setHeaderAction(Action.APP_ICON)
+        .setIcon(logo)
+        .setDebugMessage(e)
+        .build()
+}
+
 /**
  * Car App Library service for Android Auto displaying large artwork images via PaneTemplate.
  *
@@ -52,6 +113,7 @@ import org.koin.core.component.inject
  * - Pane actions ≤ 2 (play/pause primary only here)
  * - ActionStrip ≤ 2, icon-only for prev/next (no label buttons in strip)
  * - Pane rows capped via [ConstraintManager.CONTENT_LIMIT_TYPE_PANE]
+ * - Pack grids use [SectionedItemTemplate] + [GridSection.ITEM_SIZE_EXTRA_LARGE], hard-capped
  * - Loading vs rows mutually exclusive
  * - [onGetTemplate] never throws — errors surface as [MessageTemplate]
  */
@@ -74,34 +136,35 @@ class ArthurCarSession : Session() {
 /**
  * Screen displaying the available pack families on the Android Auto dashboard.
  */
+@OptIn(ExperimentalCarApi::class)
 class PackSelectionScreen(carContext: CarContext) : Screen(carContext) {
     override fun onGetTemplate(): Template {
-        val gridLimit = try {
-            carContext.getCarService(ConstraintManager::class.java)
-                ?.getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_GRID) ?: 4
-        } catch (_: Exception) {
-            4
+        return try {
+            buildTemplate()
+        } catch (e: Throwable) {
+            carErrorTemplate(carContext, e)
         }
+    }
 
-        val gridBuilder = ItemList.Builder()
+    private fun buildTemplate(): Template {
+        val gridLimit = gridContentLimit(carContext, MAX_HOME_GRID_ITEMS)
         val families = PackFamily.entries
             .filter { it != PackFamily.Video }
             .take(gridLimit)
 
-        families.forEach { family ->
-            val carIcon = CarIcon.Builder(
-                IconCompat.createWithResource(carContext, family.coverRes),
-            ).build()
+        val sectionBuilder = GridSection.Builder()
+            .setItemSize(GridSection.ITEM_SIZE_EXTRA_LARGE)
+            .setItemImageShape(GridSection.ITEM_IMAGE_SHAPE_UNSET)
 
+        families.forEach { family ->
             val item = GridItem.Builder()
                 .setTitle(carContext.getString(family.titleRes))
-                .setImage(carIcon, GridItem.IMAGE_TYPE_LARGE)
+                .setImage(coverCarIcon(carContext, family.coverRes), GridItem.IMAGE_TYPE_LARGE)
                 .setOnClickListener {
                     screenManager.push(SubPackSelectionScreen(carContext, family))
                 }
                 .build()
-
-            gridBuilder.addItem(item)
+            sectionBuilder.addItem(item)
         }
 
         val header = Header.Builder()
@@ -109,10 +172,9 @@ class PackSelectionScreen(carContext: CarContext) : Screen(carContext) {
             .setStartHeaderAction(Action.APP_ICON)
             .build()
 
-        return GridTemplate.Builder()
+        return SectionedItemTemplate.Builder()
             .setHeader(header)
-            .setSingleList(gridBuilder.build())
-            .setItemSize(GridTemplate.ITEM_SIZE_LARGE)
+            .addSection(sectionBuilder.build())
             .build()
     }
 }
@@ -120,35 +182,36 @@ class PackSelectionScreen(carContext: CarContext) : Screen(carContext) {
 /**
  * Screen displaying the sub-packs / topics for a given [PackFamily].
  */
+@OptIn(ExperimentalCarApi::class)
 class SubPackSelectionScreen(
     carContext: CarContext,
     val family: PackFamily,
 ) : Screen(carContext) {
     override fun onGetTemplate(): Template {
-        val gridLimit = try {
-            carContext.getCarService(ConstraintManager::class.java)
-                ?.getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_GRID) ?: 6
-        } catch (_: Exception) {
-            6
+        return try {
+            buildTemplate()
+        } catch (e: Throwable) {
+            carErrorTemplate(carContext, e)
         }
+    }
 
-        val gridBuilder = ItemList.Builder()
+    private fun buildTemplate(): Template {
+        val gridLimit = gridContentLimit(carContext, MAX_SUB_GRID_ITEMS)
         val tiles = family.subPackTiles().take(gridLimit)
 
-        tiles.forEach { tile ->
-            val carIcon = CarIcon.Builder(
-                IconCompat.createWithResource(carContext, tile.coverRes),
-            ).build()
+        val sectionBuilder = GridSection.Builder()
+            .setItemSize(GridSection.ITEM_SIZE_EXTRA_LARGE)
+            .setItemImageShape(GridSection.ITEM_IMAGE_SHAPE_UNSET)
 
+        tiles.forEach { tile ->
             val item = GridItem.Builder()
                 .setTitle(carContext.getString(tile.titleRes))
-                .setImage(carIcon, GridItem.IMAGE_TYPE_LARGE)
+                .setImage(coverCarIcon(carContext, tile.coverRes), GridItem.IMAGE_TYPE_LARGE)
                 .setOnClickListener {
                     screenManager.push(ArtworkPaneScreen(carContext, tile.selection))
                 }
                 .build()
-
-            gridBuilder.addItem(item)
+            sectionBuilder.addItem(item)
         }
 
         val header = Header.Builder()
@@ -156,10 +219,9 @@ class SubPackSelectionScreen(
             .setStartHeaderAction(Action.BACK)
             .build()
 
-        return GridTemplate.Builder()
+        return SectionedItemTemplate.Builder()
             .setHeader(header)
-            .setSingleList(gridBuilder.build())
-            .setItemSize(GridTemplate.ITEM_SIZE_LARGE)
+            .addSection(sectionBuilder.build())
             .build()
     }
 }

@@ -12,53 +12,11 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Checkout geoking-ci
-        uses: actions/checkout@v4
-        with:
-          repository: ludoo0d0a/geoking-ci
-          path: geoking-ci
-
-      - name: Checkout geoking-tools
-        uses: actions/checkout@v4
-        with:
-          repository: ludoo0d0a/geoking-tools
-          path: geoking-tools
-
-      - name: Setup Gradle
-        uses: ./geoking-ci/actions/setup-gradle
-        with:
-          gradle-version: wrapper
-          java-version: "21"
-
-      - name: Decode google-services.json (Firebase)
-        env:
-          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
-        run: echo "$GOOGLE_SERVICES_JSON" | base64 --decode > androidApp/google-services.json
-
-      - name: Assemble debug APK
-        env:
-          GK_TOOLS: ${{ github.workspace }}/geoking-tools
-          WEB_CLIENT_ID: ${{ secrets.WEB_CLIENT_ID }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          REVENUECAT_API_KEY: ${{ secrets.REVENUECAT_API_KEY }}
-          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
-          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
-          UNSPLASH_SECRET_KEY: ${{ secrets.UNSPLASH_SECRET_KEY }}
-          PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
-          COVERR_API_KEY: ${{ secrets.COVERR_API_KEY }}
-          EUROPEANA_API_KEY: ${{ secrets.EUROPEANA_API_KEY }}
-          HARVARD_API_KEY: ${{ secrets.HARVARD_API_KEY }}
-          SMITHSONIAN_API_KEY: ${{ secrets.SMITHSONIAN_API_KEY }}
-          DEBUG_DEV: ${{ secrets.DEBUG_DEV }}
-        run: ./gradlew :androidApp:assembleDebug --no-daemon --stacktrace
-
-      - name: Upload debug APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: arthur-debug-apk
-          path: androidApp/build/outputs/apk/debug/*.apk
-          if-no-files-found: warn
+    uses: ludoo0d0a/geoking-ci/.github/workflows/android-ci.yml@main
+    with:
+      artifact_name: arthur-debug-apk
+      gradle_version: wrapper
+      gradle_module: ':androidApp'
+      apk_glob: 'androidApp/build/outputs/apk/debug/*.apk'
+      google_services_path: 'androidApp/google-services.json'
+    secrets: inherit

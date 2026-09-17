@@ -261,6 +261,7 @@ private val GENART_TAPET_IDS = setOf(
     GenartSource.TONAL_GEOMETRY,
     GenartSource.PAPER_CUT_PACK,
     GenartSource.DIAMOND_WEAVE,
+    GenartSource.CHROMATIC_BLOBS,
 )
 
 private val GENART_WEATHER_IDS = setOf(
@@ -284,6 +285,8 @@ private val GENART_WEATHER_IDS = setOf(
     GenartSource.DAY_NIGHT_WASH,
     GenartSource.FROST_CRYSTALS,
     GenartSource.ECLIPSE_CORONA,
+    GenartSource.FIRE,
+    GenartSource.AURORA_WASH,
 )
 
 private val GENART_NATURE_IDS = setOf(
@@ -365,6 +368,7 @@ private val GENART_EARTH_IDS = setOf(
     GenartSource.FIELDS,
     GenartSource.CANYON_DUNES,
     GenartSource.CONTINENTS,
+    GenartSource.FIRE,
 )
 
 private val GENART_PLANETS_IDS = setOf(
@@ -379,6 +383,7 @@ private val GENART_PLANETS_IDS = setOf(
     GenartSource.SPIRAL_GALAXY,
     GenartSource.ASTEROIDS,
     GenartSource.CONTINENTS,
+    GenartSource.HALO_ECLIPSE,
 )
 
 private val GENART_SCIFI_IDS = setOf(
@@ -394,6 +399,8 @@ private val GENART_SCIFI_IDS = setOf(
     GenartSource.ASTEROIDS,
     GenartSource.SPIRAL_GALAXY,
     GenartSource.DATA_HORIZON,
+    GenartSource.VORTEX_GLOW,
+    GenartSource.MATRIX,
 )
 
 private val GENART_ABSTRACT_IDS = setOf(
@@ -412,6 +419,13 @@ private val GENART_ABSTRACT_IDS = setOf(
     GenartSource.SOFT_CAUSTICS,
     GenartSource.PAPER_CUT_PACK,
     GenartSource.DIAMOND_WEAVE,
+    GenartSource.CHROMATIC_BLOBS,
+    GenartSource.PRISMATIC_SHADOWS,
+    GenartSource.AURORA_WASH,
+    GenartSource.VORTEX_GLOW,
+    GenartSource.SPECTRAL_FOLDS,
+    GenartSource.HALO_ECLIPSE,
+    GenartSource.MATRIX,
 )
 
 private val GENART_GEOMETRY_IDS = setOf(
@@ -428,6 +442,7 @@ private val GENART_GEOMETRY_IDS = setOf(
     GenartSource.DATA_HORIZON,
     GenartSource.WARP_STREAK,
     GenartSource.DIAMOND_WEAVE,
+    GenartSource.PRISMATIC_SHADOWS,
 )
 
 /** Random / other topics = remote photo search across capable Sources. */

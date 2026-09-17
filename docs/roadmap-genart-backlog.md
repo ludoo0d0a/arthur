@@ -202,6 +202,7 @@ detail, stays inside the calm/car-safe principles above:
 - Ion trail — shipped as `genart.iontrail`: a glowing probe on a lazy S-curve over the
   starfield backdrop, trail approximated analytically as fading segments behind the current
   position (no per-frame state needed)
+- Matrix rain — shipped as `genart.matrix`: falling vertical streams of Katakana/digit characters with a bright white-green head character and glowing green shadow effect fading down to dark green stream tails over a dark background
 
 ## Out of scope / hard (parked)
 

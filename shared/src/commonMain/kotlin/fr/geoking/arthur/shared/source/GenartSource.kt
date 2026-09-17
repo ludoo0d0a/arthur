@@ -113,6 +113,7 @@ class GenartSource(
         const val FIRE = "genart.fire"
         const val PAPER_CUT_PACK = "genart.papercut"
         const val DIAMOND_WEAVE = "genart.diamondweave"
+        const val MATRIX = "genart.matrix"
 
         fun defaultCatalog(): List<Artwork> = listOf(
             entry(PARTICLES, "#1 - Drifting Particles"),
@@ -209,6 +210,7 @@ class GenartSource(
             entry(FIRE, "#86 - Wildfire"),
             entry(PAPER_CUT_PACK, "#87 - Paper-Cut Pack"),
             entry(DIAMOND_WEAVE, "#88 - Diamond Weave"),
+            entry(MATRIX, "#93 - Matrix Rain"),
         )
 
         private fun entry(id: String, title: String) = Artwork(

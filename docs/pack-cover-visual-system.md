@@ -91,7 +91,7 @@ Primary color is **semantic to the topic** (not the Photo family blue).
 | **Abstract** | Magenta | `#2A0A2E` | `#B03A8C` | `#F2B4E0` |
 | **Architecture** | Warm stone | `#2A2218` | `#A89070` | `#EDE4D4` |
 | **StreetArt** | Coral graffiti | `#2A0C12` | `#E0455A` | `#FFC2C8` |
-| **Random** | Photo family blues | (use `pack_photo`) | | |
+| **Random** | Warm chance amber (shared across every family) | `#1A1408` | `#A67C3D` | `#F0D9A0` |
 
 Optional fourth stop for recessed voids: near-black of the **same** hue.
 
@@ -113,11 +113,13 @@ Optional fourth stop for recessed voids: near-black of the **same** hue.
 ### Photo / Video keyword topics (`StockPhotoCategory`)
 
 Shared via `PackCovers.photo()` (Photo and Video keyword tiles).
-Each topic has its **own primary hue** (see table above). Random → root `pack_photo`.
+Each topic has its **own primary hue** (see table above).
+**Random** is one shared asset (`PackCovers.random` / `pack_random.webp`) for every
+family’s Random tile (Museum, Sculpture, Painting, Photo, Video, Genart).
 
 | Topic | Drawable | Motif | Primary hue |
 |-------|----------|--------|-------------|
-| Random | `pack_photo.webp` | Camera | Photo blues |
+| Random | `pack_random.webp` | Die / chance cube | Warm chance amber |
 | Nature | `pack_photo_nature.webp` | Tree / foliage / hills | Forest green |
 | Mountains | `pack_photo_mountains.webp` | Layered peaks + snow tip | Cool slate |
 | Ocean | `pack_photo_ocean.webp` | Waves + horizon disk | Sea blue |
@@ -130,7 +132,8 @@ Each topic has its **own primary hue** (see table above). Random → root `pack_
 ### Other covers (unchanged by this pass)
 
 - Museum institutions: `pack_met`, `pack_rijksmuseum`, … (gold-on-dark logo variants)
-- Video / photo providers: `pack_pexels`, `pack_unsplash`, `pack_pixabay`, `pack_coverr`
+- Video / photo providers: `pack_pexels`, `pack_unsplash`, `pack_pixabay`, `pack_coverr`, `pack_deviantart`
+- Shared Random: `pack_random` (dice motif; wired via `PackCovers.random`)
 - Genart subtopics: still mostly vector placeholders (`pack_genart_*.xml`) — regenerate later with the Genart purple palette using this same style contract
 
 ---

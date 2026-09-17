@@ -23,3 +23,17 @@ include(":shared")
 include(":fractal")
 include(":genart")
 include(":androidApp")
+
+val gkToolsRoot = System.getenv("GK_TOOLS")
+    ?: listOf("geoking-tools", ".geoking-tools", "../geoking-tools", "../../geoking-tools")
+        .map { rootDir.resolve(it) }
+        .firstOrNull { it.resolve("android").isDirectory }
+        ?.absolutePath
+    ?: error("geoking-tools not found; clone sibling or set GK_TOOLS")
+
+includeBuild("$gkToolsRoot/android") {
+    dependencySubstitution {
+        substitute(module("fr.geoking.tools:debug-bar"))
+            .using(project(":debug-bar"))
+    }
+}

@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "fr.geoking.arthur.fractal"
-    compileSdk = 36
+    compileSdk = 37
     defaultConfig {
         minSdk = 26
     }

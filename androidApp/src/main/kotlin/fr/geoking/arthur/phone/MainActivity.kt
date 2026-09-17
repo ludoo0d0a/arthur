@@ -33,7 +33,6 @@ import fr.geoking.arthur.shared.domain.PremiumEntitlement
 import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.source.DeveloperSettings
 import fr.geoking.arthur.source.HttpCacheController
-import fr.geoking.arthur.ui.components.debug.DebugBarButton
 import fr.geoking.arthur.source.MuseumSearchSettings
 import fr.geoking.arthur.source.RotationSettings
 import fr.geoking.arthur.source.ScreensaverSettings
@@ -43,13 +42,13 @@ import fr.geoking.arthur.tv.AmbientRotationLaunch
 import fr.geoking.arthur.ui.UpdateAvailableDialog
 import fr.geoking.arthur.ui.UpdateCheckFeedbackDialog
 import fr.geoking.arthur.ui.UpdateInProgressBanner
+import fr.geoking.arthur.ui.components.debug.ArthurDebugLogOverlay
 import fr.geoking.arthur.ui.screens.ControlPlaneScreen
 import fr.geoking.arthur.ui.screens.CustomFractalEditorScreen
 import fr.geoking.arthur.ui.screens.SettingsScreen
 import fr.geoking.arthur.update.CheckFeedback
 import fr.geoking.arthur.update.InAppUpdateHelper
 import org.koin.android.ext.android.inject
-
 class MainActivity : ComponentActivity() {
     private val contentEngine: ContentEngine by inject()
     private val premium: PremiumEntitlement by inject()
@@ -177,12 +176,12 @@ class MainActivity : ComponentActivity() {
                         }
 
                         if (verbose) {
-                            DebugBarButton(
+                            ArthurDebugLogOverlay(
                                 debugLogger = debugLogger,
                                 cacheController = httpCacheController,
                                 modifier = Modifier
-                                    .align(Alignment.BottomEnd)
-                                    .padding(16.dp),
+                                    .align(Alignment.TopEnd)
+                                    .padding(top = 80.dp),
                             )
                         }
                     }

@@ -38,7 +38,7 @@ val versionProps = Properties().apply {
 
 android {
     namespace = "fr.geoking.arthur"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "fr.geoking.arthur"
@@ -146,6 +146,7 @@ dependencies {
     implementation(libs.play.app.update)
     implementation(libs.play.app.update.ktx)
     implementation(libs.aboutlibraries.compose.m3)
+    implementation("fr.geoking.tools:debug-bar")
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)

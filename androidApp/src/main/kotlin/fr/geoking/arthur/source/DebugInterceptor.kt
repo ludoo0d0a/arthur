@@ -48,11 +48,13 @@ class DebugInterceptor(
                 durationMs = duration,
                 isCached = false,
                 statusCode = null,
+                method = request.method,
                 host = host,
                 requestHeaders = requestHeaders,
                 requestBody = requestBody,
                 requestBodyTruncated = requestBodyTruncated,
                 errorMessage = e.message ?: e::class.simpleName,
+                requestSizeBytes = requestBody?.toByteArray(Charsets.UTF_8)?.size?.toLong() ?: 0L,
             )
             throw e
         }
@@ -67,6 +69,7 @@ class DebugInterceptor(
             durationMs = duration,
             isCached = isCached,
             statusCode = response.code,
+            method = request.method,
             host = host,
             requestHeaders = requestHeaders,
             requestBody = requestBody,
@@ -74,6 +77,8 @@ class DebugInterceptor(
             responseHeaders = response.headers.toMultimap(),
             responseBody = responseBody,
             responseBodyTruncated = responseBodyTruncated,
+            requestSizeBytes = requestBody?.toByteArray(Charsets.UTF_8)?.size?.toLong() ?: 0L,
+            responseSizeBytes = responseBody?.toByteArray(Charsets.UTF_8)?.size?.toLong() ?: 0L,
         )
         return response
     }

@@ -9,6 +9,7 @@ data class DebugQueryItem(
     val id: Long,
     val sourceId: String,
     val url: String,
+    val method: String = "GET",
     val durationMs: Long,
     val isCached: Boolean,
     val statusCode: Int? = null,
@@ -21,6 +22,8 @@ data class DebugQueryItem(
     val responseBody: String? = null,
     val responseBodyTruncated: Boolean = false,
     val errorMessage: String? = null,
+    val requestSizeBytes: Long = 0,
+    val responseSizeBytes: Long = 0,
 )
 
 data class DebugStats(
@@ -53,6 +56,7 @@ class DebugLogger(
         durationMs: Long,
         isCached: Boolean,
         statusCode: Int? = null,
+        method: String = "GET",
         host: String = "",
         requestHeaders: Map<String, List<String>> = emptyMap(),
         requestBody: String? = null,
@@ -61,12 +65,15 @@ class DebugLogger(
         responseBody: String? = null,
         responseBodyTruncated: Boolean = false,
         errorMessage: String? = null,
+        requestSizeBytes: Long = 0,
+        responseSizeBytes: Long = 0,
     ) {
         val now = clock()
         val item = DebugQueryItem(
             id = nextId++,
             sourceId = sourceId,
             url = url,
+            method = method,
             durationMs = durationMs,
             isCached = isCached,
             statusCode = statusCode,
@@ -79,6 +86,8 @@ class DebugLogger(
             responseBody = responseBody,
             responseBodyTruncated = responseBodyTruncated,
             errorMessage = errorMessage,
+            requestSizeBytes = requestSizeBytes,
+            responseSizeBytes = responseSizeBytes,
         )
         _stats.update { current ->
             val updatedRecent = (listOf(item) + current.recentQueries).take(maxRecentQueries)

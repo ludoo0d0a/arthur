@@ -82,11 +82,11 @@ fun ArtworkRenderer(
                             isActive = isActive,
                             quality = quality,
                         )
-                    } else if (!artwork.localPath.isNullOrBlank()) {
+                    } else if (!artwork.localPath.isNullOrBlank() || !artwork.remoteUrl.isNullOrBlank()) {
                         RemoteStillImage(
                             artworkId = artwork.id,
                             localPath = artwork.localPath,
-                            remoteUrl = null,
+                            remoteUrl = artwork.remoteUrl,
                             kind = artwork.kind,
                         )
                     } else {
@@ -208,7 +208,11 @@ private fun RemoteStillImage(
             val url = remoteUrl?.takeIf { it.isNotBlank() }
                 ?: return@withContext Result.failure(IllegalStateException("No image URL provided"))
             runCatching {
-                val downloadedFile = imageCache.downloadAndCache(artworkId, url)
+                val downloadedFile = imageCache.downloadAndCache(
+                    artworkId = artworkId,
+                    remoteUrl = url,
+                    errorLogger = errorLogger,
+                )
                 SafeBitmapDecoder.decodeFile(downloadedFile.absolutePath)
                     ?: error("Failed to decode downloaded image file")
             }

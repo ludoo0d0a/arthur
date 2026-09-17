@@ -29,28 +29,13 @@ class AmbientScreenLoaderTest {
     )
 
     @Test
-    fun ambientScreen_whenIsLoadingTrue_displaysDiscreteLoader() {
+    fun ambientScreen_doesNotDisplayDiscreteLoader() {
         composeTestRule.setContent {
             ArthurTheme {
                 AmbientScreenContent(
                     title = "Ambient Test",
                     artwork = sampleArtwork,
                     isLoading = true,
-                )
-            }
-        }
-
-        composeTestRule.onNodeWithTag("discrete_ambient_loader").assertIsDisplayed()
-    }
-
-    @Test
-    fun ambientScreen_whenIsLoadingFalse_hidesDiscreteLoader() {
-        composeTestRule.setContent {
-            ArthurTheme {
-                AmbientScreenContent(
-                    title = "Ambient Test",
-                    artwork = sampleArtwork,
-                    isLoading = false,
                 )
             }
         }

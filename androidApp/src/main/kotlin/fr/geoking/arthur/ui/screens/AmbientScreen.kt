@@ -113,20 +113,38 @@ fun AmbientScreenContent(
     val isTelevision =
         configuration.uiMode and Configuration.UI_MODE_TYPE_MASK == Configuration.UI_MODE_TYPE_TELEVISION
 
-    var current by remember(artwork?.id, rotatePool.map { it.id }, shouldRotate) {
+    val poolIds = remember(rotatePool) { rotatePool.map { it.id } }
+    var current by remember(artwork?.id) {
         mutableStateOf(
             when {
                 shouldRotate && artwork != null && rotatePool.any { it.id == artwork.id } -> artwork
-                shouldRotate -> rotatePool.first()
+                shouldRotate -> rotatePool.firstOrNull()
                 else -> artwork
             },
         )
+    }
+
+    LaunchedEffect(poolIds) {
+        val existingId = current?.id
+        if (existingId == null) {
+            current = when {
+                shouldRotate && artwork != null && rotatePool.any { it.id == artwork.id } -> artwork
+                shouldRotate -> rotatePool.firstOrNull()
+                else -> artwork
+            }
+        } else {
+            val updatedInPool = rotatePool.firstOrNull { it.id == existingId }
+            if (updatedInPool != null) {
+                current = updatedInPool
+            } else if (shouldRotate) {
+                current = rotatePool.firstOrNull()
+            }
+        }
     }
     var rotationEpoch by remember { mutableIntStateOf(0) }
     var seenIds by remember(rotatePool.map { it.id }) { mutableStateOf(emptySet<String>()) }
     val progress = remember { Animatable(0f) }
     val focusRequester = remember { FocusRequester() }
-    val poolIds = remember(rotatePool) { rotatePool.map { it.id } }
     val latestCurrent by rememberUpdatedState(current)
     val latestPool by rememberUpdatedState(rotatePool)
     val renewLatest by rememberUpdatedState(onNeedRenewPool)
@@ -367,31 +385,6 @@ fun AmbientScreenContent(
                         }
                     },
             )
-        }
-        AnimatedVisibility(
-            visible = isLoading,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .statusBarsPadding()
-                .padding(16.dp),
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .background(Color.Black.copy(alpha = 0.25f), CircleShape)
-                    .padding(4.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .testTag("discrete_ambient_loader"),
-                    color = Color.White.copy(alpha = 0.85f),
-                    strokeWidth = 2.dp,
-                )
-            }
         }
         if (canOpenDetails) {
             AmbientDetailsButton(

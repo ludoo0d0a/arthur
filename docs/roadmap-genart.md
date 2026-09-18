@@ -10,7 +10,7 @@ This roadmap is split into three parts:
 - [roadmap-genart-backlog.md](roadmap-genart-backlog.md) — the ideas backlog, organized by
   category (Weather, Nature, Live nature, Planet, Light & sky, Water & fluids, Seasons & time,
   Abstract calm, Cozy micro, Sand & earth, Celestial soft, Sci-fi), plus what's explicitly out
-  of scope.
+  of scope, and curated external references (algorithms, methodology, skills/tooling).
 - [roadmap-genart-architecture.md](roadmap-genart-architecture.md) — the `GenartRegistry`
   plugin mechanism, and the realism/rendering-technique upgrades (blur, noise, physics-inspired
   motion, shaders) to reach for on new and existing engines.

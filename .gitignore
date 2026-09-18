@@ -22,3 +22,4 @@ playstore/whatsnew/
 *.jks
 .firebase/
 .wrangler/
+geoking-tools/

@@ -91,7 +91,27 @@ Primary color is **semantic to the topic** (not the Photo family blue).
 | **Abstract** | Magenta | `#2A0A2E` | `#B03A8C` | `#F2B4E0` |
 | **Architecture** | Warm stone | `#2A2218` | `#A89070` | `#EDE4D4` |
 | **StreetArt** | Coral graffiti | `#2A0C12` | `#E0455A` | `#FFC2C8` |
-| **Random** | Photo family blues | (use `pack_photo`) | | |
+| **Random** | Warm chance amber (shared across every family) | `#1A1408` | `#A67C3D` | `#F0D9A0` |
+
+### Genart topics (`GenartTopic`)
+
+Primary color is **semantic to the topic** (not always Genart purple).
+Random uses shared `pack_random`.
+
+| Topic | Hue idea | Background | Mid | Highlight |
+|-------|----------|------------|-----|-----------|
+| **Tapet** | Soft lilac | `#1E0F2E` | `#8B6BB0` | `#E8D4F8` |
+| **Nature** | Forest green | `#0A2F1F` | `#2D6A4F` | `#A8E6C0` |
+| **Weather** | Storm slate | `#0E1A28` | `#4A6B8A` | `#B8D4F0` |
+| **Water** | Deep teal | `#021F2E` | `#1A7A8A` | `#A8E8F0` |
+| **Life** | Soft bio green | `#0F1F12` | `#3D7A4A` | `#B8E8C0` |
+| **Earth** | Terracotta | `#1A1008` | `#8B5A2B` | `#E8C8A0` |
+| **Planets** | Cosmic indigo | `#0A0A20` | `#4A4A9A` | `#C8C8F8` |
+| **SciFi** | Cyan | `#0A1A22` | `#2A8A9A` | `#A8F0F8` |
+| **Abstract** | Magenta | `#2A0A2E` | `#B03A8C` | `#F2B4E0` |
+| **Geometry** | Cool steel | `#12161C` | `#5A6A7A` | `#D0D8E0` |
+| **Fractal** | Genart purple | `#1A0A2E` | `#6B3FA0` | `#E8B4F8` |
+| **Custom** | Warm violet | `#1A0A1E` | `#7A4A9A` | `#E8C8F0` |
 
 Optional fourth stop for recessed voids: near-black of the **same** hue.
 
@@ -113,11 +133,13 @@ Optional fourth stop for recessed voids: near-black of the **same** hue.
 ### Photo / Video keyword topics (`StockPhotoCategory`)
 
 Shared via `PackCovers.photo()` (Photo and Video keyword tiles).
-Each topic has its **own primary hue** (see table above). Random → root `pack_photo`.
+Each topic has its **own primary hue** (see table above).
+**Random** is one shared asset (`PackCovers.random` / `pack_random.webp`) for every
+family’s Random tile (Museum, Sculpture, Painting, Photo, Video, Genart).
 
 | Topic | Drawable | Motif | Primary hue |
 |-------|----------|--------|-------------|
-| Random | `pack_photo.webp` | Camera | Photo blues |
+| Random | `pack_random.webp` | Die / chance cube | Warm chance amber |
 | Nature | `pack_photo_nature.webp` | Tree / foliage / hills | Forest green |
 | Mountains | `pack_photo_mountains.webp` | Layered peaks + snow tip | Cool slate |
 | Ocean | `pack_photo_ocean.webp` | Waves + horizon disk | Sea blue |
@@ -127,11 +149,31 @@ Each topic has its **own primary hue** (see table above). Random → root `pack_
 | Architecture | `pack_photo_architecture.webp` | Columns / arch fragment | Warm stone |
 | StreetArt | `pack_photo_streetart.webp` | Wall + spray swirls (no lettering) | Coral graffiti |
 
-### Other covers (unchanged by this pass)
+### Genart topics (`GenartTopic`)
+
+Wired via `PackCovers.genart()`. Each topic has its **own primary hue** (see table above).
+
+| Topic | Drawable | Motif | Primary hue |
+|-------|----------|--------|-------------|
+| Random | `pack_random.webp` | Die / chance cube | Warm chance amber |
+| Tapet | `pack_genart_tapet.webp` | Silk diamond weave / wallpaper panels | Soft lilac |
+| Nature | `pack_genart_nature.webp` | Layered tree | Forest green |
+| Weather | `pack_genart_weather.webp` | Storm cloud + rain + lightning | Storm slate |
+| Water | `pack_genart_water.webp` | Waves + horizon disk | Deep teal |
+| Life | `pack_genart_life.webp` | Sprout / seedling | Soft bio green |
+| Earth | `pack_genart_earth.webp` | Stylized globe | Terracotta |
+| Planets | `pack_genart_planets.webp` | Ringed planet + moons | Cosmic indigo |
+| SciFi | `pack_genart_scifi.webp` | Geometric probe / ship | Cyan |
+| Abstract | `pack_genart_abstract.webp` | Soft arcs / disks | Magenta |
+| Geometry | `pack_genart_geometry.webp` | Platonic solid / crystal | Cool steel |
+| Fractal | `pack_genart_fractal.webp` | Recursive spiral | Genart purple |
+| Custom | `pack_genart_custom.webp` | Faceted gem + dial ring | Warm violet |
+
+### Other covers
 
 - Museum institutions: `pack_met`, `pack_rijksmuseum`, … (gold-on-dark logo variants)
-- Video / photo providers: `pack_pexels`, `pack_unsplash`, `pack_pixabay`, `pack_coverr`
-- Genart subtopics: still mostly vector placeholders (`pack_genart_*.xml`) — regenerate later with the Genart purple palette using this same style contract
+- Video / photo providers: `pack_pexels`, `pack_unsplash`, `pack_pixabay`, `pack_coverr`, `pack_deviantart`
+- Shared Random: `pack_random` (dice motif; wired via `PackCovers.random`)
 
 ---
 

@@ -96,6 +96,7 @@ enum class GenartEngineId {
     PaperCutPack,
     DiamondWeave,
     Matrix,
+    DriftingHalos,
 }
 
 enum class GenartQuality { Low, Medium, High }

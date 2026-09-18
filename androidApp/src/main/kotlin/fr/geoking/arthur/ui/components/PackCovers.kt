@@ -6,9 +6,13 @@ import fr.geoking.arthur.shared.source.StockPhotoCategory
 
 /** Static cover drawables for pack / sub-pack tiles. */
 object PackCovers {
+    /** Shared Random tile cover for every family (Museum / Photo / Video / Genart / …). */
+    @get:DrawableRes
+    val random: Int = R.drawable.pack_random
+
     @DrawableRes
     fun museum(topic: MuseumTopic): Int = when (topic) {
-        MuseumTopic.Random -> R.drawable.pack_museum
+        MuseumTopic.Random -> random
         MuseumTopic.Met -> R.drawable.pack_met
         MuseumTopic.Rijksmuseum -> R.drawable.pack_rijksmuseum
         MuseumTopic.Artic -> R.drawable.pack_artic
@@ -22,19 +26,19 @@ object PackCovers {
 
     @DrawableRes
     fun genart(topic: GenartTopic): Int = when (topic) {
-        GenartTopic.Random -> R.drawable.pack_genart
-        GenartTopic.Tapet -> R.drawable.pack_genart_abstract
+        GenartTopic.Random -> random
+        GenartTopic.Tapet -> R.drawable.pack_genart_tapet
         GenartTopic.Nature -> R.drawable.pack_genart_nature
         GenartTopic.Weather -> R.drawable.pack_genart_weather
-        GenartTopic.Water -> R.drawable.pack_genart_nature
-        GenartTopic.Life -> R.drawable.pack_genart_nature
-        GenartTopic.Earth -> R.drawable.pack_genart_nature
+        GenartTopic.Water -> R.drawable.pack_genart_water
+        GenartTopic.Life -> R.drawable.pack_genart_life
+        GenartTopic.Earth -> R.drawable.pack_genart_earth
         GenartTopic.Planets -> R.drawable.pack_genart_planets
-        GenartTopic.SciFi -> R.drawable.pack_genart_geometry
+        GenartTopic.SciFi -> R.drawable.pack_genart_scifi
         GenartTopic.Abstract -> R.drawable.pack_genart_abstract
         GenartTopic.Geometry -> R.drawable.pack_genart_geometry
         GenartTopic.Fractal -> R.drawable.pack_genart_fractal
-        GenartTopic.Custom -> R.drawable.pack_genart
+        GenartTopic.Custom -> R.drawable.pack_genart_custom
     }
 
     @DrawableRes
@@ -47,7 +51,7 @@ object PackCovers {
         StockPhotoCategory.Abstract -> R.drawable.pack_photo_abstract
         StockPhotoCategory.Architecture -> R.drawable.pack_photo_architecture
         StockPhotoCategory.StreetArt -> R.drawable.pack_photo_streetart
-        StockPhotoCategory.Random -> R.drawable.pack_photo
+        StockPhotoCategory.Random -> random
     }
 
     /** Themed official logo marks for photo providers. */
@@ -55,7 +59,7 @@ object PackCovers {
     fun photoTopic(topic: PhotoTopic): Int = when (topic) {
         PhotoTopic.Pexels -> R.drawable.pack_pexels
         PhotoTopic.Unsplash -> R.drawable.pack_unsplash
-        PhotoTopic.DeviantArt -> R.drawable.pack_photo
+        PhotoTopic.DeviantArt -> R.drawable.pack_deviantart
     }
 
     /** Themed official logo marks (gold-on-dark, same treatment as museum packs). */

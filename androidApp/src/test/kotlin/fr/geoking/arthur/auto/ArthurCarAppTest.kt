@@ -106,6 +106,40 @@ class ArthurCarAppTest {
     }
 
     @Test
+    fun carSettingsScreen_buildsListTemplateWithIntervalOptions() {
+        val owner = object : androidx.lifecycle.LifecycleOwner {
+            override val lifecycle = androidx.lifecycle.LifecycleRegistry(this)
+        }
+        val carContext = androidx.car.app.CarContext.create(owner.lifecycle)
+        attachBaseContext(carContext, org.robolectric.RuntimeEnvironment.getApplication())
+
+        // Setup Koin DI context for RotationSettings injection safely
+        if (org.koin.core.context.GlobalContext.getOrNull() != null) {
+            org.koin.core.context.stopKoin()
+        }
+        org.koin.core.context.startKoin {
+            modules(
+                org.koin.dsl.module {
+                    single { fr.geoking.arthur.source.RotationSettings(org.robolectric.RuntimeEnvironment.getApplication()) }
+                },
+            )
+        }
+
+        try {
+            val screen = CarSettingsScreen(carContext)
+            val template = screen.onGetTemplate()
+            assertNotNull(template)
+            assertTrue(template is androidx.car.app.model.ListTemplate)
+            val listTemplate = template as androidx.car.app.model.ListTemplate
+            val list = listTemplate.singleList
+            assertNotNull(list)
+            assertEquals(fr.geoking.arthur.source.RotationSettings.OPTIONS_MS.size, list!!.items.size)
+        } finally {
+            org.koin.core.context.stopKoin()
+        }
+    }
+
+    @Test
     fun gridContentLimit_hardCapsBelowHostLimit() {
         val owner = object : androidx.lifecycle.LifecycleOwner {
             override val lifecycle = androidx.lifecycle.LifecycleRegistry(this)

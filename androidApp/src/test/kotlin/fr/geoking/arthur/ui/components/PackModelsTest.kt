@@ -115,6 +115,24 @@ class PackModelsTest {
     }
 
     @Test
+    fun genartAll_includesAllGenartKindsInOrder() {
+        val pool = resolvePackPool(
+            catalog,
+            PackSelection(PackFamily.Genart, GenartTopic.All.testTagSuffix),
+        )
+        assertEquals(
+            listOf(
+                GenartSource.SNOW,
+                GenartSource.GRASS,
+                GenartSource.NEBULA,
+                GenartSource.BLOBS,
+                GenartSource.GRADIENT_MESH,
+            ),
+            pool.map { it.id },
+        )
+    }
+
+    @Test
     fun genartRandom_includesAllGenartKinds() {
         val pool = resolvePackPool(catalog, PackSelection(PackFamily.Genart))
         assertEquals(
@@ -142,8 +160,9 @@ class PackModelsTest {
     }
 
     @Test
-    fun genartSubPacks_includeAbstractAndTapet() {
+    fun genartSubPacks_includeAllAbstractAndTapet() {
         val suffixes = PackFamily.Genart.subPackTiles().map { it.testTagSuffix }
+        assertEquals("genart_all", suffixes.first())
         assertTrue(suffixes.contains("genart_abstract"))
         assertTrue(suffixes.contains("genart_tapet"))
     }

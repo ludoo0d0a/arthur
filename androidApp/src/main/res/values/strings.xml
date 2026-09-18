@@ -77,6 +77,7 @@
     <string name="genart_topic_life">Life</string>
     <string name="genart_topic_earth">Earth</string>
     <string name="genart_topic_scifi">Sci-Fi</string>
+    <string name="search_genart_placeholder">Search genart...</string>
     <string name="custom_fractal_create">Create custom fractal</string>
     <string name="custom_fractal_title">Custom Fractal</string>
     <string name="custom_fractal_hint">%1$d points · need %2$d–%3$d</string>

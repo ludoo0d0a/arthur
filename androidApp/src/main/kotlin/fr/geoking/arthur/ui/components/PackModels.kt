@@ -50,8 +50,9 @@ data class PackTile(
 private val MuseumInstitutionTopics: List<MuseumTopic> =
     MuseumTopic.entries.filter { it.sourceId != null }
 
-/** Genart sub-pack order for the grid ([GenartTopic.Random] leads). */
+/** Genart sub-pack order for the grid ([GenartTopic.All] leads). */
 private val GenartSubTopics = listOf(
+    GenartTopic.All,
     GenartTopic.Random,
     GenartTopic.Tapet,
     GenartTopic.Nature,

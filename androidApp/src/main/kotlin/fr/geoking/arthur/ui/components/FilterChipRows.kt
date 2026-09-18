@@ -401,6 +401,7 @@ private val GENART_SCIFI_IDS = setOf(
     GenartSource.DATA_HORIZON,
     GenartSource.VORTEX_GLOW,
     GenartSource.MATRIX,
+    GenartSource.SUPERDRIVE,
 )
 
 private val GENART_ABSTRACT_IDS = setOf(
@@ -426,6 +427,8 @@ private val GENART_ABSTRACT_IDS = setOf(
     GenartSource.SPECTRAL_FOLDS,
     GenartSource.HALO_ECLIPSE,
     GenartSource.MATRIX,
+    GenartSource.DRIFTING_HALOS,
+    GenartSource.SUPERDRIVE,
 )
 
 private val GENART_GEOMETRY_IDS = setOf(
@@ -443,6 +446,7 @@ private val GENART_GEOMETRY_IDS = setOf(
     GenartSource.WARP_STREAK,
     GenartSource.DIAMOND_WEAVE,
     GenartSource.PRISMATIC_SHADOWS,
+    GenartSource.DRIFTING_HALOS,
 )
 
 /** Random / other topics = remote photo search across capable Sources. */

@@ -17,6 +17,8 @@ import androidx.car.app.model.CarIcon
 import androidx.car.app.model.GridItem
 import androidx.car.app.model.GridSection
 import androidx.car.app.model.Header
+import androidx.car.app.model.ItemList
+import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Pane
 import androidx.car.app.model.PaneTemplate
@@ -53,7 +55,7 @@ import org.koin.core.component.inject
 
 /** Hard caps so host content limits cannot densify the Spotify-style dashboard. */
 internal const val MAX_HOME_GRID_ITEMS = 5
-internal const val MAX_SUB_GRID_ITEMS = 6
+internal const val MAX_SUB_GRID_ITEMS = 30
 
 private const val COVER_ICON_SIZE_PX = 512
 
@@ -182,9 +184,21 @@ class PackSelectionScreen(carContext: CarContext) : Screen(carContext) {
             sectionBuilder.addItem(item)
         }
 
+        val settingsAction = Action.Builder()
+            .setIcon(
+                CarIcon.Builder(
+                    IconCompat.createWithResource(carContext, R.drawable.ic_settings),
+                ).build(),
+            )
+            .setOnClickListener {
+                screenManager.push(CarSettingsScreen(carContext))
+            }
+            .build()
+
         val header = Header.Builder()
             .setTitle(carContext.getString(R.string.packs_section))
             .setStartHeaderAction(Action.APP_ICON)
+            .addEndHeaderAction(settingsAction)
             .build()
 
         return SectionedItemTemplate.Builder()
@@ -198,6 +212,58 @@ class PackSelectionScreen(carContext: CarContext) : Screen(carContext) {
  * Screen displaying the sub-packs / topics for a given [PackFamily].
  */
 @OptIn(ExperimentalCarApi::class)
+/**
+ * Screen displaying application settings (such as rotation interval) in Android Auto.
+ */
+class CarSettingsScreen(carContext: CarContext) : Screen(carContext), KoinComponent {
+    private val rotationSettings: RotationSettings by inject()
+
+    override fun onGetTemplate(): Template {
+        return try {
+            buildTemplate()
+        } catch (e: Throwable) {
+            carErrorTemplate(carContext, e)
+        }
+    }
+
+    private fun buildTemplate(): Template {
+        val currentInterval = rotationSettings.intervalMs.value
+        val listBuilder = ItemList.Builder()
+
+        RotationSettings.OPTIONS_MS.forEach { ms ->
+            val label = if (ms < 60_000L) {
+                carContext.getString(R.string.rotation_interval_seconds, (ms / 1_000L).toInt())
+            } else {
+                carContext.getString(R.string.rotation_interval_minutes, (ms / 60_000L).toInt())
+            }
+
+            val rowBuilder = Row.Builder()
+                .setTitle(label)
+
+            if (ms == currentInterval) {
+                rowBuilder.addText("✓")
+            }
+
+            rowBuilder.setOnClickListener {
+                rotationSettings.setIntervalMs(ms)
+                invalidate()
+            }
+
+            listBuilder.addItem(rowBuilder.build())
+        }
+
+        val header = Header.Builder()
+            .setTitle(carContext.getString(R.string.screen_rotation_interval))
+            .setStartHeaderAction(Action.BACK)
+            .build()
+
+        return ListTemplate.Builder()
+            .setHeader(header)
+            .setSingleList(listBuilder.build())
+            .build()
+    }
+}
+
 class SubPackSelectionScreen(
     carContext: CarContext,
     val family: PackFamily,

@@ -130,10 +130,44 @@ class ArthurCarAppTest {
             gridSection.itemSize,
         )
         assertTrue(
-            "Sub-pack grid should be hard-capped at $MAX_SUB_GRID_ITEMS",
+            "Sub-pack grid should be capped at $MAX_SUB_GRID_ITEMS or host limit",
             gridSection.itemsDelegate.size <= MAX_SUB_GRID_ITEMS,
         )
         assertTrue(gridSection.itemsDelegate.size > 0)
+    }
+
+    @Test
+    fun carSettingsScreen_buildsListTemplateWithIntervalOptions() {
+        val owner = object : androidx.lifecycle.LifecycleOwner {
+            override val lifecycle = androidx.lifecycle.LifecycleRegistry(this)
+        }
+        val carContext = androidx.car.app.CarContext.create(owner.lifecycle)
+        attachBaseContext(carContext, org.robolectric.RuntimeEnvironment.getApplication())
+
+        // Setup Koin DI context for RotationSettings injection safely
+        if (org.koin.core.context.GlobalContext.getOrNull() != null) {
+            org.koin.core.context.stopKoin()
+        }
+        org.koin.core.context.startKoin {
+            modules(
+                org.koin.dsl.module {
+                    single { fr.geoking.arthur.source.RotationSettings(org.robolectric.RuntimeEnvironment.getApplication()) }
+                },
+            )
+        }
+
+        try {
+            val screen = CarSettingsScreen(carContext)
+            val template = screen.onGetTemplate()
+            assertNotNull(template)
+            assertTrue(template is androidx.car.app.model.ListTemplate)
+            val listTemplate = template as androidx.car.app.model.ListTemplate
+            val list = listTemplate.singleList
+            assertNotNull(list)
+            assertEquals(fr.geoking.arthur.source.RotationSettings.OPTIONS_MS.size, list!!.items.size)
+        } finally {
+            org.koin.core.context.stopKoin()
+        }
     }
 
     @Test
@@ -143,10 +177,10 @@ class ArthurCarAppTest {
         }
         val carContext = androidx.car.app.CarContext.create(owner.lifecycle)
         attachBaseContext(carContext, org.robolectric.RuntimeEnvironment.getApplication())
-        // When ConstraintManager is unavailable under Robolectric, fallback equals maxItems;
-        // minOf still enforces the hard cap.
+        // ConstraintManager under Robolectric returns default limit 6.
+        // minOf enforces host limit and hard cap.
         assertEquals(MAX_HOME_GRID_ITEMS, gridContentLimit(carContext, MAX_HOME_GRID_ITEMS))
-        assertEquals(MAX_SUB_GRID_ITEMS, gridContentLimit(carContext, MAX_SUB_GRID_ITEMS))
+        assertEquals(6, gridContentLimit(carContext, MAX_SUB_GRID_ITEMS))
         assertEquals(3, gridContentLimit(carContext, 3))
     }
 

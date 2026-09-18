@@ -53,7 +53,7 @@ import org.koin.core.component.inject
 
 /** Hard caps so host content limits cannot densify the Spotify-style dashboard. */
 internal const val MAX_HOME_GRID_ITEMS = 5
-internal const val MAX_SUB_GRID_ITEMS = 6
+internal const val MAX_SUB_GRID_ITEMS = 30
 
 private const val COVER_ICON_SIZE_PX = 512
 

@@ -95,6 +95,7 @@ enum class GenartEngineId {
     HaloEclipse,
     PaperCutPack,
     DiamondWeave,
+    Matrix,
     DriftingHalos,
 }
 

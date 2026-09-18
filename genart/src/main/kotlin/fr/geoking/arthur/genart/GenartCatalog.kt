@@ -98,6 +98,11 @@ enum class GenartEngineId {
     Matrix,
     DriftingHalos,
     Superdrive,
+    Fireworks,
+    AtmosphericAsteroid,
+    SaturnRings,
+    LavaSun,
+    Moon,
 }
 
 enum class GenartQuality { Low, Medium, High }

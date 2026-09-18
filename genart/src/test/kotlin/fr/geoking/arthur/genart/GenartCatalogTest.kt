@@ -64,6 +64,11 @@ class GenartCatalogTest {
         assertEquals(GenartEngineId.Matrix, GenartCatalog.engineForId("genart.matrix"))
         assertEquals(GenartEngineId.DriftingHalos, GenartCatalog.engineForId("genart.driftinghalos"))
         assertEquals(GenartEngineId.Superdrive, GenartCatalog.engineForId("genart.superdrive"))
+        assertEquals(GenartEngineId.Fireworks, GenartCatalog.engineForId("genart.fireworks"))
+        assertEquals(GenartEngineId.AtmosphericAsteroid, GenartCatalog.engineForId("genart.atmosphericasteroid"))
+        assertEquals(GenartEngineId.SaturnRings, GenartCatalog.engineForId("genart.saturnrings"))
+        assertEquals(GenartEngineId.LavaSun, GenartCatalog.engineForId("genart.lavasun"))
+        assertEquals(GenartEngineId.Moon, GenartCatalog.engineForId("genart.moon"))
     }
 
     @Test
@@ -119,5 +124,10 @@ class GenartCatalogTest {
         assertEquals("#93 - Matrix Rain", GenartCatalog.entries().first { it.id == "genart.matrix" }.title)
         assertEquals("#94 - Moving Halos", GenartCatalog.entries().first { it.id == "genart.driftinghalos" }.title)
         assertEquals("#95 - Superdrive Vibes", GenartCatalog.entries().first { it.id == "genart.superdrive" }.title)
+        assertEquals("#96 - Soft Fireworks", GenartCatalog.entries().first { it.id == "genart.fireworks" }.title)
+        assertEquals("#97 - Atmospheric Asteroid", GenartCatalog.entries().first { it.id == "genart.atmosphericasteroid" }.title)
+        assertEquals("#98 - Saturn and Rings", GenartCatalog.entries().first { it.id == "genart.saturnrings" }.title)
+        assertEquals("#99 - Lava Sun", GenartCatalog.entries().first { it.id == "genart.lavasun" }.title)
+        assertEquals("#100 - Full Moon", GenartCatalog.entries().first { it.id == "genart.moon" }.title)
     }
 }

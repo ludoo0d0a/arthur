@@ -289,6 +289,7 @@ private val GENART_WEATHER_IDS = setOf(
     GenartSource.ECLIPSE_CORONA,
     GenartSource.FIRE,
     GenartSource.AURORA_WASH,
+    GenartSource.FIREWORKS,
 )
 
 private val GENART_NATURE_IDS = setOf(
@@ -386,6 +387,10 @@ private val GENART_PLANETS_IDS = setOf(
     GenartSource.ASTEROIDS,
     GenartSource.CONTINENTS,
     GenartSource.HALO_ECLIPSE,
+    GenartSource.ATMOSPHERIC_ASTEROID,
+    GenartSource.SATURN_RINGS,
+    GenartSource.LAVA_SUN,
+    GenartSource.MOON,
 )
 
 private val GENART_SCIFI_IDS = setOf(
@@ -404,6 +409,10 @@ private val GENART_SCIFI_IDS = setOf(
     GenartSource.VORTEX_GLOW,
     GenartSource.MATRIX,
     GenartSource.SUPERDRIVE,
+    GenartSource.FIREWORKS,
+    GenartSource.ATMOSPHERIC_ASTEROID,
+    GenartSource.SATURN_RINGS,
+    GenartSource.LAVA_SUN,
 )
 
 private val GENART_ABSTRACT_IDS = setOf(

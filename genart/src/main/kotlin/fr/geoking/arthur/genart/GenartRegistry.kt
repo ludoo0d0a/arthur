@@ -1277,9 +1277,12 @@ object GenartRegistry {
             },
             renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
                 MatrixStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
             id = GenartEngineId.DriftingHalos,
             stableId = "genart.driftinghalos",
-            title = "#93 - Moving Halos",
+            title = "#94 - Moving Halos",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 DriftingHalosEngine(isActive, palette, quality, brightness, speed, modifier)
             },

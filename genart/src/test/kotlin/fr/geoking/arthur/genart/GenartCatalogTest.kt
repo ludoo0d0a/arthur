@@ -116,6 +116,6 @@ class GenartCatalogTest {
         assertEquals("#87 - Paper-Cut Pack", GenartCatalog.entries().first { it.id == "genart.papercut" }.title)
         assertEquals("#88 - Diamond Weave", GenartCatalog.entries().first { it.id == "genart.diamondweave" }.title)
         assertEquals("#93 - Matrix Rain", GenartCatalog.entries().first { it.id == "genart.matrix" }.title)
-        assertEquals("#93 - Moving Halos", GenartCatalog.entries().first { it.id == "genart.driftinghalos" }.title)
+        assertEquals("#94 - Moving Halos", GenartCatalog.entries().first { it.id == "genart.driftinghalos" }.title)
     }
 }

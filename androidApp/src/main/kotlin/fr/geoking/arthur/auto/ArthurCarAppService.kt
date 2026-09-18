@@ -129,6 +129,21 @@ class ArthurCarAppService : CarAppService() {
 
 class ArthurCarSession : Session() {
     override fun onCreateScreen(intent: Intent): Screen {
+        val uri = intent.data
+        val artworkId = intent.getStringExtra("artwork_id")
+            ?: uri?.getQueryParameter("artwork_id")
+            ?: uri?.getQueryParameter("id")
+        if (artworkId != null) {
+            val familyStr = intent.getStringExtra("pack_family")
+                ?: uri?.getQueryParameter("family")
+            val family = familyStr?.let { runCatching { PackFamily.valueOf(it) }.getOrNull() }
+                ?: PackFamily.Museum
+            return ArtworkPaneScreen(
+                carContext,
+                packSelection = PackSelection(family),
+                initialArtworkId = artworkId,
+            )
+        }
         return PackSelectionScreen(carContext)
     }
 }
@@ -229,6 +244,7 @@ class SubPackSelectionScreen(
 class ArtworkPaneScreen(
     carContext: CarContext,
     val packSelection: PackSelection = PackSelection(PackFamily.Museum),
+    val initialArtworkId: String? = null,
 ) : Screen(carContext), KoinComponent {
     private val contentEngine: ContentEngine by inject()
     private val rotationSettings: RotationSettings by inject()
@@ -268,7 +284,12 @@ class ArtworkPaneScreen(
             }
             catalog = resolvePackPool(fullCatalog, packSelection).ifEmpty { fullCatalog }
             runCatching {
-                current = resolveAmbientArtwork(catalog, null)
+                current = if (initialArtworkId != null) {
+                    catalog.firstOrNull { it.id == initialArtworkId }
+                        ?: resolveAmbientArtwork(catalog, null)
+                } else {
+                    resolveAmbientArtwork(catalog, null)
+                }
                 scheduleAsyncRender()
                 if (isPlaying) startRotation()
             }

@@ -50,7 +50,8 @@ class AmbientActivity : ComponentActivity() {
         )
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         val requested = intentArtwork()
-        val rotate = intent.getBooleanExtra(EXTRA_ROTATE, false)
+        val rotate = intent.getBooleanExtra(EXTRA_ROTATE, false) ||
+            intent.data?.getQueryParameter("rotate")?.toBooleanStrictOrNull() == true
         val stashedPool = if (rotate) AmbientRotationLaunch.pool else emptyList()
         val fallbackTitle = getString(R.string.app_name)
         setContent {
@@ -134,18 +135,32 @@ class AmbientActivity : ComponentActivity() {
     }
 
     private fun intentArtwork(): Artwork? {
-        val id = intent.getStringExtra(EXTRA_ARTWORK_ID) ?: return null
-        val kind = intent.getStringExtra(EXTRA_ARTWORK_KIND)
-            ?.let { runCatching { ArtworkKind.valueOf(it) }.getOrNull() }
+        val uri = intent.data
+        val id = intent.getStringExtra(EXTRA_ARTWORK_ID)
+            ?: uri?.getQueryParameter("artwork_id")
+            ?: uri?.getQueryParameter("id")
+            ?: return null
+        val kindStr = intent.getStringExtra(EXTRA_ARTWORK_KIND)
+            ?: uri?.getQueryParameter("artwork_kind")
+            ?: uri?.getQueryParameter("kind")
+        val kind = kindStr?.let { runCatching { ArtworkKind.valueOf(it) }.getOrNull() }
             ?: ArtworkKind.Genart
         return Artwork(
             id = id,
-            title = intent.getStringExtra(EXTRA_ARTWORK_TITLE) ?: id,
-            attribution = intent.getStringExtra(EXTRA_ATTRIBUTION).orEmpty(),
-            sourceId = intent.getStringExtra(EXTRA_SOURCE_ID).orEmpty(),
+            title = intent.getStringExtra(EXTRA_ARTWORK_TITLE)
+                ?: uri?.getQueryParameter("artwork_title")
+                ?: uri?.getQueryParameter("title")
+                ?: id,
+            attribution = intent.getStringExtra(EXTRA_ATTRIBUTION)
+                ?: uri?.getQueryParameter("attribution").orEmpty(),
+            sourceId = intent.getStringExtra(EXTRA_SOURCE_ID)
+                ?: uri?.getQueryParameter("source_id")
+                ?: uri?.getQueryParameter("source").orEmpty(),
             kind = kind,
-            remoteUrl = intent.getStringExtra(EXTRA_REMOTE_URL),
-            localPath = intent.getStringExtra(EXTRA_LOCAL_PATH),
+            remoteUrl = intent.getStringExtra(EXTRA_REMOTE_URL)
+                ?: uri?.getQueryParameter("remote_url"),
+            localPath = intent.getStringExtra(EXTRA_LOCAL_PATH)
+                ?: uri?.getQueryParameter("local_path"),
         )
     }
 

@@ -52,6 +52,37 @@ class ArthurCarAppTest {
     }
 
     @Test
+    fun session_onCreateScreen_withArtworkId_returnsArtworkPaneScreenWithInitialId() {
+        val service = ArthurCarAppService()
+        val session = service.onCreateSession()
+        val intent = android.content.Intent().apply {
+            putExtra("artwork_id", "genart.particles")
+            putExtra("pack_family", "Genart")
+        }
+        val screen = session.onCreateScreen(intent)
+        assertNotNull(screen)
+        assertTrue(screen is ArtworkPaneScreen)
+        val paneScreen = screen as ArtworkPaneScreen
+        assertEquals("genart.particles", paneScreen.initialArtworkId)
+        assertEquals(fr.geoking.arthur.ui.components.PackFamily.Genart, paneScreen.packSelection.family)
+    }
+
+    @Test
+    fun session_onCreateScreen_withDeepLinkData_returnsArtworkPaneScreenWithInitialId() {
+        val service = ArthurCarAppService()
+        val session = service.onCreateSession()
+        val intent = android.content.Intent().apply {
+            data = android.net.Uri.parse("arthur://ambient?artwork_id=rijks-SK-C-5&family=Museum")
+        }
+        val screen = session.onCreateScreen(intent)
+        assertNotNull(screen)
+        assertTrue(screen is ArtworkPaneScreen)
+        val paneScreen = screen as ArtworkPaneScreen
+        assertEquals("rijks-SK-C-5", paneScreen.initialArtworkId)
+        assertEquals(fr.geoking.arthur.ui.components.PackFamily.Museum, paneScreen.packSelection.family)
+    }
+
+    @Test
     fun packSelectionScreen_buildsSectionedGridWithExtraLargeItems() {
         val owner = object : androidx.lifecycle.LifecycleOwner {
             override val lifecycle = androidx.lifecycle.LifecycleRegistry(this)

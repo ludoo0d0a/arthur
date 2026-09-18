@@ -40,6 +40,20 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="arthur" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="arthur.geoking.fr" />
+            </intent-filter>
         </activity>
 
         <meta-data
@@ -49,7 +63,25 @@
         <activity
             android:name=".tv.AmbientActivity"
             android:exported="true"
-            android:theme="@style/Theme.Arthur" />
+            android:theme="@style/Theme.Arthur">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="arthur"
+                    android:host="ambient" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="arthur.geoking.fr"
+                    android:pathPrefix="/ambient" />
+            </intent-filter>
+        </activity>
 
         <!-- Browse-only Auto MediaBrowserService (no startForeground). Re-add
              FOREGROUND_SERVICE_MEDIA_PLAYBACK + foregroundServiceType when

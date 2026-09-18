@@ -78,6 +78,7 @@ class MainActivity : ComponentActivity() {
             Configuration.UI_MODE_TYPE_TELEVISION
 
         inAppUpdateHelper.checkForUpdate()
+        handleDeepLinkIntent(intent)
 
         setContent {
             ArthurTheme {
@@ -212,6 +213,28 @@ class MainActivity : ComponentActivity() {
                         CheckFeedback.None -> Unit
                     }
                 }
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        handleDeepLinkIntent(intent)
+    }
+
+    private fun handleDeepLinkIntent(intent: android.content.Intent?) {
+        val uri = intent?.data ?: return
+        if (intent.action == android.content.Intent.ACTION_VIEW) {
+            val isAmbient = uri.host == "ambient" ||
+                uri.path?.contains("/ambient") == true ||
+                uri.getQueryParameter("mode") == "ambient" ||
+                uri.getQueryParameter("artwork_id") != null ||
+                uri.getQueryParameter("id") != null
+            if (isAmbient) {
+                val ambientIntent = android.content.Intent(this, AmbientActivity::class.java).apply {
+                    data = uri
+                }
+                startActivity(ambientIntent)
             }
         }
     }

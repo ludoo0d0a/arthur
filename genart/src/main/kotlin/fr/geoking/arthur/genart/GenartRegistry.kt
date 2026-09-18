@@ -4,6 +4,7 @@ import android.graphics.Canvas
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import fr.geoking.arthur.genart.engines.SuperdriveEngine
 import fr.geoking.arthur.genart.engines.DriftingHalosEngine
 import fr.geoking.arthur.genart.engines.AntTrailsEngine
 import fr.geoking.arthur.genart.engines.AuroraWashEngine
@@ -100,6 +101,7 @@ import fr.geoking.arthur.genart.engines.WarpStreakEngine
 import fr.geoking.arthur.genart.engines.WaterfallMistEngine
 import fr.geoking.arthur.genart.engines.WavesEngine
 import fr.geoking.arthur.genart.engines.WindChimeEngine
+import fr.geoking.arthur.genart.stills.SuperdriveStill
 import fr.geoking.arthur.genart.stills.DriftingHalosStill
 import fr.geoking.arthur.genart.stills.AntTrailsStill
 import fr.geoking.arthur.genart.stills.AuroraWashStill
@@ -1277,14 +1279,28 @@ object GenartRegistry {
             },
             renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
                 MatrixStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
             id = GenartEngineId.DriftingHalos,
             stableId = "genart.driftinghalos",
-            title = "#93 - Moving Halos",
+            title = "#94 - Moving Halos",
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 DriftingHalosEngine(isActive, palette, quality, brightness, speed, modifier)
             },
             renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
                 DriftingHalosStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.Superdrive,
+            stableId = "genart.superdrive",
+            title = "#95 - Superdrive Vibes",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                SuperdriveEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                SuperdriveStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
             },
         ),
     )

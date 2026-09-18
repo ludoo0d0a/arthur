@@ -114,6 +114,8 @@ class GenartSource(
         const val PAPER_CUT_PACK = "genart.papercut"
         const val DIAMOND_WEAVE = "genart.diamondweave"
         const val MATRIX = "genart.matrix"
+        const val DRIFTING_HALOS = "genart.driftinghalos"
+        const val SUPERDRIVE = "genart.superdrive"
 
         fun defaultCatalog(): List<Artwork> = listOf(
             entry(PARTICLES, "#1 - Drifting Particles"),
@@ -211,6 +213,8 @@ class GenartSource(
             entry(PAPER_CUT_PACK, "#87 - Paper-Cut Pack"),
             entry(DIAMOND_WEAVE, "#88 - Diamond Weave"),
             entry(MATRIX, "#93 - Matrix Rain"),
+            entry(DRIFTING_HALOS, "#94 - Moving Halos"),
+            entry(SUPERDRIVE, "#95 - Superdrive Vibes"),
         )
 
         private fun entry(id: String, title: String) = Artwork(

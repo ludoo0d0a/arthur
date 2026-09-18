@@ -134,6 +134,15 @@ class FilterChipRowsTest {
     }
 
     @Test
+    fun genartAll_matchesAllGenartAndFractalItems() {
+        val filtered = catalog.filterByCategoryAndSources(
+            CategoryFilter.GENART,
+            genartTopic = GenartTopic.All,
+        )
+        assertEquals(catalog.filter { CategoryFilter.GENART.matches(it.kind) }.map { it.id }, filtered.map { it.id })
+    }
+
+    @Test
     fun genartCategory_includesFractalKinds() {
         assertTrue(CategoryFilter.GENART.matches(ArtworkKind.Genart))
         assertTrue(CategoryFilter.GENART.matches(ArtworkKind.FractalPreset))
@@ -328,7 +337,7 @@ class FilterChipRowsTest {
     fun allGenartsInDefaultCatalog_matchedByAtLeastOneCategoryPackAndRandomMatchesAll() {
         val fullGenartCatalog = GenartSource.defaultCatalog()
         val categoryTopics = GenartTopic.entries.filter {
-            it != GenartTopic.Random && it != GenartTopic.Fractal && it != GenartTopic.Custom
+            it != GenartTopic.All && it != GenartTopic.Random && it != GenartTopic.Fractal && it != GenartTopic.Custom
         }
 
         for (art in fullGenartCatalog) {

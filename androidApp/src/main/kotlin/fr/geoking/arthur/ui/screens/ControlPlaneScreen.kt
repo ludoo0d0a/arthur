@@ -3,6 +3,7 @@ package fr.geoking.arthur.ui.screens
 import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -11,13 +12,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -57,13 +63,16 @@ import fr.geoking.arthur.source.MuseumSearchSettings
 import fr.geoking.arthur.source.ScreensaverSettings
 import fr.geoking.arthur.source.StockPhotoSettings
 import fr.geoking.arthur.source.rememberArtworkImageCache
+import fr.geoking.arthur.ui.components.ArtworkCard
 import fr.geoking.arthur.ui.components.ControlPlaneHeader
 import org.koin.core.context.GlobalContext
+import fr.geoking.arthur.ui.components.GenartTopic
 import fr.geoking.arthur.ui.components.PackFamily
 import fr.geoking.arthur.ui.components.PackGrid
 import fr.geoking.arthur.ui.components.PackSelection
 import fr.geoking.arthur.ui.components.PackTile
 import fr.geoking.arthur.ui.components.allowsGenerativeAmbientFallback
+import fr.geoking.arthur.ui.components.genartTopicOrNull
 import fr.geoking.arthur.ui.components.homeTile
 import fr.geoking.arthur.ui.components.isGenartCustom
 import fr.geoking.arthur.ui.components.museumTopicOrNull
@@ -183,9 +192,7 @@ fun ControlPlaneScreen(
         catalog = catalog,
         onOpenFamily = { family ->
             openedFamily = family
-            // "random" is every family's default sub-pack — every Random tile shares this
-            // id — so opening a family highlights it instead of leaving nothing selected.
-            selection = PackSelection(family, "random")
+            selection = PackSelection(family, if (family == PackFamily.Genart) "all" else "random")
         },
         onSelectSubPack = { selection = it },
         onBackToHome = { openedFamily = null },
@@ -218,6 +225,12 @@ fun ControlPlaneScreen(
                 }
             onStartAmbient(chosen, pool, renewIds)
         },
+        onStartAmbientArtwork = { artwork ->
+            syncSourceSettings()
+            val renewIds = selection.sourceIdsForAmbientLoad()
+            val pool = resolvePackPool(catalog, selection)
+            onStartAmbient(artwork, pool, renewIds)
+        },
         modifier = modifier,
         onCreateCustomFractal = onCreateCustomFractal,
         onOpenSettings = onOpenSettings,
@@ -239,6 +252,7 @@ fun ControlPlaneContent(
     onSelectSubPack: (PackSelection) -> Unit,
     onBackToHome: () -> Unit,
     onStartAmbient: () -> Unit,
+    onStartAmbientArtwork: (Artwork) -> Unit = {},
     modifier: Modifier = Modifier,
     catalog: List<Artwork> = emptyList(),
     startingAmbient: Boolean = false,
@@ -275,6 +289,7 @@ fun ControlPlaneContent(
                 onSelectSubPack = onSelectSubPack,
                 onBackToHome = onBackToHome,
                 onStartAmbient = onStartAmbient,
+                onStartAmbientArtwork = onStartAmbientArtwork,
                 modifier = Modifier.fillMaxSize(),
                 catalog = catalog,
                 onCreateCustomFractal = onCreateCustomFractal,
@@ -293,12 +308,14 @@ private fun PhoneControlPlaneContent(
     onSelectSubPack: (PackSelection) -> Unit,
     onBackToHome: () -> Unit,
     onStartAmbient: () -> Unit,
+    onStartAmbientArtwork: (Artwork) -> Unit,
     modifier: Modifier = Modifier,
     catalog: List<Artwork> = emptyList(),
     onCreateCustomFractal: (() -> Unit)? = null,
     onOpenSettings: (() -> Unit)? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
+    var searchQuery by remember(openedFamily, selection) { mutableStateOf("") }
     BackHandler(enabled = openedFamily != null) {
         onBackToHome()
     }
@@ -377,6 +394,9 @@ private fun PhoneControlPlaneContent(
                         Text(stringResource(R.string.custom_fractal_create))
                     }
                 }
+                val isGenartAll = openedFamily == PackFamily.Genart &&
+                    selection.genartTopicOrNull() == GenartTopic.All
+
                 PackGrid(
                     tiles = openedFamily.subPackTiles(catalog),
                     selected = selection,
@@ -387,14 +407,73 @@ private fun PhoneControlPlaneContent(
                             onSelectSubPack(tile.selection)
                         }
                     },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(if (isGenartAll) 0.38f else 1f),
                     contentPadding = PaddingValues(
                         start = 20.dp,
                         end = 20.dp,
                         top = 8.dp,
-                        bottom = 24.dp,
+                        bottom = if (isGenartAll) 8.dp else 24.dp,
                     ),
                 )
+
+                if (isGenartAll) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 4.dp)
+                            .testTag("genart_search_input"),
+                        placeholder = { Text(stringResource(R.string.search_genart_placeholder)) },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = null,
+                            )
+                        },
+                        trailingIcon = {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(
+                                    onClick = { searchQuery = "" },
+                                    modifier = Modifier.testTag("genart_search_clear"),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Clear,
+                                        contentDescription = stringResource(R.string.custom_fractal_clear),
+                                    )
+                                }
+                            }
+                        },
+                        singleLine = true,
+                        shape = MaterialTheme.shapes.large,
+                    )
+
+                    val allGenarts = remember(catalog, selection) { resolvePackPool(catalog, selection) }
+                    val filteredGenarts = remember(allGenarts, searchQuery) {
+                        if (searchQuery.isBlank()) {
+                            allGenarts
+                        } else {
+                            allGenarts.filter { it.title.contains(searchQuery, ignoreCase = true) }
+                        }
+                    }
+
+                    LazyColumn(
+                        modifier = Modifier
+                            .weight(0.62f)
+                            .fillMaxWidth()
+                            .testTag("genart_all_list"),
+                        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        items(filteredGenarts, key = { it.id }) { artwork ->
+                            ArtworkCard(
+                                artwork = artwork,
+                                selected = false,
+                                onClick = { onStartAmbientArtwork(artwork) },
+                            )
+                        }
+                    }
+                }
             }
         }
     }

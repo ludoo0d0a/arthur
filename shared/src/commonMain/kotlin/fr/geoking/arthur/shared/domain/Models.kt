@@ -99,7 +99,7 @@ data class FreeTierLimits(
      * late topics (Abstract Tapet engines, Weather, Planets) are not empty —
      * Genart is on-device procedural, so a tight prefix cap only hides packs.
      */
-    val maxGenart: Int = 96,
+    val maxGenart: Int = 120,
 )
 
 /** Scheduled sequence shown on a Canvas. */

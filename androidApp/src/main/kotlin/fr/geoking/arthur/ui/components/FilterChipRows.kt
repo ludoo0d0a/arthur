@@ -84,6 +84,7 @@ enum class GenartTopic(
     @get:StringRes val labelRes: Int,
     val testTagSuffix: String,
 ) {
+    All(R.string.category_all, "all"),
     Random(R.string.stock_topic_random, "random"),
     Tapet(R.string.genart_topic_tapet, "tapet"),
     Nature(R.string.genart_topic_nature, "nature"),
@@ -234,6 +235,7 @@ fun List<Artwork>.canLoadMoreCatalog(visibleCount: Int): Boolean =
     visibleCount < size
 
 fun matchesGenartTopic(art: Artwork, topic: GenartTopic): Boolean = when (topic) {
+    GenartTopic.All -> true
     GenartTopic.Random -> true
     GenartTopic.Tapet -> art.id in GENART_TAPET_IDS
     GenartTopic.Nature -> art.id in GENART_NATURE_IDS

@@ -12,7 +12,7 @@ import kotlin.random.Random
 
 /** Bakes one frozen frame of Chromatic Blobs for Auto/Ambient album art. */
 internal object ChromaticBlobsStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
 
     fun draw(
         canvas: Canvas,

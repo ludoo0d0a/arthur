@@ -49,7 +49,7 @@ internal fun GalleryHero(
                         ArtworkRenderer(
                             artwork = artwork,
                             isActive = true,
-                            quality = GenartQuality.Low,
+                            quality = GenartQuality.Medium,
                             modifier = Modifier
                                 .fillMaxSize()
                                 .testTag("gallery_hero_artwork"),

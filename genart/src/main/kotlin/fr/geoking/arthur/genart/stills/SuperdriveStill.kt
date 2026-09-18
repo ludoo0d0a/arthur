@@ -14,7 +14,7 @@ import kotlin.random.Random
 
 /** Bakes one frozen frame of Superdrive Vibes for Auto/Ambient album art. */
 internal object SuperdriveStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG).apply {
         isDither = true
     }
 

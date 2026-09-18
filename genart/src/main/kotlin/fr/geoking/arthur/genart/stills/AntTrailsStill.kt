@@ -12,7 +12,7 @@ import kotlin.random.Random
 
 /** Bakes one frozen frame of "Ant Trails" for Android Auto album art — deterministic per [generation]. */
 internal object AntTrailsStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
 
     fun draw(
         canvas: Canvas,

@@ -12,7 +12,7 @@ import kotlin.random.Random
 
 /** Bakes one frozen frame of Gradient Mesh for Auto/Ambient album art. */
 internal object GradientMeshStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
 
     fun draw(
         canvas: Canvas,

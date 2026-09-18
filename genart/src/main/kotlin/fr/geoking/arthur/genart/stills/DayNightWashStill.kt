@@ -12,7 +12,7 @@ import kotlin.random.Random
 
 /** Bakes one frozen frame of "Soft Day-Night Wash" for Auto/Ambient album art. */
 internal object DayNightWashStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
 
     fun draw(
         canvas: Canvas,

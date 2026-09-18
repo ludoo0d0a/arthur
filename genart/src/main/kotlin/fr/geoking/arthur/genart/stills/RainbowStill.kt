@@ -20,7 +20,7 @@ private val RainbowSpectrum = intArrayOf(
 
 /** Bakes one frozen frame of "Soft Rainbow" for Auto/Ambient album art. */
 internal object RainbowStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
     private val rect = RectF()
 
     fun draw(

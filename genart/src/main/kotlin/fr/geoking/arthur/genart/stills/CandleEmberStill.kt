@@ -12,7 +12,7 @@ import kotlin.math.sin
 
 /** Bakes one calm, cozy frame of a single candle-flame glow — deterministic for a given [generation]. */
 internal object CandleEmberStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
     private const val HALO_COUNT = 3
 
     fun draw(

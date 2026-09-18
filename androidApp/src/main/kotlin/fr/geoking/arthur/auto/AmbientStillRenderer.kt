@@ -29,7 +29,8 @@ import kotlin.random.Random
  * [generation] shifts the procedural seed so Ambient Rotation refreshes look distinct.
  */
 object AmbientStillRenderer {
-    const val SIZE = 720
+    /** Near-4K square bake (4K UHD short side) — avoids pixelation on Auto / TV / phone Ambient. */
+    const val SIZE = 2160
 
     fun renderToFile(
         artwork: Artwork,

@@ -7,13 +7,14 @@ import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Shader
 import fr.geoking.arthur.genart.AnimationPalette
+import fr.geoking.arthur.genart.GenartStillFx
 import kotlin.math.PI
 import kotlin.math.sin
 import kotlin.random.Random
 
 /** Bakes one frozen frame of "Star Field Parallax" for Auto/Ambient album art. */
 internal object StarFieldStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
 
     fun draw(
         canvas: Canvas,
@@ -42,9 +43,22 @@ internal object StarFieldStill {
 
         val drift = phase + rotationDeg * PI.toFloat() / 180f
 
-        drawLayer(canvas, rnd, w, h, minDim, count = 70, sizeScale = 1f, alphaScale = 0.7f, blurFrac = 0f, drift = drift, pulse = pulse, palette = palette, colorOffset = 0)
-        drawLayer(canvas, rnd, w, h, minDim, count = 26, sizeScale = 1.7f, alphaScale = 0.85f, blurFrac = 0.018f, drift = drift, pulse = pulse, palette = palette, colorOffset = 70)
-        drawLayer(canvas, rnd, w, h, minDim, count = 10, sizeScale = 2.6f, alphaScale = 1f, blurFrac = 0.045f, drift = drift, pulse = pulse, palette = palette, colorOffset = 96)
+        // Dense far / mid / near layers — random positions, soft glow on nearer stars.
+        drawLayer(canvas, rnd, w, h, minDim, count = 140, sizeScale = 1f, alphaScale = 0.75f, blurFrac = 0f, drift = drift, pulse = pulse, palette = palette, colorOffset = 0)
+        drawLayer(canvas, rnd, w, h, minDim, count = 48, sizeScale = 1.85f, alphaScale = 0.95f, blurFrac = 0.012f, drift = drift, pulse = pulse, palette = palette, colorOffset = 70)
+        drawLayer(canvas, rnd, w, h, minDim, count = 18, sizeScale = 2.9f, alphaScale = 1.15f, blurFrac = 0.032f, drift = drift, pulse = pulse, palette = palette, colorOffset = 96)
+
+        // Extra seeded sparkle dust for near-4K richness.
+        GenartStillFx.randomScatter(
+            canvas = canvas,
+            size = size,
+            seed = generation xor 0x51F1E17L,
+            count = 60,
+            minRadiusFrac = 0.0005f,
+            maxRadiusFrac = 0.0016f,
+            alphaRange = 0.15f..0.55f,
+            withGlow = true,
+        )
 
         paint.maskFilter = null
         val t = (generation % 480L).toFloat() / 480f
@@ -52,8 +66,9 @@ internal object StarFieldStill {
         if (edgeFade > 0.02f) {
             val sx = t * w
             val sy = (0.08f + (generation % 43L).toFloat() / 43f * 0.42f) * h
-            paint.color = Color.argb((0.55f * edgeFade * 255).toInt().coerceIn(0, 255), 255, 255, 255)
-            canvas.drawCircle(sx, sy, 0.02f * minDim, paint)
+            GenartStillFx.softGlow(canvas, sx, sy, 0.035f * minDim, Color.WHITE, 0.45f * edgeFade)
+            paint.color = Color.argb((0.7f * edgeFade * 255).toInt().coerceIn(0, 255), 255, 255, 255)
+            canvas.drawCircle(sx, sy, 0.006f * minDim, paint)
         }
         paint.alpha = 255
     }
@@ -81,16 +96,16 @@ internal object StarFieldStill {
             val twinkle = 0.5f + 0.5f * sin(drift * (0.5f + rnd.nextFloat() * 1.1f) + rnd.nextFloat() * 2f * PI.toFloat())
             val x = (((x0 + drift * 0.01f) % 1f) + 1f) % 1f * w
             val y = y0 * h
-            val radius = (0.008f + sizeUnit * 0.014f) * minDim * sizeScale
+            val radius = (0.0012f + sizeUnit * 0.0038f) * minDim * sizeScale
             val tint = palette.colorAt(colorOffset + i)
-            val alpha = (0.35f + 0.65f * pulse) * (0.4f + 0.6f * twinkle) * alphaScale
+            val alpha = (0.4f + 0.6f * pulse) * (0.45f + 0.55f * twinkle) * alphaScale
             paint.color = Color.argb(
                 (alpha * 255).toInt().coerceIn(0, 255),
                 (Color.red(tint) + 255) / 2,
                 (Color.green(tint) + 255) / 2,
                 (Color.blue(tint) + 255) / 2,
             )
-            canvas.drawCircle(x, y, radius, paint)
+            canvas.drawCircle(x, y, radius.coerceAtLeast(0.85f), paint)
         }
     }
 }

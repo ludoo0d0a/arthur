@@ -13,7 +13,7 @@ import kotlin.random.Random
 
 /** Bakes one frozen frame of the Rivers look for Auto album art. */
 internal object RiversStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
     private val path = Path()
 
     fun draw(

@@ -13,7 +13,7 @@ import kotlin.random.Random
 
 /** Bakes one frozen frame of "Reeds at Water's Edge" for Android Auto album art — deterministic per [generation]. */
 internal object ReedsStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
     private val path = Path()
 
     fun draw(

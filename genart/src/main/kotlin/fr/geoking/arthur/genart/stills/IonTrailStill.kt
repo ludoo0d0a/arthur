@@ -10,7 +10,7 @@ import kotlin.math.sin
 
 /** Bakes one frozen frame of "Ion Trail" for Auto/Ambient album art: starfield plus a comet head and its fading trail. */
 internal object IonTrailStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
 
     fun draw(
         canvas: Canvas,

@@ -10,7 +10,7 @@ import kotlin.random.Random
 
 /** Bakes one frozen frame of the Pond Ripples look for Auto album art. */
 internal object PondRipplesStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
 
     fun draw(
         canvas: Canvas,

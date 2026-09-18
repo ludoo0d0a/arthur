@@ -13,7 +13,7 @@ import kotlin.random.Random
 
 /** Bakes one frozen frame of Spectral Folds for Auto/Ambient album art. */
 internal object SpectralFoldsStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
 
     fun draw(
         canvas: Canvas,

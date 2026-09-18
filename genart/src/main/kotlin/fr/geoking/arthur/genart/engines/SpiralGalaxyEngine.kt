@@ -104,13 +104,13 @@ internal fun SpiralGalaxyEngine(
                     val r = (rNorm + star.radialJitter).coerceAtLeast(0f) * MAX_RADIUS_FRAC * minDim
                     val x = cx + r * cos(angle)
                     val y = cy + r * sin(angle)
-                    val radius = 0.6f + star.sizeUnit * 1.6f
+                    val radius = (0.0010f + star.sizeUnit * 0.0032f) * minDim
                     val base = TonalPalette.mix(Color.White, TonalPalette.pick(paletteColors, star.colorIndex), 0.2f)
                     val tint = TonalPalette.brightness(base, brightness)
                     val alpha = (star.alphaUnit * dim).coerceIn(0f, 1f)
                     drawCircle(
                         color = TonalPalette.withAlpha(tint, alpha),
-                        radius = radius,
+                        radius = radius.coerceAtLeast(0.9f),
                         center = Offset(x, y),
                     )
                 }

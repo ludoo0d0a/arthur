@@ -11,7 +11,7 @@ import kotlin.math.PI
 
 /** Bakes one frozen frame of the empty perspective "Roads" look for Auto/Ambient album art. */
 internal object RoadsStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
     private val path = Path()
     private const val MARKER_COUNT = 12
 

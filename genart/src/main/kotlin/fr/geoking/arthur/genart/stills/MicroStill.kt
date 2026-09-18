@@ -15,7 +15,7 @@ import kotlin.math.sin
  * (Julius has no Auto Micro surface).
  */
 internal object MicroStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
 
     fun draw(
         canvas: Canvas,

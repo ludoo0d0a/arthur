@@ -13,7 +13,7 @@ import kotlin.random.Random
 
 /** Bakes one frozen frame of "Grass in Wind" for Android Auto album art — deterministic per [generation]. */
 internal object GrassStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
     private val path = Path()
 
     fun draw(

@@ -9,7 +9,7 @@ import kotlin.math.sin
 
 /** Bakes one frozen frame of "Space Station Drift" — starfield backdrop plus a drifting station silhouette. */
 internal object SpaceStationDriftStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
 
     fun draw(
         canvas: Canvas,

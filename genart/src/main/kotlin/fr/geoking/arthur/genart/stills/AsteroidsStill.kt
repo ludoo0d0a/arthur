@@ -10,7 +10,7 @@ import kotlin.math.sin
 /** Bakes one frozen frame of "Asteroids" — starfield backdrop plus several tumbling rock silhouettes. */
 internal object AsteroidsStill {
     private const val ROCK_COUNT = 5
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
 
     fun draw(
         canvas: Canvas,

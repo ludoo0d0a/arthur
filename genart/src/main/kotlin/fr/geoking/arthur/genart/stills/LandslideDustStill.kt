@@ -14,7 +14,7 @@ import kotlin.random.Random
 
 /** Bakes one frozen frame of Soft Landslide Dust for Auto/Ambient album art. */
 internal object LandslideDustStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
 
     fun draw(
         canvas: Canvas,

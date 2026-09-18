@@ -78,7 +78,7 @@ internal fun NebulaEngine(
                 x = seededUnit(j * 11 + 5),
                 y = seededUnit(j * 23 + 9),
                 alpha = seededRange(j * 37 + 13, 0.15f, 0.85f),
-                size = seededRange(j * 43 + 17, 0.8f, 2.5f),
+                size = seededRange(j * 43 + 17, 0.0009f, 0.0032f),
                 isPink = j % 4 == 0,
                 isCyan = j % 3 == 0,
             )
@@ -102,6 +102,7 @@ internal fun NebulaEngine(
             drawRect(color = Color(0xFF03020A))
 
             // Draw starfield
+            val minDim = minOf(w, h)
             stars.forEach { star ->
                 val starColor = when {
                     star.isPink -> Color(0xFFF472B6)
@@ -110,7 +111,7 @@ internal fun NebulaEngine(
                 }
                 drawCircle(
                     color = starColor.copy(alpha = star.alpha * brightness.coerceIn(0.5f, 1.5f)),
-                    radius = star.size,
+                    radius = (star.size * minDim).coerceAtLeast(0.85f),
                     center = Offset(star.x * w, star.y * h),
                 )
             }

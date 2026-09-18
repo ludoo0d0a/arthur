@@ -11,7 +11,7 @@ import kotlin.random.Random
 
 /** Bakes one frozen frame of the Pebble Shore Wash look for Auto album art. */
 internal object PebbleShoreWashStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
     private val path = Path()
 
     fun draw(

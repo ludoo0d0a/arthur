@@ -11,7 +11,7 @@ import fr.geoking.arthur.genart.AnimationPalette
 
 /** Bakes one frozen frame of "Data Horizon" for Auto/Ambient album art — perspective grid, cool cross-fade tint. */
 internal object DataHorizonStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
 
     fun draw(
         canvas: Canvas,

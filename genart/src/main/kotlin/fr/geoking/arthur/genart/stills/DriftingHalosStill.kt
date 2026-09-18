@@ -11,7 +11,7 @@ import kotlin.random.Random
 
 /** Bakes one frozen frame of Drifting Halos for Auto/Ambient album art. */
 internal object DriftingHalosStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
 
     fun draw(
         canvas: Canvas,

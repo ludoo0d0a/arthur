@@ -12,7 +12,7 @@ import kotlin.random.Random
 
 /** Bakes one frozen frame of Moss Growth for Auto/Ambient album art. */
 internal object MossGrowthStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
     private const val MOSS_GREEN = 0xFF4C6B3A.toInt()
 
     fun draw(

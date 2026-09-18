@@ -10,7 +10,8 @@ import kotlin.math.max
  */
 object SafeBitmapDecoder {
     const val DEFAULT_MAX_SIDE = 2048
-    const val AMBIENT_STILL_MAX_SIDE = 720
+    /** Match [fr.geoking.arthur.auto.AmbientStillRenderer.SIZE] so ambient stills stay near-4K. */
+    const val AMBIENT_STILL_MAX_SIDE = 2160
 
     fun decodeFile(path: String, maxSide: Int = DEFAULT_MAX_SIDE): Bitmap? {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }

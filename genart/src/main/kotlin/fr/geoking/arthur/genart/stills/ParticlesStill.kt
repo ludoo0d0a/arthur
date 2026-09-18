@@ -16,7 +16,7 @@ import kotlin.random.Random
  * Ported from Julius ParticlesEffectSurface — deterministic for a given [seed].
  */
 internal object ParticlesStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
 
     fun draw(
         canvas: Canvas,

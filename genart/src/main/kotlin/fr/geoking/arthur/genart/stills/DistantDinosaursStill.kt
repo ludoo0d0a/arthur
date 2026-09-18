@@ -13,7 +13,7 @@ import kotlin.random.Random
 
 /** Bakes one frozen frame of the Distant Dinosaur Silhouettes engine for Auto/Ambient album art. */
 internal object DistantDinosaursStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
     private val path = Path()
     private val duskSkyTop = Color.rgb(0x24, 0x17, 0x36)
     private val duskSkyHorizon = Color.rgb(0x6B, 0x4A, 0x55)

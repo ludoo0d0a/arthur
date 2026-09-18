@@ -15,7 +15,7 @@ import kotlin.random.Random
 
 /** Bakes one frozen frame of "Rising Smoke" for Auto/Ambient album art. */
 internal object SmokeStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
     private const val WISP_COUNT = 6
 
     fun draw(

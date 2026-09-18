@@ -13,7 +13,7 @@ import kotlin.random.Random
 
 /** Bakes one static frame of "Soft Fields" for Android Auto album art — deterministic per [generation]. */
 internal object FieldsStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
     private val path = Path()
     private val wheatGold = Color.rgb(0xD9, 0xB6, 0x6B)
     private val sageGreen = Color.rgb(0x9C, 0xAA, 0x7A)

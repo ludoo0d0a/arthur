@@ -44,9 +44,9 @@ internal fun StarFieldEngine(
     speed: Float,
     modifier: Modifier = Modifier,
 ) {
-    val farCount = qualityCount(quality, low = 46, medium = 74, high = 110)
-    val midCount = qualityCount(quality, low = 16, medium = 26, high = 40)
-    val nearCount = qualityCount(quality, low = 6, medium = 9, high = 14)
+    val farCount = qualityCount(quality, low = 70, medium = 120, high = 190)
+    val midCount = qualityCount(quality, low = 24, medium = 42, high = 68)
+    val nearCount = qualityCount(quality, low = 10, medium = 16, high = 26)
 
     val farStars = remember(farCount) { starLayer(farCount, seedBase = 1) }
     val midStars = remember(midCount) { starLayer(midCount, seedBase = 2) }
@@ -114,15 +114,20 @@ internal fun StarFieldEngine(
             val edgeFade = sin(t * PI.toFloat()).coerceAtLeast(0f)
             val alpha = 0.55f * dim * edgeFade
             if (alpha > 0.01f) {
-                val trailLen = w * 0.02f
+                val minDim = size.minDimension
+                val trailLen = w * 0.025f
                 drawLine(
                     color = Color.White.copy(alpha = alpha * 0.6f),
                     start = Offset(x - trailLen, y),
                     end = Offset(x, y),
-                    strokeWidth = 1.4f,
+                    strokeWidth = (minDim * 0.0018f).coerceAtLeast(1.2f),
                     cap = StrokeCap.Round,
                 )
-                drawCircle(color = Color.White.copy(alpha = alpha), radius = 1.6f, center = Offset(x, y))
+                drawCircle(
+                    color = Color.White.copy(alpha = alpha),
+                    radius = (minDim * 0.0032f).coerceAtLeast(1.4f),
+                    center = Offset(x, y),
+                )
             }
         }
     }
@@ -160,13 +165,14 @@ private fun DrawScope.drawStarLayer(
         val x = phase01(star.xFrac + drift * driftScale) * w
         val y = star.yFrac * h
         val twinkle = 0.5f + 0.5f * sin01(twinkleAngle * star.twinkleFreq + star.twinklePhase)
-        val radius = (0.7f + star.sizeUnit * 1.6f) * sizeScale
+        val minDim = size.minDimension
+        val radius = (0.0011f + star.sizeUnit * 0.0034f) * minDim * sizeScale
         val base = TonalPalette.mix(Color.White, TonalPalette.pick(paletteColors, star.colorIndex), 0.18f)
         val tint = TonalPalette.brightness(base, brightness)
-        val alpha = (star.alphaUnit * (0.4f + 0.6f * twinkle) * alphaScale * dim).coerceIn(0f, 1f)
+        val alpha = (star.alphaUnit * (0.45f + 0.55f * twinkle) * alphaScale * dim).coerceIn(0f, 1f)
         drawCircle(
             color = TonalPalette.withAlpha(tint, alpha),
-            radius = radius,
+            radius = radius.coerceAtLeast(0.9f),
             center = Offset(x, y),
         )
     }

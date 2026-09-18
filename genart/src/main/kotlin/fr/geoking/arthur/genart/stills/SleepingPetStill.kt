@@ -11,7 +11,7 @@ import kotlin.math.sin
 
 /** Bakes one frozen frame of the "Sleeping Pet" curled silhouette for Auto/Ambient album art. */
 internal object SleepingPetStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
     private val bodyRect = RectF()
     private val darkBrown = Color.rgb(0x2A, 0x1D, 0x18)
 

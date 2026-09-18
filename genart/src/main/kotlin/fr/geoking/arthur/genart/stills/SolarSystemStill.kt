@@ -13,7 +13,7 @@ import kotlin.math.sin
 
 /** Bakes one frozen frame of "Solar System" for Auto/Ambient album art, over the star field backdrop. */
 internal object SolarSystemStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
     private val revolutionPool = floatArrayOf(11f, 7f, 5f, 3f, 2f)
 
     fun draw(

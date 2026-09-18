@@ -13,7 +13,7 @@ import kotlin.random.Random
 
 /** Bakes one frozen frame of Soft Ribbons for Auto/Ambient album art. */
 internal object SoftRibbonsStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
     private val path = Path()
 
     fun draw(

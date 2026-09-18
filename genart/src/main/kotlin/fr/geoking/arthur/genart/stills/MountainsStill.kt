@@ -13,7 +13,7 @@ import kotlin.random.Random
 
 /** Bakes one static frame of the Layered Mountains look for Auto album art. */
 internal object MountainsStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
     private val path = Path()
     private val hazeColor = Color.rgb(0x3B, 0x4A, 0x6B)
     private val moonColor = Color.rgb(0xF7, 0xF1, 0xDE)

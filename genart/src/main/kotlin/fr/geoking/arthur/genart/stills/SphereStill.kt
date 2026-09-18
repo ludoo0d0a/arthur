@@ -14,7 +14,7 @@ import kotlin.math.sin
 
 /** Ported from Julius SphereEffectSurface — single fixed frame. */
 internal object SphereStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
     private val path = Path()
 
     fun draw(

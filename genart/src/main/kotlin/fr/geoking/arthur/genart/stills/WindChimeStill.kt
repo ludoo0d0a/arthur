@@ -13,7 +13,7 @@ import kotlin.random.Random
 
 /** Bakes one frozen frame of "Wind Chime Silhouette" for Auto/Ambient album art. */
 internal object WindChimeStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
 
     fun draw(
         canvas: Canvas,

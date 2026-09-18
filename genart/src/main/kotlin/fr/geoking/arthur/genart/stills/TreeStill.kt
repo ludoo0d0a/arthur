@@ -13,7 +13,7 @@ import kotlin.random.Random
 
 /** Bakes one frozen frame of "Tree in Wind" for Android Auto album art — deterministic per [generation]. */
 internal object TreeStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
     private val trunkPath = Path()
 
     fun draw(

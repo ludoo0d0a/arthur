@@ -13,7 +13,7 @@ import kotlin.random.Random
 
 /** Bakes one static frame of City Night Lights for Auto/Ambient album art. */
 internal object CityLightsStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
     private val skylineColor = Color.rgb(0x06, 0x09, 0x12)
     private val windowWarm = Color.rgb(0xFF, 0xC8, 0x73)
     private const val BUILDING_COUNT = 16

@@ -13,7 +13,7 @@ import kotlin.random.Random
 
 /** Bakes one frozen frame of the Gerstner Ocean swell look for Auto album art. */
 internal object GerstnerOceanStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
     private val path = Path()
 
     fun draw(

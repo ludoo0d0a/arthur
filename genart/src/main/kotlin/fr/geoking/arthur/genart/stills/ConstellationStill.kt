@@ -12,7 +12,7 @@ import kotlin.random.Random
 
 /** Bakes one static frame of the Constellation Twinkle starfield for Auto album art. */
 internal object ConstellationStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
 
     fun draw(
         canvas: Canvas,

@@ -15,7 +15,7 @@ import kotlin.random.Random
 
 /** Bakes one calm frame of a towering flame — deterministic for a given [generation]. */
 internal object FireStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
     private const val TONGUE_COUNT = 5
 
     fun draw(

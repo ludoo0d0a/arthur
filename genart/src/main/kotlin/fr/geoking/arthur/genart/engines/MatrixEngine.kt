@@ -71,19 +71,19 @@ internal fun MatrixEngine(
     )
 
     val textPaint = remember {
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG).apply {
             typeface = Typeface.MONOSPACE
             textAlign = Paint.Align.CENTER
         }
     }
     val glowPaint = remember {
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG).apply {
             typeface = Typeface.MONOSPACE
             textAlign = Paint.Align.CENTER
         }
     }
     val haloPaint = remember {
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG).apply {
             style = Paint.Style.FILL
         }
     }

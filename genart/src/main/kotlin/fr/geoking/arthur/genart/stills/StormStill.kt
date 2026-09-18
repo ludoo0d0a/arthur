@@ -14,7 +14,7 @@ import kotlin.random.Random
 
 /** Bakes one frozen frame of "Soft Storm" for Auto/Ambient album art — blurred clouds + crisp rain. */
 internal object StormStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
 
     fun draw(
         canvas: Canvas,

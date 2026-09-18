@@ -69,7 +69,7 @@ fun ArtworkRenderer(
     artwork: Artwork,
     isActive: Boolean,
     modifier: Modifier = Modifier,
-    quality: GenartQuality = GenartQuality.Medium,
+    quality: GenartQuality = GenartQuality.High,
 ) {
     key(artwork.id) {
         Box(modifier = modifier.fillMaxSize()) {

@@ -21,7 +21,7 @@ private const val MAX_RADIUS_FRAC = 0.46f
 
 /** Bakes one frozen frame of Spiral Galaxy Drift for Auto/Ambient album art. */
 internal object SpiralGalaxyStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
 
     fun draw(
         canvas: Canvas,

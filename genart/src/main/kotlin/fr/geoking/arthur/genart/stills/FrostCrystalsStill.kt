@@ -13,7 +13,7 @@ import kotlin.random.Random
 
 /** Bakes one static frame of the First Frost Crystals sparkle scatter for Auto album art. */
 internal object FrostCrystalsStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
 
     fun draw(
         canvas: Canvas,

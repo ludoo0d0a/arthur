@@ -15,16 +15,16 @@ private const val MATRIX_CHARS = "ｦｱｳｴｵｶｷｹｺｻｼｽｾｿﾀ�
 
 /** Bakes one frozen frame of Matrix Rain for Auto/Ambient album art. */
 internal object MatrixStill {
-    private val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+    private val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
+    private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG).apply {
         typeface = Typeface.MONOSPACE
         textAlign = Paint.Align.CENTER
     }
-    private val glowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+    private val glowPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG).apply {
         typeface = Typeface.MONOSPACE
         textAlign = Paint.Align.CENTER
     }
-    private val haloPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+    private val haloPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG).apply {
         style = Paint.Style.FILL
     }
 

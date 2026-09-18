@@ -13,7 +13,7 @@ import kotlin.random.Random
 
 /** Bakes a high-density 4K space nebula with deep blues, vibrant pinks, and rich starfields. */
 internal object NebulaStill {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
 
     // Cosmic Blue and Pink/Magenta palette references
     private val cosmicBluePinkTones = intArrayOf(
@@ -150,52 +150,45 @@ internal object NebulaStill {
             paint.shader = null
         }
 
-        // 3. Multi-Tier Starfield
-        // Background Stardust (~160 small stars)
-        for (j in 0 until 160) {
+        // 3. Multi-Tier Starfield (fractions of minDim — crisp at near-4K, no pixel blocks)
+        for (j in 0 until 220) {
             val sx = rnd.nextFloat() * w
             val sy = rnd.nextFloat() * h
-            val a = 0.15f + rnd.nextFloat() * 0.55f
-            val starSize = 0.5f + rnd.nextFloat() * 1.2f
+            val a = 0.2f + rnd.nextFloat() * 0.55f
+            val starSize = (0.0007f + rnd.nextFloat() * 0.0018f) * minDim
             val tint = if (j % 4 == 0) 0xFFDB2777.toInt() else if (j % 3 == 0) 0xFF60A5FA.toInt() else 0xFFFFFFFF.toInt()
             paint.color = Color.argb((a * 255).toInt(), Color.red(tint), Color.green(tint), Color.blue(tint))
-            canvas.drawCircle(sx, sy, starSize, paint)
+            canvas.drawCircle(sx, sy, starSize.coerceAtLeast(0.8f), paint)
         }
 
-        // Medium Glowing Stars (~35 stars)
-        for (j in 0 until 35) {
+        for (j in 0 until 48) {
             val sx = rnd.nextFloat() * w
             val sy = rnd.nextFloat() * h
-            val a = 0.4f + rnd.nextFloat() * 0.5f
-            val coreSize = 1.2f + rnd.nextFloat() * 1.5f
-            val glowSize = coreSize * (2.5f + rnd.nextFloat() * 2f)
-
-            // Outer soft glow
+            val a = 0.45f + rnd.nextFloat() * 0.5f
+            val coreSize = (0.0016f + rnd.nextFloat() * 0.0024f) * minDim
+            val glowSize = coreSize * (2.8f + rnd.nextFloat() * 2.2f)
             paint.shader = RadialGradient(
                 sx, sy, glowSize,
-                intArrayOf(Color.argb((a * 120).toInt(), 255, 255, 255), Color.TRANSPARENT),
+                intArrayOf(Color.argb((a * 130).toInt(), 255, 255, 255), Color.TRANSPARENT),
                 floatArrayOf(0f, 1f),
                 Shader.TileMode.CLAMP,
             )
             canvas.drawCircle(sx, sy, glowSize, paint)
             paint.shader = null
-
-            // Crisp center
             paint.color = Color.argb((a * 255).toInt(), 255, 255, 255)
-            canvas.drawCircle(sx, sy, coreSize, paint)
+            canvas.drawCircle(sx, sy, coreSize.coerceAtLeast(1f), paint)
         }
 
-        // Prominent Flare Stars (~8 stars)
-        for (j in 0 until 8) {
+        for (j in 0 until 12) {
             val sx = rnd.nextFloat() * w
             val sy = rnd.nextFloat() * h
-            val flareLen = (12f + rnd.nextFloat() * 20f) * (minDim / 600f)
-            paint.color = Color.argb(180, 255, 255, 255)
-            paint.strokeWidth = 1.2f
+            val flareLen = (0.012f + rnd.nextFloat() * 0.02f) * minDim
+            paint.color = Color.argb(200, 255, 255, 255)
+            paint.strokeWidth = (0.0012f * minDim).coerceAtLeast(1.1f)
             canvas.drawLine(sx - flareLen, sy, sx + flareLen, sy, paint)
             canvas.drawLine(sx, sy - flareLen, sx, sy + flareLen, paint)
             paint.style = Paint.Style.FILL
-            canvas.drawCircle(sx, sy, 2.5f, paint)
+            canvas.drawCircle(sx, sy, (0.0028f * minDim).coerceAtLeast(1.6f), paint)
         }
 
         paint.alpha = 255

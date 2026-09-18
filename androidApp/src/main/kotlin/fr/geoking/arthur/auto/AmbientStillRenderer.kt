@@ -3,6 +3,7 @@ package fr.geoking.arthur.auto
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.RadialGradient
 import android.graphics.Rect
@@ -163,9 +164,108 @@ object AmbientStillRenderer {
     }
 
     private fun drawBitmapCover(canvas: Canvas, bmp: Bitmap) {
+        val (topColor, bottomColor) = extractGradientColors(bmp)
+
+        // 1. Draw full-screen Spotify-style linear gradient background
+        val gradientPaint = Paint().apply {
+            shader = LinearGradient(
+                0f,
+                0f,
+                0f,
+                SIZE.toFloat(),
+                topColor,
+                bottomColor,
+                Shader.TileMode.CLAMP,
+            )
+        }
+        canvas.drawRect(0f, 0f, SIZE.toFloat(), SIZE.toFloat(), gradientPaint)
+
+        // 2. Calculate aspect-fit destination rect with padding so background gradient is visible
+        val padding = (SIZE * 0.05f).toInt()
+        val maxDim = SIZE - 2 * padding
+        val scale = minOf(maxDim.toFloat() / bmp.width, maxDim.toFloat() / bmp.height)
+        val drawW = (bmp.width * scale).toInt().coerceAtLeast(1)
+        val drawH = (bmp.height * scale).toInt().coerceAtLeast(1)
+        val left = (SIZE - drawW) / 2
+        val top = (SIZE - drawH) / 2
+        val dstRect = Rect(left, top, left + drawW, top + drawH)
+
+        // 3. Draw subtle shadow under the artwork image for depth
+        val shadowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.argb(120, 0, 0, 0)
+        }
+        val shadowOffset = 8
+        val shadowRect = Rect(
+            (left - 4).coerceAtLeast(0),
+            (top + shadowOffset).coerceAtMost(SIZE),
+            (left + drawW + 4).coerceAtMost(SIZE),
+            (top + drawH + shadowOffset).coerceAtMost(SIZE),
+        )
+        canvas.drawRect(shadowRect, shadowPaint)
+
+        // 4. Draw the artwork bitmap aspect-fit
         val srcRect = Rect(0, 0, bmp.width, bmp.height)
-        val dstRect = Rect(0, 0, SIZE, SIZE)
-        canvas.drawBitmap(bmp, srcRect, dstRect, Paint(Paint.FILTER_BITMAP_FLAG))
+        canvas.drawBitmap(bmp, srcRect, dstRect, Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG))
+    }
+
+    internal fun extractGradientColors(bmp: Bitmap): Pair<Int, Int> {
+        val w = bmp.width
+        val h = bmp.height
+        var topR = 0L
+        var topG = 0L
+        var topB = 0L
+        var topCount = 0
+        var botR = 0L
+        var botG = 0L
+        var botB = 0L
+        var botCount = 0
+
+        val stepX = (w / 12).coerceAtLeast(1)
+        val stepY = (h / 12).coerceAtLeast(1)
+
+        for (y in 0 until (h / 3) step stepY) {
+            for (x in 0 until w step stepX) {
+                val pixel = bmp.getPixel(x, y)
+                topR += Color.red(pixel)
+                topG += Color.green(pixel)
+                topB += Color.blue(pixel)
+                topCount++
+            }
+        }
+
+        for (y in (2 * h / 3) until h step stepY) {
+            for (x in 0 until w step stepX) {
+                val pixel = bmp.getPixel(x, y)
+                botR += Color.red(pixel)
+                botG += Color.green(pixel)
+                botB += Color.blue(pixel)
+                botCount++
+            }
+        }
+
+        val topAvg = if (topCount > 0) {
+            Color.rgb((topR / topCount).toInt(), (topG / topCount).toInt(), (topB / topCount).toInt())
+        } else {
+            Color.rgb(30, 30, 45)
+        }
+
+        val botAvg = if (botCount > 0) {
+            Color.rgb((botR / botCount).toInt(), (botG / botCount).toInt(), (botB / botCount).toInt())
+        } else {
+            Color.rgb(10, 10, 20)
+        }
+
+        val topColor = adjustToSpotifyTone(topAvg, targetValue = 0.32f)
+        val botColor = adjustToSpotifyTone(botAvg, targetValue = 0.12f)
+        return Pair(topColor, botColor)
+    }
+
+    private fun adjustToSpotifyTone(color: Int, targetValue: Float): Int {
+        val hsv = FloatArray(3)
+        Color.colorToHSV(color, hsv)
+        hsv[1] = hsv[1].coerceIn(0.25f, 0.75f)
+        hsv[2] = targetValue
+        return Color.HSVToColor(hsv)
     }
 
     private fun drawCustomFractal(canvas: Canvas, artworkId: String, generation: Long) {

@@ -3,6 +3,7 @@ package fr.geoking.arthur.ui.components
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.source.BundledPackSource
+import fr.geoking.arthur.shared.source.FractalSource
 import fr.geoking.arthur.shared.source.GenartSource
 import fr.geoking.arthur.shared.source.MetSource
 import fr.geoking.arthur.shared.source.PexelsSource
@@ -353,6 +354,29 @@ class FilterChipRowsTest {
                 matchesGenartTopic(art, GenartTopic.Random),
             )
         }
+    }
+
+    @Test
+    fun fractalPresetDefaultCatalog_hasNumberedTitles() {
+        val defaultFractals = FractalSource.defaultCatalog()
+        assertEquals(8, defaultFractals.size)
+        assertTrue(defaultFractals.all { it.title.startsWith("#") })
+        assertEquals("#96 - Mandelbrot", defaultFractals.first().title)
+        assertEquals("#103 - Phoenix", defaultFractals.last().title)
+    }
+
+    @Test
+    fun genartTopicsFor_returnsMatchingTopicsForGenartAndFractals() {
+        val particles = catalog.first { it.id == GenartSource.PARTICLES }
+        val topics = genartTopicsFor(particles)
+        assertTrue(topics.contains(GenartTopic.Abstract))
+        assertTrue(topics.contains(GenartTopic.Geometry))
+
+        val julia = catalog.first { it.id == "fractal.julia" }
+        assertEquals(listOf(GenartTopic.Fractal), genartTopicsFor(julia))
+
+        val custom = catalog.first { it.id == "customfractal-1" }
+        assertEquals(listOf(GenartTopic.Custom), genartTopicsFor(custom))
     }
 
     @Test

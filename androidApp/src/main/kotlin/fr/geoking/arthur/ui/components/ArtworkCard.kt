@@ -51,6 +51,7 @@ internal fun ArtworkCard(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    subtitle: String? = null,
     selectOnFocus: Boolean = true,
     focusRequester: FocusRequester? = null,
 ) {
@@ -150,14 +151,15 @@ internal fun ArtworkCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                val displaySubtitle = subtitle ?: artwork.genartCategorySubtitle() ?: buildString {
+                    append(stringResource(visual.labelRes))
+                    if (artwork.attribution.isNotBlank()) {
+                        append(" · ")
+                        append(artwork.attribution)
+                    }
+                }
                 Text(
-                    text = buildString {
-                        append(stringResource(visual.labelRes))
-                        if (artwork.attribution.isNotBlank()) {
-                            append(" · ")
-                            append(artwork.attribution)
-                        }
-                    },
+                    text = displaySubtitle,
                     style = MaterialTheme.typography.bodyMedium,
                     color = metaColor,
                     maxLines = 1,

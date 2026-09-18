@@ -321,6 +321,7 @@ class ArtworkPaneScreen(
     private var current: Artwork? = null
     private var generation: Long = 0L
     private var isPlaying: Boolean = true
+    private var consecutiveAutoRotations: Int = 0
     private var rotationJob: Job? = null
     private var renderJob: Job? = null
     private var loaded: Boolean = false
@@ -391,12 +392,26 @@ class ArtworkPaneScreen(
         rotationJob = scope.launch {
             while (isActive) {
                 delay(rotationSettings.intervalMs.value)
-                if (isPlaying) advance(+1)
+                if (isPlaying) {
+                    consecutiveAutoRotations += 1
+                    if (consecutiveAutoRotations >= 3) {
+                        // After 3 auto-rotations (4th image shown), pause auto-rotation to respect Android Auto's step limit.
+                        isPlaying = false
+                        consecutiveAutoRotations = 0
+                        advance(+1, isAuto = true)
+                        rotationJob?.cancel()
+                    } else {
+                        advance(+1, isAuto = true)
+                    }
+                }
             }
         }
     }
 
-    fun advance(delta: Int) {
+    fun advance(delta: Int, isAuto: Boolean = false) {
+        if (!isAuto) {
+            consecutiveAutoRotations = 0
+        }
         if (catalog.isEmpty()) return
         val index = catalog.indexOfFirst { it.id == current?.id }.let { if (it < 0) 0 else it }
         val nextIndex = if (delta >= 0) {
@@ -414,6 +429,7 @@ class ArtworkPaneScreen(
 
     fun togglePlay() {
         isPlaying = !isPlaying
+        consecutiveAutoRotations = 0
         if (isPlaying) startRotation() else rotationJob?.cancel()
         invalidate()
     }
@@ -517,7 +533,7 @@ class ArtworkPaneScreen(
                             IconCompat.createWithResource(carContext, R.drawable.ic_car_previous),
                         ).build(),
                     )
-                    .setOnClickListener { advance(-1) }
+                    .setOnClickListener { advance(-1, isAuto = false) }
                     .build(),
             )
             .addAction(
@@ -527,7 +543,7 @@ class ArtworkPaneScreen(
                             IconCompat.createWithResource(carContext, R.drawable.ic_car_next),
                         ).build(),
                     )
-                    .setOnClickListener { advance(+1) }
+                    .setOnClickListener { advance(+1, isAuto = false) }
                     .build(),
             )
             .build()

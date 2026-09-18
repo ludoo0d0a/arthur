@@ -97,6 +97,7 @@ enum class GenartEngineId {
     DiamondWeave,
     Matrix,
     DriftingHalos,
+    Superdrive,
 }
 
 enum class GenartQuality { Low, Medium, High }

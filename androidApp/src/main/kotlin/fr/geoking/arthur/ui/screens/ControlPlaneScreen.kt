@@ -394,8 +394,7 @@ private fun PhoneControlPlaneContent(
                         Text(stringResource(R.string.custom_fractal_create))
                     }
                 }
-                val isGenartAll = openedFamily == PackFamily.Genart &&
-                    selection.genartTopicOrNull() == GenartTopic.All
+                val isGenartFamily = openedFamily == PackFamily.Genart
 
                 PackGrid(
                     tiles = openedFamily.subPackTiles(catalog),
@@ -407,16 +406,16 @@ private fun PhoneControlPlaneContent(
                             onSelectSubPack(tile.selection)
                         }
                     },
-                    modifier = Modifier.weight(if (isGenartAll) 0.38f else 1f),
+                    modifier = Modifier.weight(if (isGenartFamily) 0.38f else 1f),
                     contentPadding = PaddingValues(
                         start = 20.dp,
                         end = 20.dp,
                         top = 8.dp,
-                        bottom = if (isGenartAll) 8.dp else 24.dp,
+                        bottom = if (isGenartFamily) 8.dp else 24.dp,
                     ),
                 )
 
-                if (isGenartAll) {
+                if (isGenartFamily) {
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },

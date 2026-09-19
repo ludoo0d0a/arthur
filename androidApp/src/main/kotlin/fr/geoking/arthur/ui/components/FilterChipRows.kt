@@ -251,6 +251,20 @@ fun matchesGenartTopic(art: Artwork, topic: GenartTopic): Boolean = when (topic)
     GenartTopic.Custom -> art.kind == ArtworkKind.CustomFractal
 }
 
+fun genartTopicsFor(art: Artwork): List<GenartTopic> =
+    GenartTopic.entries.filter { topic ->
+        topic != GenartTopic.All && topic != GenartTopic.Random && matchesGenartTopic(art, topic)
+    }
+
+@Composable
+fun Artwork.genartCategorySubtitle(): String? {
+    if (!CategoryFilter.GENART.matches(kind)) return null
+    val topics = genartTopicsFor(this)
+    if (topics.isEmpty()) return null
+    val labels = topics.map { stringResource(it.labelRes) }
+    return labels.joinToString(", ")
+}
+
 private val GENART_TAPET_IDS = setOf(
     GenartSource.GRADIENT_MESH,
     GenartSource.BLOBS,

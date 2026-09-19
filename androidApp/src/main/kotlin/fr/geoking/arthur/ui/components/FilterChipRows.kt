@@ -315,6 +315,7 @@ private val GENART_NATURE_IDS = setOf(
     GenartSource.CANYON_DUNES,
     GenartSource.DRIFTING_POLLEN,
     GenartSource.WIND_CHIME,
+    GenartSource.FLOW_RIBBONS,
 )
 
 private val GENART_WATER_IDS = setOf(
@@ -413,6 +414,8 @@ private val GENART_SCIFI_IDS = setOf(
     GenartSource.ATMOSPHERIC_ASTEROID,
     GenartSource.SATURN_RINGS,
     GenartSource.LAVA_SUN,
+    GenartSource.SPIRAL_MANDALA,
+    GenartSource.CLIFFORD_WASH,
 )
 
 private val GENART_ABSTRACT_IDS = setOf(
@@ -440,6 +443,9 @@ private val GENART_ABSTRACT_IDS = setOf(
     GenartSource.MATRIX,
     GenartSource.DRIFTING_HALOS,
     GenartSource.SUPERDRIVE,
+    GenartSource.SPIRAL_MANDALA,
+    GenartSource.FLOW_RIBBONS,
+    GenartSource.CLIFFORD_WASH,
 )
 
 private val GENART_GEOMETRY_IDS = setOf(
@@ -458,6 +464,7 @@ private val GENART_GEOMETRY_IDS = setOf(
     GenartSource.DIAMOND_WEAVE,
     GenartSource.PRISMATIC_SHADOWS,
     GenartSource.DRIFTING_HALOS,
+    GenartSource.SPIRAL_MANDALA,
 )
 
 /** Random / other topics = remote photo search across capable Sources. */

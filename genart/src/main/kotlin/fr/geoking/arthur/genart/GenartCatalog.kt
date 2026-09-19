@@ -103,6 +103,9 @@ enum class GenartEngineId {
     SaturnRings,
     LavaSun,
     Moon,
+    SpiralMandala,
+    FlowRibbons,
+    CliffordWash,
 }
 
 enum class GenartQuality { Low, Medium, High }

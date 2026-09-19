@@ -10,6 +10,9 @@ import fr.geoking.arthur.genart.engines.AtmosphericAsteroidEngine
 import fr.geoking.arthur.genart.engines.SaturnRingsEngine
 import fr.geoking.arthur.genart.engines.LavaSunEngine
 import fr.geoking.arthur.genart.engines.MoonEngine
+import fr.geoking.arthur.genart.engines.SpiralMandalaEngine
+import fr.geoking.arthur.genart.engines.FlowRibbonsEngine
+import fr.geoking.arthur.genart.engines.CliffordWashEngine
 import fr.geoking.arthur.genart.engines.DriftingHalosEngine
 import fr.geoking.arthur.genart.engines.AntTrailsEngine
 import fr.geoking.arthur.genart.engines.AuroraWashEngine
@@ -112,6 +115,9 @@ import fr.geoking.arthur.genart.stills.AtmosphericAsteroidStill
 import fr.geoking.arthur.genart.stills.SaturnRingsStill
 import fr.geoking.arthur.genart.stills.LavaSunStill
 import fr.geoking.arthur.genart.stills.MoonStill
+import fr.geoking.arthur.genart.stills.SpiralMandalaStill
+import fr.geoking.arthur.genart.stills.FlowRibbonsStill
+import fr.geoking.arthur.genart.stills.CliffordWashStill
 import fr.geoking.arthur.genart.stills.DriftingHalosStill
 import fr.geoking.arthur.genart.stills.AntTrailsStill
 import fr.geoking.arthur.genart.stills.AuroraWashStill
@@ -1366,6 +1372,39 @@ object GenartRegistry {
             },
             renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
                 MoonStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.SpiralMandala,
+            stableId = "genart.spiralmandala",
+            title = "#101 - Spiral Mandala",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                SpiralMandalaEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                SpiralMandalaStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.FlowRibbons,
+            stableId = "genart.flowribbons",
+            title = "#102 - Flow Ribbons",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                FlowRibbonsEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                FlowRibbonsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.CliffordWash,
+            stableId = "genart.cliffordwash",
+            title = "#103 - Clifford Wash",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                CliffordWashEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                CliffordWashStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
             },
         ),
     )

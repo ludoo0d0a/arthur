@@ -278,8 +278,25 @@ Reuse this section when proposing engines, picking patterns, or choosing tooling
 
 ### Proposed Future Engine Concepts for Arthur (`:genart`)
 
-- `genart.spiralmandala` — *Spiral Mandala*: Multi-fold rotational symmetry pentagons/hexagons with breathing stroke width tapering and dual-spiral rotation.
-- `genart.slimegrowth` — *Slime Mold Network*: Soft Physarum Polycephalum transport network filaments slowly spreading and reorganizing.
-- `genart.differentialgrowth` — *Lichen Rim*: Expanding organic ribbon loop with self-repelling vertices, creating detailed lichen/coral-like folds.
-- `genart.wetwash` — *Watercolor Landscape*: Soft bleeding pigment patches accumulating into misty hill silhouettes.
-- `genart.hatching` — *Charcoal Hatching*: Dynamic directional line strokes shading soft geometric contours with organic charcoal physics.
+#### Shipped (analytic / loop-safe)
+
+- `genart.spiralmandala` — *Spiral Mandala*: N-fold rotational symmetry with Archimedean/log spiral arms, dual phase offset, breathing stroke taper + center glow.
+- `genart.flowribbons` — *Flow Ribbons*: Soft ink strokes advected on an fbm flow field (`flowAngle01`); positions recomputed from seed + phase (no trail buffer).
+- `genart.cliffordwash` — *Clifford Wash*: Clifford attractor points baked once in `remember`, dense soft dots with slow rotate/bloom.
+
+#### Parked (sim-heavy — impress but wrong cost for Ambient)
+
+- `genart.slimegrowth` — *Slime Mold Network*: Soft Physarum transport filaments (agent trails + diffusion).
+- `genart.differentialgrowth` — *Lichen Rim*: Expanding self-repelling ribbon loop.
+- `genart.wetwash` — *Watercolor Landscape*: Soft bleeding pigment patches (needs diffusion buffers).
+- `genart.hatching` — *Charcoal Hatching*: Directional stroke physics (many dynamic paths).
+- Gray-Scott reaction-diffusion, hydraulic erosion, AGSL flagships — keep for optional future GPU paths only.
+
+### Efficiency ranking (reuse filter for new proposals)
+
+| Tier | Style | Ship for Ambient? |
+|------|--------|-------------------|
+| **A — Analytic** | Polar math, prebaked attractors, `loopedFbm` / `flowAngle01`, remembered seeds | Yes — preferred |
+| **B — Light physics** | Shared wind scalar, short Verlet tips, Gerstner sines | Yes if capped by `qualityCount` |
+| **C — Field sims** | Physarum, Gray-Scott, differential growth, wet diffusion | Park — too heavy for phone/Auto loops |
+| **D — GPU shaders** | AGSL RuntimeShader | Flagship only, API 33+, Canvas fallback |

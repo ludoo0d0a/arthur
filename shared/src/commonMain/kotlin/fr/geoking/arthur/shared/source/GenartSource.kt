@@ -121,6 +121,9 @@ class GenartSource(
         const val SATURN_RINGS = "genart.saturnrings"
         const val LAVA_SUN = "genart.lavasun"
         const val MOON = "genart.moon"
+        const val SPIRAL_MANDALA = "genart.spiralmandala"
+        const val FLOW_RIBBONS = "genart.flowribbons"
+        const val CLIFFORD_WASH = "genart.cliffordwash"
 
         fun defaultCatalog(): List<Artwork> = listOf(
             entry(PARTICLES, "#1 - Drifting Particles"),
@@ -225,6 +228,9 @@ class GenartSource(
             entry(SATURN_RINGS, "#98 - Saturn and Rings"),
             entry(LAVA_SUN, "#99 - Lava Sun"),
             entry(MOON, "#100 - Full Moon"),
+            entry(SPIRAL_MANDALA, "#101 - Spiral Mandala"),
+            entry(FLOW_RIBBONS, "#102 - Flow Ribbons"),
+            entry(CLIFFORD_WASH, "#103 - Clifford Wash"),
         )
 
         private fun entry(id: String, title: String) = Artwork(

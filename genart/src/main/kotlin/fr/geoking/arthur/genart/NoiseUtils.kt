@@ -53,3 +53,10 @@ internal fun loopedFbm(t: Float, radius: Float = 1.6f, octaves: Int = 3, seedOff
     val y = sin(angle) * radius
     return fbm2D(x, y, octaves, seedOffset)
 }
+
+/**
+ * Angle (radians) of a 2D flow field at `(x, y)`, derived from [fbm2D] so particles/ribbons
+ * can follow organic vector streams without storing a grid. Result is in `[0, 2π)`.
+ */
+internal fun flowAngle01(x: Float, y: Float, seedOffset: Int = 0): Float =
+    fbm2D(x, y, octaves = 3, seedOffset = seedOffset) * 2f * PI.toFloat()

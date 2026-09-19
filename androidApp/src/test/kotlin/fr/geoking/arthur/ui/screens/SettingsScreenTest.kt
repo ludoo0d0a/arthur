@@ -5,6 +5,10 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.test.core.app.ApplicationProvider
+import android.content.Context
+import fr.geoking.arthur.R
 import fr.geoking.arthur.phone.theme.ArthurTheme
 import fr.geoking.arthur.shared.error.ErrorCategory
 import fr.geoking.arthur.shared.error.ErrorLogger
@@ -22,6 +26,8 @@ class SettingsScreenTest {
     @get:Rule
     val composeTestRule = createComposeRule()
 
+    private val context: Context get() = ApplicationProvider.getApplicationContext()
+
     @Test
     fun settingsScreen_whenShowDeveloperTrue_showsDeveloperMenu() {
         composeTestRule.setContent {
@@ -33,7 +39,8 @@ class SettingsScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Developer").assertIsDisplayed()
+        val text = context.getString(R.string.screen_developer)
+        composeTestRule.onNodeWithText(text).performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -47,7 +54,8 @@ class SettingsScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Developer").assertDoesNotExist()
+        val text = context.getString(R.string.screen_developer)
+        composeTestRule.onNodeWithText(text).assertDoesNotExist()
     }
 
     @Test

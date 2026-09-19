@@ -97,6 +97,21 @@ class ArthurMediaMappingTest {
     }
 
     @Test
+    fun sampleRotationPool_generativePool_preservesAllItems() {
+        val pool = (1..10).map { i ->
+            Artwork(
+                id = "genart-$i",
+                title = "Genart $i",
+                sourceId = GenartSource.ID,
+                kind = ArtworkKind.Genart,
+            )
+        }
+        val sampled = AmbientAlbumArt.sampleRotationPool(pool)
+        assertEquals(10, sampled.size)
+        assertEquals(pool.map { it.id }.toSet(), sampled.map { it.id }.toSet())
+    }
+
+    @Test
     fun authority_usesPackageSuffix() {
         assertEquals("fr.geoking.arthur.albumart", AmbientAlbumArt.authority("fr.geoking.arthur"))
     }

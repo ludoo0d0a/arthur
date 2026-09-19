@@ -120,9 +120,12 @@ fun AmbientScreenContent(
     onNeedRenewPool: (() -> Unit)? = null,
 ) {
     val rotatePool = remember(rotationPool) {
-        rotationPool
-            .filter { it.isAmbientDisplayable() }
-            .take(AmbientAlbumArt.MAX_AUTO_ROTATION_POOL)
+        val displayable = rotationPool.filter { it.isAmbientDisplayable() }
+        if (displayable.isNotEmpty() && displayable.all { it.isGenerative }) {
+            displayable
+        } else {
+            displayable.take(AmbientAlbumArt.MAX_AUTO_ROTATION_POOL)
+        }
     }
     val shouldRotate = rotatePool.size >= 2
     val configuration = LocalConfiguration.current
@@ -233,7 +236,7 @@ fun AmbientScreenContent(
         }
         val nextSeen = seenIds + nextId
         seenIds = nextSeen
-        if (renewLatest != null && poolIds.all { it in nextSeen }) {
+        if (poolIds.all { it in nextSeen }) {
             seenIds = emptySet()
             renewLatest?.invoke()
         }

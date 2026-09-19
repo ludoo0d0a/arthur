@@ -36,6 +36,15 @@ class AmbientRotationLaunchTest {
     }
 
     @Test
+    fun prepare_generativePool_preservesAllGenartsInPool() {
+        val pool = (1..8).map { i ->
+            Artwork(id = "genart-$i", title = "G$i", sourceId = "genart", kind = ArtworkKind.Genart)
+        }
+        AmbientRotationLaunch.prepare(pool)
+        assertEquals(8, AmbientRotationLaunch.pool.size)
+    }
+
+    @Test
     fun loadRotatingAmbient_prefersStashedPoolAndRequestedSeed() = runBlocking {
         val engine = ContentEngine(
             sources = listOf(

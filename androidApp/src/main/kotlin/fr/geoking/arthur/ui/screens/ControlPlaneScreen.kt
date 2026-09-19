@@ -54,7 +54,6 @@ import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.isGenerative
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
-import fr.geoking.arthur.shared.source.BundledPackSource
 import fr.geoking.arthur.shared.source.CustomFractalSource
 import fr.geoking.arthur.shared.source.FractalSource
 import fr.geoking.arthur.shared.source.GenartSource
@@ -74,6 +73,7 @@ import fr.geoking.arthur.ui.components.PackGrid
 import fr.geoking.arthur.ui.components.PackSelection
 import fr.geoking.arthur.ui.components.PackTile
 import fr.geoking.arthur.ui.components.allowsGenerativeAmbientFallback
+import fr.geoking.arthur.ui.components.defaultSubId
 import fr.geoking.arthur.ui.components.genartTopicOrNull
 import fr.geoking.arthur.ui.components.homeTile
 import fr.geoking.arthur.ui.components.isGenartCustom
@@ -194,7 +194,7 @@ fun ControlPlaneScreen(
         catalog = catalog,
         onOpenFamily = { family ->
             openedFamily = family
-            selection = PackSelection(family, if (family == PackFamily.Genart) "all" else "random")
+            selection = PackSelection(family, family.defaultSubId())
         },
         onSelectSubPack = { selection = it },
         onBackToHome = { openedFamily = null },
@@ -205,18 +205,7 @@ fun ControlPlaneScreen(
             val cachedPool = packCatalogCache[prefetchKey]
                 ?: imageCache.loadCachedArtworks(renewIds)
                     .ifEmpty {
-                        if (selection.allowsGenerativeAmbientFallback()) {
-                            catalog
-                        } else {
-                            BundledPackSource.defaultPack().filter { art ->
-                                when (selection.family) {
-                                    PackFamily.Painting -> art.kind == ArtworkKind.Painting
-                                    PackFamily.Sculpture -> art.kind == ArtworkKind.Sculpture
-                                    PackFamily.Photo -> art.kind == ArtworkKind.Photo
-                                    else -> true
-                                }
-                            }
-                        }
+                        if (selection.allowsGenerativeAmbientFallback()) catalog else emptyList()
                     }
             val pool = resolvePackPool(cachedPool, selection)
             val preferred: (Artwork) -> Boolean = { art ->

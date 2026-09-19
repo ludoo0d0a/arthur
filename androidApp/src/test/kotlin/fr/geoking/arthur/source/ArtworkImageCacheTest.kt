@@ -165,6 +165,28 @@ class ArtworkImageCacheTest {
     }
 
     @Test
+    fun clearAll_removesFilesAndIndex() {
+        val cache = ArtworkImageCache(context)
+        val art = Artwork(
+            id = "pexels-clear",
+            title = "Clear me",
+            sourceId = PexelsSource.ID,
+            kind = ArtworkKind.Photo,
+            remoteUrl = "https://example.com/c.jpg",
+        )
+        cache.remember(listOf(art), StockPhotoCategory.Nature.query)
+        cache.putImage(art.id, jpegBytes)
+        assertEquals(1, cache.entryCount())
+        assertTrue(cache.totalBytes() > 0L)
+
+        cache.clearAll()
+        assertEquals(0, cache.entryCount())
+        assertEquals(0L, cache.totalBytes())
+        assertFalse(cache.hasImage(art.id))
+        assertTrue(cache.loadCached(StockPhotoCategory.Nature.query, PexelsSource.ID).isEmpty())
+    }
+
+    @Test
     fun downloadAndCache_throwsExceptionOnFailure() {
         val cache = ArtworkImageCache(context)
         val artId = "test-art-uncached"

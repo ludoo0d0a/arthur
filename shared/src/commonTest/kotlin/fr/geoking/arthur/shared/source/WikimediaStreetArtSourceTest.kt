@@ -76,7 +76,7 @@ class WikimediaStreetArtSourceTest {
         assertEquals("Mural in Berlin", art[0].title)
         assertEquals("Ada Artist from Berlin / Wikimedia Commons", art[0].attribution)
         assertEquals("https://example.com/thumb.jpg", art[0].remoteUrl)
-        assertEquals(ArtworkKind.Painting, art[0].kind)
+        assertEquals(ArtworkKind.Photo, art[0].kind)
         assertEquals(WikimediaStreetArtSource.ID, art[0].sourceId)
     }
 

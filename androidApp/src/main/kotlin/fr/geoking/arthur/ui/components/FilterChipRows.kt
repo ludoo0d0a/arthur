@@ -118,17 +118,30 @@ enum class MuseumTopic(
     Harvard(HarvardSource.ID, R.string.source_harvard, HarvardSource.ID),
     Smithsonian(SmithsonianSource.ID, R.string.source_smithsonian, SmithsonianSource.ID),
     Louvre(LouvreSource.ID, R.string.source_louvre, LouvreSource.ID),
-    WikimediaStreetArt(
-        WikimediaStreetArtSource.ID,
-        R.string.source_wikimedia_streetart,
-        WikimediaStreetArtSource.ID,
-    ),
     ;
 
     companion object {
+        /** Every concrete museum institution (excludes [Random]). */
+        val institutions: List<MuseumTopic> by lazy {
+            entries.filter { it.sourceId != null }
+        }
+
+        /**
+         * Painting / Sculpture institution tiles: all museums except Louvre
+         * (Louvre stays under the Museum pack only — see navigation-structure.md).
+         */
+        val paintingSculptureInstitutions: List<MuseumTopic> by lazy {
+            institutions.filter { it != Louvre }
+        }
+
         /** Every concrete museum institution's Source id (excludes [Random]). */
         val institutionSourceIds: Set<String> by lazy {
-            entries.mapNotNull { it.sourceId }.toSet()
+            institutions.mapNotNull { it.sourceId }.toSet()
+        }
+
+        /** Painting / Sculpture Random ambient: institutions without Louvre. */
+        val paintingSculptureSourceIds: Set<String> by lazy {
+            paintingSculptureInstitutions.mapNotNull { it.sourceId }.toSet()
         }
     }
 }
@@ -144,6 +157,7 @@ enum class PhotoTopic(
     Pexels(PexelsSource.ID, R.string.source_pexels_video, PexelsSource.ID),
     Unsplash(UnsplashSource.ID, R.string.source_unsplash, UnsplashSource.ID),
     DeviantArt(DeviantArtSource.ID, R.string.source_deviantart, DeviantArtSource.ID),
+    Wikimedia(WikimediaStreetArtSource.ID, R.string.source_wikimedia, WikimediaStreetArtSource.ID),
 }
 
 /**
@@ -479,7 +493,7 @@ fun matchesPhotoTopic(art: Artwork, stockCategory: StockPhotoCategory): Boolean 
         StockPhotoCategory.Architecture,
         StockPhotoCategory.Sky,
         StockPhotoCategory.StreetArt,
-        -> art.sourceId in SourceCapabilities.sourceIdsWithRemoteSearch(ArtworkKind.Photo)
+        -> art.sourceId in SourceCapabilities.sourceIdsForPhotoProviders()
     }
 
 fun matchesVideoTopic(art: Artwork, stockCategory: StockPhotoCategory): Boolean =
@@ -499,7 +513,8 @@ fun matchesVideoTopic(art: Artwork, stockCategory: StockPhotoCategory): Boolean 
 /** Random = every museum Source; other topics = that museum Source only. */
 fun matchesMuseumTopic(art: Artwork, museumTopic: MuseumTopic): Boolean =
     when (museumTopic) {
-        MuseumTopic.Random -> art.sourceId in MuseumTopic.institutionSourceIds
+        // Sculpture / Painting Random excludes Louvre (Museum pack only).
+        MuseumTopic.Random -> art.sourceId in MuseumTopic.paintingSculptureSourceIds
         else -> art.sourceId == museumTopic.sourceId
     }
 
@@ -664,7 +679,7 @@ private fun MuseumTopicFilterRow(
         contentPadding = contentPadding,
         horizontalArrangement = Arrangement.spacedBy(horizontalSpacing),
     ) {
-        items(MuseumTopic.entries) { topic ->
+        items(listOf(MuseumTopic.Random) + MuseumTopic.paintingSculptureInstitutions) { topic ->
             FilterChip(
                 selected = museumTopic == topic,
                 onClick = { onMuseumTopicChange(topic) },

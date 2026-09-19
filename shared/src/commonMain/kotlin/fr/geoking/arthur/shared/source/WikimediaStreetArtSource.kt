@@ -57,7 +57,7 @@ class WikimediaStreetArtSource(
             title = title,
             attribution = attribution,
             sourceId = ID,
-            kind = ArtworkKind.Painting,
+            kind = ArtworkKind.Photo,
             remoteUrl = imageUrl,
             license = license.orEmpty(),
             externalUrl = info.descriptionurl?.takeIf { it.isNotBlank() }

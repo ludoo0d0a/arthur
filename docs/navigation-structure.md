@@ -1,0 +1,73 @@
+la structure doit etre la suivante : 
+
+- musées
+  - the met (image aleatoire sur tout le catalogue)
+  - rijksmuseum (image aleatoire sur tout le catalogue)
+  - art insitute (image aleatoire sur tout le catalogue)
+  - cleveland (image aleatoire sur tout le catalogue)
+  - europeana (image aleatoire sur tout le catalogue)
+  - harvard (image aleatoire sur tout le catalogue)
+  - smithsonian (image aleatoire sur tout le catalogue)
+  - Le louvre (image aleatoire sur tout le catalogue)
+- sculpture
+  - aleatoire (image aleatoire sur tout les catalogues des musées, categorie 'sculpture')
+  - the met (image aleatoire sur le catalogue du musée, categorie 'sculpture')
+  - rijksmuseum (image aleatoire sur le catalogue du musée, categorie 'sculpture')
+  - art insitute (image aleatoire sur le catalogue du musée, categorie 'sculpture')
+  - cleveland (image aleatoire sur le catalogue du musée, categorie 'sculpture')
+  - europeana (image aleatoire sur le catalogue du musée, categorie 'sculpture')
+  - harvard (image aleatoire sur le catalogue du musée, categorie 'sculpture')
+  - smithsonian (image aleatoire sur le catalogue du musée, categorie 'sculpture')
+- peinture
+  - aleatoire (image aleatoire sur tout le catalogue des musées, categorie 'peinture')
+  - the met (image aleatoire sur le catalogue du musée, categorie 'peinture')
+  - rijksmuseum (image aleatoire sur le catalogue du musée, categorie 'peinture')
+  - art insitute (image aleatoire sur le catalogue du musée, categorie 'peinture')
+  - cleveland (image aleatoire sur le catalogue du musée, categorie 'peinture')
+  - europeana (image aleatoire sur le catalogue du musée, categorie 'peinture')
+  - harvard (image aleatoire sur le catalogue du musée, categorie 'peinture')
+  - smithsonian (image aleatoire sur le catalogue du musée, categorie 'peinture')
+- genart
+  - tout (105)
+  - aleatoire (genart aleatoire sur tout le catalogue des genarts)
+  - tapet (genart aleatoire sur leses genarts de cette categorie )
+  - nature (genart aleatoire sur leses genarts de cette categorie )
+  - meteo (genart aleatoire sur leses genarts de cette categorie )
+  - eau (genart aleatoire sur leses genarts de cette categorie )
+  - vivant (genart aleatoire sur leses genarts de cette categorie )
+  - terre (genart aleatoire sur leses genarts de cette categorie )
+  - planetes (genart aleatoire sur leses genarts de cette categorie )
+  - sci fi (genart aleatoire sur leses genarts de cette categorie )
+  - abstract (genart aleatoire sur leses genarts de cette categorie )
+  - geomertie (genart aleatoire sur leses genarts de cette categorie )
+  - fractale (genart aleatoire sur leses genarts de cette categorie )
+  - perso
+- photos
+  - pexels (image aleatoire sur tout le catalogue) - provider 1
+  - unsplash (image aleatoire sur tout le catalogue) - provider 2
+  - deviantart (image aleatoire sur tout le catalogue) - provider 3
+  - wikimedia (image aleatoire sur tout le catalogue) - provider 4
+  - aleatoire (genart aleatoire sur tous les catalogues des providers de type 'photo' = pexels+unsplash+deviantart+wikimedia pour le moment)
+  - nature (image aleatoire sur tous les catalogues des providers de type 'photo' , pour cette catégorie )
+  - ville (image aleatoire sur tous les catalogues des providers de type 'photo' , pour cette catégorie )
+  - ocean (image aleatoire sur tous les catalogues des providers de type 'photo' , pour cette catégorie )
+  - montagnes (image aleatoire sur tous les catalogues des providers de type 'photo' , pour cette catégorie )
+  - abstrait (image aleatoire sur tous les catalogues des providers de type 'photo' , pour cette catégorie )
+  - architecture (image aleatoire sur tous les catalogues des providers de type 'photo' , pour cette catégorie )
+  - ciel (image aleatoire sur tous les catalogues des providers de type 'photo' , pour cette catégorie )
+  - streetart (image aleatoire sur tous les catalogues des providers de type 'photo' , pour cette catégorie )
+- videos
+  - pexels (video aleatoire sur tout le catalogue) - provider 1
+  - unsplash (video aleatoire sur tout le catalogue) - provider 2
+  - pixabay (video aleatoire sur tout le catalogue) - provider 3
+  - coverr (video aleatoire sur tout le catalogue) - provider 4
+  - aleatoire (video aleatoire sur tous les catalogues des providers de type 'video' = pexels+unsplash+pixbay+coverr pour le moment)
+  - nature (video aleatoire sur tous les catalogues des providers de type 'video' , pour cette catégorie )
+  - ville (video aleatoire sur tous les catalogues des providers de type 'video' , pour cette catégorie )
+  - ocean (video aleatoire sur tous les catalogues des providers de type 'video' , pour cette catégorie )
+  - montagne (video aleatoire sur tous les catalogues des providers de type 'video' , pour cette catégorie )
+  - abstrait (video aleatoire sur tous les catalogues des providers de type 'video' , pour cette catégorie )
+  - architecture (video aleatoire sur tous les catalogues des providers de type 'video' , pour cette catégorie )
+  - ciel (video aleatoire sur tous les catalogues des providers de type 'video' , pour cette catégorie )
+  - streetart (video aleatoire sur tous les catalogues des providers de type 'video' , pour cette catégorie )
+

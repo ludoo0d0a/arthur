@@ -227,6 +227,24 @@ class ArtworkImageCache(
             .mapNotNull { it.toArtworkOrNull() }
             .filter { art -> kind == null || art.kind == kind }
 
+    /** Number of index entries that still have image bytes on disk. */
+    fun entryCount(): Int =
+        decodeEntries().count { hasImage(it.id) }
+
+    /** Total bytes of files under the artwork cache directory. */
+    fun totalBytes(): Long {
+        if (!dir.exists()) return 0L
+        return dir.listFiles()?.sumOf { it.length() } ?: 0L
+    }
+
+    /** Deletes every cached image file and clears the catalog index. */
+    fun clearAll() {
+        if (dir.exists()) {
+            dir.listFiles()?.forEach { it.delete() }
+        }
+        prefs.edit().remove(KEY_CATALOG).apply()
+    }
+
     private fun trimGenartLocked(byId: MutableMap<String, String>) {
         val genartIds = byId.values.mapNotNull { line ->
             val parts = line.split(SEP)

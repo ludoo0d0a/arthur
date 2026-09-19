@@ -243,39 +243,26 @@ class ArthurDreamService : DreamService() {
  * a generative piece when the Control Plane asked for museum/photo stills.
  */
 internal suspend fun loadPinnedAmbient(
-    contentEngine: ContentEngine,
+    @Suppress("UNUSED_PARAMETER") contentEngine: ContentEngine,
     requested: Artwork?,
 ): Artwork? {
-    if (requested == null) return null
-    val catalog = contentEngine.catalog(
-        PreparedRotation(
-            sourceIds = emptyList(),
-            artworkIds = emptyList(),
-        ),
-    )
-    return resolveAmbientArtwork(catalog, requested.id) ?: requested
+    // Keep the Control Plane artwork as-is. Never reload the global catalog
+    // (empty sourceIds = every Source) as a cross-pack fallback.
+    return requested
 }
 
 /**
- * Start ambient with random rotation: prefer the Control Plane pool (live URLs),
- * else fall back to a fresh engine catalog. Seed with the requested piece when present.
- * Never invent a generative fallback when the requested seed is absent — an empty
- * museum/photo pool should show the placeholder, not Drifting Particles.
+ * Start ambient with random rotation from the Control Plane pool only.
+ * An empty stashed pool stays empty — show the placeholder, never invent another Source.
  */
 internal suspend fun loadRotatingAmbient(
-    contentEngine: ContentEngine,
+    @Suppress("UNUSED_PARAMETER") contentEngine: ContentEngine,
     requested: Artwork?,
     stashedPool: List<Artwork>,
 ): Pair<List<Artwork>, Artwork?> {
-    val pool = stashedPool.ifEmpty {
-        contentEngine.catalog(
-            PreparedRotation(
-                sourceIds = emptyList(),
-                artworkIds = emptyList(),
-            ),
-        )
-    }
+    val pool = stashedPool
     val artwork = when {
+        pool.isEmpty() -> null
         requested == null -> pool.randomOrNull()
         pool.any { it.id == requested.id } ->
             pool.first { it.id == requested.id }
@@ -304,9 +291,15 @@ internal suspend fun loadDreamAmbient(
         } else {
             null
         }
+    val rotationSource = when {
+        pool.isNotEmpty() -> pool
+        activeSelection.allowsGenerativeAmbientFallback() && chosen != null ->
+            listOfNotNull(chosen)
+        else -> emptyList()
+    }
     val rotationPool = AmbientAlbumArt.sampleRotationPool(
-        if (pool.isNotEmpty()) pool else fullCatalog,
+        rotationSource,
         seed = chosen,
     )
-    return rotationPool to (chosen ?: rotationPool.firstOrNull())
+    return rotationPool to chosen
 }

@@ -68,7 +68,8 @@ object SourceCapabilities {
         SmithsonianSource.ID to museumStillKinds,
         LouvreSource.ID to museumStillKinds,
         WikimediaStreetArtSource.ID to SourceContentSupport(
-            kinds = setOf(ArtworkKind.Painting),
+            kinds = setOf(ArtworkKind.Photo),
+            remoteSearchKinds = setOf(ArtworkKind.Photo),
         ),
         GenartSource.ID to SourceContentSupport(
             kinds = setOf(ArtworkKind.Genart),
@@ -92,9 +93,20 @@ object SourceCapabilities {
         byId.filter { (_, support) -> kind in support.remoteSearchKinds }.keys.toList()
 
     /**
-     * Ambient Start for Painting / Sculpture / Photo **Random**: every Source that can
-     * remotely search that kind (museums + stock).
+     * Ambient Start for Painting / Sculpture **Random**: every Source that can
+     * remotely search that kind (museums + stock remotes that expose the kind).
      */
     fun sourceIdsForKindAmbient(kind: ArtworkKind): List<String> =
         sourceIdsWithRemoteSearch(kind)
+
+    /**
+     * Photo pack providers only (Pexels, Unsplash, DeviantArt, Wikimedia) —
+     * excludes museum Sources even when they expose Photo search.
+     */
+    fun sourceIdsForPhotoProviders(): List<String> = listOf(
+        PexelsSource.ID,
+        UnsplashSource.ID,
+        DeviantArtSource.ID,
+        WikimediaStreetArtSource.ID,
+    )
 }

@@ -57,12 +57,12 @@ class ControlPlaneFilterTest {
     }
 
     @Test
-    fun photoPack_showsTopicAndMuseumSubPacks() {
+    fun photoPack_showsProviderAndTopicSubPacks() {
         setControlPlane(openedFamily = PackFamily.Photo, selection = PackSelection(PackFamily.Photo))
 
         composeRule.onNodeWithTag("pack_tile_photo_random").assertIsDisplayed()
         composeRule.onNodeWithTag("pack_tile_photo_nature").assertIsDisplayed()
-        composeRule.onNodeWithTag("pack_tile_photo_museum_met").assertIsDisplayed()
+        composeRule.onNodeWithTag("pack_tile_photo_wikimedia-streetart").assertIsDisplayed()
     }
 
     @Test

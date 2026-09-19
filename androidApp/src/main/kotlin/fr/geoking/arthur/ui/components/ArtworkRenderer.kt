@@ -335,7 +335,7 @@ private fun RemoteStillImage(
                         failureReason
                     }
                 } else {
-                    failureReason
+                    null
                 }
             }
             StillArtworkPlaceholder(

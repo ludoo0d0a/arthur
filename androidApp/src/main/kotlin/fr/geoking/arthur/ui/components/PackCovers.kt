@@ -21,7 +21,6 @@ object PackCovers {
         MuseumTopic.Harvard -> R.drawable.pack_harvard
         MuseumTopic.Smithsonian -> R.drawable.pack_smithsonian
         MuseumTopic.Louvre -> R.drawable.pack_louvre
-        MuseumTopic.WikimediaStreetArt -> R.drawable.pack_painting
     }
 
     @DrawableRes
@@ -61,6 +60,7 @@ object PackCovers {
         PhotoTopic.Pexels -> R.drawable.pack_pexels
         PhotoTopic.Unsplash -> R.drawable.pack_unsplash
         PhotoTopic.DeviantArt -> R.drawable.pack_deviantart
+        PhotoTopic.Wikimedia -> R.drawable.pack_photo_streetart
     }
 
     /** Themed official logo marks (gold-on-dark, same treatment as museum packs). */

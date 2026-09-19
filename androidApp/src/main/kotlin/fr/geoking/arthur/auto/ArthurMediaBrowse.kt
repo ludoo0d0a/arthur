@@ -91,7 +91,7 @@ object ArthurMediaBrowse {
         HarvardSource.ID -> "Harvard Art Museums"
         SmithsonianSource.ID -> "Smithsonian"
         LouvreSource.ID -> "Musée du Louvre"
-        WikimediaStreetArtSource.ID -> "Wikimedia Street Art"
+        WikimediaStreetArtSource.ID -> "Wikimedia"
         PexelsSource.ID -> "Pexels"
         UnsplashSource.ID -> "Unsplash"
         else -> sourceId

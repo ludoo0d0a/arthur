@@ -370,7 +370,9 @@ fun AmbientScreenContent(
             else -> {
                 LaunchedEffect(Unit) { displayReady = true }
                 StillArtworkPlaceholder(
-                    kind = ArtworkKind.Genart,
+                    kind = shown?.kind
+                        ?: rotatePool.firstOrNull()?.kind
+                        ?: ArtworkKind.Photo,
                     showWarning = true,
                     modifier = Modifier.fillMaxSize(),
                 )

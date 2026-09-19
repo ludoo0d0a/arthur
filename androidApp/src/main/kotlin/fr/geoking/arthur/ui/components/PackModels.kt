@@ -25,7 +25,7 @@ enum class PackFamily(
 /**
  * Selected pack for Ambient: a [PackFamily] plus optional subcategory.
  * [subId] null means the family's home tile was started directly, with no sub-pack
- * chosen — this behaves exactly like that family's **Random** sub-pack.
+ * chosen — Museum defaults to Met; other families behave like **Random**.
  */
 data class PackSelection(
     val family: PackFamily,
@@ -42,13 +42,6 @@ data class PackTile(
     val testTagSuffix: String,
     val itemCount: Int? = null,
 )
-
-/**
- * Museum institution sub-packs (every [MuseumTopic] with a Source, i.e. excluding
- * [MuseumTopic.Random]).
- */
-private val MuseumInstitutionTopics: List<MuseumTopic> =
-    MuseumTopic.entries.filter { it.sourceId != null }
 
 /** Genart sub-pack order for the grid ([GenartTopic.All] leads). */
 private val GenartSubTopics = listOf(
@@ -68,6 +61,17 @@ private val GenartSubTopics = listOf(
     GenartTopic.Custom,
 )
 
+/** Default sub-pack id when opening a family on the Control Plane. */
+fun PackFamily.defaultSubId(): String = when (this) {
+    PackFamily.Genart -> GenartTopic.All.testTagSuffix
+    PackFamily.Museum -> MuseumTopic.Met.testTagSuffix
+    PackFamily.Photo,
+    PackFamily.Video,
+    PackFamily.Sculpture,
+    PackFamily.Painting,
+    -> "random"
+}
+
 fun PackFamily.homeTile(catalog: List<Artwork> = emptyList()): PackTile = PackTile(
     id = "family_${testTagSuffix}",
     titleRes = titleRes,
@@ -80,7 +84,7 @@ fun PackFamily.homeTile(catalog: List<Artwork> = emptyList()): PackTile = PackTi
 )
 
 fun PackFamily.subPackTiles(catalog: List<Artwork> = emptyList()): List<PackTile> = when (this) {
-    PackFamily.Museum -> MuseumTopic.entries.map { topic ->
+    PackFamily.Museum -> MuseumTopic.institutions.map { topic ->
         PackTile(
             id = "sub_museum_${topic.testTagSuffix}",
             titleRes = topic.labelRes,
@@ -119,18 +123,7 @@ fun PackFamily.subPackTiles(catalog: List<Artwork> = emptyList()): List<PackTile
                 testTagSuffix = "photo_${topic.query}",
             )
         }
-        // Museums support Photo content too — offer them as sources searchable with
-        // category=Photo, same "one source, 20 items" rule as any other pick.
-        val museums = MuseumInstitutionTopics.map { topic ->
-            PackTile(
-                id = "sub_photo_museum_${topic.testTagSuffix}",
-                titleRes = topic.labelRes,
-                coverRes = PackCovers.museum(topic),
-                selection = PackSelection(PackFamily.Photo, topic.testTagSuffix),
-                testTagSuffix = "photo_museum_${topic.testTagSuffix}",
-            )
-        }
-        providerSources + topics + museums
+        providerSources + topics
     }
     PackFamily.Video -> {
         val sources = VideoTopic.entries.map { topic ->
@@ -153,30 +146,50 @@ fun PackFamily.subPackTiles(catalog: List<Artwork> = emptyList()): List<PackTile
         }
         sources + keywords
     }
-    PackFamily.Sculpture -> MuseumTopic.entries.map { topic ->
-        PackTile(
-            id = "sub_sculpture_${topic.testTagSuffix}",
-            titleRes = topic.labelRes,
-            coverRes = PackCovers.museum(topic),
-            selection = PackSelection(PackFamily.Sculpture, topic.testTagSuffix),
-            testTagSuffix = "sculpture_${topic.testTagSuffix}",
+    PackFamily.Sculpture -> {
+        val random = PackTile(
+            id = "sub_sculpture_${MuseumTopic.Random.testTagSuffix}",
+            titleRes = MuseumTopic.Random.labelRes,
+            coverRes = PackCovers.museum(MuseumTopic.Random),
+            selection = PackSelection(PackFamily.Sculpture, MuseumTopic.Random.testTagSuffix),
+            testTagSuffix = "sculpture_${MuseumTopic.Random.testTagSuffix}",
         )
+        val institutions = MuseumTopic.paintingSculptureInstitutions.map { topic ->
+            PackTile(
+                id = "sub_sculpture_${topic.testTagSuffix}",
+                titleRes = topic.labelRes,
+                coverRes = PackCovers.museum(topic),
+                selection = PackSelection(PackFamily.Sculpture, topic.testTagSuffix),
+                testTagSuffix = "sculpture_${topic.testTagSuffix}",
+            )
+        }
+        listOf(random) + institutions
     }
-    PackFamily.Painting -> MuseumTopic.entries.map { topic ->
-        PackTile(
-            id = "sub_painting_${topic.testTagSuffix}",
-            titleRes = topic.labelRes,
-            coverRes = PackCovers.museum(topic),
-            selection = PackSelection(PackFamily.Painting, topic.testTagSuffix),
-            testTagSuffix = "painting_${topic.testTagSuffix}",
+    PackFamily.Painting -> {
+        val random = PackTile(
+            id = "sub_painting_${MuseumTopic.Random.testTagSuffix}",
+            titleRes = MuseumTopic.Random.labelRes,
+            coverRes = PackCovers.museum(MuseumTopic.Random),
+            selection = PackSelection(PackFamily.Painting, MuseumTopic.Random.testTagSuffix),
+            testTagSuffix = "painting_${MuseumTopic.Random.testTagSuffix}",
         )
+        val institutions = MuseumTopic.paintingSculptureInstitutions.map { topic ->
+            PackTile(
+                id = "sub_painting_${topic.testTagSuffix}",
+                titleRes = topic.labelRes,
+                coverRes = PackCovers.museum(topic),
+                selection = PackSelection(PackFamily.Painting, topic.testTagSuffix),
+                testTagSuffix = "painting_${topic.testTagSuffix}",
+            )
+        }
+        listOf(random) + institutions
     }
 }
 
 fun resolvePackPool(catalog: List<Artwork>, selection: PackSelection): List<Artwork> {
     val pool = when (selection.family) {
         PackFamily.Museum -> {
-            val topic = selection.museumTopicOrNull() ?: MuseumTopic.Random
+            val topic = selection.museumTopicOrNull() ?: MuseumTopic.Met
             val museumKinds = catalog.filter { art ->
                 art.kind == ArtworkKind.Painting || art.kind == ArtworkKind.Sculpture
             }
@@ -196,18 +209,11 @@ fun resolvePackPool(catalog: List<Artwork>, selection: PackSelection): List<Artw
                     CategoryFilter.PHOTO.matches(art.kind) && matchesPhotoSource(art, photoSource)
                 }
             } else {
-                val museum = selection.museumTopicOrNull()
-                if (museum != null) {
-                    catalog.filter { art ->
-                        CategoryFilter.PHOTO.matches(art.kind) && matchesMuseumTopic(art, museum)
-                    }
-                } else {
-                    val topic = selection.stockCategoryOrNull() ?: StockPhotoCategory.Random
-                    catalog.filterByCategoryAndSources(
-                        category = CategoryFilter.PHOTO,
-                        stockCategory = topic,
-                    )
-                }
+                val topic = selection.stockCategoryOrNull() ?: StockPhotoCategory.Random
+                catalog.filterByCategoryAndSources(
+                    category = CategoryFilter.PHOTO,
+                    stockCategory = topic,
+                )
             }
         }
         PackFamily.Video -> {
@@ -241,10 +247,14 @@ fun resolvePackPool(catalog: List<Artwork>, selection: PackSelection): List<Artw
     }
 
     val isRandom = when (selection.family) {
-        PackFamily.Museum -> (selection.museumTopicOrNull() ?: MuseumTopic.Random) == MuseumTopic.Random
+        PackFamily.Museum -> false
         PackFamily.Genart -> (selection.genartTopicOrNull() ?: GenartTopic.Random) == GenartTopic.Random
-        PackFamily.Photo -> (selection.stockCategoryOrNull() ?: StockPhotoCategory.Random) == StockPhotoCategory.Random
-        PackFamily.Video -> (selection.stockCategoryOrNull() ?: StockPhotoCategory.Random) == StockPhotoCategory.Random
+        PackFamily.Photo ->
+            selection.photoSourceOrNull() != null ||
+                (selection.stockCategoryOrNull() ?: StockPhotoCategory.Random) == StockPhotoCategory.Random
+        PackFamily.Video ->
+            selection.videoSourceOrNull() != null ||
+                (selection.stockCategoryOrNull() ?: StockPhotoCategory.Random) == StockPhotoCategory.Random
         PackFamily.Sculpture -> (selection.museumTopicOrNull() ?: MuseumTopic.Random) == MuseumTopic.Random
         PackFamily.Painting -> (selection.museumTopicOrNull() ?: MuseumTopic.Random) == MuseumTopic.Random
     }
@@ -257,15 +267,13 @@ fun PackSelection.stockCategoryOrNull(): StockPhotoCategory? =
         null
     } else {
         when (family) {
-            // A museum institution id or provider source id under Photo is a Source pick, not a stock topic.
             PackFamily.Photo ->
-                if (museumTopicOrNull() != null || photoSourceOrNull() != null) {
+                if (photoSourceOrNull() != null) {
                     null
                 } else {
                     StockPhotoCategory.fromQuery(subId)
                 }
             PackFamily.Video -> {
-                // Source tiles use VideoTopic ids; keywords use StockPhotoCategory.query.
                 if (videoSourceOrNull() != null) {
                     null
                 } else {
@@ -301,10 +309,6 @@ fun PackSelection.museumTopicOrNull(): MuseumTopic? =
             PackFamily.Sculpture,
             PackFamily.Painting,
             -> MuseumTopic.entries.firstOrNull { it.testTagSuffix == subId }
-            // Photo only offers concrete museum Sources (its own Random tile is
-            // StockPhotoCategory.Random) — never resolve MuseumTopic.Random here.
-            PackFamily.Photo ->
-                MuseumInstitutionTopics.firstOrNull { it.testTagSuffix == subId }
             else -> null
         }
     }
@@ -317,33 +321,26 @@ fun PackSelection.videoSourceOrNull(): VideoTopic? =
     }
 
 /**
- * Source ids to load for Ambient Start. Still packs (museum / photo / painting /
- * sculpture) load capability-matched providers so free-tier slots are not eaten by
- * unrelated Sources — and so we never fall back to a genart engine like Particles.
- * Genart uses the in-memory catalog (`null`).
+ * Source ids to load for Ambient Start. Still packs load capability-matched providers
+ * so free-tier slots are not eaten by unrelated Sources — and so we never fall back
+ * to a genart engine like Particles. Genart uses the in-memory catalog (`null`).
  */
 fun PackSelection.sourceIdsForAmbientLoad(): List<String>? = when (family) {
     PackFamily.Museum -> {
         when (val topic = museumTopicOrNull()) {
-            null, MuseumTopic.Random -> MuseumInstitutionTopics.mapNotNull { it.sourceId }
+            null -> listOf(MuseumTopic.Met.sourceId!!)
+            MuseumTopic.Random -> MuseumTopic.institutions.mapNotNull { it.sourceId }
             else -> listOfNotNull(topic.sourceId)
         }
     }
-    PackFamily.Painting -> stillKindAmbientIds(ArtworkKind.Painting, museumTopicOrNull())
-    PackFamily.Sculpture -> stillKindAmbientIds(ArtworkKind.Sculpture, museumTopicOrNull())
+    PackFamily.Painting -> stillKindAmbientIds(museumTopicOrNull())
+    PackFamily.Sculpture -> stillKindAmbientIds(museumTopicOrNull())
     PackFamily.Photo -> {
         val photoSource = photoSourceOrNull()
         if (photoSource != null) {
             listOf(photoSource.sourceId)
         } else {
-            val museum = museumTopicOrNull()
-            if (museum != null) {
-                listOfNotNull(museum.sourceId)
-            } else when (stockCategoryOrNull()) {
-                null, StockPhotoCategory.Random ->
-                    SourceCapabilities.sourceIdsForKindAmbient(ArtworkKind.Photo)
-                else -> SourceCapabilities.sourceIdsWithRemoteSearch(ArtworkKind.Photo)
-            }
+            SourceCapabilities.sourceIdsForPhotoProviders()
         }
     }
     PackFamily.Video -> when (val source = videoSourceOrNull()) {
@@ -353,17 +350,17 @@ fun PackSelection.sourceIdsForAmbientLoad(): List<String>? = when (family) {
     PackFamily.Genart -> null
 }
 
-/** Painting / Sculpture pack: Random → every remote API for that kind. */
-private fun stillKindAmbientIds(kind: ArtworkKind, topic: MuseumTopic?): List<String> =
+/** Painting / Sculpture pack: Random → museums without Louvre. */
+private fun stillKindAmbientIds(topic: MuseumTopic?): List<String> =
     when (topic) {
-        null, MuseumTopic.Random -> SourceCapabilities.sourceIdsForKindAmbient(kind)
+        null, MuseumTopic.Random -> MuseumTopic.paintingSculptureInstitutions.mapNotNull { it.sourceId }
         else -> listOfNotNull(topic.sourceId)
     }
 
 fun PackSelection.isGenartCustom(): Boolean =
     family == PackFamily.Genart && genartTopicOrNull() == GenartTopic.Custom
 
-/** True when an empty pool must not fall back to an unrelated generative Artwork. */
+/** True when an empty pool may resolve a generative Artwork from the in-memory catalog. */
 fun PackSelection.allowsGenerativeAmbientFallback(): Boolean =
     family == PackFamily.Genart
 

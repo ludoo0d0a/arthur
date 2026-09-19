@@ -51,6 +51,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.OutlinedTextField
@@ -84,7 +85,10 @@ import fr.geoking.arthur.phone.theme.ArthurTheme
 import fr.geoking.arthur.shared.error.ErrorCategory
 import fr.geoking.arthur.shared.error.ErrorItem
 import fr.geoking.arthur.shared.error.ErrorLogger
+import fr.geoking.arthur.source.ArtworkImageCache
+import fr.geoking.arthur.source.HttpCacheController
 import fr.geoking.arthur.source.RotationSettings
+import android.text.format.Formatter
 import org.koin.core.context.GlobalContext
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -358,6 +362,7 @@ private fun MainMenu(
                     modifier = Modifier.testTag("settings_wifi_only_stills_switch"),
                 )
             }
+            ImageCacheSettingsRow()
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -405,6 +410,66 @@ private fun MainMenu(
                     onClick = { onNavigate(SettingsScreenPage.Developer) },
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun ImageCacheSettingsRow() {
+    val context = LocalContext.current
+    val imageCache = remember {
+        runCatching { GlobalContext.get().get<ArtworkImageCache>() }.getOrNull()
+    }
+    val httpCache = remember {
+        runCatching { GlobalContext.get().get<HttpCacheController>() }.getOrNull()
+    }
+    var revision by remember { mutableStateOf(0) }
+    val entryCount = remember(revision) { imageCache?.entryCount() ?: 0 }
+    val totalBytes = remember(revision) {
+        (imageCache?.totalBytes() ?: 0L) + (httpCache?.stats()?.sizeBytes ?: 0L)
+    }
+    val sizeLabel = remember(totalBytes) {
+        Formatter.formatShortFileSize(context, totalBytes)
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .testTag("settings_image_cache"),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+            Text(
+                text = stringResource(R.string.settings_image_cache),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Text(
+                text = stringResource(
+                    R.string.settings_image_cache_subtitle,
+                    sizeLabel,
+                    entryCount,
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.testTag("settings_image_cache_stats"),
+            )
+        }
+        TextButton(
+            onClick = {
+                imageCache?.clearAll()
+                httpCache?.clear()
+                revision++
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.settings_image_cache_cleared),
+                    Toast.LENGTH_SHORT,
+                ).show()
+            },
+            enabled = imageCache != null,
+            modifier = Modifier.testTag("settings_image_cache_clear"),
+        ) {
+            Text(stringResource(R.string.settings_image_cache_clear))
         }
     }
 }

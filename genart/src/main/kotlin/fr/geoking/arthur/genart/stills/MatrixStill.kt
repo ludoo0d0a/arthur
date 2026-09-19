@@ -24,9 +24,6 @@ internal object MatrixStill {
         typeface = Typeface.MONOSPACE
         textAlign = Paint.Align.CENTER
     }
-    private val haloPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG).apply {
-        style = Paint.Style.FILL
-    }
 
     fun draw(
         canvas: Canvas,
@@ -87,12 +84,6 @@ internal object MatrixStill {
                 if (cIdx == 0) {
                     // Head character: glowing green-white
                     val glowColor = 0xFF00FF66.toInt()
-
-                    haloPaint.color = Color.argb(
-                        (0.35f * dim * 255).toInt().coerceIn(0, 255),
-                        0, 255, 102,
-                    )
-                    canvas.drawCircle(x, cy - fontSize * 0.3f, fontSize * 0.9f, haloPaint)
 
                     glowPaint.color = Color.argb(
                         (0.85f * dim * 255).toInt().coerceIn(0, 255),

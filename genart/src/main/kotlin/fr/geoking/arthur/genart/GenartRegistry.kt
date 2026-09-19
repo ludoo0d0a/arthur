@@ -77,7 +77,6 @@ import fr.geoking.arthur.genart.engines.ContinentsEngine
 import fr.geoking.arthur.genart.engines.DataHorizonEngine
 import fr.geoking.arthur.genart.engines.DayNightWashEngine
 import fr.geoking.arthur.genart.engines.DiamondWeaveEngine
-import fr.geoking.arthur.genart.engines.DistantDinosaursEngine
 import fr.geoking.arthur.genart.engines.FieldsEngine
 import fr.geoking.arthur.genart.engines.FlowerEngine
 import fr.geoking.arthur.genart.engines.GerstnerOceanEngine
@@ -170,7 +169,6 @@ import fr.geoking.arthur.genart.stills.ContinentsStill
 import fr.geoking.arthur.genart.stills.DataHorizonStill
 import fr.geoking.arthur.genart.stills.DayNightWashStill
 import fr.geoking.arthur.genart.stills.DiamondWeaveStill
-import fr.geoking.arthur.genart.stills.DistantDinosaursStill
 import fr.geoking.arthur.genart.stills.FieldsStill
 import fr.geoking.arthur.genart.stills.FlowerStill
 import fr.geoking.arthur.genart.stills.GerstnerOceanStill
@@ -916,17 +914,6 @@ object GenartRegistry {
             },
             renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
                 TumbleweedDriftStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
-            },
-        ),
-        GenartEngineDescriptor(
-            id = GenartEngineId.DistantDinosaurs,
-            stableId = "genart.dinosaurs",
-            title = "#63 - Distant Dinosaur Silhouettes",
-            render = { isActive, palette, quality, brightness, speed, modifier ->
-                DistantDinosaursEngine(isActive, palette, quality, brightness, speed, modifier)
-            },
-            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
-                DistantDinosaursStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
             },
         ),
         GenartEngineDescriptor(

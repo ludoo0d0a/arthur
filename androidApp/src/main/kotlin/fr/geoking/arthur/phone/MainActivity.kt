@@ -99,6 +99,7 @@ class MainActivity : ComponentActivity() {
                         val simulatePremium by developerSettings.simulatePremium.collectAsState()
                         val verbose by developerSettings.verbose.collectAsState()
                         val rotationIntervalMs by rotationSettings.intervalMs.collectAsState()
+                        val wifiOnlyRemoteStills by rotationSettings.wifiOnlyRemoteStills.collectAsState()
                         val showQuotes by quoteSettings.showQuotes.collectAsState()
                         val isPremium = premium.isPremium
                         // Custom fractal authoring needs touch; TV uses remote only.
@@ -114,6 +115,8 @@ class MainActivity : ComponentActivity() {
                                     onVerboseChange = developerSettings::setVerbose,
                                     rotationIntervalMs = rotationIntervalMs,
                                     onRotationIntervalChange = rotationSettings::setIntervalMs,
+                                    wifiOnlyRemoteStills = wifiOnlyRemoteStills,
+                                    onWifiOnlyRemoteStillsChange = rotationSettings::setWifiOnlyRemoteStills,
                                     showQuotes = showQuotes,
                                     onShowQuotesChange = quoteSettings::setShowQuotes,
                                     deviantArtUsername = stockPhotoSettings.deviantArtUsername,

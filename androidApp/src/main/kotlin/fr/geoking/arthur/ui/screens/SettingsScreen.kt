@@ -141,6 +141,8 @@ fun SettingsScreen(
     onVerboseChange: (Boolean) -> Unit = {},
     rotationIntervalMs: Long = AmbientAlbumArt.ROTATION_INTERVAL_MS,
     onRotationIntervalChange: (Long) -> Unit = {},
+    wifiOnlyRemoteStills: Boolean = false,
+    onWifiOnlyRemoteStillsChange: (Boolean) -> Unit = {},
     showQuotes: Boolean = true,
     onShowQuotesChange: (Boolean) -> Unit = {},
     deviantArtUsername: String = "",
@@ -228,6 +230,8 @@ fun SettingsScreen(
                     isPremium = isPremium,
                     showDeveloper = showDeveloper,
                     rotationIntervalMs = rotationIntervalMs,
+                    wifiOnlyRemoteStills = wifiOnlyRemoteStills,
+                    onWifiOnlyRemoteStillsChange = onWifiOnlyRemoteStillsChange,
                     showQuotes = showQuotes,
                     onShowQuotesChange = onShowQuotesChange,
                     onCheckForUpdate = onCheckForUpdate,
@@ -267,6 +271,8 @@ private fun MainMenu(
     isPremium: Boolean,
     showDeveloper: Boolean,
     rotationIntervalMs: Long,
+    wifiOnlyRemoteStills: Boolean,
+    onWifiOnlyRemoteStillsChange: (Boolean) -> Unit,
     showQuotes: Boolean,
     onShowQuotesChange: (Boolean) -> Unit,
     onCheckForUpdate: (() -> Unit)?,
@@ -327,6 +333,31 @@ private fun MainMenu(
                 value = rotationIntervalLabel(rotationIntervalMs),
                 onClick = { onNavigate(SettingsScreenPage.RotationInterval) },
             )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .testTag("settings_wifi_only_stills"),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+                    Text(
+                        text = stringResource(R.string.settings_wifi_only_stills),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_wifi_only_stills_subtitle),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = wifiOnlyRemoteStills,
+                    onCheckedChange = onWifiOnlyRemoteStillsChange,
+                    modifier = Modifier.testTag("settings_wifi_only_stills_switch"),
+                )
+            }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

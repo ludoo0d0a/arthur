@@ -60,7 +60,10 @@ class MuseumSearchSettings {
  * Disk cache of stock stills + baked genart frames.
  * Stock entries are keyed by photo topic; genart is capped at [MAX_GENART] (LRU).
  */
-class ArtworkImageCache(context: Context) {
+class ArtworkImageCache(
+    context: Context,
+    private val invalidStore: InvalidArtworkStore? = null,
+) {
     private val appContext = context.applicationContext
     private val dir = File(appContext.cacheDir, "artwork").also { it.mkdirs() }
     private val prefs = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -70,31 +73,83 @@ class ArtworkImageCache(context: Context) {
     fun hasImage(artworkId: String): Boolean =
         imageFile(artworkId).let { it.exists() && it.length() > MIN_BYTES }
 
+    /** Bytes on disk and decodable bounds; purges corrupt files. */
+    fun hasDecodableImage(artworkId: String): Boolean =
+        validCachedFileOrNull(artworkId) != null
+
     fun putImage(artworkId: String, bytes: ByteArray) {
         if (bytes.size < MIN_BYTES) return
         imageFile(artworkId).writeBytes(bytes)
     }
 
     fun localPathOrNull(artworkId: String): String? =
-        imageFile(artworkId).takeIf { it.exists() && it.length() > MIN_BYTES }?.absolutePath
+        validCachedFileOrNull(artworkId)?.absolutePath
 
+    /**
+     * Returns a cached file with valid image bounds, or null after deleting corrupt bytes.
+     * Does not mark the artwork permanently invalid (caller may re-download).
+     */
+    fun validCachedFileOrNull(artworkId: String): File? {
+        val target = imageFile(artworkId)
+        if (!target.exists() || target.length() <= MIN_BYTES) return null
+        if (SafeBitmapDecoder.canDecodeBounds(target.absolutePath)) return target
+        target.delete()
+        return null
+    }
+
+    /** Deletes cached bytes and marks [artworkId] invalid. */
+    fun purgeInvalid(artworkId: String) {
+        imageFile(artworkId).delete()
+        invalidStore?.markInvalid(artworkId)
+    }
+
+    /**
+     * Ensures [artworkId] is on disk from [remoteUrl].
+     * When [allowNetwork] is false (cache-only): return valid cache or throw [RemoteStillCacheOnlyMiss].
+     */
     fun downloadAndCache(
         artworkId: String,
         remoteUrl: String,
         errorLogger: fr.geoking.arthur.shared.error.ErrorLogger? = null,
         sourceId: String = "image_download",
+        allowNetwork: Boolean = true,
     ): File {
-        val target = imageFile(artworkId)
-        if (target.exists() && target.length() > MIN_BYTES) {
-            return target
+        validCachedFileOrNull(artworkId)?.let { return it }
+        // Stale oversized non-image: drop before download / cache-only miss.
+        imageFile(artworkId).takeIf { it.exists() }?.delete()
+
+        if (!allowNetwork) {
+            throw RemoteStillCacheOnlyMiss(artworkId)
         }
-        return StillImageDownloader.downloadToFile(
-            url = remoteUrl,
-            targetFile = target,
-            errorLogger = errorLogger,
-            sourceId = sourceId,
-            artworkId = artworkId,
-        )
+
+        return try {
+            val downloaded = StillImageDownloader.downloadToFile(
+                url = remoteUrl,
+                targetFile = imageFile(artworkId),
+                errorLogger = errorLogger,
+                sourceId = sourceId,
+                artworkId = artworkId,
+            )
+            if (!SafeBitmapDecoder.canDecodeBounds(downloaded.absolutePath)) {
+                downloaded.delete()
+                invalidStore?.markInvalid(artworkId)
+                throw java.io.IOException("Downloaded image is not decodable")
+            }
+            invalidStore?.clear(artworkId)
+            downloaded
+        } catch (e: RemoteStillCacheOnlyMiss) {
+            throw e
+        } catch (e: Exception) {
+            val httpCode = Regex("""HTTP (\d{3})""")
+                .find(e.message.orEmpty())
+                ?.groupValues
+                ?.getOrNull(1)
+                ?.toIntOrNull()
+            if (StillImageDownloader.isNonRetryable(httpCode, e)) {
+                invalidStore?.markInvalid(artworkId)
+            }
+            throw e
+        }
     }
 
     fun remember(artworks: List<Artwork>, category: String) {

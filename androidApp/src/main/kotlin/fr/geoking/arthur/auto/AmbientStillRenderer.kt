@@ -19,6 +19,7 @@ import fr.geoking.arthur.shared.domain.isGenerative
 import android.os.Looper
 import fr.geoking.arthur.shared.source.CustomFractalSource
 import fr.geoking.arthur.source.ArtworkImageCache
+import fr.geoking.arthur.source.InvalidArtworkStore
 import fr.geoking.arthur.source.SafeBitmapDecoder
 import fr.geoking.arthur.source.StillImageDownloader
 import java.io.File
@@ -37,8 +38,9 @@ object AmbientStillRenderer {
         generation: Long,
         file: File,
         imageCache: ArtworkImageCache? = null,
+        invalidStore: InvalidArtworkStore? = null,
     ) {
-        val bitmap = render(artwork, generation, imageCache)
+        val bitmap = render(artwork, generation, imageCache, invalidStore)
         file.outputStream().use { out ->
             bitmap.compress(Bitmap.CompressFormat.PNG, 90, out)
         }
@@ -49,11 +51,11 @@ object AmbientStillRenderer {
         artwork: Artwork,
         generation: Long,
         imageCache: ArtworkImageCache? = null,
+        invalidStore: InvalidArtworkStore? = null,
     ): Bitmap {
         val bitmap = Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         val seed = artwork.id.hashCode().toLong() xor (generation * 0x9E3779B9L)
-        var errorReason: String? = null
         runCatching {
             when {
                 artwork.kind == ArtworkKind.Genart -> drawGenart(canvas, artwork.id, generation)
@@ -61,7 +63,14 @@ object AmbientStillRenderer {
                     drawCustomFractal(canvas, artwork.id, generation)
                 artwork.isGenerative -> drawFractalField(canvas, artwork.id, seed)
                 !artwork.localPath.isNullOrBlank() || !artwork.remoteUrl.isNullOrBlank() -> {
-                    val (drawn, reason) = drawStillImageWithResult(canvas, artwork.id, artwork.localPath, artwork.remoteUrl, imageCache)
+                    val (drawn, reason) = drawStillImageWithResult(
+                        canvas,
+                        artwork.id,
+                        artwork.localPath,
+                        artwork.remoteUrl,
+                        imageCache,
+                        invalidStore,
+                    )
                     if (!drawn) drawStillPlaceholder(canvas, seed, isError = true, errorReason = reason)
                 }
                 else -> drawStillPlaceholder(canvas, seed, isError = true)
@@ -109,6 +118,7 @@ object AmbientStillRenderer {
         localPath: String?,
         remoteUrl: String?,
         imageCache: ArtworkImageCache?,
+        invalidStore: InvalidArtworkStore? = null,
     ): Pair<Boolean, String?> {
         // 1. Check local path
         val fromFile = localPath?.takeIf { it.isNotBlank() }?.let { path ->
@@ -138,10 +148,10 @@ object AmbientStillRenderer {
             return Pair(false, "Download skipped on main thread")
         }
 
-        // 4. Download on background thread
+        // 4. Download on background thread (Auto is never Wi‑Fi-gated)
         return try {
             val file = if (imageCache != null) {
-                imageCache.downloadAndCache(artworkId, url)
+                imageCache.downloadAndCache(artworkId, url, allowNetwork = true)
             } else {
                 val tempFile = File.createTempFile("ambient_still_", ".tmp")
                 try {
@@ -155,11 +165,23 @@ object AmbientStillRenderer {
             val bmp = SafeBitmapDecoder.decodeFile(
                 file.absolutePath,
                 SafeBitmapDecoder.AMBIENT_STILL_MAX_SIDE,
-            ) ?: throw java.io.IOException("Failed to decode image file")
+            ) ?: run {
+                imageCache?.purgeInvalid(artworkId)
+                invalidStore?.markInvalid(artworkId)
+                throw java.io.IOException("Failed to decode image file")
+            }
             drawBitmapCover(canvas, bmp)
             bmp.recycle()
             Pair(true, null)
         } catch (e: Throwable) {
+            val httpCode = Regex("""HTTP (\d{3})""")
+                .find(e.message.orEmpty())
+                ?.groupValues
+                ?.getOrNull(1)
+                ?.toIntOrNull()
+            if (StillImageDownloader.isNonRetryable(httpCode, e)) {
+                invalidStore?.markInvalid(artworkId)
+            }
             Pair(false, e.message ?: e.toString())
         }
     }

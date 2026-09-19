@@ -7,14 +7,19 @@ import kotlinx.coroutines.withContext
 
 /** Warms [ArtworkImageCache] so Ambient advances hit disk instead of waiting on the network. */
 object StillImagePrefetcher {
-    suspend fun ensureCached(cache: ArtworkImageCache, artwork: Artwork) {
+    suspend fun ensureCached(
+        cache: ArtworkImageCache,
+        artwork: Artwork,
+        allowNetwork: Boolean = true,
+    ) {
         val url = artwork.remoteUrl?.takeIf { it.isNotBlank() } ?: return
         if (!artwork.localPath.isNullOrBlank()) return
-        if (cache.hasImage(artwork.id)) return
+        if (cache.hasDecodableImage(artwork.id)) return
+        if (!allowNetwork) return
         withContext(Dispatchers.IO) {
-            if (cache.hasImage(artwork.id)) return@withContext
+            if (cache.hasDecodableImage(artwork.id)) return@withContext
             try {
-                cache.downloadAndCache(artwork.id, url)
+                cache.downloadAndCache(artwork.id, url, allowNetwork = true)
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {

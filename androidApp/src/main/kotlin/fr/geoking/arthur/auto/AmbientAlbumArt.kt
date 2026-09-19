@@ -73,6 +73,29 @@ object AmbientAlbumArt {
         return Math.floorMod(currentIndex + 1, poolSize)
     }
 
+    /**
+     * Steps [delta] through [pool], skipping ids for which [isInvalid] is true.
+     * If every item is invalid, still returns one step from [currentIndex].
+     */
+    fun nextValidIndex(
+        poolSize: Int,
+        currentIndex: Int,
+        delta: Int,
+        isInvalidAt: (Int) -> Boolean,
+    ): Int {
+        if (poolSize <= 0) return 0
+        var idx = currentIndex
+        repeat(poolSize) {
+            idx = if (delta >= 0) {
+                advanceIndex(idx, poolSize)
+            } else {
+                Math.floorMod(idx - 1, poolSize)
+            }
+            if (!isInvalidAt(idx)) return idx
+        }
+        return if (delta >= 0) advanceIndex(currentIndex, poolSize) else Math.floorMod(currentIndex - 1, poolSize)
+    }
+
     fun parseUri(uri: Uri): Pair<String, Long>? =
         parsePathSegments(uri.pathSegments)
 

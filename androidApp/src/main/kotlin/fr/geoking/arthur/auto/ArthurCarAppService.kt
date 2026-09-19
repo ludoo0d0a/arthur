@@ -36,6 +36,7 @@ import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.source.ArtworkImageCache
+import fr.geoking.arthur.source.InvalidArtworkStore
 import fr.geoking.arthur.source.RotationSettings
 import fr.geoking.arthur.ui.components.PackFamily
 import fr.geoking.arthur.ui.components.PackSelection
@@ -315,6 +316,7 @@ class ArtworkPaneScreen(
     private val contentEngine: ContentEngine by inject()
     private val rotationSettings: RotationSettings by inject()
     private val imageCache: ArtworkImageCache by inject()
+    private val invalidStore: InvalidArtworkStore by inject()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     private var catalog: List<Artwork> = emptyList()
@@ -375,7 +377,7 @@ class ArtworkPaneScreen(
         renderJob = scope.launch {
             val bitmap = withContext(Dispatchers.IO) {
                 runCatching {
-                    AmbientStillRenderer.render(art, gen, imageCache)
+                    AmbientStillRenderer.render(art, gen, imageCache, invalidStore)
                 }.getOrNull()
             }
             if (isActive && bitmap != null) {
@@ -414,11 +416,12 @@ class ArtworkPaneScreen(
         }
         if (catalog.isEmpty()) return
         val index = catalog.indexOfFirst { it.id == current?.id }.let { if (it < 0) 0 else it }
-        val nextIndex = if (delta >= 0) {
-            AmbientAlbumArt.advanceIndex(index, catalog.size)
-        } else {
-            Math.floorMod(index - 1, catalog.size)
-        }
+        val nextIndex = AmbientAlbumArt.nextValidIndex(
+            poolSize = catalog.size,
+            currentIndex = index,
+            delta = delta,
+            isInvalidAt = { catalog[it].id.let(invalidStore::isInvalid) },
+        )
         current = catalog[nextIndex]
         generation += 1
         scheduleAsyncRender()

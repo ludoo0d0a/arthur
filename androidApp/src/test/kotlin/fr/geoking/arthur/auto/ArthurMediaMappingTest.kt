@@ -50,6 +50,20 @@ class ArthurMediaMappingTest {
     }
 
     @Test
+    fun nextValidIndex_skipsInvalid() {
+        val invalid = setOf(1)
+        assertEquals(
+            2,
+            AmbientAlbumArt.nextValidIndex(
+                poolSize = 3,
+                currentIndex = 0,
+                delta = +1,
+                isInvalidAt = { it in invalid },
+            ),
+        )
+    }
+
+    @Test
     fun sampleRotationPool_capsAtThreeAndPrefersCached() {
         val pool = (1..6).map { i ->
             Artwork(

@@ -113,6 +113,8 @@
     <string name="screen_licenses">Open source licenses</string>
     <string name="screen_rotation_interval">Rotation interval</string>
     <string name="settings_rotation_interval_subtitle">How long each artwork stays on screen</string>
+    <string name="settings_wifi_only_stills">Wi‑Fi only for photos</string>
+    <string name="settings_wifi_only_stills_subtitle">When off Wi‑Fi, use cached images only</string>
     <string name="settings_show_quotes">Show quotes</string>
     <string name="settings_show_quotes_subtitle">Famous quotes beside each Ambient picture (ZenQuotes)</string>
     <string name="rotation_interval_seconds">%1$d s</string>

@@ -39,9 +39,11 @@ import fr.geoking.arthur.shared.source.UnsplashSource
 import fr.geoking.arthur.shared.source.WikimediaStreetArtSource
 import fr.geoking.arthur.source.ArtworkImageCache
 import fr.geoking.arthur.source.DeveloperSettings
+import fr.geoking.arthur.source.InvalidArtworkStore
 import fr.geoking.arthur.source.MuseumSearchSettings
 import fr.geoking.arthur.source.QuoteRepository
 import fr.geoking.arthur.source.QuoteSettings
+import fr.geoking.arthur.source.RemoteStillNetworkGate
 import fr.geoking.arthur.source.RotationSettings
 import fr.geoking.arthur.source.ScreensaverSettings
 import fr.geoking.arthur.source.StockPhotoSettings
@@ -129,6 +131,8 @@ val appModule = module {
     single { RotationSettings(androidContext()) }
     single { ScreensaverSettings(androidContext()) }
     single { QuoteSettings(androidContext()) }
+    single { InvalidArtworkStore(androidContext()) }
+    single { RemoteStillNetworkGate(androidContext(), get()) }
     single {
         val client = get<HttpClient>()
         val errorLogger = get<ErrorLogger>()
@@ -153,7 +157,7 @@ val appModule = module {
     single { CustomFractalStore(androidContext()) }
     single { StockPhotoSettings(androidContext()) }
     single { MuseumSearchSettings() }
-    single { ArtworkImageCache(androidContext()) }
+    single { ArtworkImageCache(androidContext(), get()) }
     single {
         val httpCacheDir = File(androidContext().cacheDir, "http_cache").also { it.mkdirs() }
         okhttp3.Cache(httpCacheDir, 50 * 1024 * 1024L)

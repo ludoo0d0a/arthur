@@ -68,7 +68,11 @@ import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.hasDetailContent
 import fr.geoking.arthur.shared.domain.isGenerative
+import fr.geoking.arthur.source.AmbientStillPicker
+import fr.geoking.arthur.source.InvalidArtworkStore
 import fr.geoking.arthur.source.Quote
+import fr.geoking.arthur.source.RemoteStillNetworkGate
+import fr.geoking.arthur.source.RotationSettings
 import fr.geoking.arthur.source.StillImagePrefetcher
 import fr.geoking.arthur.source.rememberArtworkImageCache
 import fr.geoking.arthur.source.rememberQuoteRepository
@@ -80,8 +84,8 @@ import fr.geoking.arthur.ui.components.sourceLabel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.koin.core.context.GlobalContext
 import kotlin.math.abs
-import kotlin.random.Random
 
 /**
  * Fullscreen ambient surface.
@@ -164,26 +168,69 @@ fun AmbientScreenContent(
     val latestPool by rememberUpdatedState(rotatePool)
     val renewLatest by rememberUpdatedState(onNeedRenewPool)
     val imageCache = rememberArtworkImageCache()
+    val rotationSettings = remember {
+        runCatching { GlobalContext.get().get<RotationSettings>() }.getOrNull()
+    }
+    val networkGate = remember {
+        runCatching { GlobalContext.get().get<RemoteStillNetworkGate>() }.getOrNull()
+    }
+    val invalidStore = remember {
+        runCatching { GlobalContext.get().get<InvalidArtworkStore>() }.getOrNull()
+    }
+
+    fun eligibleIdsForPick(pool: List<Artwork>): Set<String> {
+        val invalid = invalidStore?.snapshot().orEmpty()
+        val cacheOnly = networkGate?.isCacheOnlyMode() == true
+        return pool.mapNotNull { art ->
+            if (art.id in invalid) return@mapNotNull null
+            if (cacheOnly && !art.isOfflineDisplayable(imageCache)) return@mapNotNull null
+            art.id
+        }.toSet()
+    }
 
     suspend fun advance(delta: Int, random: Boolean) {
         if (!shouldRotate) return
         val pool = latestPool
         val shownId = latestCurrent?.id
+        val eligible = eligibleIdsForPick(pool)
+        if (eligible.isEmpty()) return
         val index = pool.indexOfFirst { it.id == shownId }.let { if (it < 0) 0 else it }
         val nextArt = if (random) {
-            pool.filter { it.id != shownId }.randomOrNull(Random.Default)
-                ?: pool.random(Random.Default)
-        } else if (delta >= 0) {
-            pool[AmbientAlbumArt.advanceIndex(index, pool.size)]
+            val recent = rotationSettings?.recentStillIds().orEmpty()
+            val pickedId = AmbientStillPicker.pickNextRandom(
+                poolIds = pool.map { it.id },
+                currentId = shownId,
+                seenIds = seenIds,
+                recentIds = recent,
+                eligibleIds = eligible,
+            ) ?: return
+            pool.firstOrNull { it.id == pickedId } ?: return
         } else {
-            pool[Math.floorMod(index - 1, pool.size)]
+            var steps = 0
+            var idx = index
+            var candidate: Artwork
+            do {
+                idx = if (delta >= 0) {
+                    AmbientAlbumArt.advanceIndex(idx, pool.size)
+                } else {
+                    Math.floorMod(idx - 1, pool.size)
+                }
+                candidate = pool[idx]
+                steps++
+            } while (candidate.id !in eligible && steps < pool.size)
+            if (candidate.id !in eligible) return
+            candidate
         }
+        val allowNetwork = networkGate?.canDownloadRemoteStill() ?: true
         withContext(Dispatchers.IO) {
-            StillImagePrefetcher.ensureCached(imageCache, nextArt)
+            StillImagePrefetcher.ensureCached(imageCache, nextArt, allowNetwork = allowNetwork)
         }
         displayReady = false
         current = nextArt
         val nextId = nextArt.id
+        if (!nextArt.remoteUrl.isNullOrBlank()) {
+            rotationSettings?.recordRecentStillId(nextId)
+        }
         val nextSeen = seenIds + nextId
         seenIds = nextSeen
         if (renewLatest != null && poolIds.all { it in nextSeen }) {
@@ -220,14 +267,15 @@ fun AmbientScreenContent(
         if (!ambientActive) return@LaunchedEffect
         val currentArt = shown ?: return@LaunchedEffect
         val pool = latestPool
+        val allowNetwork = networkGate?.canDownloadRemoteStill() ?: true
         withContext(Dispatchers.IO) {
-            StillImagePrefetcher.ensureCached(imageCache, currentArt)
+            StillImagePrefetcher.ensureCached(imageCache, currentArt, allowNetwork = allowNetwork)
             if (pool.size < 2) return@withContext
             val index = pool.indexOfFirst { it.id == currentArt.id }.let { if (it < 0) 0 else it }
             val next = pool[AmbientAlbumArt.advanceIndex(index, pool.size)]
             val prev = pool[Math.floorMod(index - 1, pool.size)]
-            StillImagePrefetcher.ensureCached(imageCache, next)
-            StillImagePrefetcher.ensureCached(imageCache, prev)
+            StillImagePrefetcher.ensureCached(imageCache, next, allowNetwork = allowNetwork)
+            StillImagePrefetcher.ensureCached(imageCache, prev, allowNetwork = allowNetwork)
         }
     }
 
@@ -311,6 +359,11 @@ fun AmbientScreenContent(
                     isActive = ambientActive,
                     quality = GenartQuality.High,
                     onDisplayReady = { displayReady = true },
+                    onStillFailed = {
+                        if (shouldRotate) {
+                            scope.launch { advanceLatest(+1, true) }
+                        }
+                    },
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -621,3 +674,10 @@ private fun AmbientFrostedCircle(modifier: Modifier = Modifier) {
 
 private fun Artwork.isAmbientDisplayable(): Boolean =
     isGenerative || !remoteUrl.isNullOrBlank() || !localPath.isNullOrBlank()
+
+/** Offline-ready for cache-only Ambient: generative, local file, or decodable disk cache. */
+private fun Artwork.isOfflineDisplayable(cache: fr.geoking.arthur.source.ArtworkImageCache): Boolean {
+    if (isGenerative) return true
+    if (!localPath.isNullOrBlank()) return true
+    return cache.hasDecodableImage(id)
+}

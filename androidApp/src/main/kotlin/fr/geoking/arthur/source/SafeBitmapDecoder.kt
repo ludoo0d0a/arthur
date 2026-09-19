@@ -13,6 +13,13 @@ object SafeBitmapDecoder {
     /** Match [fr.geoking.arthur.auto.AmbientStillRenderer.SIZE] so ambient stills stay near-4K. */
     const val AMBIENT_STILL_MAX_SIDE = 2160
 
+    /** True when [path] has decodable image bounds (cheap check before full decode). */
+    fun canDecodeBounds(path: String): Boolean {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(path, bounds)
+        return bounds.outWidth > 0 && bounds.outHeight > 0
+    }
+
     fun decodeFile(path: String, maxSide: Int = DEFAULT_MAX_SIDE): Bitmap? {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeFile(path, bounds)

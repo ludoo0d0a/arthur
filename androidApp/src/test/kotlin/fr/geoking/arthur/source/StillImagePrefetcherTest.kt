@@ -28,12 +28,26 @@ class StillImagePrefetcherTest {
             kind = ArtworkKind.Photo,
             remoteUrl = "https://example.invalid/missing.jpg",
         )
-        cache.putImage(art.id, ByteArray(2_000) { 0x4F })
+        cache.putImage(art.id, TestStillBytes.jpeg())
         assertTrue(cache.hasImage(art.id))
 
         // Would fail if it attempted a network download to example.invalid.
         StillImagePrefetcher.ensureCached(cache, art)
         assertTrue(cache.hasImage(art.id))
+    }
+
+    @Test
+    fun ensureCached_skipsWhenAllowNetworkFalse() = runBlocking {
+        val cache = ArtworkImageCache(context)
+        val art = Artwork(
+            id = "prefetch-wifi",
+            title = "Wifi",
+            sourceId = "test",
+            kind = ArtworkKind.Photo,
+            remoteUrl = "https://example.invalid/missing.jpg",
+        )
+        StillImagePrefetcher.ensureCached(cache, art, allowNetwork = false)
+        assertFalse(cache.hasImage(art.id))
     }
 
     @Test

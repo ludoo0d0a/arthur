@@ -27,7 +27,7 @@ la structure doit etre la suivante :
   - europeana (image aleatoire sur le catalogue du musée, categorie 'peinture')
   - harvard (image aleatoire sur le catalogue du musée, categorie 'peinture')
   - smithsonian (image aleatoire sur le catalogue du musée, categorie 'peinture')
-- genart
+- genart (sous-packs monétisés via Marketplace sauf tout / aléatoire — free subset)
   - tout (105)
   - aleatoire (genart aleatoire sur tout le catalogue des genarts)
   - tapet (genart aleatoire sur leses genarts de cette categorie )
@@ -41,7 +41,8 @@ la structure doit etre la suivante :
   - abstract (genart aleatoire sur leses genarts de cette categorie )
   - geomertie (genart aleatoire sur leses genarts de cette categorie )
   - fractale (genart aleatoire sur leses genarts de cette categorie )
-  - perso
+  - perso (Custom Fractal — pack Marketplace)
+- photos personnelles (pack Marketplace — phone / TV commerce only)
 - photos
   - pexels (image aleatoire sur tout le catalogue) - provider 1
   - unsplash (image aleatoire sur tout le catalogue) - provider 2

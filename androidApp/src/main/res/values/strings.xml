@@ -70,6 +70,17 @@
     <string name="kind_custom_fractal">Custom fractal</string>
     <string name="kind_genart">Genart</string>
     <string name="kind_personal">Personal photo</string>
+    <string name="pack_personal">Personal photos</string>
+    <string name="pack_locked">Locked</string>
+    <string name="marketplace_title">Marketplace</string>
+    <string name="marketplace_owned">Owned</string>
+    <string name="marketplace_locked">Not owned</string>
+    <string name="marketplace_unlock">Unlock</string>
+    <string name="marketplace_buy_on_phone">Purchases may not be available on this TV. Unlock packs on your phone.</string>
+    <string name="marketplace_genart_pack">Genart · %1$s</string>
+    <string name="marketplace_open">Marketplace</string>
+    <string name="marketplace_subtitle">Buy packs for Personal Photos and Genart</string>
+    <string name="premium_ux_subtitle">No ads and favorites (coming soon)</string>
     <string name="genart_topic_fractal">Fractal</string>
     <string name="genart_topic_custom">Custom</string>
     <string name="genart_topic_abstract">Abstract</string>

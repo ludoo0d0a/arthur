@@ -5,9 +5,9 @@ import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.FreeTierLimits
 import fr.geoking.arthur.shared.domain.PreparedRotation
-import fr.geoking.arthur.shared.domain.PremiumEntitlement
 import fr.geoking.arthur.shared.domain.Source
 import fr.geoking.arthur.shared.domain.isGenerative
+import fr.geoking.arthur.shared.marketplace.PackOwnership
 import fr.geoking.arthur.shared.source.BundledPackSource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
@@ -19,11 +19,12 @@ import kotlinx.coroutines.launch
 import kotlin.math.ceil
 
 /**
- * Aggregates Sources into an Ambient Rotation, applying free-tier caps and Premium gates.
+ * Aggregates Sources into an Ambient Rotation, applying free-tier caps and Marketplace pack gates.
+ * Premium does not unlock content packs — see [PackOwnership].
  */
 class ContentEngine(
     private val sources: List<Source>,
-    private val entitlement: PremiumEntitlement,
+    private val packOwnership: PackOwnership = PackOwnership.NONE,
     private val limits: FreeTierLimits = FreeTierLimits(),
 ) {
     private fun calculatePerSourceLimit(sourceCount: Int): Int? =
@@ -99,16 +100,17 @@ class ContentEngine(
         val candidates = artworks.filter { art ->
             art.isGenerative || hasDisplayableStill(art)
         }
-        if (entitlement.isPremium) {
-            return candidates
-        }
         var fractals = 0
-        var genart = 0
         val stills = ArrayList<Artwork>()
         val kept = ArrayList<Artwork>(candidates.size)
         for (art in candidates) {
             when (art.kind) {
-                ArtworkKind.PersonalPhoto, ArtworkKind.CustomFractal -> Unit
+                ArtworkKind.PersonalPhoto -> {
+                    if (packOwnership.ownsPersonalPhotos()) kept.add(art)
+                }
+                ArtworkKind.CustomFractal -> {
+                    if (packOwnership.ownsCustomFractal()) kept.add(art)
+                }
                 ArtworkKind.Photo, ArtworkKind.Video, ArtworkKind.Painting, ArtworkKind.Sculpture -> {
                     // Bundled pack (incl. Photo suggestions) always available on free tier.
                     if (art.sourceId == BundledPackSource.ID) {
@@ -118,12 +120,15 @@ class ContentEngine(
                     }
                 }
                 ArtworkKind.FractalPreset -> {
-                    fractals++
-                    if (fractals <= limits.maxFractalPresets) kept.add(art)
+                    if (packOwnership.ownsAllFractalPresets()) {
+                        kept.add(art)
+                    } else {
+                        fractals++
+                        if (fractals <= limits.maxFractalPresets) kept.add(art)
+                    }
                 }
                 ArtworkKind.Genart -> {
-                    genart++
-                    if (genart <= limits.maxGenart) kept.add(art)
+                    if (packOwnership.allowsGenartEngine(art.id)) kept.add(art)
                 }
             }
         }

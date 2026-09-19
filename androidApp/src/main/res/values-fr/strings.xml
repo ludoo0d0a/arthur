@@ -69,6 +69,17 @@
     <string name="kind_custom_fractal">Fractale personnalisée</string>
     <string name="kind_genart">Genart</string>
     <string name="kind_personal">Photo personnelle</string>
+    <string name="pack_personal">Photos personnelles</string>
+    <string name="pack_locked">Verrouillé</string>
+    <string name="marketplace_title">Boutique</string>
+    <string name="marketplace_owned">Possédé</string>
+    <string name="marketplace_locked">Non possédé</string>
+    <string name="marketplace_unlock">Débloquer</string>
+    <string name="marketplace_buy_on_phone">Les achats peuvent être indisponibles sur cette TV. Débloquez les packs sur le téléphone.</string>
+    <string name="marketplace_genart_pack">Genart · %1$s</string>
+    <string name="marketplace_open">Boutique</string>
+    <string name="marketplace_subtitle">Acheter des packs Photos personnelles et Genart</string>
+    <string name="premium_ux_subtitle">Sans pubs et favoris (bientôt)</string>
     <string name="genart_topic_fractal">Fractale</string>
     <string name="genart_topic_custom">Perso</string>
     <string name="genart_topic_abstract">Abstrait</string>

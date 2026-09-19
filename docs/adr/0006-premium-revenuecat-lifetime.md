@@ -1,3 +1,3 @@
 # Premium is a RevenueCat lifetime entitlement
 
-Feature gates (Personal Photos, full Remote Sources, unlimited Genart, Custom Fractal) need a store-agnostic entitlement for future Apple. Raw Play Billing in UI would lock Android-only patterns. v1 **Premium Entitlement** is a **one-time lifetime** RevenueCat product on Play (subscription deferred); the app reads the entitlement, not purchase tokens at call sites.
+**Superseded for content gates by [ADR 0009](0009-marketplace-pack-skus.md).** Premium remains a store-agnostic **lifetime** RevenueCat product for **global UX** (no ads, favorites). Pack content unlocks are Marketplace SKUs. Raw Play Billing in UI would lock Android-only patterns; the app reads entitlements, not purchase tokens at call sites.

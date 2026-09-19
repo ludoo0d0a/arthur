@@ -5,6 +5,8 @@ import androidx.annotation.StringRes
 import fr.geoking.arthur.R
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
+import fr.geoking.arthur.shared.marketplace.MarketplaceCatalog
+import fr.geoking.arthur.shared.marketplace.PackOwnership
 import fr.geoking.arthur.shared.source.SourceCapabilities
 import fr.geoking.arthur.shared.source.StockPhotoCategory
 
@@ -17,6 +19,7 @@ enum class PackFamily(
     Museum(R.string.pack_museum, R.drawable.pack_museum, "museum"),
     Genart(R.string.kind_genart, R.drawable.pack_genart, "genart"),
     Photo(R.string.kind_photo, R.drawable.pack_photo, "photo"),
+    Personal(R.string.pack_personal, R.drawable.pack_photo, "personal"),
     Video(R.string.kind_video, R.drawable.pack_video, "video"),
     Sculpture(R.string.kind_sculpture, R.drawable.pack_sculpture, "sculpture"),
     Painting(R.string.kind_painting, R.drawable.pack_painting, "painting"),
@@ -41,7 +44,12 @@ data class PackTile(
     val selection: PackSelection,
     val testTagSuffix: String,
     val itemCount: Int? = null,
-)
+    /** Marketplace SKU when this tile requires a purchase; null = free. */
+    val sellablePackId: String? = null,
+) {
+    fun isLocked(ownership: PackOwnership): Boolean =
+        sellablePackId != null && !ownership.owns(sellablePackId)
+}
 
 /** Genart sub-pack order for the grid ([GenartTopic.All] leads). */
 private val GenartSubTopics = listOf(
@@ -65,6 +73,7 @@ private val GenartSubTopics = listOf(
 fun PackFamily.defaultSubId(): String = when (this) {
     PackFamily.Genart -> GenartTopic.All.testTagSuffix
     PackFamily.Museum -> MuseumTopic.Met.testTagSuffix
+    PackFamily.Personal -> "all"
     PackFamily.Photo,
     PackFamily.Video,
     PackFamily.Sculpture,
@@ -81,6 +90,11 @@ fun PackFamily.homeTile(catalog: List<Artwork> = emptyList()): PackTile = PackTi
     itemCount = if (this == PackFamily.Genart && catalog.isNotEmpty()) {
         resolvePackPool(catalog, PackSelection(PackFamily.Genart)).size
     } else null,
+    sellablePackId = if (this == PackFamily.Personal) {
+        MarketplaceCatalog.PERSONAL_PHOTOS_ID
+    } else {
+        null
+    },
 )
 
 fun PackFamily.subPackTiles(catalog: List<Artwork> = emptyList()): List<PackTile> = when (this) {
@@ -102,8 +116,10 @@ fun PackFamily.subPackTiles(catalog: List<Artwork> = emptyList()): List<PackTile
             selection = selection,
             testTagSuffix = "genart_${topic.testTagSuffix}",
             itemCount = if (catalog.isNotEmpty()) resolvePackPool(catalog, selection).size else null,
+            sellablePackId = MarketplaceCatalog.sellablePackIdForGenartTopic(topic.testTagSuffix),
         )
     }
+    PackFamily.Personal -> emptyList()
     PackFamily.Photo -> {
         val providerSources = PhotoTopic.entries.map { topic ->
             PackTile(
@@ -202,6 +218,7 @@ fun resolvePackPool(catalog: List<Artwork>, selection: PackSelection): List<Artw
                 genartTopic = topic,
             )
         }
+        PackFamily.Personal -> catalog.filter { it.kind == ArtworkKind.PersonalPhoto }
         PackFamily.Photo -> {
             val photoSource = selection.photoSourceOrNull()
             if (photoSource != null) {
@@ -248,6 +265,7 @@ fun resolvePackPool(catalog: List<Artwork>, selection: PackSelection): List<Artw
 
     val isRandom = when (selection.family) {
         PackFamily.Museum -> false
+        PackFamily.Personal -> true
         PackFamily.Genart -> (selection.genartTopicOrNull() ?: GenartTopic.Random) == GenartTopic.Random
         PackFamily.Photo ->
             selection.photoSourceOrNull() != null ||
@@ -348,6 +366,7 @@ fun PackSelection.sourceIdsForAmbientLoad(): List<String>? = when (family) {
         else -> listOf(source.sourceId)
     }
     PackFamily.Genart -> null
+    PackFamily.Personal -> null
 }
 
 /** Painting / Sculpture pack: Random → museums without Louvre. */

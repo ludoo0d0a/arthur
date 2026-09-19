@@ -19,7 +19,7 @@ Status: `idea` until shipped (then move to **Shipped** or strike through with a 
 |-------|--------|
 | `Artwork` metadata | `title`, `attribution`, `sourceId` (no date field yet) |
 | Category / Source filters | Control Plane chip rows (`FilterChipRows`) |
-| Personal Photos gate | Premium + `ArtworkKind.PersonalPhoto` in Content Engine |
+| Personal Photos gate | Marketplace pack SKU + `ArtworkKind.PersonalPhoto` in Content Engine ([ADR 0009](adr/0009-marketplace-pack-skus.md)) |
 | Phone → TV blobs | Pairing codec treats Personal Photos as blob payload |
 
 ## Backlog
@@ -44,7 +44,7 @@ Richer context beyond the card line:
 
 ### Favorites
 
-- Star / heart Artwork on Control Plane; persist locally
+- Star / heart Artwork on Control Plane; persist locally (**Premium** global UX — not a Marketplace pack)
 - Favorites as a first-class pool for Ambient Rotation and custom random (below)
 - Sync favorite **ids** in pairing manifest when relevant (not full blobs unless Personal Photos)
 
@@ -67,7 +67,7 @@ Control Plane configures the pool; Canvases draw randomly from it on the existin
 
 ### Personal Photos (phone → TV)
 
-Complete the Premium Personal Photos Source:
+Complete the Marketplace **Personal Photos** pack Source:
 
 - Pick from device (Photo Picker) on Control Plane
 - Include in Prepared Rotation

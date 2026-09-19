@@ -160,11 +160,13 @@ fun PackCoverTile(
     selectOnFocus: Boolean = false,
     onFocusSelect: (() -> Unit)? = null,
     maxCoverSize: Dp = Dp.Unspecified,
+    locked: Boolean = false,
 ) {
     val scheme = MaterialTheme.colorScheme
     val interactionSource = remember { MutableInteractionSource() }
     val focused by interactionSource.collectIsFocusedAsState()
     val currentOnFocusSelect by rememberUpdatedState(onFocusSelect)
+    val tileLocked = locked
 
     LaunchedEffect(focused, tile.id) {
         if (selectOnFocus && focused) {
@@ -223,8 +225,23 @@ fun PackCoverTile(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
                 )
+                if (tile.sellablePackId != null && tileLocked) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.45f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.pack_locked),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = Color.White,
+                            modifier = Modifier.testTag("pack_tile_locked_${tile.testTagSuffix}"),
+                        )
+                    }
+                }
                 PackSelectedPlayOverlay(
-                    visible = showPlay,
+                    visible = showPlay && !tileLocked,
                     testTagSuffix = tile.testTagSuffix,
                 )
             }
@@ -259,6 +276,7 @@ fun PackGrid(
     selectedTileFocusRequester: FocusRequester? = null,
     selectOnFocus: Boolean = false,
     onTileFocused: ((PackTile) -> Unit)? = null,
+    isLocked: (PackTile) -> Boolean = { false },
 ) {
     val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
     val layoutDirection = LocalLayoutDirection.current
@@ -298,6 +316,7 @@ fun PackGrid(
                     selectOnFocus = selectOnFocus,
                     onFocusSelect = onTileFocused?.let { focused -> { focused(tile) } },
                     maxCoverSize = layout.maxCoverSize,
+                    locked = isLocked(tile),
                 )
             }
         }

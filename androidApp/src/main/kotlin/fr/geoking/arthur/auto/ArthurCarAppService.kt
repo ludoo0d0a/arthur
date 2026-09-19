@@ -168,6 +168,7 @@ class PackSelectionScreen(carContext: CarContext) : Screen(carContext) {
         val gridLimit = gridContentLimit(carContext, MAX_HOME_GRID_ITEMS)
         val families = PackFamily.entries
             .filter { it != PackFamily.Video }
+            .filter { it != PackFamily.Personal } // Marketplace packs: no Auto commerce / Personal browse
             .take(gridLimit)
 
         val sectionBuilder = GridSection.Builder()
@@ -279,7 +280,9 @@ class SubPackSelectionScreen(
 
     private fun buildTemplate(): Template {
         val gridLimit = gridContentLimit(carContext, MAX_SUB_GRID_ITEMS)
-        val tiles = family.subPackTiles().take(gridLimit)
+        val tiles = family.subPackTiles()
+            .filter { it.sellablePackId == null } // no Marketplace commerce on Auto
+            .take(gridLimit)
 
         val sectionBuilder = GridSection.Builder()
             .setItemSize(GridSection.ITEM_SIZE_EXTRA_LARGE)

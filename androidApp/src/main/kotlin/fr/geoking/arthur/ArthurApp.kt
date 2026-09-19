@@ -2,14 +2,17 @@ package fr.geoking.arthur
 
 import android.app.Application
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import fr.geoking.arthur.billing.DevAwarePackOwnership
 import fr.geoking.arthur.billing.DevAwarePremiumEntitlement
 import fr.geoking.arthur.billing.FakePurchasesGateway
 import fr.geoking.arthur.billing.PurchasesGateway
+import fr.geoking.arthur.billing.RevenueCatPackOwnership
 import fr.geoking.arthur.billing.RevenueCatPremiumEntitlement
 import fr.geoking.arthur.fractal.CustomFractalStore
 import fr.geoking.arthur.shared.debug.DebugLogger
 import fr.geoking.arthur.shared.domain.PremiumEntitlement
 import fr.geoking.arthur.shared.engine.ContentEngine
+import fr.geoking.arthur.shared.marketplace.PackOwnership
 import fr.geoking.arthur.source.CacheBypassInterceptor
 import fr.geoking.arthur.source.DebugInterceptor
 import fr.geoking.arthur.source.ForceCacheNetworkInterceptor
@@ -152,6 +155,11 @@ val appModule = module {
                 (BuildConfig.DEBUG || BuildConfig.DEBUG_DEV) &&
                     developerSettings.simulatePremium.value
             },
+        )
+    }
+    single<PackOwnership> {
+        DevAwarePackOwnership(
+            delegate = RevenueCatPackOwnership(get()),
         )
     }
     single { CustomFractalStore(androidContext()) }
@@ -412,7 +420,7 @@ val appModule = module {
                 get<FractalSource>(),
                 get<CustomFractalSource>(),
             ),
-            entitlement = get(),
+            packOwnership = get(),
         )
     }
 }

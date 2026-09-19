@@ -54,6 +54,7 @@ import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.isGenerative
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
+import fr.geoking.arthur.shared.marketplace.PackOwnership
 import fr.geoking.arthur.shared.source.CustomFractalSource
 import fr.geoking.arthur.shared.source.FractalSource
 import fr.geoking.arthur.shared.source.GenartSource
@@ -98,6 +99,8 @@ fun ControlPlaneScreen(
     museumSearchSettings: MuseumSearchSettings? = null,
     screensaverSettings: ScreensaverSettings? = null,
     onOpenSettings: (() -> Unit)? = null,
+    packOwnership: PackOwnership = PackOwnership.NONE,
+    onOpenMarketplace: ((highlightPackId: String?) -> Unit)? = null,
 ) {
     var catalog by remember { mutableStateOf(initialCatalog.orEmpty()) }
     var openedFamily by remember { mutableStateOf<PackFamily?>(null) }
@@ -125,6 +128,7 @@ fun ControlPlaneScreen(
         PackFamily.Sculpture -> MuseumSearchKind.Sculpture
         PackFamily.Museum -> MuseumSearchKind.All
         PackFamily.Photo -> MuseumSearchKind.Photo
+        PackFamily.Personal -> MuseumSearchKind.Photo
         else -> MuseumSearchKind.All
     }
 
@@ -193,8 +197,16 @@ fun ControlPlaneScreen(
         selection = selection,
         catalog = catalog,
         onOpenFamily = { family ->
-            openedFamily = family
-            selection = PackSelection(family, family.defaultSubId())
+            val home = family.homeTile()
+            if (home.isLocked(packOwnership)) {
+                onOpenMarketplace?.invoke(home.sellablePackId)
+            } else if (family == PackFamily.Personal) {
+                selection = PackSelection(PackFamily.Personal)
+                openedFamily = family
+            } else {
+                openedFamily = family
+                selection = PackSelection(family, family.defaultSubId())
+            }
         },
         onSelectSubPack = { selection = it },
         onBackToHome = { openedFamily = null },
@@ -245,6 +257,8 @@ fun ControlPlaneScreen(
         onOpenSettings = onOpenSettings,
         defaultScreensaverSelection = defaultScreensaver,
         onSetDefaultScreensaver = screensaverSettings?.let { settings -> { settings.setDefaultPack(it) } },
+        packOwnership = packOwnership,
+        onOpenMarketplace = onOpenMarketplace,
     )
 }
 
@@ -269,6 +283,8 @@ fun ControlPlaneContent(
     onOpenSettings: (() -> Unit)? = null,
     defaultScreensaverSelection: PackSelection? = null,
     onSetDefaultScreensaver: ((PackSelection) -> Unit)? = null,
+    packOwnership: PackOwnership = PackOwnership.NONE,
+    onOpenMarketplace: ((highlightPackId: String?) -> Unit)? = null,
 ) {
     val configuration = LocalConfiguration.current
     val isTelevision = remember(configuration) {
@@ -289,6 +305,8 @@ fun ControlPlaneContent(
                 onOpenSettings = onOpenSettings,
                 defaultScreensaverSelection = defaultScreensaverSelection,
                 onSetDefaultScreensaver = onSetDefaultScreensaver,
+                packOwnership = packOwnership,
+                onOpenMarketplace = onOpenMarketplace,
             )
         } else {
             PhoneControlPlaneContent(
@@ -303,6 +321,8 @@ fun ControlPlaneContent(
                 catalog = catalog,
                 onCreateCustomFractal = onCreateCustomFractal,
                 onOpenSettings = onOpenSettings,
+                packOwnership = packOwnership,
+                onOpenMarketplace = onOpenMarketplace,
             )
         }
     }
@@ -322,6 +342,8 @@ private fun PhoneControlPlaneContent(
     catalog: List<Artwork> = emptyList(),
     onCreateCustomFractal: (() -> Unit)? = null,
     onOpenSettings: (() -> Unit)? = null,
+    packOwnership: PackOwnership = PackOwnership.NONE,
+    onOpenMarketplace: ((highlightPackId: String?) -> Unit)? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
     var searchQuery by remember(openedFamily, selection) { mutableStateOf("") }
@@ -384,6 +406,7 @@ private fun PhoneControlPlaneContent(
                     tiles = PackFamily.entries.map { it.homeTile(catalog) },
                     selected = null,
                     onTileClick = { onOpenFamily(it.selection.family) },
+                    isLocked = { it.isLocked(packOwnership) },
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(
                         start = 20.dp,
@@ -410,12 +433,15 @@ private fun PhoneControlPlaneContent(
                     tiles = openedFamily.subPackTiles(catalog),
                     selected = selection,
                     onTileClick = { tile: PackTile ->
-                        if (tile.selection == selection) {
+                        if (tile.isLocked(packOwnership)) {
+                            onOpenMarketplace?.invoke(tile.sellablePackId)
+                        } else if (tile.selection == selection) {
                             onStartAmbient()
                         } else {
                             onSelectSubPack(tile.selection)
                         }
                     },
+                    isLocked = { it.isLocked(packOwnership) },
                     modifier = Modifier.weight(if (isGenartAll) 0.38f else 1f),
                     contentPadding = PaddingValues(
                         start = 20.dp,

@@ -496,5 +496,6 @@ class PackModelsTest {
         assertFalse(PackSelection(PackFamily.Video).allowsGenerativeAmbientFallback())
         assertFalse(PackSelection(PackFamily.Painting).allowsGenerativeAmbientFallback())
         assertFalse(PackSelection(PackFamily.Sculpture).allowsGenerativeAmbientFallback())
+        assertFalse(PackSelection(PackFamily.Personal).allowsGenerativeAmbientFallback())
     }
 }

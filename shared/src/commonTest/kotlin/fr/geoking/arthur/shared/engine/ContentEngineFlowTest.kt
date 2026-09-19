@@ -2,10 +2,10 @@ package fr.geoking.arthur.shared.engine
 
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
-import fr.geoking.arthur.shared.domain.FakePremiumEntitlement
 import fr.geoking.arthur.shared.domain.FreeTierLimits
 import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.Source
+import fr.geoking.arthur.shared.marketplace.PackOwnership
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
@@ -44,7 +44,7 @@ class ContentEngineFlowTest {
         val s3 = TestSource("s3")
         val engine = ContentEngine(
             sources = listOf(s1, s2, s3),
-            entitlement = FakePremiumEntitlement(isPremium = false),
+            packOwnership = PackOwnership.NONE,
             limits = FreeTierLimits(maxPhotoArtwork = 12),
         )
 
@@ -66,16 +66,15 @@ class ContentEngineFlowTest {
         val sources = (1..9).map { TestSource("met-$it", 20) }
         val engine = ContentEngine(
             sources = sources,
-            entitlement = FakePremiumEntitlement(isPremium = true),
+            packOwnership = PackOwnership.NONE,
             limits = FreeTierLimits(maxPhotoArtwork = 24),
         )
 
         val prepared = PreparedRotation(sourceIds = sources.map { it.id }, artworkIds = emptyList())
         val result = engine.catalog(prepared)
 
-        // 24 / 9 = 2.66 -> maxOf(3, ceil(24/9)) = 3 per source
-        // 9 * 3 = 27
-        assertEquals(27, result.size)
+        // 24 / 9 = 2.66 -> maxOf(3, ceil(24/9)) = 3 per source; fair sample caps to 24
+        assertEquals(24, result.size)
         assertEquals(3, sources.first().lastLimitPassed)
     }
 }

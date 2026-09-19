@@ -154,6 +154,7 @@ fun SettingsScreen(
     deviantArtPassword: String = "",
     onDeviantArtPasswordChange: (String) -> Unit = {},
     onCheckForUpdate: (() -> Unit)? = null,
+    onOpenMarketplace: (() -> Unit)? = null,
     initialScreenStack: List<SettingsScreenPage>? = null,
     onInitialRouteConsumed: () -> Unit = {},
     errorLogger: ErrorLogger? = null,
@@ -239,6 +240,7 @@ fun SettingsScreen(
                     showQuotes = showQuotes,
                     onShowQuotesChange = onShowQuotesChange,
                     onCheckForUpdate = onCheckForUpdate,
+                    onOpenMarketplace = onOpenMarketplace,
                     onNavigate = { screenStack = screenStack + it },
                 )
                 SettingsScreenPage.RotationInterval -> RotationIntervalContent(
@@ -280,6 +282,7 @@ private fun MainMenu(
     showQuotes: Boolean,
     onShowQuotesChange: (Boolean) -> Unit,
     onCheckForUpdate: (() -> Unit)?,
+    onOpenMarketplace: (() -> Unit)?,
     onNavigate: (SettingsScreenPage) -> Unit,
 ) {
     Column(
@@ -319,12 +322,25 @@ private fun MainMenu(
                             fontWeight = FontWeight.Bold,
                         )
                         Text(
-                            stringResource(R.string.premium_thanks),
+                            stringResource(R.string.premium_ux_subtitle),
                             style = MaterialTheme.typography.bodySmall,
                             color = Color.White.copy(alpha = 0.8f),
                         )
                     }
                 }
+            }
+        }
+
+        if (onOpenMarketplace != null) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            ) {
+                SettingsItem(
+                    label = stringResource(R.string.marketplace_open),
+                    value = stringResource(R.string.marketplace_subtitle),
+                    onClick = onOpenMarketplace,
+                )
             }
         }
 

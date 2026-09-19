@@ -36,7 +36,10 @@ All calls are plain HTTP `GET`, JSON, over a shared OkHttp client
 | **Sculpture** | `sculpture` | `Sculpture` | Same as Painting (Random without Louvre) |
 | **Photo** | `photo` | `Photo` | Pexels, Unsplash, DeviantArt, Wikimedia (+ keyword topics across those four) |
 | **Video** | `video` | `Video` | Pexels Video, Unsplash Video, Pixabay Video, Coverr |
-| **Genart** | `genart` | `Genart`, `FractalPreset`, `CustomFractal` | In-memory procedural engines |
+| **Genart** | `genart` | `Genart`, `FractalPreset`, `CustomFractal` | In-memory procedural engines (topic packs via Marketplace except All/Random free subset) |
+| **Personal** | `personal` | `PersonalPhoto` | On-device Personal Photos (Marketplace pack) |
+
+Marketplace browse/buy: phone + TV only (not Auto). `PackOwnership` gates Content Engine — Premium does not unlock packs.
 
 `BundledPackSource` remains for previews / Android Auto demos — it is **never**
 injected as an Ambient stills fallback when a pack pool is empty.

@@ -25,11 +25,11 @@ import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.R
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
+import fr.geoking.arthur.shared.marketplace.GenartPackTopics
 import fr.geoking.arthur.shared.source.ArticSource
 import fr.geoking.arthur.shared.source.ClevelandSource
 import fr.geoking.arthur.shared.source.CoverrSource
 import fr.geoking.arthur.shared.source.EuropeanaSource
-import fr.geoking.arthur.shared.source.GenartSource
 import fr.geoking.arthur.shared.source.HarvardSource
 import fr.geoking.arthur.shared.source.LouvreSource
 import fr.geoking.arthur.shared.source.DeviantArtSource
@@ -251,235 +251,19 @@ fun List<Artwork>.canLoadMoreCatalog(visibleCount: Int): Boolean =
 fun matchesGenartTopic(art: Artwork, topic: GenartTopic): Boolean = when (topic) {
     GenartTopic.All -> true
     GenartTopic.Random -> true
-    GenartTopic.Tapet -> art.id in GENART_TAPET_IDS
-    GenartTopic.Nature -> art.id in GENART_NATURE_IDS
-    GenartTopic.Weather -> art.id in GENART_WEATHER_IDS
-    GenartTopic.Water -> art.id in GENART_WATER_IDS
-    GenartTopic.Life -> art.id in GENART_LIFE_IDS
-    GenartTopic.Earth -> art.id in GENART_EARTH_IDS
-    GenartTopic.Planets -> art.id in GENART_PLANETS_IDS
-    GenartTopic.SciFi -> art.id in GENART_SCIFI_IDS
-    GenartTopic.Abstract -> art.id in GENART_ABSTRACT_IDS
-    GenartTopic.Geometry -> art.id in GENART_GEOMETRY_IDS
+    GenartTopic.Tapet -> art.id in GenartPackTopics.TAPET_IDS
+    GenartTopic.Nature -> art.id in GenartPackTopics.NATURE_IDS
+    GenartTopic.Weather -> art.id in GenartPackTopics.WEATHER_IDS
+    GenartTopic.Water -> art.id in GenartPackTopics.WATER_IDS
+    GenartTopic.Life -> art.id in GenartPackTopics.LIFE_IDS
+    GenartTopic.Earth -> art.id in GenartPackTopics.EARTH_IDS
+    GenartTopic.Planets -> art.id in GenartPackTopics.PLANETS_IDS
+    GenartTopic.SciFi -> art.id in GenartPackTopics.SCIFI_IDS
+    GenartTopic.Abstract -> art.id in GenartPackTopics.ABSTRACT_IDS
+    GenartTopic.Geometry -> art.id in GenartPackTopics.GEOMETRY_IDS
     GenartTopic.Fractal -> art.kind == ArtworkKind.FractalPreset
     GenartTopic.Custom -> art.kind == ArtworkKind.CustomFractal
 }
-
-private val GENART_TAPET_IDS = setOf(
-    GenartSource.GRADIENT_MESH,
-    GenartSource.BLOBS,
-    GenartSource.VORONOI,
-    GenartSource.SILK,
-    GenartSource.ARC_MOSAIC,
-    GenartSource.RIBBONS,
-    GenartSource.NOISE_FIELD,
-    GenartSource.LOW_FREQ_NOISE_FIELD,
-    GenartSource.TONAL_GEOMETRY,
-    GenartSource.PAPER_CUT_PACK,
-    GenartSource.DIAMOND_WEAVE,
-    GenartSource.CHROMATIC_BLOBS,
-)
-
-private val GENART_WEATHER_IDS = setOf(
-    GenartSource.SNOW,
-    GenartSource.AURORA,
-    GenartSource.CLOUDS,
-    GenartSource.RAIN,
-    GenartSource.FOG,
-    GenartSource.SUNBEAMS,
-    GenartSource.STORM,
-    GenartSource.LIGHT_DRIZZLE,
-    GenartSource.RAINBOW,
-    GenartSource.SMOG,
-    GenartSource.SMOKE,
-    GenartSource.HEAT_HAZE,
-    GenartSource.SUNSHINE,
-    GenartSource.STEAM_CURL,
-    GenartSource.RAIN_ON_GLASS,
-    GenartSource.WATERFALL_MIST,
-    GenartSource.SOFT_WIND_STREAKS,
-    GenartSource.DAY_NIGHT_WASH,
-    GenartSource.FROST_CRYSTALS,
-    GenartSource.ECLIPSE_CORONA,
-    GenartSource.FIRE,
-    GenartSource.AURORA_WASH,
-    GenartSource.FIREWORKS,
-)
-
-private val GENART_NATURE_IDS = setOf(
-    GenartSource.GRASS,
-    GenartSource.BIRD_FLOCK,
-    GenartSource.MOUNTAINS,
-    GenartSource.POND_RIPPLES,
-    GenartSource.FALLING_LEAVES,
-    GenartSource.FIRE_EMBERS,
-    GenartSource.DUNES,
-    GenartSource.FISH_SCHOOL,
-    GenartSource.FIREFLIES,
-    GenartSource.BUBBLES,
-    GenartSource.CHERRY_BLOSSOMS,
-    GenartSource.WAVES,
-    GenartSource.TREE,
-    GenartSource.FLOWER,
-    GenartSource.LAKE,
-    GenartSource.FIELDS,
-    GenartSource.REEDS,
-    GenartSource.MOSS_GROWTH,
-    GenartSource.RIVERS,
-    GenartSource.CANYON_DUNES,
-    GenartSource.DRIFTING_POLLEN,
-    GenartSource.WIND_CHIME,
-    GenartSource.FLOW_RIBBONS,
-)
-
-private val GENART_WATER_IDS = setOf(
-    GenartSource.WAVES,
-    GenartSource.POND_RIPPLES,
-    GenartSource.RAIN,
-    GenartSource.FISH_SCHOOL,
-    GenartSource.BUBBLES,
-    GenartSource.LIGHT_DRIZZLE,
-    GenartSource.PEBBLE_SHORE_WASH,
-    GenartSource.FROST_CRYSTALS,
-    GenartSource.MOONLIGHT_RIPPLES,
-    GenartSource.INK_IN_WATER,
-    GenartSource.TERRARIUM_DRIP,
-    GenartSource.AQUARIUM,
-    GenartSource.RAIN_ON_GLASS,
-    GenartSource.REEDS,
-    GenartSource.RIVERS,
-    GenartSource.LAKE,
-    GenartSource.WATERFALL_MIST,
-    GenartSource.GERSTNER_OCEAN,
-    GenartSource.SOFT_CAUSTICS,
-)
-
-private val GENART_LIFE_IDS = setOf(
-    GenartSource.BIRD_FLOCK,
-    GenartSource.FISH_SCHOOL,
-    GenartSource.FIREFLIES,
-    GenartSource.ANT_TRAILS,
-    GenartSource.SLEEPING_PET,
-    GenartSource.DISTANT_DINOSAURS,
-    GenartSource.MOSS_GROWTH,
-    GenartSource.TERRARIUM_DRIP,
-    GenartSource.AQUARIUM,
-    GenartSource.TREE,
-    GenartSource.FLOWER,
-    GenartSource.CHERRY_BLOSSOMS,
-    GenartSource.DRIFTING_POLLEN,
-    GenartSource.CANDLE_EMBER,
-    GenartSource.WIND_CHIME,
-)
-
-private val GENART_EARTH_IDS = setOf(
-    GenartSource.GRASS,
-    GenartSource.MOUNTAINS,
-    GenartSource.FIRE_EMBERS,
-    GenartSource.DUNES,
-    GenartSource.HEAT_HAZE,
-    GenartSource.LANDSLIDE_DUST,
-    GenartSource.PEBBLE_SHORE_WASH,
-    GenartSource.TUMBLEWEED_DRIFT,
-    GenartSource.DISTANT_DINOSAURS,
-    GenartSource.MOSS_GROWTH,
-    GenartSource.FIELDS,
-    GenartSource.CANYON_DUNES,
-    GenartSource.CONTINENTS,
-    GenartSource.FIRE,
-)
-
-private val GENART_PLANETS_IDS = setOf(
-    GenartSource.SPHERE,
-    GenartSource.CONSTELLATION,
-    GenartSource.METEORS,
-    GenartSource.NEBULA,
-    GenartSource.STAR_FIELD,
-    GenartSource.SOLAR_SYSTEM,
-    GenartSource.ECLIPSE_CORONA,
-    GenartSource.SPACE_STATION_DRIFT,
-    GenartSource.SPIRAL_GALAXY,
-    GenartSource.ASTEROIDS,
-    GenartSource.CONTINENTS,
-    GenartSource.HALO_ECLIPSE,
-    GenartSource.ATMOSPHERIC_ASTEROID,
-    GenartSource.SATURN_RINGS,
-    GenartSource.LAVA_SUN,
-    GenartSource.MOON,
-)
-
-private val GENART_SCIFI_IDS = setOf(
-    GenartSource.PSEUDO3D,
-    GenartSource.TUNNEL,
-    GenartSource.STAR_FIELD,
-    GenartSource.SOLAR_SYSTEM,
-    GenartSource.ION_TRAIL,
-    GenartSource.WARP_STREAK,
-    GenartSource.SPACE_STATION_DRIFT,
-    GenartSource.CITY_LIGHTS,
-    GenartSource.ROADS,
-    GenartSource.ASTEROIDS,
-    GenartSource.SPIRAL_GALAXY,
-    GenartSource.DATA_HORIZON,
-    GenartSource.VORTEX_GLOW,
-    GenartSource.MATRIX,
-    GenartSource.SUPERDRIVE,
-    GenartSource.FIREWORKS,
-    GenartSource.ATMOSPHERIC_ASTEROID,
-    GenartSource.SATURN_RINGS,
-    GenartSource.LAVA_SUN,
-    GenartSource.SPIRAL_MANDALA,
-    GenartSource.CLIFFORD_WASH,
-)
-
-private val GENART_ABSTRACT_IDS = setOf(
-    GenartSource.BREATH_CIRCLES,
-    GenartSource.RIBBONS,
-    GenartSource.BLOBS,
-    GenartSource.NOISE_FIELD,
-    GenartSource.VORONOI,
-    GenartSource.SILK,
-    GenartSource.GRADIENT_MESH,
-    GenartSource.ARC_MOSAIC,
-    GenartSource.LOW_FREQ_NOISE_FIELD,
-    GenartSource.INK_IN_WATER,
-    GenartSource.SOFT_SHADOWS,
-    GenartSource.PARTICLES,
-    GenartSource.SOFT_CAUSTICS,
-    GenartSource.PAPER_CUT_PACK,
-    GenartSource.DIAMOND_WEAVE,
-    GenartSource.CHROMATIC_BLOBS,
-    GenartSource.PRISMATIC_SHADOWS,
-    GenartSource.AURORA_WASH,
-    GenartSource.VORTEX_GLOW,
-    GenartSource.SPECTRAL_FOLDS,
-    GenartSource.HALO_ECLIPSE,
-    GenartSource.MATRIX,
-    GenartSource.DRIFTING_HALOS,
-    GenartSource.SUPERDRIVE,
-    GenartSource.SPIRAL_MANDALA,
-    GenartSource.FLOW_RIBBONS,
-    GenartSource.CLIFFORD_WASH,
-)
-
-private val GENART_GEOMETRY_IDS = setOf(
-    GenartSource.PARTICLES,
-    GenartSource.PSEUDO3D,
-    GenartSource.SOFT_SHADOWS,
-    GenartSource.TUNNEL,
-    GenartSource.TONAL_GEOMETRY,
-    GenartSource.MICRO,
-    GenartSource.ROADS,
-    GenartSource.ARC_MOSAIC,
-    GenartSource.SPHERE,
-    GenartSource.CITY_LIGHTS,
-    GenartSource.DATA_HORIZON,
-    GenartSource.WARP_STREAK,
-    GenartSource.DIAMOND_WEAVE,
-    GenartSource.PRISMATIC_SHADOWS,
-    GenartSource.DRIFTING_HALOS,
-    GenartSource.SPIRAL_MANDALA,
-)
 
 /** Random / other topics = remote photo search across capable Sources. */
 fun matchesPhotoTopic(art: Artwork, stockCategory: StockPhotoCategory): Boolean =

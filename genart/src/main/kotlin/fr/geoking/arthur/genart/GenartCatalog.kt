@@ -63,7 +63,6 @@ enum class GenartEngineId {
     WindChime,
     DayNightWash,
     TumbleweedDrift,
-    DistantDinosaurs,
     CityLights,
     MossGrowth,
     TerrariumDrip,

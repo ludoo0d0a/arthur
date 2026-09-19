@@ -82,11 +82,6 @@ internal fun MatrixEngine(
             textAlign = Paint.Align.CENTER
         }
     }
-    val haloPaint = remember {
-        Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG).apply {
-            style = Paint.Style.FILL
-        }
-    }
 
     Canvas(modifier = modifier) {
         val w = size.width
@@ -135,10 +130,6 @@ internal fun MatrixEngine(
                         )
                         val headColor = TonalPalette.brightness(baseHead, brightness)
                         val glowColor = Color(0xFF00FF66)
-
-                        // Draw soft green radial halo behind head for shadow/glow effect
-                        haloPaint.color = glowColor.copy(alpha = 0.35f * dim).toArgb()
-                        canvas.drawCircle(x, cy - fontSize * 0.3f, fontSize * 0.9f, haloPaint)
 
                         // Green shadow layer text
                         glowPaint.color = glowColor.copy(alpha = 0.85f * dim).toArgb()

@@ -81,7 +81,6 @@ class GenartSource(
         const val WIND_CHIME = "genart.windchime"
         const val DAY_NIGHT_WASH = "genart.daynightwash"
         const val TUMBLEWEED_DRIFT = "genart.tumbleweed"
-        const val DISTANT_DINOSAURS = "genart.dinosaurs"
         const val CITY_LIGHTS = "genart.citylights"
         const val MOSS_GROWTH = "genart.moss"
         const val TERRARIUM_DRIP = "genart.terrariumdrip"
@@ -180,7 +179,6 @@ class GenartSource(
             entry(WIND_CHIME, "#60 - Wind Chime Silhouette"),
             entry(DAY_NIGHT_WASH, "#61 - Soft Day-Night Wash"),
             entry(TUMBLEWEED_DRIFT, "#62 - Tumbleweed Drift"),
-            entry(DISTANT_DINOSAURS, "#63 - Distant Dinosaur Silhouettes"),
             entry(CITY_LIGHTS, "#64 - City Night Lights"),
             entry(MOSS_GROWTH, "#65 - Moss Growth"),
             entry(TERRARIUM_DRIP, "#66 - Terrarium Drip"),

@@ -158,8 +158,13 @@ val appModule = module {
         )
     }
     single<PackOwnership> {
+        val developerSettings = get<DeveloperSettings>()
         DevAwarePackOwnership(
             delegate = RevenueCatPackOwnership(get()),
+            simulateAllPacks = {
+                (BuildConfig.DEBUG || BuildConfig.DEBUG_DEV) &&
+                    developerSettings.simulateAllPacks.value
+            },
         )
     }
     single { CustomFractalStore(androidContext()) }

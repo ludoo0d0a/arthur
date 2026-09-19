@@ -3,8 +3,11 @@ package fr.geoking.arthur.ui.screens
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import android.content.Context
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.test.core.app.ApplicationProvider
+import fr.geoking.arthur.R
 import fr.geoking.arthur.phone.theme.ArthurTheme
 import fr.geoking.arthur.shared.error.ErrorCategory
 import fr.geoking.arthur.shared.error.ErrorLogger
@@ -16,7 +19,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
+@Config(sdk = [34], qualifiers = "en")
 class SettingsScreenTest {
 
     @get:Rule
@@ -24,6 +27,8 @@ class SettingsScreenTest {
 
     @Test
     fun settingsScreen_whenShowDeveloperTrue_showsDeveloperMenu() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val devTitle = context.getString(R.string.screen_developer)
         composeTestRule.setContent {
             ArthurTheme {
                 SettingsScreen(
@@ -33,11 +38,13 @@ class SettingsScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Developer").assertIsDisplayed()
+        composeTestRule.onNodeWithText(devTitle).assertExists()
     }
 
     @Test
     fun settingsScreen_whenShowDeveloperFalse_hidesDeveloperMenu() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val devTitle = context.getString(R.string.screen_developer)
         composeTestRule.setContent {
             ArthurTheme {
                 SettingsScreen(
@@ -47,7 +54,7 @@ class SettingsScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Developer").assertDoesNotExist()
+        composeTestRule.onNodeWithText(devTitle).assertDoesNotExist()
     }
 
     @Test
@@ -130,5 +137,25 @@ class SettingsScreenTest {
         composeTestRule.onNodeWithTag("dev_verbose").assertIsDisplayed()
         composeTestRule.onNodeWithTag("dev_verbose").performClick()
         assertEquals(true, verboseState)
+    }
+
+    @Test
+    fun developerContent_showsSimulateAllPacksToggle() {
+        var simulateAllPacksState = false
+        composeTestRule.setContent {
+            ArthurTheme {
+                SettingsScreen(
+                    onDismiss = {},
+                    showDeveloper = true,
+                    simulateAllPacks = simulateAllPacksState,
+                    onSimulateAllPacksChange = { simulateAllPacksState = it },
+                    initialScreenStack = listOf(SettingsScreenPage.Developer),
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithTag("dev_simulate_all_packs").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("dev_simulate_all_packs").performClick()
+        assertEquals(true, simulateAllPacksState)
     }
 }

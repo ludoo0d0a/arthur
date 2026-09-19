@@ -46,4 +46,20 @@ class RevenueCatPremiumEntitlementTest {
         )
         assertTrue(entitlement.isPremium)
     }
+
+    @Test
+    fun devAwarePackOwnership_orsSimulateAllPacksOverride() {
+        var simulatePacks = false
+        val gateway = FakePurchasesGateway(premium = false)
+        val ownership = DevAwarePackOwnership(
+            delegate = RevenueCatPackOwnership(gateway),
+            simulateAllPacks = { simulatePacks },
+        )
+        assertFalse(ownership.ownsPersonalPhotos())
+        assertFalse(ownership.ownsCustomFractal())
+
+        simulatePacks = true
+        assertTrue(ownership.ownsPersonalPhotos())
+        assertTrue(ownership.ownsCustomFractal())
+    }
 }

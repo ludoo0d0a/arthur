@@ -32,6 +32,24 @@ class DeveloperSettingsTest {
     }
 
     @Test
+    fun simulateAllPacks_defaultsTrue() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        context.getSharedPreferences("arthur_developer", Context.MODE_PRIVATE).edit().clear().commit()
+        val settings = DeveloperSettings(context)
+        assertTrue(settings.simulateAllPacks.value)
+    }
+
+    @Test
+    fun simulateAllPacks_persists() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        context.getSharedPreferences("arthur_developer", Context.MODE_PRIVATE).edit().clear().commit()
+        val settings = DeveloperSettings(context)
+        settings.setSimulateAllPacks(false)
+        assertEquals(false, settings.simulateAllPacks.value)
+        assertEquals(false, DeveloperSettings(context).simulateAllPacks.value)
+    }
+
+    @Test
     fun verbose_defaultsFalse() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         context.getSharedPreferences("arthur_developer", Context.MODE_PRIVATE).edit().clear().commit()

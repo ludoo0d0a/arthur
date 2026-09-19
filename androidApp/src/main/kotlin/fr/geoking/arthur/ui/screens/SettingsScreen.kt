@@ -141,6 +141,8 @@ fun SettingsScreen(
     showDeveloper: Boolean = BuildConfig.DEBUG || BuildConfig.DEBUG_DEV,
     simulatePremium: Boolean = true,
     onSimulatePremiumChange: (Boolean) -> Unit = {},
+    simulateAllPacks: Boolean = true,
+    onSimulateAllPacksChange: (Boolean) -> Unit = {},
     verbose: Boolean = false,
     onVerboseChange: (Boolean) -> Unit = {},
     rotationIntervalMs: Long = AmbientAlbumArt.ROTATION_INTERVAL_MS,
@@ -260,6 +262,8 @@ fun SettingsScreen(
                 SettingsScreenPage.Developer -> DeveloperContent(
                     simulatePremium = simulatePremium,
                     onSimulatePremiumChange = onSimulatePremiumChange,
+                    simulateAllPacks = simulateAllPacks,
+                    onSimulateAllPacksChange = onSimulateAllPacksChange,
                     verbose = verbose,
                     onVerboseChange = onVerboseChange,
                     onOpenErrorLog = { screenStack = screenStack + SettingsScreenPage.DeveloperErrorLog },
@@ -553,6 +557,8 @@ private fun rotationIntervalLabel(ms: Long): String {
 private fun DeveloperContent(
     simulatePremium: Boolean,
     onSimulatePremiumChange: (Boolean) -> Unit,
+    simulateAllPacks: Boolean = true,
+    onSimulateAllPacksChange: (Boolean) -> Unit = {},
     verbose: Boolean = false,
     onVerboseChange: (Boolean) -> Unit = {},
     onOpenErrorLog: () -> Unit = {},
@@ -591,6 +597,31 @@ private fun DeveloperContent(
                     checked = simulatePremium,
                     onCheckedChange = onSimulatePremiumChange,
                     modifier = Modifier.testTag("dev_simulate_premium"),
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+                    Text(
+                        text = stringResource(R.string.dev_simulate_all_packs),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    Text(
+                        text = stringResource(R.string.dev_simulate_all_packs_subtitle),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = simulateAllPacks,
+                    onCheckedChange = onSimulateAllPacksChange,
+                    modifier = Modifier.testTag("dev_simulate_all_packs"),
                 )
             }
 

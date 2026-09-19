@@ -151,6 +151,8 @@
     <string name="settings_developer_subtitle">Debug options &amp; testing tools</string>
     <string name="dev_simulate_premium">Simulate premium</string>
     <string name="dev_simulate_premium_subtitle">Unlock premium features without a purchase</string>
+    <string name="dev_simulate_all_packs">Simulate all packs</string>
+    <string name="dev_simulate_all_packs_subtitle">Unlock all marketplace content packs without purchase</string>
     <string name="dev_verbose">Verbose mode</string>
     <string name="dev_verbose_subtitle">Display debug metrics and query timing floating bar</string>
     <string name="dev_errors_list">Error Log</string>

@@ -22,4 +22,5 @@ val UsedApisList: List<UsedApi> = listOf(
     UsedApi("Pixabay Videos", "https://pixabay.com/api/docs/"),
     UsedApi("Coverr", "https://api.coverr.co/docs/"),
     UsedApi("Unsplash", "https://unsplash.com/developers"),
+    UsedApi("ZenQuotes", "https://zenquotes.io/"),
 )

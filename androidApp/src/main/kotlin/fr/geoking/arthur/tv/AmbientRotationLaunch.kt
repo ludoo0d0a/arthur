@@ -1,5 +1,6 @@
 package fr.geoking.arthur.tv
 
+import fr.geoking.arthur.auto.AmbientAlbumArt
 import fr.geoking.arthur.shared.domain.Artwork
 
 /**
@@ -19,7 +20,7 @@ object AmbientRotationLaunch {
         private set
 
     fun prepare(pool: List<Artwork>, renewSourceIds: List<String>? = null) {
-        this.pool = pool
+        this.pool = AmbientAlbumArt.sampleRotationPool(pool)
         this.renewSourceIds = renewSourceIds
     }
 }

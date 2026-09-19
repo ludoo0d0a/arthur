@@ -5,6 +5,7 @@ import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.PremiumEntitlement
 import fr.geoking.arthur.shared.domain.Source
 import fr.geoking.arthur.shared.engine.ContentEngine
+import fr.geoking.arthur.auto.AmbientAlbumArt
 import fr.geoking.arthur.ui.components.PackFamily
 import fr.geoking.arthur.ui.components.PackSelection
 import kotlinx.coroutines.runBlocking
@@ -21,8 +22,17 @@ class AmbientRotationLaunchTest {
             Artwork(id = "b", title = "B", sourceId = "genart", kind = ArtworkKind.Genart),
         )
         AmbientRotationLaunch.prepare(pool, renewSourceIds = listOf("met"))
-        assertEquals(pool, AmbientRotationLaunch.pool)
+        assertEquals(pool.map { it.id }.toSet(), AmbientRotationLaunch.pool.map { it.id }.toSet())
         assertEquals(listOf("met"), AmbientRotationLaunch.renewSourceIds)
+    }
+
+    @Test
+    fun prepare_capsPoolToMaxAutoRotation() {
+        val pool = (1..8).map { i ->
+            Artwork(id = "art-$i", title = "A$i", sourceId = "bundled", kind = ArtworkKind.Photo)
+        }
+        AmbientRotationLaunch.prepare(pool)
+        assertEquals(AmbientAlbumArt.MAX_AUTO_ROTATION_POOL, AmbientRotationLaunch.pool.size)
     }
 
     @Test
@@ -56,8 +66,9 @@ class AmbientRotationLaunchTest {
         )
         val requested = stashed[0]
         val (pool, artwork) = loadRotatingAmbient(engine, requested, stashed)
-        assertEquals(stashed, pool)
+        assertEquals(stashed.map { it.id }.toSet(), pool.map { it.id }.toSet())
         assertEquals(requested.id, artwork?.id)
+        assertEquals(requested.id, pool.first().id)
     }
 
     @Test

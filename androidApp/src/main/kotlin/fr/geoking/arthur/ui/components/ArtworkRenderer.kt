@@ -63,6 +63,9 @@ import kotlinx.coroutines.withContext
  * Renders Artwork for Control Plane hero and phone Ambient.
  * Generative kinds use live Canvas engines; stills prefer local cache then remote URL.
  * Failures show the category icon on a gradient with a warning — never another engine.
+ *
+ * [onDisplayReady] fires once the still is on screen (or generative/video has started),
+ * including after a failed load so Ambient rotation does not wait forever.
  */
 @Composable
 fun ArtworkRenderer(
@@ -70,6 +73,7 @@ fun ArtworkRenderer(
     isActive: Boolean,
     modifier: Modifier = Modifier,
     quality: GenartQuality = GenartQuality.High,
+    onDisplayReady: (() -> Unit)? = null,
 ) {
     key(artwork.id) {
         Box(modifier = modifier.fillMaxSize()) {
@@ -77,6 +81,7 @@ fun ArtworkRenderer(
                 ArtworkKind.Genart -> {
                     val engine = GenartCatalog.engineForId(artwork.id)
                     if (engine != null) {
+                        LaunchedEffect(artwork.id) { onDisplayReady?.invoke() }
                         GenartEffectCanvas(
                             engine = engine,
                             isActive = isActive,
@@ -88,32 +93,38 @@ fun ArtworkRenderer(
                             localPath = artwork.localPath,
                             remoteUrl = artwork.remoteUrl,
                             kind = artwork.kind,
+                            onDisplayReady = onDisplayReady,
                         )
                     } else {
+                        LaunchedEffect(artwork.id) { onDisplayReady?.invoke() }
                         StillArtworkPlaceholder(kind = artwork.kind, showWarning = true)
                     }
                 }
                 ArtworkKind.CustomFractal -> {
                     val params = CustomFractalParams.fromArtworkId(artwork.id)
                     if (params != null) {
+                        LaunchedEffect(artwork.id) { onDisplayReady?.invoke() }
                         CustomFractalEffectCanvas(
                             params = params,
                             isActive = isActive,
                             quality = quality.toFractalQuality(),
                         )
                     } else {
+                        LaunchedEffect(artwork.id) { onDisplayReady?.invoke() }
                         StillArtworkPlaceholder(kind = artwork.kind, showWarning = true)
                     }
                 }
                 ArtworkKind.FractalPreset -> {
                     val type = fractalTypeForArtworkId(artwork.id)
                     if (type != null) {
+                        LaunchedEffect(artwork.id) { onDisplayReady?.invoke() }
                         FractalEffectCanvas(
                             isActive = isActive,
                             quality = quality.toFractalQuality(),
                             forceType = type,
                         )
                     } else {
+                        LaunchedEffect(artwork.id) { onDisplayReady?.invoke() }
                         StillArtworkPlaceholder(kind = artwork.kind, showWarning = true)
                     }
                 }
@@ -121,12 +132,14 @@ fun ArtworkRenderer(
                     val url = artwork.remoteUrl?.takeIf { it.isNotBlank() }
                         ?: artwork.localPath?.takeIf { it.isNotBlank() }
                     if (url != null) {
+                        LaunchedEffect(artwork.id) { onDisplayReady?.invoke() }
                         AmbientVideoPlayer(
                             url = url,
                             isActive = isActive,
                             modifier = Modifier.fillMaxSize(),
                         )
                     } else {
+                        LaunchedEffect(artwork.id) { onDisplayReady?.invoke() }
                         StillArtworkPlaceholder(kind = artwork.kind, showWarning = true)
                     }
                 }
@@ -137,8 +150,10 @@ fun ArtworkRenderer(
                             localPath = artwork.localPath,
                             remoteUrl = artwork.remoteUrl,
                             kind = artwork.kind,
+                            onDisplayReady = onDisplayReady,
                         )
                     } else {
+                        LaunchedEffect(artwork.id) { onDisplayReady?.invoke() }
                         StillArtworkPlaceholder(kind = artwork.kind, showWarning = true)
                     }
                 }
@@ -177,6 +192,7 @@ private fun RemoteStillImage(
     remoteUrl: String?,
     kind: ArtworkKind,
     modifier: Modifier = Modifier,
+    onDisplayReady: (() -> Unit)? = null,
 ) {
     val imageCache = rememberArtworkImageCache()
     val developerSettings = remember {
@@ -223,6 +239,12 @@ private fun RemoteStillImage(
                 hasFailed = true
                 failureReason = error.message ?: error.toString()
             }
+    }
+
+    LaunchedEffect(bitmapState, hasFailed) {
+        if (bitmapState != null || hasFailed) {
+            onDisplayReady?.invoke()
+        }
     }
 
     val bmp = bitmapState

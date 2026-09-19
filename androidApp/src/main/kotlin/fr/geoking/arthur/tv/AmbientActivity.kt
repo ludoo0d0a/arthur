@@ -32,6 +32,7 @@ import fr.geoking.arthur.ui.components.allowsGenerativeAmbientFallback
 import fr.geoking.arthur.ui.components.resolvePackPool
 import fr.geoking.arthur.ui.components.sourceIdsForAmbientLoad
 import fr.geoking.arthur.ui.screens.AmbientScreenContent
+import fr.geoking.arthur.auto.AmbientAlbumArt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -86,9 +87,9 @@ class AmbientActivity : ComponentActivity() {
                                 PreparedRotation(sourceIds = renewIds, artworkIds = emptyList()),
                             ).collect { emitted ->
                                 if (emitted.isNotEmpty()) {
-                                    rotationPool = emitted
+                                    rotationPool = AmbientAlbumArt.sampleRotationPool(emitted)
                                     if (artwork == null) {
-                                        artwork = emitted.randomOrNull()
+                                        artwork = rotationPool.randomOrNull()
                                     }
                                     AmbientRotationLaunch.prepare(emitted, renewIds)
                                 }
@@ -116,7 +117,7 @@ class AmbientActivity : ComponentActivity() {
                                             PreparedRotation(sourceIds = ids, artworkIds = emptyList()),
                                         ).collect { emitted ->
                                             if (emitted.size >= 2) {
-                                                rotationPool = emitted
+                                                rotationPool = AmbientAlbumArt.sampleRotationPool(emitted)
                                                 AmbientRotationLaunch.prepare(emitted, ids)
                                             }
                                         }
@@ -280,7 +281,7 @@ internal suspend fun loadRotatingAmbient(
             pool.first { it.id == requested.id }
         else -> requested
     }
-    return pool to artwork
+    return AmbientAlbumArt.sampleRotationPool(pool, seed = artwork) to artwork
 }
 
 /** Dream: rotate the selected screensaver pack catalog, or default ambient pack when none selected. */
@@ -303,6 +304,9 @@ internal suspend fun loadDreamAmbient(
         } else {
             null
         }
-    val rotationPool = if (pool.isNotEmpty()) pool else fullCatalog
-    return rotationPool to chosen
+    val rotationPool = AmbientAlbumArt.sampleRotationPool(
+        if (pool.isNotEmpty()) pool else fullCatalog,
+        seed = chosen,
+    )
+    return rotationPool to (chosen ?: rotationPool.firstOrNull())
 }

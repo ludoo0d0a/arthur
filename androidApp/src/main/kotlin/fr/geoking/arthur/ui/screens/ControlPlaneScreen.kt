@@ -46,10 +46,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.R
+import fr.geoking.arthur.auto.AmbientAlbumArt
 import fr.geoking.arthur.phone.theme.ArthurTheme
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.PreparedRotation
+import fr.geoking.arthur.shared.domain.isGenerative
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.shared.source.BundledPackSource
@@ -217,19 +219,37 @@ fun ControlPlaneScreen(
                         }
                     }
             val pool = resolvePackPool(cachedPool, selection)
-            val chosen = pool.randomOrNull()
+            val preferred: (Artwork) -> Boolean = { art ->
+                art.isGenerative ||
+                    !art.localPath.isNullOrBlank() ||
+                    imageCache.hasImage(art.id)
+            }
+            val rotationPool = AmbientAlbumArt.sampleRotationPool(
+                pool = pool,
+                isPreferred = preferred,
+            )
+            val chosen = rotationPool.firstOrNull()
                 ?: if (selection.allowsGenerativeAmbientFallback()) {
                     resolveAmbientArtwork(catalog, artworkId = null)
                 } else {
                     null
                 }
-            onStartAmbient(chosen, pool, renewIds)
+            onStartAmbient(chosen, rotationPool, renewIds)
         },
         onStartAmbientArtwork = { artwork ->
             syncSourceSettings()
             val renewIds = selection.sourceIdsForAmbientLoad()
             val pool = resolvePackPool(catalog, selection)
-            onStartAmbient(artwork, pool, renewIds)
+            val rotationPool = AmbientAlbumArt.sampleRotationPool(
+                pool = pool,
+                seed = artwork,
+                isPreferred = { art ->
+                    art.isGenerative ||
+                        !art.localPath.isNullOrBlank() ||
+                        imageCache.hasImage(art.id)
+                },
+            )
+            onStartAmbient(artwork, rotationPool, renewIds)
         },
         modifier = modifier,
         onCreateCustomFractal = onCreateCustomFractal,

@@ -141,6 +141,8 @@ fun SettingsScreen(
     onVerboseChange: (Boolean) -> Unit = {},
     rotationIntervalMs: Long = AmbientAlbumArt.ROTATION_INTERVAL_MS,
     onRotationIntervalChange: (Long) -> Unit = {},
+    showQuotes: Boolean = true,
+    onShowQuotesChange: (Boolean) -> Unit = {},
     deviantArtUsername: String = "",
     onDeviantArtUsernameChange: (String) -> Unit = {},
     deviantArtPassword: String = "",
@@ -226,6 +228,8 @@ fun SettingsScreen(
                     isPremium = isPremium,
                     showDeveloper = showDeveloper,
                     rotationIntervalMs = rotationIntervalMs,
+                    showQuotes = showQuotes,
+                    onShowQuotesChange = onShowQuotesChange,
                     onCheckForUpdate = onCheckForUpdate,
                     onNavigate = { screenStack = screenStack + it },
                 )
@@ -263,6 +267,8 @@ private fun MainMenu(
     isPremium: Boolean,
     showDeveloper: Boolean,
     rotationIntervalMs: Long,
+    showQuotes: Boolean,
+    onShowQuotesChange: (Boolean) -> Unit,
     onCheckForUpdate: (() -> Unit)?,
     onNavigate: (SettingsScreenPage) -> Unit,
 ) {
@@ -321,6 +327,31 @@ private fun MainMenu(
                 value = rotationIntervalLabel(rotationIntervalMs),
                 onClick = { onNavigate(SettingsScreenPage.RotationInterval) },
             )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .testTag("settings_show_quotes"),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+                    Text(
+                        text = stringResource(R.string.settings_show_quotes),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_show_quotes_subtitle),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = showQuotes,
+                    onCheckedChange = onShowQuotesChange,
+                    modifier = Modifier.testTag("settings_show_quotes_switch"),
+                )
+            }
             SettingsItem(
                 label = "DeviantArt Credentials",
                 onClick = { onNavigate(SettingsScreenPage.DeviantArtCredentials) },

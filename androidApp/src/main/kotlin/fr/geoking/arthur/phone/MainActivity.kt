@@ -34,6 +34,7 @@ import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.source.DeveloperSettings
 import fr.geoking.arthur.source.HttpCacheController
 import fr.geoking.arthur.source.MuseumSearchSettings
+import fr.geoking.arthur.source.QuoteSettings
 import fr.geoking.arthur.source.RotationSettings
 import fr.geoking.arthur.source.ScreensaverSettings
 import fr.geoking.arthur.source.StockPhotoSettings
@@ -61,6 +62,7 @@ class MainActivity : ComponentActivity() {
     private val developerSettings: DeveloperSettings by inject()
     private val rotationSettings: RotationSettings by inject()
     private val screensaverSettings: ScreensaverSettings by inject()
+    private val quoteSettings: QuoteSettings by inject()
 
     private val inAppUpdateHelper by lazy { InAppUpdateHelper(applicationContext) }
 
@@ -97,6 +99,7 @@ class MainActivity : ComponentActivity() {
                         val simulatePremium by developerSettings.simulatePremium.collectAsState()
                         val verbose by developerSettings.verbose.collectAsState()
                         val rotationIntervalMs by rotationSettings.intervalMs.collectAsState()
+                        val showQuotes by quoteSettings.showQuotes.collectAsState()
                         val isPremium = premium.isPremium
                         // Custom fractal authoring needs touch; TV uses remote only.
                         when {
@@ -111,6 +114,8 @@ class MainActivity : ComponentActivity() {
                                     onVerboseChange = developerSettings::setVerbose,
                                     rotationIntervalMs = rotationIntervalMs,
                                     onRotationIntervalChange = rotationSettings::setIntervalMs,
+                                    showQuotes = showQuotes,
+                                    onShowQuotesChange = quoteSettings::setShowQuotes,
                                     deviantArtUsername = stockPhotoSettings.deviantArtUsername,
                                     onDeviantArtUsernameChange = { stockPhotoSettings.deviantArtUsername = it },
                                     deviantArtPassword = stockPhotoSettings.deviantArtPassword,

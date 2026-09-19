@@ -40,6 +40,8 @@ import fr.geoking.arthur.shared.source.WikimediaStreetArtSource
 import fr.geoking.arthur.source.ArtworkImageCache
 import fr.geoking.arthur.source.DeveloperSettings
 import fr.geoking.arthur.source.MuseumSearchSettings
+import fr.geoking.arthur.source.QuoteRepository
+import fr.geoking.arthur.source.QuoteSettings
 import fr.geoking.arthur.source.RotationSettings
 import fr.geoking.arthur.source.ScreensaverSettings
 import fr.geoking.arthur.source.StockPhotoSettings
@@ -126,6 +128,17 @@ val appModule = module {
     single { DeveloperSettings(androidContext()) }
     single { RotationSettings(androidContext()) }
     single { ScreensaverSettings(androidContext()) }
+    single { QuoteSettings(androidContext()) }
+    single {
+        val client = get<HttpClient>()
+        val errorLogger = get<ErrorLogger>()
+        QuoteRepository(
+            context = androidContext(),
+            httpGet = { url ->
+                safeHttpGet(client, url, QuoteRepository.SOURCE_ID, errorLogger)
+            },
+        )
+    }
     single<PremiumEntitlement> {
         val gatewayEntitlement = RevenueCatPremiumEntitlement(get())
         val developerSettings = get<DeveloperSettings>()

@@ -2,10 +2,13 @@ package fr.geoking.arthur.shared.engine
 
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
-import fr.geoking.arthur.shared.domain.FakePremiumEntitlement
 import fr.geoking.arthur.shared.domain.FreeTierLimits
 import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.Source
+import fr.geoking.arthur.shared.marketplace.FakePackOwnership
+import fr.geoking.arthur.shared.marketplace.GenartPackTopics
+import fr.geoking.arthur.shared.marketplace.MarketplaceCatalog
+import fr.geoking.arthur.shared.marketplace.PackOwnership
 import fr.geoking.arthur.shared.source.BundledPackSource
 import fr.geoking.arthur.shared.source.FractalSource
 import fr.geoking.arthur.shared.source.GenartSource
@@ -33,36 +36,49 @@ class ContentEngineTest {
             Artwork("fp2", "Preset 2", sourceId = id, kind = ArtworkKind.FractalPreset),
             Artwork("fp3", "Preset 3", sourceId = id, kind = ArtworkKind.FractalPreset),
             Artwork("fp4", "Preset 4", sourceId = id, kind = ArtworkKind.FractalPreset),
-            Artwork("g1", "Genart 1", sourceId = id, kind = ArtworkKind.Genart),
-            Artwork("g2", "Genart 2", sourceId = id, kind = ArtworkKind.Genart),
-            Artwork("g3", "Genart 3", sourceId = id, kind = ArtworkKind.Genart),
+            Artwork(GenartSource.PARTICLES, "Genart 1", sourceId = id, kind = ArtworkKind.Genart),
+            Artwork(GenartSource.PSEUDO3D, "Genart 2", sourceId = id, kind = ArtworkKind.Genart),
+            Artwork(GenartSource.BLOBS, "Genart 3", sourceId = id, kind = ArtworkKind.Genart),
         )
     }
 
     @Test
-    fun freeTier_capsPhotosFractalsGenart_andBlocksPremiumKinds() = runBlocking {
+    fun freeTier_capsPhotosFractals_andBlocksLockedPacks() = runBlocking {
         val engine = ContentEngine(
             sources = listOf(richSource),
-            entitlement = FakePremiumEntitlement(isPremium = false),
-            limits = FreeTierLimits(maxPhotoArtwork = 5, maxFractalPresets = 3, maxGenart = 2),
+            packOwnership = PackOwnership.NONE,
+            limits = FreeTierLimits(maxPhotoArtwork = 5, maxFractalPresets = 3),
         )
         val catalog = engine.catalog(PreparedRotation(sourceIds = listOf("rich"), artworkIds = emptyList()))
         assertEquals(5, catalog.count { it.kind == ArtworkKind.Photo })
         assertEquals(3, catalog.count { it.kind == ArtworkKind.FractalPreset })
         assertEquals(2, catalog.count { it.kind == ArtworkKind.Genart })
+        assertTrue(catalog.any { it.id == GenartSource.PARTICLES })
+        assertTrue(catalog.any { it.id == GenartSource.PSEUDO3D })
+        assertFalse(catalog.any { it.id == GenartSource.BLOBS })
         assertFalse(catalog.any { it.kind == ArtworkKind.PersonalPhoto })
         assertFalse(catalog.any { it.kind == ArtworkKind.CustomFractal })
     }
 
     @Test
-    fun premium_unlocksAllKinds() = runBlocking {
+    fun owningPacks_unlocksPersonalCustomAndGenartTopics() = runBlocking {
+        val ownership = FakePackOwnership(
+            owned = setOf(
+                MarketplaceCatalog.PERSONAL_PHOTOS_ID,
+                MarketplaceCatalog.genartPackId(GenartPackTopics.CUSTOM),
+                MarketplaceCatalog.genartPackId(GenartPackTopics.TAPET),
+                MarketplaceCatalog.genartPackId(GenartPackTopics.FRACTAL),
+            ),
+        )
         val engine = ContentEngine(
             sources = listOf(richSource),
-            entitlement = FakePremiumEntitlement(isPremium = true),
+            packOwnership = ownership,
         )
         val catalog = engine.catalog(PreparedRotation(sourceIds = listOf("rich"), artworkIds = emptyList()))
         assertTrue(catalog.any { it.kind == ArtworkKind.PersonalPhoto })
         assertTrue(catalog.any { it.kind == ArtworkKind.CustomFractal })
+        assertTrue(catalog.any { it.id == GenartSource.BLOBS })
+        assertEquals(4, catalog.count { it.kind == ArtworkKind.FractalPreset })
         assertEquals(15, catalog.size)
     }
 
@@ -71,7 +87,7 @@ class ContentEngineTest {
         val bundled = BundledPackSource()
         val engine = ContentEngine(
             sources = listOf(bundled),
-            entitlement = FakePremiumEntitlement(isPremium = false),
+            packOwnership = PackOwnership.NONE,
         )
         val prepared = PreparedRotation(
             sourceIds = listOf(BundledPackSource.ID),
@@ -82,47 +98,53 @@ class ContentEngineTest {
     }
 
     @Test
-    fun genartSource_freeTier_capsAtTwo() = runBlocking {
+    fun genartSource_freeAllowlist_only() = runBlocking {
         val engine = ContentEngine(
             sources = listOf(GenartSource()),
-            entitlement = FakePremiumEntitlement(isPremium = false),
-            limits = FreeTierLimits(maxGenart = 2),
+            packOwnership = PackOwnership.NONE,
         )
         val catalog = engine.catalog(
             PreparedRotation(sourceIds = listOf(GenartSource.ID), artworkIds = emptyList()),
         )
-        assertEquals(2, catalog.size)
+        assertEquals(MarketplaceCatalog.freeGenartEngineIds.size, catalog.size)
+        assertTrue(catalog.all { it.id in MarketplaceCatalog.freeGenartEngineIds })
         assertTrue(catalog.all { it.kind == ArtworkKind.Genart })
-        assertEquals(
-            listOf(GenartSource.PARTICLES, GenartSource.PSEUDO3D),
-            catalog.map { it.id },
-        )
     }
 
     @Test
-    fun genartSource_premium_includesAllEngines() = runBlocking {
+    fun genartSource_owningAllTopicPacks_includesMappedEngines() = runBlocking {
+        val ownership = FakePackOwnership().also { it.unlockAll() }
         val engine = ContentEngine(
             sources = listOf(GenartSource()),
-            entitlement = FakePremiumEntitlement(isPremium = true),
+            packOwnership = ownership,
         )
         val catalog = engine.catalog(
             PreparedRotation(sourceIds = listOf(GenartSource.ID), artworkIds = emptyList()),
         )
-        assertEquals(GenartSource.defaultCatalog().size, catalog.size)
+        val expected = GenartSource.defaultCatalog().map { it.id }.filter { id ->
+            id in MarketplaceCatalog.freeGenartEngineIds ||
+                GenartPackTopics.topicsCoveringEngine(id).isNotEmpty()
+        }.toSet()
+        assertEquals(expected, catalog.map { it.id }.toSet())
         assertTrue(catalog.all { it.kind == ArtworkKind.Genart })
     }
 
     @Test
-    fun genartSource_defaultFreeTier_includesAbstractTapetEngines() = runBlocking {
+    fun genartSource_owningTapet_includesAbstractTapetEngines() = runBlocking {
+        val ownership = FakePackOwnership(
+            owned = setOf(
+                MarketplaceCatalog.genartPackId(GenartPackTopics.TAPET),
+                MarketplaceCatalog.genartPackId(GenartPackTopics.ABSTRACT),
+            ),
+        )
         val engine = ContentEngine(
             sources = listOf(GenartSource()),
-            entitlement = FakePremiumEntitlement(isPremium = false),
+            packOwnership = ownership,
         )
         val catalog = engine.catalog(
             PreparedRotation(sourceIds = listOf(GenartSource.ID), artworkIds = emptyList()),
         )
         val ids = catalog.map { it.id }.toSet()
-        assertEquals(GenartSource.defaultCatalog().size, catalog.size)
         assertTrue(ids.contains(GenartSource.BLOBS))
         assertTrue(ids.contains(GenartSource.NOISE_FIELD))
         assertTrue(ids.contains(GenartSource.VORONOI))
@@ -137,7 +159,7 @@ class ContentEngineTest {
     fun fractalSource_freeTier_capsPresets() = runBlocking {
         val engine = ContentEngine(
             sources = listOf(FractalSource()),
-            entitlement = FakePremiumEntitlement(isPremium = false),
+            packOwnership = PackOwnership.NONE,
             limits = FreeTierLimits(maxFractalPresets = 3),
         )
         val catalog = engine.catalog(
@@ -151,7 +173,7 @@ class ContentEngineTest {
     fun freeTier_keepsAllBundledSuggestionPhotos() = runBlocking {
         val engine = ContentEngine(
             sources = listOf(BundledPackSource()),
-            entitlement = FakePremiumEntitlement(isPremium = false),
+            packOwnership = PackOwnership.NONE,
             limits = FreeTierLimits(maxPhotoArtwork = 2),
         )
         val catalog = engine.catalog(
@@ -178,16 +200,16 @@ class ContentEngineTest {
                     kind = ArtworkKind.Photo,
                     remoteUrl = "https://example.com/a.jpg",
                 ),
-                Artwork("g1", "Genart", sourceId = id, kind = ArtworkKind.Genart),
+                Artwork(GenartSource.PARTICLES, "Genart", sourceId = id, kind = ArtworkKind.Genart),
             )
         }
         val engine = ContentEngine(
             sources = listOf(source),
-            entitlement = FakePremiumEntitlement(isPremium = false),
-            limits = FreeTierLimits(maxPhotoArtwork = 5, maxGenart = 2),
+            packOwnership = PackOwnership.NONE,
+            limits = FreeTierLimits(maxPhotoArtwork = 5),
         )
         val catalog = engine.catalog(PreparedRotation(sourceIds = listOf("mixed"), artworkIds = emptyList()))
-        assertEquals(setOf("ok", "g1"), catalog.map { it.id }.toSet())
+        assertEquals(setOf("ok", GenartSource.PARTICLES), catalog.map { it.id }.toSet())
         assertEquals(2, catalog.size)
     }
 
@@ -213,7 +235,7 @@ class ContentEngineTest {
                 stills("harvard", 10),
                 stills("smithsonian", 10),
             ),
-            entitlement = FakePremiumEntitlement(isPremium = false),
+            packOwnership = PackOwnership.NONE,
             limits = FreeTierLimits(maxPhotoArtwork = 8),
         )
         val catalog = engine.catalog(
@@ -243,17 +265,17 @@ class ContentEngineTest {
             override val id = "good"
             override val displayName = "Good Source"
             override suspend fun load() = listOf(
-                Artwork("g1", "Good Art", sourceId = id, kind = ArtworkKind.Genart),
+                Artwork(GenartSource.PARTICLES, "Good Art", sourceId = id, kind = ArtworkKind.Genart),
             )
         }
         val engine = ContentEngine(
             sources = listOf(failingSource, goodSource),
-            entitlement = FakePremiumEntitlement(isPremium = false),
+            packOwnership = PackOwnership.NONE,
         )
         val catalog = engine.catalog(
             PreparedRotation(sourceIds = listOf("failing", "good"), artworkIds = emptyList()),
         )
         assertEquals(1, catalog.size)
-        assertEquals("g1", catalog.first().id)
+        assertEquals(GenartSource.PARTICLES, catalog.first().id)
     }
 }

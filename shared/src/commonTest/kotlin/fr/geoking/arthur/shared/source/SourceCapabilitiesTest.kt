@@ -1,5 +1,14 @@
 package fr.geoking.arthur.shared.source
 
+import fr.geoking.arthur.shared.source.BundledPackSource
+import fr.geoking.arthur.shared.source.CoverrSource
+import fr.geoking.arthur.shared.source.DeviantArtSource
+import fr.geoking.arthur.shared.source.MetSource
+import fr.geoking.arthur.shared.source.PexelsSource
+import fr.geoking.arthur.shared.source.PexelsVideoSource
+import fr.geoking.arthur.shared.source.PixabayVideoSource
+import fr.geoking.arthur.shared.source.UnsplashSource
+import fr.geoking.arthur.shared.source.WikimediaStreetArtSource
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -88,11 +97,33 @@ class SourceCapabilitiesTest {
     }
 
     @Test
-    fun paintingSupportingIdsIncludeBundledAndMuseums() {
+    fun paintingSupportingIdsIncludeBundledAndMuseums_notWikimedia() {
         val ids = SourceCapabilities.sourceIdsSupporting(ArtworkKind.Painting)
         assertTrue(BundledPackSource.ID in ids)
         assertTrue(MetSource.ID in ids)
-        assertTrue(WikimediaStreetArtSource.ID in ids)
+        assertFalse(WikimediaStreetArtSource.ID in ids)
         assertFalse(PexelsSource.ID in ids)
+    }
+
+    @Test
+    fun photoProviders_excludeMuseums() {
+        val ids = SourceCapabilities.sourceIdsForPhotoProviders()
+        assertEquals(
+            listOf(
+                PexelsSource.ID,
+                UnsplashSource.ID,
+                DeviantArtSource.ID,
+                WikimediaStreetArtSource.ID,
+            ),
+            ids,
+        )
+        assertFalse(MetSource.ID in ids)
+    }
+
+    @Test
+    fun wikimediaSupportsPhotoSearch() {
+        val support = SourceCapabilities.support(WikimediaStreetArtSource.ID)!!
+        assertEquals(setOf(ArtworkKind.Photo), support.kinds)
+        assertEquals(setOf(ArtworkKind.Photo), support.remoteSearchKinds)
     }
 }

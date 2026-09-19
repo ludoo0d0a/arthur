@@ -81,7 +81,9 @@ interface Source {
     suspend fun load(limit: Int): List<Artwork> = load()
 }
 
-/** Paid unlock gate — adapters (RevenueCat) live on Android. */
+/** Paid unlock gate for global UX (no ads, favorites) — adapters (RevenueCat) live on Android.
+ * Content packs use [fr.geoking.arthur.shared.marketplace.PackOwnership], not Premium.
+ */
 interface PremiumEntitlement {
     val isPremium: Boolean
 }

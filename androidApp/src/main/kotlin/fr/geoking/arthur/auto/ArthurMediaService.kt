@@ -14,6 +14,7 @@ import fr.geoking.arthur.shared.domain.isGenerative
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.source.ArtworkImageCache
+import fr.geoking.arthur.source.InvalidArtworkStore
 import fr.geoking.arthur.source.RotationSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -38,6 +39,7 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
     private val contentEngine: ContentEngine by inject()
     private val rotationSettings: RotationSettings by inject()
     private val imageCache: ArtworkImageCache by inject()
+    private val invalidStore: InvalidArtworkStore by inject()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private lateinit var session: MediaSessionCompat
     private var catalog: List<Artwork> = emptyList()
@@ -127,11 +129,12 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
         val pool = rotationPool()
         if (pool.isEmpty()) return
         val index = pool.indexOfFirst { it.id == current?.id }.let { if (it < 0) 0 else it }
-        val nextIndex = if (delta >= 0) {
-            AmbientAlbumArt.advanceIndex(index, pool.size)
-        } else {
-            Math.floorMod(index - 1, pool.size)
-        }
+        val nextIndex = AmbientAlbumArt.nextValidIndex(
+            poolSize = pool.size,
+            currentIndex = index,
+            delta = delta,
+            isInvalidAt = { pool[it].id.let(invalidStore::isInvalid) },
+        )
         val next = pool[nextIndex]
         current = next
         generation += 1
@@ -152,7 +155,7 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
             val file = AmbientAlbumArt.cacheFile(this@ArthurMediaService, art.id, gen)
             if (!file.exists()) {
                 runCatching {
-                    AmbientStillRenderer.renderToFile(art, gen, file, imageCache)
+                    AmbientStillRenderer.renderToFile(art, gen, file, imageCache, invalidStore)
                 }
             }
         }

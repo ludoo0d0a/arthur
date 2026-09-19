@@ -2,14 +2,17 @@ package fr.geoking.arthur
 
 import android.app.Application
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import fr.geoking.arthur.billing.DevAwarePackOwnership
 import fr.geoking.arthur.billing.DevAwarePremiumEntitlement
 import fr.geoking.arthur.billing.FakePurchasesGateway
 import fr.geoking.arthur.billing.PurchasesGateway
+import fr.geoking.arthur.billing.RevenueCatPackOwnership
 import fr.geoking.arthur.billing.RevenueCatPremiumEntitlement
 import fr.geoking.arthur.fractal.CustomFractalStore
 import fr.geoking.arthur.shared.debug.DebugLogger
 import fr.geoking.arthur.shared.domain.PremiumEntitlement
 import fr.geoking.arthur.shared.engine.ContentEngine
+import fr.geoking.arthur.shared.marketplace.PackOwnership
 import fr.geoking.arthur.source.CacheBypassInterceptor
 import fr.geoking.arthur.source.DebugInterceptor
 import fr.geoking.arthur.source.ForceCacheNetworkInterceptor
@@ -39,7 +42,11 @@ import fr.geoking.arthur.shared.source.UnsplashSource
 import fr.geoking.arthur.shared.source.WikimediaStreetArtSource
 import fr.geoking.arthur.source.ArtworkImageCache
 import fr.geoking.arthur.source.DeveloperSettings
+import fr.geoking.arthur.source.InvalidArtworkStore
 import fr.geoking.arthur.source.MuseumSearchSettings
+import fr.geoking.arthur.source.QuoteRepository
+import fr.geoking.arthur.source.QuoteSettings
+import fr.geoking.arthur.source.RemoteStillNetworkGate
 import fr.geoking.arthur.source.RotationSettings
 import fr.geoking.arthur.source.ScreensaverSettings
 import fr.geoking.arthur.source.StockPhotoSettings
@@ -126,6 +133,19 @@ val appModule = module {
     single { DeveloperSettings(androidContext()) }
     single { RotationSettings(androidContext()) }
     single { ScreensaverSettings(androidContext()) }
+    single { QuoteSettings(androidContext()) }
+    single { InvalidArtworkStore(androidContext()) }
+    single { RemoteStillNetworkGate(androidContext(), get()) }
+    single {
+        val client = get<HttpClient>()
+        val errorLogger = get<ErrorLogger>()
+        QuoteRepository(
+            context = androidContext(),
+            httpGet = { url ->
+                safeHttpGet(client, url, QuoteRepository.SOURCE_ID, errorLogger)
+            },
+        )
+    }
     single<PremiumEntitlement> {
         val gatewayEntitlement = RevenueCatPremiumEntitlement(get())
         val developerSettings = get<DeveloperSettings>()
@@ -137,10 +157,15 @@ val appModule = module {
             },
         )
     }
+    single<PackOwnership> {
+        DevAwarePackOwnership(
+            delegate = RevenueCatPackOwnership(get()),
+        )
+    }
     single { CustomFractalStore(androidContext()) }
     single { StockPhotoSettings(androidContext()) }
     single { MuseumSearchSettings() }
-    single { ArtworkImageCache(androidContext()) }
+    single { ArtworkImageCache(androidContext(), get()) }
     single {
         val httpCacheDir = File(androidContext().cacheDir, "http_cache").also { it.mkdirs() }
         okhttp3.Cache(httpCacheDir, 50 * 1024 * 1024L)
@@ -395,7 +420,7 @@ val appModule = module {
                 get<FractalSource>(),
                 get<CustomFractalSource>(),
             ),
-            entitlement = get(),
+            packOwnership = get(),
         )
     }
 }

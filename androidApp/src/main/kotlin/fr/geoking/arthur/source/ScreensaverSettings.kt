@@ -1,9 +1,11 @@
 package fr.geoking.arthur.source
 
 import android.content.Context
+import fr.geoking.arthur.shared.source.WikimediaStreetArtSource
 import fr.geoking.arthur.ui.components.MuseumTopic
 import fr.geoking.arthur.ui.components.PackFamily
 import fr.geoking.arthur.ui.components.PackSelection
+import fr.geoking.arthur.ui.components.PhotoTopic
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,7 +34,31 @@ class ScreensaverSettings(context: Context) {
         val familyName = prefs.getString(KEY_FAMILY, null) ?: return null
         val family = runCatching { PackFamily.valueOf(familyName) }.getOrNull() ?: return null
         val subId = prefs.getString(KEY_SUB_ID, null)
-        return PackSelection(family, subId)
+        val raw = PackSelection(family, subId)
+        val migrated = migrateLegacySelection(raw)
+        if (migrated != raw) {
+            prefs.edit()
+                .putString(KEY_FAMILY, migrated.family.name)
+                .putString(KEY_SUB_ID, migrated.subId)
+                .apply()
+        }
+        return migrated
+    }
+
+    /**
+     * Former Museum → Wikimedia Street Art tile now lives under Photo → Wikimedia.
+     * Stale Museum/random (removed) → Met.
+     */
+    private fun migrateLegacySelection(selection: PackSelection): PackSelection {
+        if (selection.family == PackFamily.Museum &&
+            selection.subId == WikimediaStreetArtSource.ID
+        ) {
+            return PackSelection(PackFamily.Photo, PhotoTopic.Wikimedia.testTagSuffix)
+        }
+        if (selection.family == PackFamily.Museum && selection.subId == "random") {
+            return PackSelection(PackFamily.Museum, MuseumTopic.Met.testTagSuffix)
+        }
+        return selection
     }
 
     companion object {

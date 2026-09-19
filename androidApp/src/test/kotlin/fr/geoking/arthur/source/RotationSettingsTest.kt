@@ -59,4 +59,30 @@ class RotationSettingsTest {
             RotationSettings.OPTIONS_MS,
         )
     }
+
+    @Test
+    fun wifiOnly_defaultsOffAndPersists() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        context.getSharedPreferences("arthur_rotation", Context.MODE_PRIVATE).edit().clear().commit()
+        val settings = RotationSettings(context)
+        assertEquals(false, settings.wifiOnlyRemoteStills.value)
+        settings.setWifiOnlyRemoteStills(true)
+        assertEquals(true, RotationSettings(context).wifiOnlyRemoteStills.value)
+    }
+
+    @Test
+    fun recentStillRing_keepsMostRecentFirstAndCaps() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        context.getSharedPreferences("arthur_rotation", Context.MODE_PRIVATE).edit().clear().commit()
+        val settings = RotationSettings(context)
+        for (i in 1..15) {
+            settings.recordRecentStillId("art-$i")
+        }
+        val recent = settings.recentStillIds()
+        assertEquals(RotationSettings.RECENT_RING_SIZE, recent.size)
+        assertEquals("art-15", recent.first())
+        assertEquals(false, recent.contains("art-1"))
+        assertEquals(false, recent.contains("art-2"))
+        assertEquals(false, recent.contains("art-3"))
+    }
 }

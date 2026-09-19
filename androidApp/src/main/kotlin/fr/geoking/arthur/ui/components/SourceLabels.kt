@@ -36,7 +36,7 @@ fun sourceLabelRes(sourceId: String): Int? = when (sourceId) {
     HarvardSource.ID -> R.string.source_harvard
     SmithsonianSource.ID -> R.string.source_smithsonian
     LouvreSource.ID -> R.string.source_louvre
-    WikimediaStreetArtSource.ID -> R.string.source_wikimedia_streetart
+    WikimediaStreetArtSource.ID -> R.string.source_wikimedia
     BundledPackSource.ID -> R.string.source_bundled
     PexelsSource.ID, PexelsVideoSource.ID -> R.string.source_pexels_video
     PixabayVideoSource.ID -> R.string.source_pixabay_video

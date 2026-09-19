@@ -50,6 +50,53 @@ class ArthurMediaMappingTest {
     }
 
     @Test
+    fun nextValidIndex_skipsInvalid() {
+        val invalid = setOf(1)
+        assertEquals(
+            2,
+            AmbientAlbumArt.nextValidIndex(
+                poolSize = 3,
+                currentIndex = 0,
+                delta = +1,
+                isInvalidAt = { it in invalid },
+            ),
+        )
+    }
+
+    @Test
+    fun sampleRotationPool_capsAtThreeAndPrefersCached() {
+        val pool = (1..6).map { i ->
+            Artwork(
+                id = "id-$i",
+                title = "T$i",
+                sourceId = "pexels",
+                kind = ArtworkKind.Photo,
+                remoteUrl = "https://example.com/$i.jpg",
+            )
+        }
+        val sampled = AmbientAlbumArt.sampleRotationPool(
+            pool = pool,
+            isPreferred = { it.id == "id-4" || it.id == "id-5" },
+        )
+        assertEquals(3, sampled.size)
+        assertTrue(sampled.first().id == "id-4" || sampled.first().id == "id-5")
+        assertTrue(sampled.all { it.id in pool.map { art -> art.id } })
+    }
+
+    @Test
+    fun sampleRotationPool_keepsSeedFirst() {
+        val pool = listOf(
+            Artwork(id = "a", title = "A", sourceId = "s", kind = ArtworkKind.Photo),
+            Artwork(id = "b", title = "B", sourceId = "s", kind = ArtworkKind.Photo),
+            Artwork(id = "c", title = "C", sourceId = "s", kind = ArtworkKind.Photo),
+            Artwork(id = "d", title = "D", sourceId = "s", kind = ArtworkKind.Photo),
+        )
+        val sampled = AmbientAlbumArt.sampleRotationPool(pool, seed = pool[2])
+        assertEquals(3, sampled.size)
+        assertEquals("c", sampled.first().id)
+    }
+
+    @Test
     fun authority_usesPackageSuffix() {
         assertEquals("fr.geoking.arthur.albumart", AmbientAlbumArt.authority("fr.geoking.arthur"))
     }

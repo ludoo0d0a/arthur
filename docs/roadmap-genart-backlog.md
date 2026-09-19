@@ -215,10 +215,27 @@ detail, stays inside the calm/car-safe principles above:
 
 ## Inspirative Genart Algorithms & Libraries (External Reference Research)
 
-Curated research and proposal catalog derived from generative art showcases and reference hubs:
+Curated research and proposal catalog derived from generative art showcases and reference hubs.
+Reuse this section when proposing engines, picking patterns, or choosing tooling — not a ship commitment.
+
+### Reference hubs (galleries & catalogs)
+
 - **Espiralito Gallery** ([espiralito.com/gallery](https://www.espiralito.com/gallery/)): Deterministic spiral geometry, multi-fold rotational symmetry, and parametric path modulation.
 - **Latent Box Collections** ([latentbox.com/en/docs/collections](https://latentbox.com/en/docs/collections)): Index of generative algorithms, bio-inspired simulations, and creative coding tools.
 - **genart.dev Gallery** ([genart.dev/gallery](https://genart.dev/gallery)): Cross-engine generative sketches spanning Canvas 2D, p5.js, Three.js, SVG, and GLSL shaders.
+- **Zazow** ([zazow.com](https://www.zazow.com/)): Interactive playgrounds for Mandelbrot, plasma, spirals, Bauhaus tiling — good for quick visual prototyping of fractal / geometric / color-flow ideas.
+- **AIArtists.org — Generative Art & Design** ([aiartists.org/generative-art-design](https://aiartists.org/generative-art-design)): Broad survey of examples, tools, artists, and process-vs-object generative design thinking.
+
+### Methodology & vocabulary
+
+- **Monokai — Algorithmic art as a subset of generative art** ([monokai.com/articles/…](https://monokai.com/articles/algorithmic-art-as-a-subset-of-generative-art/)): Clear split between rule-based algorithmic art (Arthur’s on-device Compose engines) vs prompt/ML “AI art”; useful framing for docs and product language.
+- **Harvey Rayner — Demystifying generative art** ([medium.com/@harvey.rayner/…](https://medium.com/@harvey.rayner/demystifying-generative-art-e43e296d19c0)): Conceptual walkthrough of generative practice (rules, variation, curation).
+
+### Skills, patterns & reusable technique packs
+
+- **Generative art algorithms (MCP skill)** ([app.mcpmarket.com/…/generative-art-algorithms](https://app.mcpmarket.com/ludovic-valente/skills/generative-art-algorithms)): Personal/packaged skill for generative-art algorithm patterns — pull when scaffolding a new engine family.
+- **Open Skills — algorithmic-art (Anthropic)** ([openskills.cc/skills/anthropics-skills-algorithmic-art](https://openskills.cc/skills/anthropics-skills-algorithmic-art)): p5.js-oriented skill covering seeded randomness, flow fields, particles, noise, and interactive parameter exploration (map ideas to Compose Canvas / `NoiseUtils`).
+- **organvm-iv-taxis / a-i--skills** ([github.com/organvm-iv-taxis/a-i--skills](https://github.com/organvm-iv-taxis/a-i--skills)): External AI/skills repo — mine for algorithmic-art and creative-coding skill definitions to adapt into Arthur agent workflows.
 
 ### Key Generative Art Algorithms & Math Models
 
@@ -261,8 +278,25 @@ Curated research and proposal catalog derived from generative art showcases and 
 
 ### Proposed Future Engine Concepts for Arthur (`:genart`)
 
-- `genart.spiralmandala` — *Spiral Mandala*: Multi-fold rotational symmetry pentagons/hexagons with breathing stroke width tapering and dual-spiral rotation.
-- `genart.slimegrowth` — *Slime Mold Network*: Soft Physarum Polycephalum transport network filaments slowly spreading and reorganizing.
-- `genart.differentialgrowth` — *Lichen Rim*: Expanding organic ribbon loop with self-repelling vertices, creating detailed lichen/coral-like folds.
-- `genart.wetwash` — *Watercolor Landscape*: Soft bleeding pigment patches accumulating into misty hill silhouettes.
-- `genart.hatching` — *Charcoal Hatching*: Dynamic directional line strokes shading soft geometric contours with organic charcoal physics.
+#### Shipped (analytic / loop-safe)
+
+- `genart.spiralmandala` — *Spiral Mandala*: N-fold rotational symmetry with Archimedean/log spiral arms, dual phase offset, breathing stroke taper + center glow.
+- `genart.flowribbons` — *Flow Ribbons*: Soft ink strokes advected on an fbm flow field (`flowAngle01`); positions recomputed from seed + phase (no trail buffer).
+- `genart.cliffordwash` — *Clifford Wash*: Clifford attractor points baked once in `remember`, dense soft dots with slow rotate/bloom.
+
+#### Parked (sim-heavy — impress but wrong cost for Ambient)
+
+- `genart.slimegrowth` — *Slime Mold Network*: Soft Physarum transport filaments (agent trails + diffusion).
+- `genart.differentialgrowth` — *Lichen Rim*: Expanding self-repelling ribbon loop.
+- `genart.wetwash` — *Watercolor Landscape*: Soft bleeding pigment patches (needs diffusion buffers).
+- `genart.hatching` — *Charcoal Hatching*: Directional stroke physics (many dynamic paths).
+- Gray-Scott reaction-diffusion, hydraulic erosion, AGSL flagships — keep for optional future GPU paths only.
+
+### Efficiency ranking (reuse filter for new proposals)
+
+| Tier | Style | Ship for Ambient? |
+|------|--------|-------------------|
+| **A — Analytic** | Polar math, prebaked attractors, `loopedFbm` / `flowAngle01`, remembered seeds | Yes — preferred |
+| **B — Light physics** | Shared wind scalar, short Verlet tips, Gerstner sines | Yes if capped by `qualityCount` |
+| **C — Field sims** | Physarum, Gray-Scott, differential growth, wet diffusion | Park — too heavy for phone/Auto loops |
+| **D — GPU shaders** | AGSL RuntimeShader | Flagship only, API 33+, Canvas fallback |

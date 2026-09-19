@@ -17,9 +17,12 @@ val UsedApisList: List<UsedApi> = listOf(
     UsedApi("Harvard Art Museums", "https://github.com/harvardartmuseums/api-docs"),
     UsedApi("Smithsonian Open Access", "https://api.si.edu/openaccess"),
     UsedApi("Musée du Louvre Collections", "https://collections.louvre.fr/en/page/documentationJSON"),
+    UsedApi("Wikimedia Commons", "https://www.mediawiki.org/wiki/API:Main_page"),
     UsedApi("Pexels", "https://www.pexels.com/api/"),
     UsedApi("Pexels Videos", "https://www.pexels.com/api/documentation/#videos"),
     UsedApi("Pixabay Videos", "https://pixabay.com/api/docs/"),
     UsedApi("Coverr", "https://api.coverr.co/docs/"),
     UsedApi("Unsplash", "https://unsplash.com/developers"),
+    UsedApi("DeviantArt", "https://www.deviantart.com/developers/"),
+    UsedApi("ZenQuotes", "https://zenquotes.io/"),
 )

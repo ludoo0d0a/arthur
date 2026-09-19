@@ -51,6 +51,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.OutlinedTextField
@@ -84,7 +85,10 @@ import fr.geoking.arthur.phone.theme.ArthurTheme
 import fr.geoking.arthur.shared.error.ErrorCategory
 import fr.geoking.arthur.shared.error.ErrorItem
 import fr.geoking.arthur.shared.error.ErrorLogger
+import fr.geoking.arthur.source.ArtworkImageCache
+import fr.geoking.arthur.source.HttpCacheController
 import fr.geoking.arthur.source.RotationSettings
+import android.text.format.Formatter
 import org.koin.core.context.GlobalContext
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -141,11 +145,16 @@ fun SettingsScreen(
     onVerboseChange: (Boolean) -> Unit = {},
     rotationIntervalMs: Long = AmbientAlbumArt.ROTATION_INTERVAL_MS,
     onRotationIntervalChange: (Long) -> Unit = {},
+    wifiOnlyRemoteStills: Boolean = false,
+    onWifiOnlyRemoteStillsChange: (Boolean) -> Unit = {},
+    showQuotes: Boolean = true,
+    onShowQuotesChange: (Boolean) -> Unit = {},
     deviantArtUsername: String = "",
     onDeviantArtUsernameChange: (String) -> Unit = {},
     deviantArtPassword: String = "",
     onDeviantArtPasswordChange: (String) -> Unit = {},
     onCheckForUpdate: (() -> Unit)? = null,
+    onOpenMarketplace: (() -> Unit)? = null,
     initialScreenStack: List<SettingsScreenPage>? = null,
     onInitialRouteConsumed: () -> Unit = {},
     errorLogger: ErrorLogger? = null,
@@ -226,7 +235,12 @@ fun SettingsScreen(
                     isPremium = isPremium,
                     showDeveloper = showDeveloper,
                     rotationIntervalMs = rotationIntervalMs,
+                    wifiOnlyRemoteStills = wifiOnlyRemoteStills,
+                    onWifiOnlyRemoteStillsChange = onWifiOnlyRemoteStillsChange,
+                    showQuotes = showQuotes,
+                    onShowQuotesChange = onShowQuotesChange,
                     onCheckForUpdate = onCheckForUpdate,
+                    onOpenMarketplace = onOpenMarketplace,
                     onNavigate = { screenStack = screenStack + it },
                 )
                 SettingsScreenPage.RotationInterval -> RotationIntervalContent(
@@ -263,7 +277,12 @@ private fun MainMenu(
     isPremium: Boolean,
     showDeveloper: Boolean,
     rotationIntervalMs: Long,
+    wifiOnlyRemoteStills: Boolean,
+    onWifiOnlyRemoteStillsChange: (Boolean) -> Unit,
+    showQuotes: Boolean,
+    onShowQuotesChange: (Boolean) -> Unit,
     onCheckForUpdate: (() -> Unit)?,
+    onOpenMarketplace: (() -> Unit)?,
     onNavigate: (SettingsScreenPage) -> Unit,
 ) {
     Column(
@@ -303,12 +322,25 @@ private fun MainMenu(
                             fontWeight = FontWeight.Bold,
                         )
                         Text(
-                            stringResource(R.string.premium_thanks),
+                            stringResource(R.string.premium_ux_subtitle),
                             style = MaterialTheme.typography.bodySmall,
                             color = Color.White.copy(alpha = 0.8f),
                         )
                     }
                 }
+            }
+        }
+
+        if (onOpenMarketplace != null) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            ) {
+                SettingsItem(
+                    label = stringResource(R.string.marketplace_open),
+                    value = stringResource(R.string.marketplace_subtitle),
+                    onClick = onOpenMarketplace,
+                )
             }
         }
 
@@ -321,6 +353,57 @@ private fun MainMenu(
                 value = rotationIntervalLabel(rotationIntervalMs),
                 onClick = { onNavigate(SettingsScreenPage.RotationInterval) },
             )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .testTag("settings_wifi_only_stills"),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+                    Text(
+                        text = stringResource(R.string.settings_wifi_only_stills),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_wifi_only_stills_subtitle),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = wifiOnlyRemoteStills,
+                    onCheckedChange = onWifiOnlyRemoteStillsChange,
+                    modifier = Modifier.testTag("settings_wifi_only_stills_switch"),
+                )
+            }
+            ImageCacheSettingsRow()
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .testTag("settings_show_quotes"),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+                    Text(
+                        text = stringResource(R.string.settings_show_quotes),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_show_quotes_subtitle),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = showQuotes,
+                    onCheckedChange = onShowQuotesChange,
+                    modifier = Modifier.testTag("settings_show_quotes_switch"),
+                )
+            }
             SettingsItem(
                 label = "DeviantArt Credentials",
                 onClick = { onNavigate(SettingsScreenPage.DeviantArtCredentials) },
@@ -343,6 +426,66 @@ private fun MainMenu(
                     onClick = { onNavigate(SettingsScreenPage.Developer) },
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun ImageCacheSettingsRow() {
+    val context = LocalContext.current
+    val imageCache = remember {
+        runCatching { GlobalContext.get().get<ArtworkImageCache>() }.getOrNull()
+    }
+    val httpCache = remember {
+        runCatching { GlobalContext.get().get<HttpCacheController>() }.getOrNull()
+    }
+    var revision by remember { mutableStateOf(0) }
+    val entryCount = remember(revision) { imageCache?.entryCount() ?: 0 }
+    val totalBytes = remember(revision) {
+        (imageCache?.totalBytes() ?: 0L) + (httpCache?.stats()?.sizeBytes ?: 0L)
+    }
+    val sizeLabel = remember(totalBytes) {
+        Formatter.formatShortFileSize(context, totalBytes)
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .testTag("settings_image_cache"),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+            Text(
+                text = stringResource(R.string.settings_image_cache),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Text(
+                text = stringResource(
+                    R.string.settings_image_cache_subtitle,
+                    sizeLabel,
+                    entryCount,
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.testTag("settings_image_cache_stats"),
+            )
+        }
+        TextButton(
+            onClick = {
+                imageCache?.clearAll()
+                httpCache?.clear()
+                revision++
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.settings_image_cache_cleared),
+                    Toast.LENGTH_SHORT,
+                ).show()
+            },
+            enabled = imageCache != null,
+            modifier = Modifier.testTag("settings_image_cache_clear"),
+        ) {
+            Text(stringResource(R.string.settings_image_cache_clear))
         }
     }
 }

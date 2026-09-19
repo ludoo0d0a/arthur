@@ -3,6 +3,7 @@ package fr.geoking.arthur.auto
 import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
+import fr.geoking.arthur.shared.domain.Artwork
 import java.io.File
 
 /**
@@ -12,8 +13,37 @@ import java.io.File
 object AmbientAlbumArt {
     /** Default rotation interval (20s). User preference lives in [fr.geoking.arthur.source.RotationSettings]. */
     const val ROTATION_INTERVAL_MS = 20_000L
+    /** Auto-rotation keeps at most this many pieces so next-still preload stays ahead of the timer. */
+    const val MAX_AUTO_ROTATION_POOL = 3
     const val PATH_ART = "art"
     const val AUTHORITY_SUFFIX = ".albumart"
+
+    /**
+     * Caps [pool] to [maxSize] for Ambient auto-rotation.
+     * Prefers [seed] and [isPreferred] items (e.g. already on disk) so the first slide avoids a network wait.
+     */
+    fun sampleRotationPool(
+        pool: List<Artwork>,
+        maxSize: Int = MAX_AUTO_ROTATION_POOL,
+        seed: Artwork? = null,
+        isPreferred: (Artwork) -> Boolean = { false },
+    ): List<Artwork> {
+        if (pool.isEmpty() || maxSize <= 0) return emptyList()
+        val preferred = pool.filter(isPreferred).shuffled()
+        val others = pool.filterNot(isPreferred).shuffled()
+        val ordered = ArrayList<Artwork>(maxSize.coerceAtMost(pool.size))
+        val seedInPool = seed?.takeIf { candidate -> pool.any { it.id == candidate.id } }
+        if (seedInPool != null) {
+            ordered.add(seedInPool)
+        } else {
+            (preferred.firstOrNull() ?: others.firstOrNull())?.let { ordered.add(it) }
+        }
+        for (art in preferred + others) {
+            if (ordered.size >= maxSize) break
+            if (ordered.none { it.id == art.id }) ordered.add(art)
+        }
+        return ordered
+    }
 
     fun authority(packageName: String): String = packageName + AUTHORITY_SUFFIX
 
@@ -41,6 +71,29 @@ object AmbientAlbumArt {
     fun advanceIndex(currentIndex: Int, poolSize: Int): Int {
         if (poolSize <= 0) return 0
         return Math.floorMod(currentIndex + 1, poolSize)
+    }
+
+    /**
+     * Steps [delta] through [pool], skipping ids for which [isInvalid] is true.
+     * If every item is invalid, still returns one step from [currentIndex].
+     */
+    fun nextValidIndex(
+        poolSize: Int,
+        currentIndex: Int,
+        delta: Int,
+        isInvalidAt: (Int) -> Boolean,
+    ): Int {
+        if (poolSize <= 0) return 0
+        var idx = currentIndex
+        repeat(poolSize) {
+            idx = if (delta >= 0) {
+                advanceIndex(idx, poolSize)
+            } else {
+                Math.floorMod(idx - 1, poolSize)
+            }
+            if (!isInvalidAt(idx)) return idx
+        }
+        return if (delta >= 0) advanceIndex(currentIndex, poolSize) else Math.floorMod(currentIndex - 1, poolSize)
     }
 
     fun parseUri(uri: Uri): Pair<String, Long>? =

@@ -2,9 +2,10 @@ package fr.geoking.arthur.tv
 
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
-import fr.geoking.arthur.shared.domain.PremiumEntitlement
+import fr.geoking.arthur.shared.marketplace.PackOwnership
 import fr.geoking.arthur.shared.domain.Source
 import fr.geoking.arthur.shared.engine.ContentEngine
+import fr.geoking.arthur.auto.AmbientAlbumArt
 import fr.geoking.arthur.ui.components.PackFamily
 import fr.geoking.arthur.ui.components.PackSelection
 import kotlinx.coroutines.runBlocking
@@ -21,8 +22,17 @@ class AmbientRotationLaunchTest {
             Artwork(id = "b", title = "B", sourceId = "genart", kind = ArtworkKind.Genart),
         )
         AmbientRotationLaunch.prepare(pool, renewSourceIds = listOf("met"))
-        assertEquals(pool, AmbientRotationLaunch.pool)
+        assertEquals(pool.map { it.id }.toSet(), AmbientRotationLaunch.pool.map { it.id }.toSet())
         assertEquals(listOf("met"), AmbientRotationLaunch.renewSourceIds)
+    }
+
+    @Test
+    fun prepare_capsPoolToMaxAutoRotation() {
+        val pool = (1..8).map { i ->
+            Artwork(id = "art-$i", title = "A$i", sourceId = "bundled", kind = ArtworkKind.Photo)
+        }
+        AmbientRotationLaunch.prepare(pool)
+        assertEquals(AmbientAlbumArt.MAX_AUTO_ROTATION_POOL, AmbientRotationLaunch.pool.size)
     }
 
     @Test
@@ -35,9 +45,7 @@ class AmbientRotationLaunchTest {
                     override suspend fun load(): List<Artwork> = emptyList()
                 },
             ),
-            entitlement = object : PremiumEntitlement {
-                override val isPremium = true
-            },
+            packOwnership = PackOwnership.NONE,
         )
         val stashed = listOf(
             Artwork(
@@ -56,12 +64,13 @@ class AmbientRotationLaunchTest {
         )
         val requested = stashed[0]
         val (pool, artwork) = loadRotatingAmbient(engine, requested, stashed)
-        assertEquals(stashed, pool)
+        assertEquals(stashed.map { it.id }.toSet(), pool.map { it.id }.toSet())
         assertEquals(requested.id, artwork?.id)
+        assertEquals(requested.id, pool.first().id)
     }
 
     @Test
-    fun loadRotatingAmbient_emptyStashFallsBackToEngineCatalog() = runBlocking {
+    fun loadRotatingAmbient_emptyStashStaysEmpty() = runBlocking {
         val art = Artwork(
             id = "bundled-1",
             title = "Harbor",
@@ -77,13 +86,11 @@ class AmbientRotationLaunchTest {
                     override suspend fun load(): List<Artwork> = listOf(art)
                 },
             ),
-            entitlement = object : PremiumEntitlement {
-                override val isPremium = true
-            },
+            packOwnership = PackOwnership.NONE,
         )
         val (pool, artwork) = loadRotatingAmbient(engine, requested = null, stashedPool = emptyList())
-        assertEquals(listOf(art), pool)
-        assertTrue(artwork != null)
+        assertEquals(emptyList<Artwork>(), pool)
+        assertTrue(artwork == null)
     }
 
     @Test
@@ -102,9 +109,7 @@ class AmbientRotationLaunchTest {
                     override suspend fun load(): List<Artwork> = listOf(particles)
                 },
             ),
-            entitlement = object : PremiumEntitlement {
-                override val isPremium = true
-            },
+            packOwnership = PackOwnership.NONE,
         )
         assertEquals(null, loadPinnedAmbient(engine, requested = null))
     }
@@ -126,9 +131,7 @@ class AmbientRotationLaunchTest {
                     override suspend fun load(): List<Artwork> = emptyList()
                 },
             ),
-            entitlement = object : PremiumEntitlement {
-                override val isPremium = true
-            },
+            packOwnership = PackOwnership.NONE,
         )
         val (pool, artwork) = loadRotatingAmbient(
             engine,
@@ -168,9 +171,7 @@ class AmbientRotationLaunchTest {
                     override suspend fun load(): List<Artwork> = listOf(photo)
                 },
             ),
-            entitlement = object : PremiumEntitlement {
-                override val isPremium = true
-            },
+            packOwnership = PackOwnership.NONE,
         )
         val selection = PackSelection(PackFamily.Painting)
         val (pool, artwork) = loadDreamAmbient(engine, selection)
@@ -206,9 +207,7 @@ class AmbientRotationLaunchTest {
                     override suspend fun load(): List<Artwork> = listOf(genart)
                 },
             ),
-            entitlement = object : PremiumEntitlement {
-                override val isPremium = true
-            },
+            packOwnership = PackOwnership.NONE,
         )
         val (pool, artwork) = loadDreamAmbient(engine, selection = null)
         assertEquals(listOf(museum), pool)

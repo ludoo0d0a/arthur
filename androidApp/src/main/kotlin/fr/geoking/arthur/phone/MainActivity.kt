@@ -24,16 +24,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.google.android.play.core.install.model.InstallStatus
 import fr.geoking.arthur.BuildConfig
-import fr.geoking.arthur.billing.FakePurchasesGateway
 import fr.geoking.arthur.billing.PurchasesGateway
 import fr.geoking.arthur.fractal.CustomFractalStore
 import fr.geoking.arthur.phone.theme.ArthurTheme
 import fr.geoking.arthur.shared.debug.DebugLogger
 import fr.geoking.arthur.shared.domain.PremiumEntitlement
 import fr.geoking.arthur.shared.engine.ContentEngine
+import fr.geoking.arthur.shared.marketplace.GenartPackTopics
+import fr.geoking.arthur.shared.marketplace.MarketplaceCatalog
+import fr.geoking.arthur.shared.marketplace.PackOwnership
 import fr.geoking.arthur.source.DeveloperSettings
 import fr.geoking.arthur.source.HttpCacheController
 import fr.geoking.arthur.source.MuseumSearchSettings
+import fr.geoking.arthur.source.QuoteSettings
 import fr.geoking.arthur.source.RotationSettings
 import fr.geoking.arthur.source.ScreensaverSettings
 import fr.geoking.arthur.source.StockPhotoSettings
@@ -45,6 +48,7 @@ import fr.geoking.arthur.ui.UpdateInProgressBanner
 import fr.geoking.arthur.ui.components.debug.ArthurDebugLogOverlay
 import fr.geoking.arthur.ui.screens.ControlPlaneScreen
 import fr.geoking.arthur.ui.screens.CustomFractalEditorScreen
+import fr.geoking.arthur.ui.screens.MarketplaceScreen
 import fr.geoking.arthur.ui.screens.SettingsScreen
 import fr.geoking.arthur.update.CheckFeedback
 import fr.geoking.arthur.update.InAppUpdateHelper
@@ -52,6 +56,7 @@ import org.koin.android.ext.android.inject
 class MainActivity : ComponentActivity() {
     private val contentEngine: ContentEngine by inject()
     private val premium: PremiumEntitlement by inject()
+    private val packOwnership: PackOwnership by inject()
     private val debugLogger: DebugLogger by inject()
     private val httpCacheController: HttpCacheController by inject()
     private val purchases: PurchasesGateway by inject()
@@ -61,6 +66,7 @@ class MainActivity : ComponentActivity() {
     private val developerSettings: DeveloperSettings by inject()
     private val rotationSettings: RotationSettings by inject()
     private val screensaverSettings: ScreensaverSettings by inject()
+    private val quoteSettings: QuoteSettings by inject()
 
     private val inAppUpdateHelper by lazy { InAppUpdateHelper(applicationContext) }
 
@@ -93,13 +99,30 @@ class MainActivity : ComponentActivity() {
                     Box(modifier = Modifier.fillMaxSize()) {
                         var showEditor by remember { mutableStateOf(false) }
                         var showSettings by remember { mutableStateOf(false) }
+                        var showMarketplace by remember { mutableStateOf(false) }
+                        var marketplaceHighlight by remember { mutableStateOf<String?>(null) }
                         var catalogEpoch by remember { mutableStateOf(0) }
                         val simulatePremium by developerSettings.simulatePremium.collectAsState()
                         val verbose by developerSettings.verbose.collectAsState()
                         val rotationIntervalMs by rotationSettings.intervalMs.collectAsState()
+                        val wifiOnlyRemoteStills by rotationSettings.wifiOnlyRemoteStills.collectAsState()
+                        val showQuotes by quoteSettings.showQuotes.collectAsState()
                         val isPremium = premium.isPremium
                         // Custom fractal authoring needs touch; TV uses remote only.
                         when {
+                            showMarketplace -> {
+                                MarketplaceScreen(
+                                    ownership = packOwnership,
+                                    purchases = purchases,
+                                    onDismiss = {
+                                        showMarketplace = false
+                                        marketplaceHighlight = null
+                                        catalogEpoch++
+                                    },
+                                    highlightPackId = marketplaceHighlight,
+                                    canPurchaseOnDevice = true,
+                                )
+                            }
                             showSettings -> {
                                 SettingsScreen(
                                     onDismiss = { showSettings = false },
@@ -111,6 +134,10 @@ class MainActivity : ComponentActivity() {
                                     onVerboseChange = developerSettings::setVerbose,
                                     rotationIntervalMs = rotationIntervalMs,
                                     onRotationIntervalChange = rotationSettings::setIntervalMs,
+                                    wifiOnlyRemoteStills = wifiOnlyRemoteStills,
+                                    onWifiOnlyRemoteStillsChange = rotationSettings::setWifiOnlyRemoteStills,
+                                    showQuotes = showQuotes,
+                                    onShowQuotesChange = quoteSettings::setShowQuotes,
                                     deviantArtUsername = stockPhotoSettings.deviantArtUsername,
                                     onDeviantArtUsernameChange = { stockPhotoSettings.deviantArtUsername = it },
                                     deviantArtPassword = stockPhotoSettings.deviantArtPassword,
@@ -118,11 +145,16 @@ class MainActivity : ComponentActivity() {
                                     onCheckForUpdate = {
                                         inAppUpdateHelper.checkForUpdate(manual = true)
                                     },
+                                    onOpenMarketplace = {
+                                        showSettings = false
+                                        marketplaceHighlight = null
+                                        showMarketplace = true
+                                    },
                                 )
                             }
                             showEditor && !isTelevision -> {
                                 CustomFractalEditorScreen(
-                                    isPremium = isPremium,
+                                    isPremium = packOwnership.ownsCustomFractal(),
                                     onSave = { params ->
                                         val art = customFractalStore.save(params)
                                         catalogEpoch++
@@ -130,23 +162,26 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onClose = { showEditor = false },
                                     onRequestPremium = {
-                                        if (BuildConfig.DEBUG || BuildConfig.DEBUG_DEV) {
-                                            developerSettings.setSimulatePremium(true)
-                                        } else {
-                                            (purchases as? FakePurchasesGateway)?.setPremium(true)
-                                        }
+                                        marketplaceHighlight = MarketplaceCatalog.genartPackId(
+                                            GenartPackTopics.CUSTOM,
+                                        )
                                         showEditor = false
-                                        showEditor = true
+                                        showMarketplace = true
                                     },
                                 )
                             }
                             else -> {
-                                key(catalogEpoch, isPremium) {
+                                key(catalogEpoch, isPremium, packOwnership.ownsPersonalPhotos()) {
                                     ControlPlaneScreen(
                                         contentEngine = contentEngine,
                                         stockPhotoSettings = stockPhotoSettings,
                                         museumSearchSettings = museumSearchSettings,
                                         screensaverSettings = screensaverSettings,
+                                        packOwnership = packOwnership,
+                                        onOpenMarketplace = { packId ->
+                                            marketplaceHighlight = packId
+                                            showMarketplace = true
+                                        },
                                         onStartAmbient = { artwork, pool, renewSourceIds ->
                                             AmbientRotationLaunch.prepare(pool, renewSourceIds)
                                             startActivity(

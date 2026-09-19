@@ -2,12 +2,9 @@ package fr.geoking.arthur.ui.screens
 
 import android.content.res.Configuration
 import android.os.Build
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -15,6 +12,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -22,6 +20,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -29,10 +28,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -53,9 +54,11 @@ import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.R
@@ -65,31 +68,42 @@ import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.hasDetailContent
 import fr.geoking.arthur.shared.domain.isGenerative
+import fr.geoking.arthur.source.AmbientStillPicker
+import fr.geoking.arthur.source.InvalidArtworkStore
+import fr.geoking.arthur.source.Quote
+import fr.geoking.arthur.source.RemoteStillNetworkGate
+import fr.geoking.arthur.source.RotationSettings
 import fr.geoking.arthur.source.StillImagePrefetcher
 import fr.geoking.arthur.source.rememberArtworkImageCache
+import fr.geoking.arthur.source.rememberQuoteRepository
+import fr.geoking.arthur.source.rememberQuoteSettings
 import fr.geoking.arthur.ui.components.ArtworkRenderer
 import fr.geoking.arthur.ui.components.StillArtworkPlaceholder
 import fr.geoking.arthur.ui.components.authorForDisplay
 import fr.geoking.arthur.ui.components.sourceLabel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.koin.core.context.GlobalContext
 import kotlin.math.abs
-import kotlin.random.Random
 
 /**
  * Fullscreen ambient surface.
  *
  * - Control Plane Start: pass the selected [artwork] and the filtered catalog as
- *   [rotationPool] (≥2 items) for random rotation every [intervalMs].
+ *   [rotationPool] (≥2 items, capped at [AmbientAlbumArt.MAX_AUTO_ROTATION_POOL])
+ *   for random rotation every [intervalMs].
  * - Pin only: empty [rotationPool].
  * - Dream / screensaver: pass a multi-item [rotationPool] to rotate the same way.
  * - [onNeedRenewPool]: after every pool id has been shown once, request a fresh
  *   API sample (museums / stock). Parent replaces [rotationPool].
  *
  * Navigation while rotating:
- * - Phone: tap left half = previous, tap right half = next; swipe left = next,
- *   swipe right = previous
- * - TV: D-pad / arrow left & right
+ * - Phone: prev / play-pause / next icons; swipe left = next, swipe right = previous
+ * - TV: D-pad / arrow left & right; MediaPlayPause toggles rotation
+ *
+ * Display interval starts only after the still is ready (loader time excluded).
+ * The next still is warmed into disk cache before it becomes current.
  *
  * Missing or unloadable assets render the category placeholder + warning — never a
  * silent swap to an unrelated genart engine (e.g. pond ripples).
@@ -106,7 +120,9 @@ fun AmbientScreenContent(
     onNeedRenewPool: (() -> Unit)? = null,
 ) {
     val rotatePool = remember(rotationPool) {
-        rotationPool.filter { it.isAmbientDisplayable() }
+        rotationPool
+            .filter { it.isAmbientDisplayable() }
+            .take(AmbientAlbumArt.MAX_AUTO_ROTATION_POOL)
     }
     val shouldRotate = rotatePool.size >= 2
     val configuration = LocalConfiguration.current
@@ -143,67 +159,132 @@ fun AmbientScreenContent(
     }
     var rotationEpoch by remember { mutableIntStateOf(0) }
     var seenIds by remember(rotatePool.map { it.id }) { mutableStateOf(emptySet<String>()) }
+    var isPlaying by remember { mutableStateOf(true) }
+    var displayReady by remember { mutableStateOf(false) }
     val progress = remember { Animatable(0f) }
     val focusRequester = remember { FocusRequester() }
+    val scope = rememberCoroutineScope()
     val latestCurrent by rememberUpdatedState(current)
     val latestPool by rememberUpdatedState(rotatePool)
     val renewLatest by rememberUpdatedState(onNeedRenewPool)
+    val imageCache = rememberArtworkImageCache()
+    val rotationSettings = remember {
+        runCatching { GlobalContext.get().get<RotationSettings>() }.getOrNull()
+    }
+    val networkGate = remember {
+        runCatching { GlobalContext.get().get<RemoteStillNetworkGate>() }.getOrNull()
+    }
+    val invalidStore = remember {
+        runCatching { GlobalContext.get().get<InvalidArtworkStore>() }.getOrNull()
+    }
 
-    fun advance(delta: Int, random: Boolean) {
+    fun eligibleIdsForPick(pool: List<Artwork>): Set<String> {
+        val invalid = invalidStore?.snapshot().orEmpty()
+        val cacheOnly = networkGate?.isCacheOnlyMode() == true
+        return pool.mapNotNull { art ->
+            if (art.id in invalid) return@mapNotNull null
+            if (cacheOnly && !art.isOfflineDisplayable(imageCache)) return@mapNotNull null
+            art.id
+        }.toSet()
+    }
+
+    suspend fun advance(delta: Int, random: Boolean) {
         if (!shouldRotate) return
         val pool = latestPool
         val shownId = latestCurrent?.id
+        val eligible = eligibleIdsForPick(pool)
+        if (eligible.isEmpty()) return
         val index = pool.indexOfFirst { it.id == shownId }.let { if (it < 0) 0 else it }
-        current = if (random) {
-            pool.filter { it.id != shownId }.randomOrNull(Random.Default)
-                ?: pool.random(Random.Default)
-        } else if (delta >= 0) {
-            pool[AmbientAlbumArt.advanceIndex(index, pool.size)]
+        val nextArt = if (random) {
+            val recent = rotationSettings?.recentStillIds().orEmpty()
+            val pickedId = AmbientStillPicker.pickNextRandom(
+                poolIds = pool.map { it.id },
+                currentId = shownId,
+                seenIds = seenIds,
+                recentIds = recent,
+                eligibleIds = eligible,
+            ) ?: return
+            pool.firstOrNull { it.id == pickedId } ?: return
         } else {
-            pool[Math.floorMod(index - 1, pool.size)]
+            var steps = 0
+            var idx = index
+            var candidate: Artwork
+            do {
+                idx = if (delta >= 0) {
+                    AmbientAlbumArt.advanceIndex(idx, pool.size)
+                } else {
+                    Math.floorMod(idx - 1, pool.size)
+                }
+                candidate = pool[idx]
+                steps++
+            } while (candidate.id !in eligible && steps < pool.size)
+            if (candidate.id !in eligible) return
+            candidate
         }
-        val nextId = current?.id
-        if (nextId != null) {
-            val nextSeen = seenIds + nextId
-            seenIds = nextSeen
-            if (renewLatest != null && poolIds.all { it in nextSeen }) {
-                seenIds = emptySet()
-                renewLatest?.invoke()
-            }
+        val allowNetwork = networkGate?.canDownloadRemoteStill() ?: true
+        withContext(Dispatchers.IO) {
+            StillImagePrefetcher.ensureCached(imageCache, nextArt, allowNetwork = allowNetwork)
+        }
+        displayReady = false
+        current = nextArt
+        val nextId = nextArt.id
+        if (!nextArt.remoteUrl.isNullOrBlank()) {
+            rotationSettings?.recordRecentStillId(nextId)
+        }
+        val nextSeen = seenIds + nextId
+        seenIds = nextSeen
+        if (renewLatest != null && poolIds.all { it in nextSeen }) {
+            seenIds = emptySet()
+            renewLatest?.invoke()
         }
         rotationEpoch++
     }
 
     val advanceLatest by rememberUpdatedState(::advance)
-    val imageCache = rememberArtworkImageCache()
+    val quoteRepository = rememberQuoteRepository()
+    val quoteSettings = rememberQuoteSettings()
+    val showQuotes by quoteSettings.showQuotes.collectAsState()
+    var slideQuote by remember { mutableStateOf<Quote?>(null) }
     val shown = if (shouldRotate) current else artwork
     var showDetails by remember { mutableStateOf(false) }
-    LaunchedEffect(shown?.id) { showDetails = false }
+    LaunchedEffect(shown?.id) {
+        displayReady = false
+        showDetails = false
+    }
     val ambientActive = isActive && !showDetails
+
+    LaunchedEffect(shown?.id, showQuotes) {
+        if (!showQuotes || shown == null) {
+            slideQuote = null
+            return@LaunchedEffect
+        }
+        slideQuote = withContext(Dispatchers.IO) {
+            quoteRepository.nextQuote()
+        }
+    }
 
     LaunchedEffect(shown?.id, poolIds, ambientActive) {
         if (!ambientActive) return@LaunchedEffect
         val currentArt = shown ?: return@LaunchedEffect
         val pool = latestPool
+        val allowNetwork = networkGate?.canDownloadRemoteStill() ?: true
         withContext(Dispatchers.IO) {
-            StillImagePrefetcher.ensureCached(imageCache, currentArt)
+            StillImagePrefetcher.ensureCached(imageCache, currentArt, allowNetwork = allowNetwork)
             if (pool.size < 2) return@withContext
             val index = pool.indexOfFirst { it.id == currentArt.id }.let { if (it < 0) 0 else it }
             val next = pool[AmbientAlbumArt.advanceIndex(index, pool.size)]
             val prev = pool[Math.floorMod(index - 1, pool.size)]
-            StillImagePrefetcher.ensureCached(imageCache, next)
-            StillImagePrefetcher.ensureCached(imageCache, prev)
-            val covered = setOf(currentArt.id, next.id, prev.id)
-            val timerCandidate = pool.filter { it.id !in covered }.randomOrNull(Random.Default)
-            if (timerCandidate != null) {
-                StillImagePrefetcher.ensureCached(imageCache, timerCandidate)
-            }
+            StillImagePrefetcher.ensureCached(imageCache, next, allowNetwork = allowNetwork)
+            StillImagePrefetcher.ensureCached(imageCache, prev, allowNetwork = allowNetwork)
         }
     }
 
-    LaunchedEffect(rotationEpoch, ambientActive, shouldRotate, poolIds, intervalMs) {
-        if (!ambientActive || !shouldRotate) {
-            progress.snapTo(0f)
+    // Interval counts only while the current slide is visible — not during still download.
+    LaunchedEffect(rotationEpoch, ambientActive, shouldRotate, isPlaying, displayReady, poolIds, intervalMs) {
+        if (!ambientActive || !shouldRotate || !isPlaying || !displayReady) {
+            if (!isPlaying || !ambientActive || !shouldRotate) {
+                progress.snapTo(0f)
+            }
             return@LaunchedEffect
         }
         progress.snapTo(0f)
@@ -251,11 +332,15 @@ fun AmbientScreenContent(
                             if (event.type != KeyEventType.KeyUp) return@onKeyEvent false
                             when (event.key) {
                                 Key.DirectionRight, Key.MediaSkipForward -> {
-                                    advanceLatest(+1, false)
+                                    scope.launch { advanceLatest(+1, false) }
                                     true
                                 }
                                 Key.DirectionLeft, Key.MediaSkipBackward -> {
-                                    advanceLatest(-1, false)
+                                    scope.launch { advanceLatest(-1, false) }
+                                    true
+                                }
+                                Key.MediaPlayPause, Key.MediaPlay, Key.MediaPause -> {
+                                    isPlaying = !isPlaying
                                     true
                                 }
                                 else -> false
@@ -273,12 +358,21 @@ fun AmbientScreenContent(
                     artwork = shown,
                     isActive = ambientActive,
                     quality = GenartQuality.High,
+                    onDisplayReady = { displayReady = true },
+                    onStillFailed = {
+                        if (shouldRotate) {
+                            scope.launch { advanceLatest(+1, true) }
+                        }
+                    },
                     modifier = Modifier.fillMaxSize(),
                 )
             }
             else -> {
+                LaunchedEffect(Unit) { displayReady = true }
                 StillArtworkPlaceholder(
-                    kind = ArtworkKind.Genart,
+                    kind = shown?.kind
+                        ?: rotatePool.firstOrNull()?.kind
+                        ?: ArtworkKind.Photo,
                     showWarning = true,
                     modifier = Modifier.fillMaxSize(),
                 )
@@ -299,6 +393,27 @@ fun AmbientScreenContent(
                 .padding(28.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
+            val quote = slideQuote
+            if (quote != null) {
+                Text(
+                    text = "\u201C${quote.text}\u201D",
+                    style = MaterialTheme.typography.bodyLarge.copy(fontStyle = FontStyle.Italic),
+                    color = Color.White.copy(alpha = 0.9f),
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.testTag("ambient_quote"),
+                )
+                if (quote.author.isNotBlank()) {
+                    Text(
+                        text = "\u2014 ${quote.author}",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Color.White.copy(alpha = 0.7f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.testTag("ambient_quote_author"),
+                    )
+                }
+            }
             if (sourceLabel.isNotEmpty()) {
                 Text(
                     text = sourceLabel,
@@ -328,31 +443,7 @@ fun AmbientScreenContent(
                 modifier = Modifier.testTag("ambient_title"),
             )
         }
-        if (shouldRotate && ambientActive) {
-            val currentIndex = remember(shown?.id, rotatePool) {
-                val idx = rotatePool.indexOfFirst { it.id == shown?.id }
-                if (idx < 0) 1 else idx + 1
-            }
-            val totalCount = rotatePool.size
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(28.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                Text(
-                    text = "$currentIndex / $totalCount",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color.White.copy(alpha = 0.9f),
-                    modifier = Modifier.testTag("ambient_counter"),
-                )
-                AmbientRotationProgress(
-                    progress = { progress.value },
-                )
-            }
-        }
-        // Above artwork chrome, below details button so ⋯ stays tappable.
+        // Swipe layer under chrome controls so icons stay tappable.
         if (shouldRotate && !isTelevision) {
             Box(
                 modifier = Modifier
@@ -374,17 +465,46 @@ fun AmbientScreenContent(
                             when {
                                 abs(totalDragX) >= swipeThresholdPx -> {
                                     if (totalDragX < 0f) {
-                                        advanceLatest(+1, false)
+                                        scope.launch { advanceLatest(+1, false) }
                                     } else {
-                                        advanceLatest(-1, false)
+                                        scope.launch { advanceLatest(-1, false) }
                                     }
                                 }
-                                startX < size.width / 2f -> advanceLatest(-1, false)
-                                else -> advanceLatest(+1, false)
+                                // Half-screen tap kept as fallback; icons are primary.
+                                startX < size.width / 2f -> scope.launch { advanceLatest(-1, false) }
+                                else -> scope.launch { advanceLatest(+1, false) }
                             }
                         }
                     },
             )
+        }
+        if (shouldRotate) {
+            val currentIndex = remember(shown?.id, rotatePool) {
+                val idx = rotatePool.indexOfFirst { it.id == shown?.id }
+                if (idx < 0) 1 else idx + 1
+            }
+            val totalCount = rotatePool.size
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(28.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = "$currentIndex / $totalCount",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color.White.copy(alpha = 0.9f),
+                    modifier = Modifier.testTag("ambient_counter"),
+                )
+                AmbientPlaybackControls(
+                    isPlaying = isPlaying,
+                    progress = { progress.value },
+                    onPrevious = { scope.launch { advanceLatest(-1, false) } },
+                    onTogglePlay = { isPlaying = !isPlaying },
+                    onNext = { scope.launch { advanceLatest(+1, false) } },
+                )
+            }
         }
         if (canOpenDetails) {
             AmbientDetailsButton(
@@ -394,6 +514,122 @@ fun AmbientScreenContent(
                     .statusBarsPadding()
                     .padding(12.dp),
             )
+        }
+    }
+}
+
+@Composable
+private fun AmbientPlaybackControls(
+    isPlaying: Boolean,
+    progress: () -> Float,
+    onPrevious: () -> Unit,
+    onTogglePlay: () -> Unit,
+    onNext: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.testTag("ambient_playback_controls"),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        AmbientChromeIconButton(
+            onClick = onPrevious,
+            contentDescription = stringResource(R.string.ambient_previous),
+            testTag = "ambient_previous",
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_car_previous),
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.95f),
+                modifier = Modifier.size(22.dp),
+            )
+        }
+        AmbientPlayPauseButton(
+            isPlaying = isPlaying,
+            progress = progress,
+            onClick = onTogglePlay,
+        )
+        AmbientChromeIconButton(
+            onClick = onNext,
+            contentDescription = stringResource(R.string.ambient_next),
+            testTag = "ambient_next",
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_car_next),
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.95f),
+                modifier = Modifier.size(22.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun AmbientPlayPauseButton(
+    isPlaying: Boolean,
+    progress: () -> Float,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val description = stringResource(
+        if (isPlaying) R.string.ambient_pause else R.string.ambient_play,
+    )
+    Box(
+        modifier = modifier
+            .size(52.dp)
+            .semantics { contentDescription = description }
+            .testTag("ambient_play_pause"),
+        contentAlignment = Alignment.Center,
+    ) {
+        AmbientFrostedCircle()
+        CircularProgressIndicator(
+            progress = progress,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(5.dp)
+                .testTag("ambient_rotation_progress"),
+            color = Color.White,
+            trackColor = Color.White.copy(alpha = 0.28f),
+            strokeWidth = 2.5.dp,
+        )
+        IconButton(onClick = onClick) {
+            if (isPlaying) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_pause),
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.95f),
+                    modifier = Modifier.size(22.dp),
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Filled.PlayArrow,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.95f),
+                    modifier = Modifier.size(28.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AmbientChromeIconButton(
+    onClick: () -> Unit,
+    contentDescription: String,
+    testTag: String,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    Box(
+        modifier = modifier
+            .size(44.dp)
+            .semantics { this.contentDescription = contentDescription }
+            .testTag(testTag),
+        contentAlignment = Alignment.Center,
+    ) {
+        AmbientFrostedCircle()
+        IconButton(onClick = onClick) {
+            content()
         }
     }
 }
@@ -411,17 +647,7 @@ private fun AmbientDetailsButton(
             .testTag("ambient_details"),
         contentAlignment = Alignment.Center,
     ) {
-        val frosted = Modifier
-            .matchParentSize()
-            .then(
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    Modifier.blur(12.dp)
-                } else {
-                    Modifier
-                },
-            )
-            .background(Color.White.copy(alpha = 0.18f), CircleShape)
-        Box(modifier = frosted)
+        AmbientFrostedCircle()
         IconButton(onClick = onClick) {
             Icon(
                 imageVector = Icons.Filled.MoreVert,
@@ -433,20 +659,10 @@ private fun AmbientDetailsButton(
 }
 
 @Composable
-private fun AmbientRotationProgress(
-    progress: () -> Float,
-    modifier: Modifier = Modifier,
-) {
-    val description = stringResource(R.string.ambient_rotation_progress)
+private fun AmbientFrostedCircle(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
-            .size(52.dp)
-            .semantics { contentDescription = description }
-            .testTag("ambient_rotation_progress"),
-        contentAlignment = Alignment.Center,
-    ) {
-        val frosted = Modifier
-            .matchParentSize()
+            .fillMaxSize()
             .then(
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     Modifier.blur(12.dp)
@@ -454,19 +670,16 @@ private fun AmbientRotationProgress(
                     Modifier
                 },
             )
-            .background(Color.White.copy(alpha = 0.18f), CircleShape)
-        Box(modifier = frosted)
-        CircularProgressIndicator(
-            progress = progress,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(5.dp),
-            color = Color.White,
-            trackColor = Color.White.copy(alpha = 0.28f),
-            strokeWidth = 2.5.dp,
-        )
-    }
+            .background(Color.White.copy(alpha = 0.18f), CircleShape),
+    )
 }
 
 private fun Artwork.isAmbientDisplayable(): Boolean =
     isGenerative || !remoteUrl.isNullOrBlank() || !localPath.isNullOrBlank()
+
+/** Offline-ready for cache-only Ambient: generative, local file, or decodable disk cache. */
+private fun Artwork.isOfflineDisplayable(cache: fr.geoking.arthur.source.ArtworkImageCache): Boolean {
+    if (isGenerative) return true
+    if (!localPath.isNullOrBlank()) return true
+    return cache.hasDecodableImage(id)
+}

@@ -1,6 +1,6 @@
 # Arthur
 
-Ambient art and photo display — name is a play on **ART'hur**. Phone is the Control Plane; Auto and TV are Canvases. Single App Shell APK. v1 Content Engine: Bundled Pack, Rijksmuseum + The Met + Art Institute of Chicago + Cleveland Museum + Europeana + Harvard Art Museums + Smithsonian + Louvre Remote Sources, Wikimedia Street Art, Pexels + Unsplash Stock Photo Sources, DeviantArt Community Art Source, Genart, Fractal Presets, Premium Custom Fractal, Photo Artwork, Premium Personal Photos. RevenueCat lifetime. Apple-Ready Shared only (no Apple UI in v1). Canvas Pairing LAN/QR. **Release Spine**: geoking-tools + geoking-ci (CI/CD Play, listings/i18n, Firebase Analytics/Crashlytics, In-App Updates, arthur.geoking.fr); Scora = reference copy source only.
+Ambient art and photo display — name is a play on **ART'hur**. Phone is the Control Plane; Auto and TV are Canvases. Single App Shell APK. v1 Content Engine: Bundled Pack, Rijksmuseum + The Met + Art Institute of Chicago + Cleveland Museum + Europeana + Harvard Art Museums + Smithsonian + Louvre Remote Sources, Wikimedia Street Art, Pexels + Unsplash Stock Photo Sources, DeviantArt Community Art Source, Genart, Fractal Presets, Marketplace Custom Fractal pack, Photo Artwork, Marketplace Personal Photos pack. RevenueCat lifetime Premium (UX) + pack SKUs. Apple-Ready Shared only (no Apple UI in v1). Canvas Pairing LAN/QR. **Release Spine**: geoking-tools + geoking-ci (CI/CD Play, listings/i18n, Firebase Analytics/Crashlytics, In-App Updates, arthur.geoking.fr); Scora = reference copy source only.
 
 ## Language
 
@@ -13,7 +13,7 @@ Single Android APK (`:androidApp`) hosting Control Plane UI, Auto Canvas (Media)
 _Avoid_: Multi-APK store listing for v1, separate `:tv` application module as ship artifact
 
 **Control Plane**:
-The phone app where the user chooses sources, builds playlists/rotations, configures canvases, and unlocks Premium. It is not the primary long-form viewing surface.
+The phone app where the user chooses sources, builds playlists/rotations, configures canvases, unlocks Premium (global UX), and buys Marketplace packs. It is not the primary long-form viewing surface.
 _Avoid_: Settings hub, companion-only app
 
 **Canvas**:
@@ -51,8 +51,12 @@ Local `:fractal` (or equivalent) module seeded by extracting Julius phone/Auto f
 _Avoid_: Julius submodule, rewrite-from-scratch on day one
 
 **Premium Entitlement**:
-The RevenueCat entitlement that unlocks Premium features. v1 store product = **one-time** (lifetime) purchase on Play; StoreKit later. Feature gates read the entitlement, not raw Play Billing tokens.
-_Avoid_: Checking Play Billing purchase tokens directly in UI feature flags; subscription as v1-only monetization
+The RevenueCat entitlement that unlocks **global UX** (no ads, favorites, and similar). v1 store product = **one-time** (lifetime) purchase on Play; StoreKit later. Does **not** unlock content packs — those are Marketplace SKUs ([ADR 0009](docs/adr/0009-marketplace-pack-skus.md)). Feature gates read the entitlement, not raw Play Billing tokens.
+_Avoid_: Checking Play Billing purchase tokens directly in UI; gating Personal Photos / Genart packs on Premium; subscription as v1-only monetization
+
+**Marketplace / Sellable Pack**:
+In-app catalog of purchasable content packs (Personal Photos, Genart topic packs, …). Each pack has a RevenueCat entitlement + Play product id; `PackOwnership` gates the Content Engine and Control Plane. Browse/buy UI on **phone and TV only** — never Android Auto (Auto may still play owned pack content).
+_Avoid_: Marketplace on Auto; tying pack unlocks to Premium; raw Billing tokens in pack tiles
 
 **Apple-Ready Shared**:
 v1 ships Android only (phone Control Plane, Auto Canvas, TV Canvas). Domain logic — Content Engine, Ambient Rotation, Prepared Rotation, Premium Entitlement checks, fractal math as it moves to commonMain — lives in KMP `commonMain` so iOS/tvOS can attach later. No compiled Apple UI target in v1.

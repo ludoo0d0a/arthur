@@ -18,10 +18,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.R
 import fr.geoking.arthur.shared.domain.Artwork
+import fr.geoking.arthur.shared.marketplace.PackOwnership
 import fr.geoking.arthur.ui.components.ControlPlaneHeader
 import fr.geoking.arthur.ui.components.PackFamily
 import fr.geoking.arthur.ui.components.PackGrid
 import fr.geoking.arthur.ui.components.PackSelection
+import fr.geoking.arthur.ui.components.PackTile
 import fr.geoking.arthur.ui.components.homeTile
 import fr.geoking.arthur.ui.components.subPackTiles
 
@@ -42,6 +44,8 @@ fun TvControlPlaneContent(
     onOpenSettings: (() -> Unit)? = null,
     defaultScreensaverSelection: PackSelection? = null,
     onSetDefaultScreensaver: ((PackSelection) -> Unit)? = null,
+    packOwnership: PackOwnership = PackOwnership.NONE,
+    onOpenMarketplace: ((highlightPackId: String?) -> Unit)? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
     val firstTileFocus = remember { FocusRequester() }
@@ -93,6 +97,7 @@ fun TvControlPlaneContent(
                     tiles = PackFamily.entries.map { it.homeTile(catalog) },
                     selected = null,
                     onTileClick = { onOpenFamily(it.selection.family) },
+                    isLocked = { it.isLocked(packOwnership) },
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(bottom = 24.dp),
                     firstTileFocusRequester = firstTileFocus,
@@ -108,17 +113,32 @@ fun TvControlPlaneContent(
                 PackGrid(
                     tiles = openedFamily.subPackTiles(catalog),
                     selected = selection,
-                    onTileClick = { onStartAmbient() },
-                    onTileLongClick = { tile ->
-                        onSetDefaultScreensaver?.invoke(tile.selection)
-                        onStartAmbient()
+                    onTileClick = { tile ->
+                        if (tile.isLocked(packOwnership)) {
+                            onOpenMarketplace?.invoke(tile.sellablePackId)
+                        } else {
+                            onStartAmbient()
+                        }
                     },
+                    onTileLongClick = { tile ->
+                        if (tile.isLocked(packOwnership)) {
+                            onOpenMarketplace?.invoke(tile.sellablePackId)
+                        } else {
+                            onSetDefaultScreensaver?.invoke(tile.selection)
+                            onStartAmbient()
+                        }
+                    },
+                    isLocked = { it.isLocked(packOwnership) },
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(bottom = 24.dp),
                     firstTileFocusRequester = firstTileFocus,
                     selectedTileFocusRequester = selectedTileFocus,
                     selectOnFocus = true,
-                    onTileFocused = { onSelectSubPack(it.selection) },
+                    onTileFocused = { tile ->
+                        if (!tile.isLocked(packOwnership)) {
+                            onSelectSubPack(tile.selection)
+                        }
+                    },
                 )
             }
         }

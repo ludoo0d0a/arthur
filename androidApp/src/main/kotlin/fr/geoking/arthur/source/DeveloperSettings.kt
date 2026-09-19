@@ -13,6 +13,11 @@ class DeveloperSettings(context: Context) {
     )
     val simulatePremium: StateFlow<Boolean> = _simulatePremium.asStateFlow()
 
+    private val _simulateAllPacks = MutableStateFlow(
+        prefs.getBoolean(KEY_SIMULATE_ALL_PACKS, DEFAULT_SIMULATE_ALL_PACKS),
+    )
+    val simulateAllPacks: StateFlow<Boolean> = _simulateAllPacks.asStateFlow()
+
     private val _verbose = MutableStateFlow(
         prefs.getBoolean(KEY_VERBOSE, DEFAULT_VERBOSE),
     )
@@ -24,6 +29,12 @@ class DeveloperSettings(context: Context) {
         _simulatePremium.value = enabled
     }
 
+    fun setSimulateAllPacks(enabled: Boolean) {
+        if (_simulateAllPacks.value == enabled) return
+        prefs.edit().putBoolean(KEY_SIMULATE_ALL_PACKS, enabled).apply()
+        _simulateAllPacks.value = enabled
+    }
+
     fun setVerbose(enabled: Boolean) {
         if (_verbose.value == enabled) return
         prefs.edit().putBoolean(KEY_VERBOSE, enabled).apply()
@@ -32,9 +43,11 @@ class DeveloperSettings(context: Context) {
 
     companion object {
         const val DEFAULT_SIMULATE_PREMIUM = true
+        const val DEFAULT_SIMULATE_ALL_PACKS = true
         const val DEFAULT_VERBOSE = false
         private const val PREFS = "arthur_developer"
         private const val KEY_SIMULATE_PREMIUM = "simulate_premium"
+        private const val KEY_SIMULATE_ALL_PACKS = "simulate_all_packs"
         private const val KEY_VERBOSE = "verbose"
     }
 }

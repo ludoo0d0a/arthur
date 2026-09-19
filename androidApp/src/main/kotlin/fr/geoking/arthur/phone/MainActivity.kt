@@ -103,6 +103,7 @@ class MainActivity : ComponentActivity() {
                         var marketplaceHighlight by remember { mutableStateOf<String?>(null) }
                         var catalogEpoch by remember { mutableStateOf(0) }
                         val simulatePremium by developerSettings.simulatePremium.collectAsState()
+                        val simulateAllPacks by developerSettings.simulateAllPacks.collectAsState()
                         val verbose by developerSettings.verbose.collectAsState()
                         val rotationIntervalMs by rotationSettings.intervalMs.collectAsState()
                         val wifiOnlyRemoteStills by rotationSettings.wifiOnlyRemoteStills.collectAsState()
@@ -130,6 +131,8 @@ class MainActivity : ComponentActivity() {
                                     showDeveloper = BuildConfig.DEBUG || BuildConfig.DEBUG_DEV,
                                     simulatePremium = simulatePremium,
                                     onSimulatePremiumChange = developerSettings::setSimulatePremium,
+                                    simulateAllPacks = simulateAllPacks,
+                                    onSimulateAllPacksChange = developerSettings::setSimulateAllPacks,
                                     verbose = verbose,
                                     onVerboseChange = developerSettings::setVerbose,
                                     rotationIntervalMs = rotationIntervalMs,
@@ -171,7 +174,7 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                             else -> {
-                                key(catalogEpoch, isPremium, packOwnership.ownsPersonalPhotos()) {
+                                key(catalogEpoch, isPremium, packOwnership.ownsPersonalPhotos(), simulateAllPacks) {
                                     ControlPlaneScreen(
                                         contentEngine = contentEngine,
                                         stockPhotoSettings = stockPhotoSettings,

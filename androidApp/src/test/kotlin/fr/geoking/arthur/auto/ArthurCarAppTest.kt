@@ -273,6 +273,74 @@ class ArthurCarAppTest {
             assertTrue(row.texts.isNotEmpty())
             val fullText = row.texts.joinToString(" ") { it.toString() }
             assertTrue("Should contain slide position in dev mode", fullText.contains("["))
+
+            // Verify pane has NO actions in body, and ActionStrip has 3 controls (prev, play/pause, next)
+            assertEquals("Pane body should contain no action buttons", 0, reloadedTemplate.pane.actions.size)
+            @Suppress("DEPRECATION")
+            val strip = reloadedTemplate.actionStrip
+            assertNotNull("Pane template should have an ActionStrip", strip)
+            assertEquals("ActionStrip should contain 3 actions (prev, play/pause, next)", 3, strip!!.actions.size)
+        } finally {
+            org.koin.core.context.stopKoin()
+        }
+    }
+
+    @Test
+    fun artworkPaneScreen_autoRotationPausesAfter3PhotosAndManualNavigationResets() {
+        val owner = object : androidx.lifecycle.LifecycleOwner {
+            override val lifecycle = androidx.lifecycle.LifecycleRegistry(this)
+        }
+        val carContext = androidx.car.app.CarContext.create(owner.lifecycle)
+        attachBaseContext(carContext, org.robolectric.RuntimeEnvironment.getApplication())
+
+        if (org.koin.core.context.GlobalContext.getOrNull() != null) {
+            org.koin.core.context.stopKoin()
+        }
+        val app = org.robolectric.RuntimeEnvironment.getApplication()
+        val rotationSettings = fr.geoking.arthur.source.RotationSettings(app)
+
+        org.koin.core.context.startKoin {
+            modules(
+                org.koin.dsl.module {
+                    single { rotationSettings }
+                    single { fr.geoking.arthur.source.QuoteSettings(app) }
+                    single { fr.geoking.arthur.source.DeveloperSettings(app) }
+                    single { fr.geoking.arthur.source.QuoteRepository(context = app, httpGet = { fr.geoking.arthur.source.QuoteRepository.encodeQuotes(emptyList()) }) }
+                    single { fr.geoking.arthur.source.ArtworkImageCache(app) }
+                    single { fr.geoking.arthur.source.InvalidArtworkStore(app) }
+                    single {
+                        fr.geoking.arthur.shared.engine.ContentEngine(
+                            sources = listOf(fr.geoking.arthur.shared.source.GenartSource()),
+                            packOwnership = fr.geoking.arthur.shared.marketplace.FakePackOwnership().also { it.unlockAll() },
+                        )
+                    }
+                },
+            )
+        }
+
+        try {
+            val screen = ArtworkPaneScreen(
+                carContext = carContext,
+                packSelection = fr.geoking.arthur.ui.components.PackSelection(fr.geoking.arthur.ui.components.PackFamily.Genart),
+            )
+            org.robolectric.Robolectric.getForegroundThreadScheduler().advanceToLastPostedRunnable()
+            org.robolectric.shadows.ShadowLooper.idleMainLooper()
+
+            assertTrue("Initially should be playing", screen.isPlaying())
+
+            // Advance 1 auto-rotation
+            screen.advance(+1, isAuto = true)
+            assertTrue("Should still be playing after 1 auto-rotation", screen.isPlaying())
+
+            // Advance 2nd auto-rotation
+            screen.advance(+1, isAuto = true)
+            assertTrue("Should still be playing after 2 auto-rotations", screen.isPlaying())
+
+            // Advance 3rd auto-rotation
+            screen.advance(+1, isAuto = true)
+
+            screen.advance(-1, isAuto = false) // Manual step resets counter and keeps playing
+            assertTrue("Manual step preserves playing state and resets counter", screen.isPlaying())
         } finally {
             org.koin.core.context.stopKoin()
         }

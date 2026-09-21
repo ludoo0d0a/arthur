@@ -578,19 +578,6 @@ class ArtworkPaneScreen(
             )
         }
 
-        // Pane actions: max 2. Primary play/pause only; prev/next live in ActionStrip.
-        paneBuilder.addAction(
-            Action.Builder()
-                .setTitle(
-                    carContext.getString(
-                        if (isPlaying) R.string.car_pause else R.string.car_play,
-                    ),
-                )
-                .setFlags(Action.FLAG_PRIMARY)
-                .setOnClickListener { togglePlay() }
-                .build(),
-        )
-
         val strip = ActionStrip.Builder()
             .addAction(
                 Action.Builder()
@@ -600,6 +587,19 @@ class ArtworkPaneScreen(
                         ).build(),
                     )
                     .setOnClickListener { advance(-1, isAuto = false) }
+                    .build(),
+            )
+            .addAction(
+                Action.Builder()
+                    .setIcon(
+                        CarIcon.Builder(
+                            IconCompat.createWithResource(
+                                carContext,
+                                if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play_circle,
+                            ),
+                        ).build(),
+                    )
+                    .setOnClickListener { togglePlay() }
                     .build(),
             )
             .addAction(

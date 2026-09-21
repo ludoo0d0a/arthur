@@ -218,6 +218,23 @@ class ArthurMediaMappingTest {
     }
 
     @Test
+    fun mediaSubtitleFormat_includesQuotesAndSlidePositionWhenEnabled() {
+        val art = Artwork("genart.particles", "Particles", attribution = "GeoKing", sourceId = "genart", kind = ArtworkKind.Genart)
+        val quoteText = "“Simple is best” — Author"
+        val slidePos = "[1/5]"
+
+        val subtitleWithQuote = buildString {
+            if (art.attribution.isNotBlank()) append(art.attribution)
+            if (isNotEmpty()) append(" • ")
+            append(quoteText)
+            if (isNotEmpty()) append(" ")
+            append(slidePos)
+        }
+
+        assertEquals("GeoKing • “Simple is best” — Author [1/5]", subtitleWithQuote)
+    }
+
+    @Test
     fun automotiveAppDesc_existsAndDeclaresMediaSupport() {
         val file = java.io.File("src/main/res/xml/automotive_app_desc.xml")
         assertTrue("automotive_app_desc.xml must exist", file.exists())

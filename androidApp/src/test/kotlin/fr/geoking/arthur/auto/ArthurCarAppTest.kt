@@ -152,6 +152,7 @@ class ArthurCarAppTest {
             modules(
                 org.koin.dsl.module {
                     single { fr.geoking.arthur.source.RotationSettings(org.robolectric.RuntimeEnvironment.getApplication()) }
+                    single { fr.geoking.arthur.source.QuoteSettings(org.robolectric.RuntimeEnvironment.getApplication()) }
                 },
             )
         }
@@ -164,7 +165,114 @@ class ArthurCarAppTest {
             val listTemplate = template as androidx.car.app.model.ListTemplate
             val list = listTemplate.singleList
             assertNotNull(list)
-            assertEquals(fr.geoking.arthur.source.RotationSettings.OPTIONS_MS.size, list!!.items.size)
+            assertEquals(1 + fr.geoking.arthur.source.RotationSettings.OPTIONS_MS.size, list!!.items.size)
+        } finally {
+            org.koin.core.context.stopKoin()
+        }
+    }
+
+    @Test
+    fun carSettingsScreen_togglesQuoteSettings() {
+        val owner = object : androidx.lifecycle.LifecycleOwner {
+            override val lifecycle = androidx.lifecycle.LifecycleRegistry(this)
+        }
+        val carContext = androidx.car.app.CarContext.create(owner.lifecycle)
+        attachBaseContext(carContext, org.robolectric.RuntimeEnvironment.getApplication())
+
+        if (org.koin.core.context.GlobalContext.getOrNull() != null) {
+            org.koin.core.context.stopKoin()
+        }
+        val app = org.robolectric.RuntimeEnvironment.getApplication()
+        val quoteSettings = fr.geoking.arthur.source.QuoteSettings(app)
+        quoteSettings.setShowQuotes(true)
+
+        org.koin.core.context.startKoin {
+            modules(
+                org.koin.dsl.module {
+                    single { fr.geoking.arthur.source.RotationSettings(app) }
+                    single { quoteSettings }
+                },
+            )
+        }
+
+        try {
+            val screen = CarSettingsScreen(carContext)
+            val listTemplate = screen.onGetTemplate() as androidx.car.app.model.ListTemplate
+            val item = listTemplate.singleList!!.items[0] as androidx.car.app.model.Row
+            item.onClickDelegate!!.sendClick(object : androidx.car.app.OnDoneCallback {
+                override fun onSuccess(response: androidx.car.app.serialization.Bundleable?) {}
+                override fun onFailure(response: androidx.car.app.serialization.Bundleable) {}
+            })
+            assertEquals(false, quoteSettings.showQuotes.value)
+        } finally {
+            org.koin.core.context.stopKoin()
+        }
+    }
+
+    @Test
+    fun artworkPaneScreen_formatsQuotesAndDevModeSlidePosition() {
+        val owner = object : androidx.lifecycle.LifecycleOwner {
+            override val lifecycle = androidx.lifecycle.LifecycleRegistry(this)
+        }
+        val carContext = androidx.car.app.CarContext.create(owner.lifecycle)
+        attachBaseContext(carContext, org.robolectric.RuntimeEnvironment.getApplication())
+
+        if (org.koin.core.context.GlobalContext.getOrNull() != null) {
+            org.koin.core.context.stopKoin()
+        }
+        val app = org.robolectric.RuntimeEnvironment.getApplication()
+        val devSettings = fr.geoking.arthur.source.DeveloperSettings(app)
+        devSettings.setVerbose(true)
+        val quoteSettings = fr.geoking.arthur.source.QuoteSettings(app)
+        quoteSettings.setShowQuotes(true)
+
+        val fakeQuotes = listOf(fr.geoking.arthur.source.Quote("Be yourself", "Oscar Wilde"))
+        val quoteRepo = fr.geoking.arthur.source.QuoteRepository(
+            context = app,
+            httpGet = { fr.geoking.arthur.source.QuoteRepository.encodeQuotes(fakeQuotes) },
+        )
+
+        org.koin.core.context.startKoin {
+            modules(
+                org.koin.dsl.module {
+                    single { fr.geoking.arthur.source.RotationSettings(app) }
+                    single { quoteSettings }
+                    single { devSettings }
+                    single { quoteRepo }
+                    single { fr.geoking.arthur.source.ArtworkImageCache(app) }
+                    single { fr.geoking.arthur.source.InvalidArtworkStore(app) }
+                    single {
+                        fr.geoking.arthur.shared.engine.ContentEngine(
+                            sources = listOf(fr.geoking.arthur.shared.source.GenartSource()),
+                            packOwnership = fr.geoking.arthur.shared.marketplace.FakePackOwnership().also { it.unlockAll() },
+                        )
+                    }
+                },
+            )
+        }
+
+        try {
+            val screen = ArtworkPaneScreen(
+                carContext = carContext,
+                packSelection = fr.geoking.arthur.ui.components.PackSelection(fr.geoking.arthur.ui.components.PackFamily.Genart),
+            )
+            org.robolectric.Robolectric.getForegroundThreadScheduler().advanceToLastPostedRunnable()
+            org.robolectric.shadows.ShadowLooper.idleMainLooper()
+            var reloadedTemplate = screen.onGetTemplate() as PaneTemplate
+            repeat(10) {
+                if (reloadedTemplate.pane.isLoading) {
+                    Thread.sleep(50)
+                    org.robolectric.Robolectric.getForegroundThreadScheduler().advanceToLastPostedRunnable()
+                    org.robolectric.shadows.ShadowLooper.idleMainLooper()
+                    reloadedTemplate = screen.onGetTemplate() as PaneTemplate
+                }
+            }
+            assertTrue("Pane should not be loading", !reloadedTemplate.pane.isLoading)
+            val row = reloadedTemplate.pane.rows[0]
+            assertNotNull(row)
+            assertTrue(row.texts.isNotEmpty())
+            val fullText = row.texts.joinToString(" ") { it.toString() }
+            assertTrue("Should contain slide position in dev mode", fullText.contains("["))
         } finally {
             org.koin.core.context.stopKoin()
         }

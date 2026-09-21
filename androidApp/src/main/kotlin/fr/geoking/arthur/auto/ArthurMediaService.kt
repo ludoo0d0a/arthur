@@ -46,6 +46,7 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
     private var current: Artwork? = null
     private var generation: Long = 0L
     private var playing: Boolean = false
+    private var consecutiveAutoRotations: Int = 0
     private var rotationJob: Job? = null
 
     override fun onCreate() {
@@ -109,6 +110,9 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
 
     private fun setPlaying(value: Boolean) {
         playing = value
+        if (value) {
+            consecutiveAutoRotations = 0
+        }
         publishPlayback(
             if (value) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED,
         )
@@ -120,7 +124,16 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
         rotationJob = scope.launch {
             while (isActive) {
                 delay(rotationSettings.intervalMs.value)
-                if (playing) advance(+1, userInitiated = false)
+                if (playing) {
+                    consecutiveAutoRotations += 1
+                    if (consecutiveAutoRotations >= 3) {
+                        consecutiveAutoRotations = 0
+                        advance(+1, userInitiated = false)
+                        setPlaying(false)
+                    } else {
+                        advance(+1, userInitiated = false)
+                    }
+                }
             }
         }
     }
@@ -140,6 +153,7 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
         generation += 1
         publishArtwork(next)
         if (userInitiated) {
+            consecutiveAutoRotations = 0
             if (playing) startRotation() else setPlaying(true)
         }
     }
@@ -200,7 +214,8 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
             session.setPlaybackState(
                 PlaybackStateCompat.Builder()
                     .setActions(
-                        PlaybackStateCompat.ACTION_PLAY or
+                        PlaybackStateCompat.ACTION_PLAY_PAUSE or
+                            PlaybackStateCompat.ACTION_PLAY or
                             PlaybackStateCompat.ACTION_PAUSE or
                             PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
                             PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS,

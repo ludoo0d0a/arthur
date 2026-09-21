@@ -14,7 +14,10 @@ import fr.geoking.arthur.shared.domain.isGenerative
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.source.ArtworkImageCache
+import fr.geoking.arthur.source.DeveloperSettings
 import fr.geoking.arthur.source.InvalidArtworkStore
+import fr.geoking.arthur.source.QuoteRepository
+import fr.geoking.arthur.source.QuoteSettings
 import fr.geoking.arthur.source.RotationSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -40,12 +43,16 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
     private val rotationSettings: RotationSettings by inject()
     private val imageCache: ArtworkImageCache by inject()
     private val invalidStore: InvalidArtworkStore by inject()
+    private val quoteSettings: QuoteSettings by inject()
+    private val quoteRepository: QuoteRepository by inject()
+    private val developerSettings: DeveloperSettings by inject()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private lateinit var session: MediaSessionCompat
     private var catalog: List<Artwork> = emptyList()
     private var current: Artwork? = null
     private var generation: Long = 0L
     private var playing: Boolean = false
+    private var consecutiveAutoRotations: Int = 0
     private var rotationJob: Job? = null
 
     override fun onCreate() {
@@ -109,6 +116,9 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
 
     private fun setPlaying(value: Boolean) {
         playing = value
+        if (value) {
+            consecutiveAutoRotations = 0
+        }
         publishPlayback(
             if (value) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED,
         )
@@ -119,8 +129,17 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
         rotationJob?.cancel()
         rotationJob = scope.launch {
             while (isActive) {
-                delay(rotationSettings.autoIntervalMs.value)
-                if (playing) advance(+1, userInitiated = false)
+                delay(rotationSettings.intervalMs.value)
+                if (playing) {
+                    consecutiveAutoRotations += 1
+                    if (consecutiveAutoRotations >= 3) {
+                        consecutiveAutoRotations = 0
+                        advance(+1, userInitiated = false)
+                        setPlaying(false)
+                    } else {
+                        advance(+1, userInitiated = false)
+                    }
+                }
             }
         }
     }
@@ -140,6 +159,7 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
         generation += 1
         publishArtwork(next)
         if (userInitiated) {
+            consecutiveAutoRotations = 0
             if (playing) startRotation() else setPlaying(true)
         }
     }
@@ -160,25 +180,57 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
             }
         }
         val uri = AmbientAlbumArt.contentUri(packageName, art.id, gen).toString()
+
+        val quote = if (quoteSettings.showQuotes.value) {
+            runCatching { quoteRepository.nextQuote() }.getOrNull()
+        } else {
+            null
+        }
+        val quoteText = if (quote != null) {
+            "\u201C${quote.text}\u201D" + if (quote.author.isNotBlank()) " \u2014 ${quote.author}" else ""
+        } else null
+
+        val pool = rotationPool()
+        val isDevMode = developerSettings.verbose.value
+        val index = pool.indexOfFirst { it.id == art.id }.let { if (it < 0) 0 else it }
+        val slidePos = if (isDevMode && pool.isNotEmpty()) "[${index + 1}/${pool.size}]" else null
+
+        val subtitle = buildString {
+            if (art.attribution.isNotBlank()) {
+                append(art.attribution)
+            }
+            if (quoteText != null) {
+                if (isNotEmpty()) append(" • ")
+                append(quoteText)
+            }
+            if (slidePos != null) {
+                if (isNotEmpty()) append(" ")
+                append(slidePos)
+            }
+        }
+
         runCatching {
-            session.setMetadata(
-                MediaMetadataCompat.Builder()
-                    .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, art.id)
-                    .putString(MediaMetadataCompat.METADATA_KEY_TITLE, art.title)
-                    .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE, art.title)
-                    .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, art.attribution)
-                    .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, art.attribution)
-                    .putString(
-                        MediaMetadataCompat.METADATA_KEY_GENRE,
-                        if (art.isGenerative) "generative" else art.kind.name,
-                    )
-                    .putString(MediaMetadataCompat.METADATA_KEY_ART_URI, uri)
-                    .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, uri)
-                    .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON_URI, uri)
-                    .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, rotationSettings.autoIntervalMs.value)
-                    .build(),
-            )
-            val pool = rotationPool()
+            val builder = MediaMetadataCompat.Builder()
+                .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, art.id)
+                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, art.title)
+                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE, art.title)
+                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, subtitle)
+                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, subtitle)
+                .putString(
+                    MediaMetadataCompat.METADATA_KEY_GENRE,
+                    if (art.isGenerative) "generative" else art.kind.name,
+                )
+                .putString(MediaMetadataCompat.METADATA_KEY_ART_URI, uri)
+                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, uri)
+                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON_URI, uri)
+                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, rotationSettings.intervalMs.value)
+
+            if (isDevMode && pool.isNotEmpty()) {
+                builder.putLong(MediaMetadataCompat.METADATA_KEY_TRACK_NUMBER, (index + 1).toLong())
+                builder.putLong(MediaMetadataCompat.METADATA_KEY_NUM_TRACKS, pool.size.toLong())
+            }
+
+            session.setMetadata(builder.build())
             session.setQueue(
                 pool.mapIndexed { index, item ->
                     val icon = AmbientAlbumArt.contentUri(packageName, item.id, 0L)
@@ -200,7 +252,8 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
             session.setPlaybackState(
                 PlaybackStateCompat.Builder()
                     .setActions(
-                        PlaybackStateCompat.ACTION_PLAY or
+                        PlaybackStateCompat.ACTION_PLAY_PAUSE or
+                            PlaybackStateCompat.ACTION_PLAY or
                             PlaybackStateCompat.ACTION_PAUSE or
                             PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
                             PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS,

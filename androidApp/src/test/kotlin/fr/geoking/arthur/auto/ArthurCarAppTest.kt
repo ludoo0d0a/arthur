@@ -273,6 +273,82 @@ class ArthurCarAppTest {
             assertTrue(row.texts.isNotEmpty())
             val fullText = row.texts.joinToString(" ") { it.toString() }
             assertTrue("Should contain slide position in dev mode", fullText.contains("["))
+
+            // PaneTemplate: ≤2 pane actions + ≤2 ActionStrip actions (prev / play-pause / next).
+            assertEquals("Pane body should have primary play/pause", 1, reloadedTemplate.pane.actions.size)
+            val playPause = reloadedTemplate.pane.actions[0]
+            assertNotNull("Play/pause should be icon-only", playPause.icon)
+            assertTrue(
+                "Play/pause should be primary",
+                (playPause.flags and Action.FLAG_PRIMARY) == Action.FLAG_PRIMARY,
+            )
+            assertTrue(
+                "Play/pause should have no title",
+                playPause.title == null || playPause.title.toString().isBlank(),
+            )
+            @Suppress("DEPRECATION")
+            val strip = reloadedTemplate.actionStrip
+            assertNotNull("Pane template should have an ActionStrip", strip)
+            assertEquals("ActionStrip should contain prev + next", 2, strip!!.actions.size)
+        } finally {
+            org.koin.core.context.stopKoin()
+        }
+    }
+
+    @Test
+    fun artworkPaneScreen_autoRotationPausesAfter3PhotosAndManualNavigationResets() {
+        val owner = object : androidx.lifecycle.LifecycleOwner {
+            override val lifecycle = androidx.lifecycle.LifecycleRegistry(this)
+        }
+        val carContext = androidx.car.app.CarContext.create(owner.lifecycle)
+        attachBaseContext(carContext, org.robolectric.RuntimeEnvironment.getApplication())
+
+        if (org.koin.core.context.GlobalContext.getOrNull() != null) {
+            org.koin.core.context.stopKoin()
+        }
+        val app = org.robolectric.RuntimeEnvironment.getApplication()
+        val rotationSettings = fr.geoking.arthur.source.RotationSettings(app)
+
+        org.koin.core.context.startKoin {
+            modules(
+                org.koin.dsl.module {
+                    single { rotationSettings }
+                    single { fr.geoking.arthur.source.QuoteSettings(app) }
+                    single { fr.geoking.arthur.source.DeveloperSettings(app) }
+                    single { fr.geoking.arthur.source.QuoteRepository(context = app, httpGet = { fr.geoking.arthur.source.QuoteRepository.encodeQuotes(emptyList()) }) }
+                    single { fr.geoking.arthur.source.ArtworkImageCache(app) }
+                    single { fr.geoking.arthur.source.InvalidArtworkStore(app) }
+                    single {
+                        fr.geoking.arthur.shared.engine.ContentEngine(
+                            sources = listOf(fr.geoking.arthur.shared.source.GenartSource()),
+                            packOwnership = fr.geoking.arthur.shared.marketplace.FakePackOwnership().also { it.unlockAll() },
+                        )
+                    }
+                },
+            )
+        }
+
+        try {
+            val screen = ArtworkPaneScreen(
+                carContext = carContext,
+                packSelection = fr.geoking.arthur.ui.components.PackSelection(fr.geoking.arthur.ui.components.PackFamily.Genart),
+            )
+            org.robolectric.Robolectric.getForegroundThreadScheduler().advanceToLastPostedRunnable()
+            org.robolectric.shadows.ShadowLooper.idleMainLooper()
+
+            assertTrue("Initially should be playing", screen.isPlaying())
+
+            screen.advance(+1, isAuto = true)
+            assertTrue("Should still be playing after 1 auto-rotation", screen.isPlaying())
+
+            screen.advance(+1, isAuto = true)
+            assertTrue("Should still be playing after 2 auto-rotations", screen.isPlaying())
+
+            screen.advance(+1, isAuto = true)
+            assertTrue("Should pause after 3 consecutive auto-rotations", !screen.isPlaying())
+
+            screen.advance(-1, isAuto = false)
+            assertTrue("Manual step resumes playing and resets counter", screen.isPlaying())
         } finally {
             org.koin.core.context.stopKoin()
         }
@@ -321,13 +397,13 @@ class ArthurCarAppTest {
         assertNotNull(row.image)
         assertEquals(artwork.title, row.title.toString())
 
-        // Host: Pane actions ≤ 2 — keep a single primary play/pause action.
+        // Host: Pane actions ≤ 2 — keep a single primary play/pause action (icon-only).
         val pane = Pane.Builder()
             .setImage(carIcon)
             .addRow(row)
             .addAction(
                 Action.Builder()
-                    .setTitle("Pause")
+                    .setIcon(CarIcon.Builder(IconCompat.createWithBitmap(bitmap)).build())
                     .setFlags(Action.FLAG_PRIMARY)
                     .setOnClickListener { }
                     .build(),

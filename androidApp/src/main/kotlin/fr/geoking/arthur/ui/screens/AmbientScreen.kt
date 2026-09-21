@@ -12,7 +12,6 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -20,8 +19,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -497,13 +494,6 @@ fun AmbientScreenContent(
                     color = Color.White.copy(alpha = 0.9f),
                     modifier = Modifier.testTag("ambient_counter"),
                 )
-                AmbientPlaybackControls(
-                    isPlaying = isPlaying,
-                    progress = { progress.value },
-                    onPrevious = { scope.launch { advanceLatest(-1, false) } },
-                    onTogglePlay = { isPlaying = !isPlaying },
-                    onNext = { scope.launch { advanceLatest(+1, false) } },
-                )
             }
         }
         if (canOpenDetails) {
@@ -518,121 +508,6 @@ fun AmbientScreenContent(
     }
 }
 
-@Composable
-private fun AmbientPlaybackControls(
-    isPlaying: Boolean,
-    progress: () -> Float,
-    onPrevious: () -> Unit,
-    onTogglePlay: () -> Unit,
-    onNext: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier.testTag("ambient_playback_controls"),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        AmbientChromeIconButton(
-            onClick = onPrevious,
-            contentDescription = stringResource(R.string.ambient_previous),
-            testTag = "ambient_previous",
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_car_previous),
-                contentDescription = null,
-                tint = Color.White.copy(alpha = 0.95f),
-                modifier = Modifier.size(22.dp),
-            )
-        }
-        AmbientPlayPauseButton(
-            isPlaying = isPlaying,
-            progress = progress,
-            onClick = onTogglePlay,
-        )
-        AmbientChromeIconButton(
-            onClick = onNext,
-            contentDescription = stringResource(R.string.ambient_next),
-            testTag = "ambient_next",
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_car_next),
-                contentDescription = null,
-                tint = Color.White.copy(alpha = 0.95f),
-                modifier = Modifier.size(22.dp),
-            )
-        }
-    }
-}
-
-@Composable
-private fun AmbientPlayPauseButton(
-    isPlaying: Boolean,
-    progress: () -> Float,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val description = stringResource(
-        if (isPlaying) R.string.ambient_pause else R.string.ambient_play,
-    )
-    Box(
-        modifier = modifier
-            .size(52.dp)
-            .semantics { contentDescription = description }
-            .testTag("ambient_play_pause"),
-        contentAlignment = Alignment.Center,
-    ) {
-        AmbientFrostedCircle()
-        CircularProgressIndicator(
-            progress = progress,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(5.dp)
-                .testTag("ambient_rotation_progress"),
-            color = Color.White,
-            trackColor = Color.White.copy(alpha = 0.28f),
-            strokeWidth = 2.5.dp,
-        )
-        IconButton(onClick = onClick) {
-            if (isPlaying) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_pause),
-                    contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.95f),
-                    modifier = Modifier.size(22.dp),
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Filled.PlayArrow,
-                    contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.95f),
-                    modifier = Modifier.size(28.dp),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun AmbientChromeIconButton(
-    onClick: () -> Unit,
-    contentDescription: String,
-    testTag: String,
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
-) {
-    Box(
-        modifier = modifier
-            .size(44.dp)
-            .semantics { this.contentDescription = contentDescription }
-            .testTag(testTag),
-        contentAlignment = Alignment.Center,
-    ) {
-        AmbientFrostedCircle()
-        IconButton(onClick = onClick) {
-            content()
-        }
-    }
-}
 
 @Composable
 private fun AmbientDetailsButton(

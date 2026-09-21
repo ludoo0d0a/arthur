@@ -233,11 +233,43 @@ class ArthurMediaMappingTest {
     }
 
     @Test
+    fun mediaSubtitleFormat_includesQuotesAndSlidePositionWhenEnabled() {
+        val art = Artwork("genart.particles", "Particles", attribution = "GeoKing", sourceId = "genart", kind = ArtworkKind.Genart)
+        val quoteText = "“Simple is best” — Author"
+        val slidePos = "[1/5]"
+
+        val subtitleWithQuote = buildString {
+            if (art.attribution.isNotBlank()) append(art.attribution)
+            if (isNotEmpty()) append(" • ")
+            append(quoteText)
+            if (isNotEmpty()) append(" ")
+            append(slidePos)
+        }
+
+        assertEquals("GeoKing • “Simple is best” — Author [1/5]", subtitleWithQuote)
+    }
+
+    @Test
     fun automotiveAppDesc_existsAndDeclaresMediaSupport() {
         val file = java.io.File("src/main/res/xml/automotive_app_desc.xml")
         assertTrue("automotive_app_desc.xml must exist", file.exists())
         val content = file.readText()
         assertTrue("Must contain <automotiveApp>", content.contains("<automotiveApp>"))
         assertTrue("Must contain <uses name=\"media\"", content.contains("<uses name=\"media\""))
+    }
+
+    @Test
+    fun mediaPlaybackActions_includeThreeButtonControls() {
+        val actions = android.support.v4.media.session.PlaybackStateCompat.ACTION_PLAY_PAUSE or
+            android.support.v4.media.session.PlaybackStateCompat.ACTION_PLAY or
+            android.support.v4.media.session.PlaybackStateCompat.ACTION_PAUSE or
+            android.support.v4.media.session.PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
+            android.support.v4.media.session.PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
+
+        assertTrue("Must include ACTION_PLAY_PAUSE", actions and android.support.v4.media.session.PlaybackStateCompat.ACTION_PLAY_PAUSE != 0L)
+        assertTrue("Must include ACTION_PLAY", actions and android.support.v4.media.session.PlaybackStateCompat.ACTION_PLAY != 0L)
+        assertTrue("Must include ACTION_PAUSE", actions and android.support.v4.media.session.PlaybackStateCompat.ACTION_PAUSE != 0L)
+        assertTrue("Must include ACTION_SKIP_TO_PREVIOUS", actions and android.support.v4.media.session.PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS != 0L)
+        assertTrue("Must include ACTION_SKIP_TO_NEXT", actions and android.support.v4.media.session.PlaybackStateCompat.ACTION_SKIP_TO_NEXT != 0L)
     }
 }

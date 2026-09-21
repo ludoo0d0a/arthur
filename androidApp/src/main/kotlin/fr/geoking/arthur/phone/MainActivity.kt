@@ -103,8 +103,11 @@ class MainActivity : ComponentActivity() {
                         var marketplaceHighlight by remember { mutableStateOf<String?>(null) }
                         var catalogEpoch by remember { mutableStateOf(0) }
                         val simulatePremium by developerSettings.simulatePremium.collectAsState()
+                        val simulateAllPacks by developerSettings.simulateAllPacks.collectAsState()
                         val verbose by developerSettings.verbose.collectAsState()
-                        val rotationIntervalMs by rotationSettings.intervalMs.collectAsState()
+                        val phoneIntervalMs by rotationSettings.phoneIntervalMs.collectAsState()
+                        val tvIntervalMs by rotationSettings.tvIntervalMs.collectAsState()
+                        val autoIntervalMs by rotationSettings.autoIntervalMs.collectAsState()
                         val wifiOnlyRemoteStills by rotationSettings.wifiOnlyRemoteStills.collectAsState()
                         val showQuotes by quoteSettings.showQuotes.collectAsState()
                         val isPremium = premium.isPremium
@@ -130,10 +133,16 @@ class MainActivity : ComponentActivity() {
                                     showDeveloper = BuildConfig.DEBUG || BuildConfig.DEBUG_DEV,
                                     simulatePremium = simulatePremium,
                                     onSimulatePremiumChange = developerSettings::setSimulatePremium,
+                                    simulateAllPacks = simulateAllPacks,
+                                    onSimulateAllPacksChange = developerSettings::setSimulateAllPacks,
                                     verbose = verbose,
                                     onVerboseChange = developerSettings::setVerbose,
-                                    rotationIntervalMs = rotationIntervalMs,
-                                    onRotationIntervalChange = rotationSettings::setIntervalMs,
+                                    phoneIntervalMs = phoneIntervalMs,
+                                    onPhoneIntervalChange = rotationSettings::setPhoneIntervalMs,
+                                    tvIntervalMs = tvIntervalMs,
+                                    onTvIntervalChange = rotationSettings::setTvIntervalMs,
+                                    autoIntervalMs = autoIntervalMs,
+                                    onAutoIntervalChange = rotationSettings::setAutoIntervalMs,
                                     wifiOnlyRemoteStills = wifiOnlyRemoteStills,
                                     onWifiOnlyRemoteStillsChange = rotationSettings::setWifiOnlyRemoteStills,
                                     showQuotes = showQuotes,
@@ -171,7 +180,7 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                             else -> {
-                                key(catalogEpoch, isPremium, packOwnership.ownsPersonalPhotos()) {
+                                key(catalogEpoch, isPremium, packOwnership.ownsPersonalPhotos(), simulateAllPacks) {
                                     ControlPlaneScreen(
                                         contentEngine = contentEngine,
                                         stockPhotoSettings = stockPhotoSettings,

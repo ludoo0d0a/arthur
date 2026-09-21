@@ -1,7 +1,10 @@
 package fr.geoking.arthur.auto
 
 import android.os.Looper
+import android.support.v4.media.session.MediaControllerCompat
+import android.support.v4.media.session.PlaybackStateCompat
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
@@ -31,4 +34,5 @@ class ArthurAutoStartupTest {
 
         controller.destroy()
     }
+
 }

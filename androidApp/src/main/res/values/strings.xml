@@ -125,6 +125,9 @@
     <string name="screen_licenses">Open source licenses</string>
     <string name="screen_rotation_interval">Rotation interval</string>
     <string name="settings_rotation_interval_subtitle">How long each artwork stays on screen</string>
+    <string name="rotation_interval_phone">Phone</string>
+    <string name="rotation_interval_tv">Android TV</string>
+    <string name="rotation_interval_auto">Android Auto</string>
     <string name="settings_wifi_only_stills">Wi‑Fi only for photos</string>
     <string name="settings_wifi_only_stills_subtitle">When off Wi‑Fi, use cached images only</string>
     <string name="settings_image_cache">Image cache</string>
@@ -151,6 +154,8 @@
     <string name="settings_developer_subtitle">Debug options &amp; testing tools</string>
     <string name="dev_simulate_premium">Simulate premium</string>
     <string name="dev_simulate_premium_subtitle">Unlock premium features without a purchase</string>
+    <string name="dev_simulate_all_packs">Simulate all packs</string>
+    <string name="dev_simulate_all_packs_subtitle">Unlock all marketplace content packs without purchase</string>
     <string name="dev_verbose">Verbose mode</string>
     <string name="dev_verbose_subtitle">Display debug metrics and query timing floating bar</string>
     <string name="dev_errors_list">Error Log</string>

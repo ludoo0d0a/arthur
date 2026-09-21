@@ -36,7 +36,11 @@ import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.source.ArtworkImageCache
+import fr.geoking.arthur.source.DeveloperSettings
 import fr.geoking.arthur.source.InvalidArtworkStore
+import fr.geoking.arthur.source.Quote
+import fr.geoking.arthur.source.QuoteRepository
+import fr.geoking.arthur.source.QuoteSettings
 import fr.geoking.arthur.source.RotationSettings
 import fr.geoking.arthur.ui.components.PackFamily
 import fr.geoking.arthur.ui.components.PackSelection
@@ -219,6 +223,7 @@ class PackSelectionScreen(carContext: CarContext) : Screen(carContext) {
  */
 class CarSettingsScreen(carContext: CarContext) : Screen(carContext), KoinComponent {
     private val rotationSettings: RotationSettings by inject()
+    private val quoteSettings: QuoteSettings by inject()
 
     override fun onGetTemplate(): Template {
         return try {
@@ -231,6 +236,19 @@ class CarSettingsScreen(carContext: CarContext) : Screen(carContext), KoinCompon
     private fun buildTemplate(): Template {
         val currentInterval = rotationSettings.intervalMs.value
         val listBuilder = ItemList.Builder()
+
+        val showQuotes = quoteSettings.showQuotes.value
+        val quoteRowBuilder = Row.Builder()
+            .setTitle(carContext.getString(R.string.settings_show_quotes))
+            .addText(carContext.getString(R.string.settings_show_quotes_subtitle))
+        if (showQuotes) {
+            quoteRowBuilder.addText("✓")
+        }
+        quoteRowBuilder.setOnClickListener {
+            quoteSettings.setShowQuotes(!showQuotes)
+            invalidate()
+        }
+        listBuilder.addItem(quoteRowBuilder.build())
 
         RotationSettings.OPTIONS_MS.forEach { ms ->
             val label = if (ms < 60_000L) {
@@ -320,10 +338,14 @@ class ArtworkPaneScreen(
     private val rotationSettings: RotationSettings by inject()
     private val imageCache: ArtworkImageCache by inject()
     private val invalidStore: InvalidArtworkStore by inject()
+    private val quoteSettings: QuoteSettings by inject()
+    private val quoteRepository: QuoteRepository by inject()
+    private val developerSettings: DeveloperSettings by inject()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     private var catalog: List<Artwork> = emptyList()
     private var current: Artwork? = null
+    private var currentQuote: Quote? = null
     private var generation: Long = 0L
     private var isPlaying: Boolean = true
     private var consecutiveAutoRotations: Int = 0
@@ -362,6 +384,7 @@ class ArtworkPaneScreen(
                 } else {
                     resolveAmbientArtwork(catalog, null)
                 }
+                updateQuoteForCurrent()
                 scheduleAsyncRender()
                 if (isPlaying) startRotation()
             }
@@ -413,6 +436,16 @@ class ArtworkPaneScreen(
         }
     }
 
+    private suspend fun updateQuoteForCurrent() {
+        if (quoteSettings.showQuotes.value && current != null) {
+            currentQuote = withContext(Dispatchers.IO) {
+                runCatching { quoteRepository.nextQuote() }.getOrNull()
+            }
+        } else {
+            currentQuote = null
+        }
+    }
+
     fun advance(delta: Int, isAuto: Boolean = false) {
         if (!isAuto) {
             consecutiveAutoRotations = 0
@@ -427,6 +460,10 @@ class ArtworkPaneScreen(
         )
         current = catalog[nextIndex]
         generation += 1
+        scope.launch {
+            updateQuoteForCurrent()
+            invalidate()
+        }
         scheduleAsyncRender()
         // Restart the interval so a manual skip doesn't get auto-advanced immediately.
         if (isPlaying) startRotation()
@@ -495,8 +532,31 @@ class ArtworkPaneScreen(
             }
             val rowBuilder = Row.Builder()
                 .setTitle(art.title.ifBlank { carContext.getString(R.string.app_name) })
+
+            val quote = if (quoteSettings.showQuotes.value) currentQuote else null
+            val quoteText = if (quote != null) {
+                "\u201C${quote.text}\u201D" + if (quote.author.isNotBlank()) " \u2014 ${quote.author}" else ""
+            } else null
+
+            val isDevMode = developerSettings.verbose.value
+            val index = catalog.indexOfFirst { it.id == art.id }.let { if (it < 0) 0 else it }
+            val slidePos = if (isDevMode && catalog.isNotEmpty()) "[${index + 1}/${catalog.size}]" else null
+
             if (art.attribution.isNotBlank()) {
-                rowBuilder.addText(art.attribution)
+                val attrLine = if (slidePos != null) "${art.attribution} $slidePos" else art.attribution
+                rowBuilder.addText(attrLine)
+                if (quoteText != null) {
+                    rowBuilder.addText(quoteText)
+                }
+            } else {
+                if (quoteText != null) {
+                    rowBuilder.addText(quoteText)
+                    if (slidePos != null) {
+                        rowBuilder.addText(slidePos)
+                    }
+                } else if (slidePos != null) {
+                    rowBuilder.addText(slidePos)
+                }
             }
             // The big picture is best-effort: if rendering/encoding it fails, the row still
             // shows title/attribution instead of falling back to the whole error template.

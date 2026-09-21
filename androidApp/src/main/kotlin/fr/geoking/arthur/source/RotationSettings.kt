@@ -9,19 +9,48 @@ import kotlinx.coroutines.flow.asStateFlow
 /** Persists ambient rotation interval, Wi‑Fi-only downloads, and recent still ring. */
 class RotationSettings(context: Context) {
     private val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-    private val _intervalMs = MutableStateFlow(loadIntervalMs())
-    val intervalMs: StateFlow<Long> = _intervalMs.asStateFlow()
+
+    private val _phoneIntervalMs = MutableStateFlow(loadIntervalMs(KEY_PHONE_INTERVAL_MS, KEY_INTERVAL_MS))
+    val phoneIntervalMs: StateFlow<Long> = _phoneIntervalMs.asStateFlow()
+
+    private val _tvIntervalMs = MutableStateFlow(loadIntervalMs(KEY_TV_INTERVAL_MS))
+    val tvIntervalMs: StateFlow<Long> = _tvIntervalMs.asStateFlow()
+
+    private val _autoIntervalMs = MutableStateFlow(loadIntervalMs(KEY_AUTO_INTERVAL_MS))
+    val autoIntervalMs: StateFlow<Long> = _autoIntervalMs.asStateFlow()
+
+    @Deprecated("Use phoneIntervalMs, tvIntervalMs, or autoIntervalMs based on target device", ReplaceWith("phoneIntervalMs"))
+    val intervalMs: StateFlow<Long> get() = phoneIntervalMs
 
     private val _wifiOnlyRemoteStills = MutableStateFlow(
         prefs.getBoolean(KEY_WIFI_ONLY, false),
     )
     val wifiOnlyRemoteStills: StateFlow<Boolean> = _wifiOnlyRemoteStills.asStateFlow()
 
-    fun setIntervalMs(ms: Long) {
+    fun setPhoneIntervalMs(ms: Long) {
         val value = if (ms in OPTIONS_MS) ms else AmbientAlbumArt.ROTATION_INTERVAL_MS
-        if (_intervalMs.value == value) return
-        prefs.edit().putLong(KEY_INTERVAL_MS, value).apply()
-        _intervalMs.value = value
+        if (_phoneIntervalMs.value == value) return
+        prefs.edit().putLong(KEY_PHONE_INTERVAL_MS, value).apply()
+        _phoneIntervalMs.value = value
+    }
+
+    fun setTvIntervalMs(ms: Long) {
+        val value = if (ms in OPTIONS_MS) ms else AmbientAlbumArt.ROTATION_INTERVAL_MS
+        if (_tvIntervalMs.value == value) return
+        prefs.edit().putLong(KEY_TV_INTERVAL_MS, value).apply()
+        _tvIntervalMs.value = value
+    }
+
+    fun setAutoIntervalMs(ms: Long) {
+        val value = if (ms in OPTIONS_MS) ms else AmbientAlbumArt.ROTATION_INTERVAL_MS
+        if (_autoIntervalMs.value == value) return
+        prefs.edit().putLong(KEY_AUTO_INTERVAL_MS, value).apply()
+        _autoIntervalMs.value = value
+    }
+
+    @Deprecated("Use setPhoneIntervalMs, setTvIntervalMs, or setAutoIntervalMs based on target device", ReplaceWith("setPhoneIntervalMs(ms)"))
+    fun setIntervalMs(ms: Long) {
+        setPhoneIntervalMs(ms)
     }
 
     fun setWifiOnlyRemoteStills(enabled: Boolean) {
@@ -45,9 +74,16 @@ class RotationSettings(context: Context) {
         prefs.edit().putString(KEY_RECENT_STILL_IDS, next.joinToString(RECENT_SEP)).apply()
     }
 
-    private fun loadIntervalMs(): Long {
-        val stored = prefs.getLong(KEY_INTERVAL_MS, AmbientAlbumArt.ROTATION_INTERVAL_MS)
-        return if (stored in OPTIONS_MS) stored else AmbientAlbumArt.ROTATION_INTERVAL_MS
+    private fun loadIntervalMs(key: String, legacyKey: String? = null): Long {
+        val defaultVal = AmbientAlbumArt.ROTATION_INTERVAL_MS
+        val stored = if (prefs.contains(key)) {
+            prefs.getLong(key, defaultVal)
+        } else if (legacyKey != null && prefs.contains(legacyKey)) {
+            prefs.getLong(legacyKey, defaultVal)
+        } else {
+            defaultVal
+        }
+        return if (stored in OPTIONS_MS) stored else defaultVal
     }
 
     companion object {
@@ -69,6 +105,9 @@ class RotationSettings(context: Context) {
 
         private const val PREFS = "arthur_rotation"
         private const val KEY_INTERVAL_MS = "interval_ms"
+        private const val KEY_PHONE_INTERVAL_MS = "interval_phone_ms"
+        private const val KEY_TV_INTERVAL_MS = "interval_tv_ms"
+        private const val KEY_AUTO_INTERVAL_MS = "interval_auto_ms"
         private const val KEY_WIFI_ONLY = "wifi_only_remote_stills"
         private const val KEY_RECENT_STILL_IDS = "recent_still_ids"
         private const val RECENT_SEP = "\n"

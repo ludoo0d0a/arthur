@@ -105,7 +105,9 @@ class MainActivity : ComponentActivity() {
                         val simulatePremium by developerSettings.simulatePremium.collectAsState()
                         val simulateAllPacks by developerSettings.simulateAllPacks.collectAsState()
                         val verbose by developerSettings.verbose.collectAsState()
-                        val rotationIntervalMs by rotationSettings.intervalMs.collectAsState()
+                        val phoneIntervalMs by rotationSettings.phoneIntervalMs.collectAsState()
+                        val tvIntervalMs by rotationSettings.tvIntervalMs.collectAsState()
+                        val autoIntervalMs by rotationSettings.autoIntervalMs.collectAsState()
                         val wifiOnlyRemoteStills by rotationSettings.wifiOnlyRemoteStills.collectAsState()
                         val showQuotes by quoteSettings.showQuotes.collectAsState()
                         val isPremium = premium.isPremium
@@ -135,8 +137,12 @@ class MainActivity : ComponentActivity() {
                                     onSimulateAllPacksChange = developerSettings::setSimulateAllPacks,
                                     verbose = verbose,
                                     onVerboseChange = developerSettings::setVerbose,
-                                    rotationIntervalMs = rotationIntervalMs,
-                                    onRotationIntervalChange = rotationSettings::setIntervalMs,
+                                    phoneIntervalMs = phoneIntervalMs,
+                                    onPhoneIntervalChange = rotationSettings::setPhoneIntervalMs,
+                                    tvIntervalMs = tvIntervalMs,
+                                    onTvIntervalChange = rotationSettings::setTvIntervalMs,
+                                    autoIntervalMs = autoIntervalMs,
+                                    onAutoIntervalChange = rotationSettings::setAutoIntervalMs,
                                     wifiOnlyRemoteStills = wifiOnlyRemoteStills,
                                     onWifiOnlyRemoteStillsChange = rotationSettings::setWifiOnlyRemoteStills,
                                     showQuotes = showQuotes,

@@ -14,30 +14,56 @@ import org.robolectric.annotation.Config
 @Config(application = Application::class)
 class RotationSettingsTest {
     @Test
-    fun interval_defaultsToTwentySeconds() {
+    fun intervals_defaultToTwentySeconds() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         context.getSharedPreferences("arthur_rotation", Context.MODE_PRIVATE).edit().clear().commit()
         val settings = RotationSettings(context)
+        assertEquals(AmbientAlbumArt.ROTATION_INTERVAL_MS, settings.phoneIntervalMs.value)
+        assertEquals(AmbientAlbumArt.ROTATION_INTERVAL_MS, settings.tvIntervalMs.value)
+        assertEquals(AmbientAlbumArt.ROTATION_INTERVAL_MS, settings.autoIntervalMs.value)
         assertEquals(AmbientAlbumArt.ROTATION_INTERVAL_MS, settings.intervalMs.value)
     }
 
     @Test
-    fun interval_persists() {
+    fun intervals_persistIndependently() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         context.getSharedPreferences("arthur_rotation", Context.MODE_PRIVATE).edit().clear().commit()
         val settings = RotationSettings(context)
-        settings.setIntervalMs(300_000L)
-        assertEquals(300_000L, settings.intervalMs.value)
-        assertEquals(300_000L, RotationSettings(context).intervalMs.value)
+        settings.setPhoneIntervalMs(60_000L)
+        settings.setTvIntervalMs(300_000L)
+        settings.setAutoIntervalMs(600_000L)
+
+        assertEquals(60_000L, settings.phoneIntervalMs.value)
+        assertEquals(300_000L, settings.tvIntervalMs.value)
+        assertEquals(600_000L, settings.autoIntervalMs.value)
+
+        val reloaded = RotationSettings(context)
+        assertEquals(60_000L, reloaded.phoneIntervalMs.value)
+        assertEquals(300_000L, reloaded.tvIntervalMs.value)
+        assertEquals(600_000L, reloaded.autoIntervalMs.value)
     }
 
     @Test
-    fun interval_rejectsUnknownValue() {
+    fun intervals_rejectUnknownValue() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         context.getSharedPreferences("arthur_rotation", Context.MODE_PRIVATE).edit().clear().commit()
         val settings = RotationSettings(context)
-        settings.setIntervalMs(7_000L)
-        assertEquals(AmbientAlbumArt.ROTATION_INTERVAL_MS, settings.intervalMs.value)
+        settings.setPhoneIntervalMs(7_000L)
+        settings.setTvIntervalMs(7_000L)
+        settings.setAutoIntervalMs(7_000L)
+        assertEquals(AmbientAlbumArt.ROTATION_INTERVAL_MS, settings.phoneIntervalMs.value)
+        assertEquals(AmbientAlbumArt.ROTATION_INTERVAL_MS, settings.tvIntervalMs.value)
+        assertEquals(AmbientAlbumArt.ROTATION_INTERVAL_MS, settings.autoIntervalMs.value)
+    }
+
+    @Test
+    fun phoneInterval_fallsBackToLegacyKey() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val prefs = context.getSharedPreferences("arthur_rotation", Context.MODE_PRIVATE)
+        prefs.edit().clear().putLong("interval_ms", 120_000L).commit()
+
+        val settings = RotationSettings(context)
+        assertEquals(120_000L, settings.phoneIntervalMs.value)
     }
 
     @Test

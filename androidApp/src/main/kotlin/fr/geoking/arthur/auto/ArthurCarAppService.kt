@@ -234,7 +234,7 @@ class CarSettingsScreen(carContext: CarContext) : Screen(carContext), KoinCompon
     }
 
     private fun buildTemplate(): Template {
-        val currentInterval = rotationSettings.intervalMs.value
+        val currentInterval = rotationSettings.autoIntervalMs.value
         val listBuilder = ItemList.Builder()
 
         val showQuotes = quoteSettings.showQuotes.value
@@ -265,7 +265,7 @@ class CarSettingsScreen(carContext: CarContext) : Screen(carContext), KoinCompon
             }
 
             rowBuilder.setOnClickListener {
-                rotationSettings.setIntervalMs(ms)
+                rotationSettings.setAutoIntervalMs(ms)
                 invalidate()
             }
 
@@ -419,7 +419,7 @@ class ArtworkPaneScreen(
         rotationJob?.cancel()
         rotationJob = scope.launch {
             while (isActive) {
-                delay(rotationSettings.intervalMs.value)
+                delay(rotationSettings.autoIntervalMs.value)
                 if (isPlaying) {
                     consecutiveAutoRotations += 1
                     if (consecutiveAutoRotations >= 3) {

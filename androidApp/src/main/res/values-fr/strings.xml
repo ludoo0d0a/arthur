@@ -124,6 +124,9 @@
     <string name="screen_licenses">Licences open source</string>
     <string name="screen_rotation_interval">Intervalle de rotation</string>
     <string name="settings_rotation_interval_subtitle">Durée d’affichage de chaque œuvre</string>
+    <string name="rotation_interval_phone">Téléphone</string>
+    <string name="rotation_interval_tv">Android TV</string>
+    <string name="rotation_interval_auto">Android Auto</string>
     <string name="settings_wifi_only_stills">Photos en Wi‑Fi uniquement</string>
     <string name="settings_wifi_only_stills_subtitle">Hors Wi‑Fi, utiliser uniquement les images en cache</string>
     <string name="settings_image_cache">Cache d’images</string>

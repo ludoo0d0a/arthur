@@ -276,6 +276,16 @@ class ArthurCarAppTest {
 
             // PaneTemplate: ≤2 pane actions + ≤2 ActionStrip actions (prev / play-pause / next).
             assertEquals("Pane body should have primary play/pause", 1, reloadedTemplate.pane.actions.size)
+            val playPause = reloadedTemplate.pane.actions[0]
+            assertNotNull("Play/pause should be icon-only", playPause.icon)
+            assertTrue(
+                "Play/pause should be primary",
+                (playPause.flags and Action.FLAG_PRIMARY) == Action.FLAG_PRIMARY,
+            )
+            assertTrue(
+                "Play/pause should have no title",
+                playPause.title == null || playPause.title.toString().isBlank(),
+            )
             @Suppress("DEPRECATION")
             val strip = reloadedTemplate.actionStrip
             assertNotNull("Pane template should have an ActionStrip", strip)
@@ -387,13 +397,13 @@ class ArthurCarAppTest {
         assertNotNull(row.image)
         assertEquals(artwork.title, row.title.toString())
 
-        // Host: Pane actions ≤ 2 — keep a single primary play/pause action.
+        // Host: Pane actions ≤ 2 — keep a single primary play/pause action (icon-only).
         val pane = Pane.Builder()
             .setImage(carIcon)
             .addRow(row)
             .addAction(
                 Action.Builder()
-                    .setTitle("Pause")
+                    .setIcon(CarIcon.Builder(IconCompat.createWithBitmap(bitmap)).build())
                     .setFlags(Action.FLAG_PRIMARY)
                     .setOnClickListener { }
                     .build(),

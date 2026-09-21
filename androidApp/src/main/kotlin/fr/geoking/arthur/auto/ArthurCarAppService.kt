@@ -117,7 +117,7 @@ private fun carErrorTemplate(carContext: CarContext, e: Throwable): Template {
  * Car App Library service for Android Auto displaying large artwork images via PaneTemplate.
  *
  * Host constraints applied:
- * - Pane actions ≤ 2 (play/pause primary only here)
+ * - Pane actions ≤ 2 (primary play/pause icon-only here)
  * - ActionStrip ≤ 2, icon-only for prev/next (no label buttons in strip)
  * - Pane rows capped via [ConstraintManager.CONTENT_LIMIT_TYPE_PANE]
  * - Pack grids use [SectionedItemTemplate] + [GridSection.ITEM_SIZE_EXTRA_LARGE], hard-capped
@@ -581,13 +581,16 @@ class ArtworkPaneScreen(
             )
         }
 
-        // Pane actions ≤ 2: primary play/pause. ActionStrip ≤ 2: icon-only prev/next.
+        // Pane actions ≤ 2: primary play/pause (icon-only). ActionStrip ≤ 2: prev/next.
         paneBuilder.addAction(
             Action.Builder()
-                .setTitle(
-                    carContext.getString(
-                        if (isPlaying) R.string.car_pause else R.string.car_play,
-                    ),
+                .setIcon(
+                    CarIcon.Builder(
+                        IconCompat.createWithResource(
+                            carContext,
+                            if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play_circle,
+                        ),
+                    ).build(),
                 )
                 .setFlags(Action.FLAG_PRIMARY)
                 .setOnClickListener { togglePlay() }

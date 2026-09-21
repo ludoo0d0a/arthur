@@ -4,6 +4,7 @@ import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
 import fr.geoking.arthur.shared.domain.Artwork
+import fr.geoking.arthur.shared.domain.isGenerative
 import java.io.File
 
 /**
@@ -20,6 +21,7 @@ object AmbientAlbumArt {
 
     /**
      * Caps [pool] to [maxSize] for Ambient auto-rotation.
+     * Generative artwork pools preserve all items in the pool since no remote network preloading is required.
      * Prefers [seed] and [isPreferred] items (e.g. already on disk) so the first slide avoids a network wait.
      */
     fun sampleRotationPool(
@@ -29,9 +31,10 @@ object AmbientAlbumArt {
         isPreferred: (Artwork) -> Boolean = { false },
     ): List<Artwork> {
         if (pool.isEmpty() || maxSize <= 0) return emptyList()
+        val effectiveMaxSize = if (pool.all { it.isGenerative }) pool.size else maxSize
         val preferred = pool.filter(isPreferred).shuffled()
         val others = pool.filterNot(isPreferred).shuffled()
-        val ordered = ArrayList<Artwork>(maxSize.coerceAtMost(pool.size))
+        val ordered = ArrayList<Artwork>(effectiveMaxSize.coerceAtMost(pool.size))
         val seedInPool = seed?.takeIf { candidate -> pool.any { it.id == candidate.id } }
         if (seedInPool != null) {
             ordered.add(seedInPool)
@@ -39,7 +42,7 @@ object AmbientAlbumArt {
             (preferred.firstOrNull() ?: others.firstOrNull())?.let { ordered.add(it) }
         }
         for (art in preferred + others) {
-            if (ordered.size >= maxSize) break
+            if (ordered.size >= effectiveMaxSize) break
             if (ordered.none { it.id == art.id }) ordered.add(art)
         }
         return ordered

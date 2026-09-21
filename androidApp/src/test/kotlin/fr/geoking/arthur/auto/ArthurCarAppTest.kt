@@ -274,12 +274,12 @@ class ArthurCarAppTest {
             val fullText = row.texts.joinToString(" ") { it.toString() }
             assertTrue("Should contain slide position in dev mode", fullText.contains("["))
 
-            // Verify pane has NO actions in body, and ActionStrip has 3 controls (prev, play/pause, next)
-            assertEquals("Pane body should contain no action buttons", 0, reloadedTemplate.pane.actions.size)
+            // PaneTemplate: ≤2 pane actions + ≤2 ActionStrip actions (prev / play-pause / next).
+            assertEquals("Pane body should have primary play/pause", 1, reloadedTemplate.pane.actions.size)
             @Suppress("DEPRECATION")
             val strip = reloadedTemplate.actionStrip
             assertNotNull("Pane template should have an ActionStrip", strip)
-            assertEquals("ActionStrip should contain 3 actions (prev, play/pause, next)", 3, strip!!.actions.size)
+            assertEquals("ActionStrip should contain prev + next", 2, strip!!.actions.size)
         } finally {
             org.koin.core.context.stopKoin()
         }
@@ -328,19 +328,17 @@ class ArthurCarAppTest {
 
             assertTrue("Initially should be playing", screen.isPlaying())
 
-            // Advance 1 auto-rotation
             screen.advance(+1, isAuto = true)
             assertTrue("Should still be playing after 1 auto-rotation", screen.isPlaying())
 
-            // Advance 2nd auto-rotation
             screen.advance(+1, isAuto = true)
             assertTrue("Should still be playing after 2 auto-rotations", screen.isPlaying())
 
-            // Advance 3rd auto-rotation
             screen.advance(+1, isAuto = true)
+            assertTrue("Should pause after 3 consecutive auto-rotations", !screen.isPlaying())
 
-            screen.advance(-1, isAuto = false) // Manual step resets counter and keeps playing
-            assertTrue("Manual step preserves playing state and resets counter", screen.isPlaying())
+            screen.advance(-1, isAuto = false)
+            assertTrue("Manual step resumes playing and resets counter", screen.isPlaying())
         } finally {
             org.koin.core.context.stopKoin()
         }

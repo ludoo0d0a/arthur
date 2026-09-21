@@ -421,16 +421,7 @@ class ArtworkPaneScreen(
             while (isActive) {
                 delay(rotationSettings.autoIntervalMs.value)
                 if (isPlaying) {
-                    consecutiveAutoRotations += 1
-                    if (consecutiveAutoRotations >= 3) {
-                        // After 3 auto-rotations (4th image shown), pause auto-rotation to respect Android Auto's step limit.
-                        isPlaying = false
-                        consecutiveAutoRotations = 0
-                        advance(+1, isAuto = true)
-                        rotationJob?.cancel()
-                    } else {
-                        advance(+1, isAuto = true)
-                    }
+                    advance(+1, isAuto = true)
                 }
             }
         }
@@ -449,6 +440,18 @@ class ArtworkPaneScreen(
     fun advance(delta: Int, isAuto: Boolean = false) {
         if (!isAuto) {
             consecutiveAutoRotations = 0
+            // Manual prev/next resumes auto-rotation (same as ArthurMediaService).
+            if (!isPlaying) {
+                isPlaying = true
+            }
+        } else {
+            consecutiveAutoRotations += 1
+            // After 3 auto-rotations (4th image shown), pause to respect Android Auto's step limit.
+            if (consecutiveAutoRotations >= 3) {
+                isPlaying = false
+                consecutiveAutoRotations = 0
+                rotationJob?.cancel()
+            }
         }
         if (catalog.isEmpty()) return
         val index = catalog.indexOfFirst { it.id == current?.id }.let { if (it < 0) 0 else it }
@@ -578,6 +581,19 @@ class ArtworkPaneScreen(
             )
         }
 
+        // Pane actions ≤ 2: primary play/pause. ActionStrip ≤ 2: icon-only prev/next.
+        paneBuilder.addAction(
+            Action.Builder()
+                .setTitle(
+                    carContext.getString(
+                        if (isPlaying) R.string.car_pause else R.string.car_play,
+                    ),
+                )
+                .setFlags(Action.FLAG_PRIMARY)
+                .setOnClickListener { togglePlay() }
+                .build(),
+        )
+
         val strip = ActionStrip.Builder()
             .addAction(
                 Action.Builder()
@@ -587,19 +603,6 @@ class ArtworkPaneScreen(
                         ).build(),
                     )
                     .setOnClickListener { advance(-1, isAuto = false) }
-                    .build(),
-            )
-            .addAction(
-                Action.Builder()
-                    .setIcon(
-                        CarIcon.Builder(
-                            IconCompat.createWithResource(
-                                carContext,
-                                if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play_circle,
-                            ),
-                        ).build(),
-                    )
-                    .setOnClickListener { togglePlay() }
                     .build(),
             )
             .addAction(

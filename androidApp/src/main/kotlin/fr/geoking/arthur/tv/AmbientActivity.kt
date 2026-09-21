@@ -60,7 +60,7 @@ class AmbientActivity : ComponentActivity() {
                 var artwork by remember { mutableStateOf(requested) }
                 var rotationPool by remember { mutableStateOf(stashedPool) }
                 var isLoading by remember { mutableStateOf(false) }
-                val intervalMs by rotationSettings.intervalMs.collectAsState()
+                val intervalMs by rotationSettings.tvIntervalMs.collectAsState()
                 val scope = rememberCoroutineScope()
                 LaunchedEffect(requested?.id, rotate) {
                     if (!rotate) {
@@ -214,7 +214,7 @@ class ArthurDreamService : DreamService() {
                     ArthurTheme {
                         var catalog by remember { mutableStateOf<List<Artwork>>(emptyList()) }
                         var artwork by remember { mutableStateOf<Artwork?>(null) }
-                        val intervalMs by rotationSettings.intervalMs.collectAsState()
+                        val intervalMs by rotationSettings.tvIntervalMs.collectAsState()
                         val defaultPack by screensaverSettings.defaultPack.collectAsState()
                         LaunchedEffect(defaultPack) {
                             val loaded = withContext(Dispatchers.IO) {

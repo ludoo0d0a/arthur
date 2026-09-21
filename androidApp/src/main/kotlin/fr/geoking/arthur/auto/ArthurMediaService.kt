@@ -119,7 +119,7 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
         rotationJob?.cancel()
         rotationJob = scope.launch {
             while (isActive) {
-                delay(rotationSettings.intervalMs.value)
+                delay(rotationSettings.autoIntervalMs.value)
                 if (playing) advance(+1, userInitiated = false)
             }
         }
@@ -175,7 +175,7 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
                     .putString(MediaMetadataCompat.METADATA_KEY_ART_URI, uri)
                     .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, uri)
                     .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON_URI, uri)
-                    .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, rotationSettings.intervalMs.value)
+                    .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, rotationSettings.autoIntervalMs.value)
                     .build(),
             )
             val pool = rotationPool()

@@ -126,6 +126,9 @@ fun Modifier.verticalScrollbar(
 enum class SettingsScreenPage {
     Main,
     RotationInterval,
+    PhoneRotationInterval,
+    TvRotationInterval,
+    AutoRotationInterval,
     DeviantArtCredentials,
     About,
     Licenses,
@@ -145,8 +148,12 @@ fun SettingsScreen(
     onSimulateAllPacksChange: (Boolean) -> Unit = {},
     verbose: Boolean = false,
     onVerboseChange: (Boolean) -> Unit = {},
-    rotationIntervalMs: Long = AmbientAlbumArt.ROTATION_INTERVAL_MS,
-    onRotationIntervalChange: (Long) -> Unit = {},
+    phoneIntervalMs: Long = AmbientAlbumArt.ROTATION_INTERVAL_MS,
+    onPhoneIntervalChange: (Long) -> Unit = {},
+    tvIntervalMs: Long = AmbientAlbumArt.ROTATION_INTERVAL_MS,
+    onTvIntervalChange: (Long) -> Unit = {},
+    autoIntervalMs: Long = AmbientAlbumArt.ROTATION_INTERVAL_MS,
+    onAutoIntervalChange: (Long) -> Unit = {},
     wifiOnlyRemoteStills: Boolean = false,
     onWifiOnlyRemoteStillsChange: (Boolean) -> Unit = {},
     showQuotes: Boolean = true,
@@ -192,7 +199,10 @@ fun SettingsScreen(
                     Text(
                         text = when (currentScreen) {
                             SettingsScreenPage.Main -> stringResource(R.string.screen_settings)
-                            SettingsScreenPage.RotationInterval ->
+                            SettingsScreenPage.RotationInterval,
+                            SettingsScreenPage.PhoneRotationInterval,
+                            SettingsScreenPage.TvRotationInterval,
+                            SettingsScreenPage.AutoRotationInterval ->
                                 stringResource(R.string.screen_rotation_interval)
                             SettingsScreenPage.DeviantArtCredentials -> "DeviantArt Credentials"
                             SettingsScreenPage.About -> stringResource(R.string.screen_about)
@@ -236,7 +246,9 @@ fun SettingsScreen(
                 SettingsScreenPage.Main -> MainMenu(
                     isPremium = isPremium,
                     showDeveloper = showDeveloper,
-                    rotationIntervalMs = rotationIntervalMs,
+                    phoneIntervalMs = phoneIntervalMs,
+                    tvIntervalMs = tvIntervalMs,
+                    autoIntervalMs = autoIntervalMs,
                     wifiOnlyRemoteStills = wifiOnlyRemoteStills,
                     onWifiOnlyRemoteStillsChange = onWifiOnlyRemoteStillsChange,
                     showQuotes = showQuotes,
@@ -245,9 +257,23 @@ fun SettingsScreen(
                     onOpenMarketplace = onOpenMarketplace,
                     onNavigate = { screenStack = screenStack + it },
                 )
-                SettingsScreenPage.RotationInterval -> RotationIntervalContent(
-                    selectedMs = rotationIntervalMs,
-                    onSelect = onRotationIntervalChange,
+                SettingsScreenPage.RotationInterval -> RotationIntervalSelectionMenu(
+                    phoneIntervalMs = phoneIntervalMs,
+                    tvIntervalMs = tvIntervalMs,
+                    autoIntervalMs = autoIntervalMs,
+                    onNavigate = { screenStack = screenStack + it },
+                )
+                SettingsScreenPage.PhoneRotationInterval -> RotationIntervalContent(
+                    selectedMs = phoneIntervalMs,
+                    onSelect = onPhoneIntervalChange,
+                )
+                SettingsScreenPage.TvRotationInterval -> RotationIntervalContent(
+                    selectedMs = tvIntervalMs,
+                    onSelect = onTvIntervalChange,
+                )
+                SettingsScreenPage.AutoRotationInterval -> RotationIntervalContent(
+                    selectedMs = autoIntervalMs,
+                    onSelect = onAutoIntervalChange,
                 )
                 SettingsScreenPage.DeviantArtCredentials -> DeviantArtCredentialsContent(
                     username = deviantArtUsername,
@@ -280,7 +306,9 @@ fun SettingsScreen(
 private fun MainMenu(
     isPremium: Boolean,
     showDeveloper: Boolean,
-    rotationIntervalMs: Long,
+    phoneIntervalMs: Long,
+    tvIntervalMs: Long,
+    autoIntervalMs: Long,
     wifiOnlyRemoteStills: Boolean,
     onWifiOnlyRemoteStillsChange: (Boolean) -> Unit,
     showQuotes: Boolean,
@@ -354,7 +382,7 @@ private fun MainMenu(
         ) {
             SettingsItem(
                 label = stringResource(R.string.screen_rotation_interval),
-                value = rotationIntervalLabel(rotationIntervalMs),
+                value = "${stringResource(R.string.rotation_interval_phone)}: ${rotationIntervalLabel(phoneIntervalMs)}",
                 onClick = { onNavigate(SettingsScreenPage.RotationInterval) },
             )
             Row(
@@ -490,6 +518,49 @@ private fun ImageCacheSettingsRow() {
             modifier = Modifier.testTag("settings_image_cache_clear"),
         ) {
             Text(stringResource(R.string.settings_image_cache_clear))
+        }
+    }
+}
+
+@Composable
+private fun RotationIntervalSelectionMenu(
+    phoneIntervalMs: Long,
+    tvIntervalMs: Long,
+    autoIntervalMs: Long,
+    onNavigate: (SettingsScreenPage) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp)
+            .testTag("settings_rotation_interval_menu"),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.settings_rotation_interval_subtitle),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        ) {
+            SettingsItem(
+                label = stringResource(R.string.rotation_interval_phone),
+                value = rotationIntervalLabel(phoneIntervalMs),
+                onClick = { onNavigate(SettingsScreenPage.PhoneRotationInterval) },
+            )
+            SettingsItem(
+                label = stringResource(R.string.rotation_interval_tv),
+                value = rotationIntervalLabel(tvIntervalMs),
+                onClick = { onNavigate(SettingsScreenPage.TvRotationInterval) },
+            )
+            SettingsItem(
+                label = stringResource(R.string.rotation_interval_auto),
+                value = rotationIntervalLabel(autoIntervalMs),
+                onClick = { onNavigate(SettingsScreenPage.AutoRotationInterval) },
+            )
         }
     }
 }

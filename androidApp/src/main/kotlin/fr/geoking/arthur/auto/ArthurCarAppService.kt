@@ -12,7 +12,6 @@ import androidx.car.app.Session
 import androidx.car.app.annotations.ExperimentalCarApi
 import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.Action
-import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarIcon
 import androidx.car.app.model.GridItem
 import androidx.car.app.model.GridSection
@@ -118,7 +117,7 @@ private fun carErrorTemplate(carContext: CarContext, e: Throwable): Template {
  *
  * Host constraints applied:
  * - Pane actions ≤ 2 (primary play/pause icon-only here)
- * - ActionStrip ≤ 2, icon-only for prev/next (no label buttons in strip)
+ * - Header end actions ≤ 2, icon-only for prev/next (Car API 7+ hosts ignore deprecated ActionStrip)
  * - Pane rows capped via [ConstraintManager.CONTENT_LIMIT_TYPE_PANE]
  * - Pack grids use [SectionedItemTemplate] + [GridSection.ITEM_SIZE_EXTRA_LARGE], hard-capped
  * - Loading vs rows mutually exclusive
@@ -511,16 +510,18 @@ class ArtworkPaneScreen(
     }
 
     private fun buildPaneTemplate(): Template {
-        val header = Header.Builder()
-            .setTitle(carContext.getString(packSelection.family.titleRes))
-            .setStartHeaderAction(Action.BACK)
-            .build()
+        val title = carContext.getString(packSelection.family.titleRes)
 
         if (!loaded) {
             return PaneTemplate.Builder(
                 Pane.Builder().setLoading(true).build(),
             )
-                .setHeader(header)
+                .setHeader(
+                    Header.Builder()
+                        .setTitle(title)
+                        .setStartHeaderAction(Action.BACK)
+                        .build(),
+                )
                 .build()
         }
 
@@ -581,7 +582,8 @@ class ArtworkPaneScreen(
             )
         }
 
-        // Pane actions ≤ 2: primary play/pause (icon-only). ActionStrip ≤ 2: prev/next.
+        // Pane actions ≤ 2: primary play/pause (icon-only).
+        // Header end actions ≤ 2: prev/next (icon-only) — preferred over deprecated ActionStrip.
         paneBuilder.addAction(
             Action.Builder()
                 .setIcon(
@@ -597,8 +599,10 @@ class ArtworkPaneScreen(
                 .build(),
         )
 
-        val strip = ActionStrip.Builder()
-            .addAction(
+        val header = Header.Builder()
+            .setTitle(title)
+            .setStartHeaderAction(Action.BACK)
+            .addEndHeaderAction(
                 Action.Builder()
                     .setIcon(
                         CarIcon.Builder(
@@ -608,7 +612,7 @@ class ArtworkPaneScreen(
                     .setOnClickListener { advance(-1, isAuto = false) }
                     .build(),
             )
-            .addAction(
+            .addEndHeaderAction(
                 Action.Builder()
                     .setIcon(
                         CarIcon.Builder(
@@ -622,7 +626,6 @@ class ArtworkPaneScreen(
 
         return PaneTemplate.Builder(paneBuilder.build())
             .setHeader(header)
-            .setActionStrip(strip)
             .build()
     }
 

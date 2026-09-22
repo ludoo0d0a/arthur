@@ -1,7 +1,6 @@
 package fr.geoking.arthur.auto
 
 import androidx.car.app.model.Action
-import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarIcon
 import androidx.car.app.model.Header
 import androidx.car.app.model.Pane
@@ -274,7 +273,7 @@ class ArthurCarAppTest {
             val fullText = row.texts.joinToString(" ") { it.toString() }
             assertTrue("Should contain slide position in dev mode", fullText.contains("["))
 
-            // PaneTemplate: ≤2 pane actions + ≤2 ActionStrip actions (prev / play-pause / next).
+            // PaneTemplate: primary play/pause in pane; prev/next as header end actions.
             assertEquals("Pane body should have primary play/pause", 1, reloadedTemplate.pane.actions.size)
             val playPause = reloadedTemplate.pane.actions[0]
             assertNotNull("Play/pause should be icon-only", playPause.icon)
@@ -286,10 +285,16 @@ class ArthurCarAppTest {
                 "Play/pause should have no title",
                 playPause.title == null || playPause.title.toString().isBlank(),
             )
-            @Suppress("DEPRECATION")
-            val strip = reloadedTemplate.actionStrip
-            assertNotNull("Pane template should have an ActionStrip", strip)
-            assertEquals("ActionStrip should contain prev + next", 2, strip!!.actions.size)
+            val header = reloadedTemplate.header
+            assertNotNull("Pane template should have a Header", header)
+            assertEquals(
+                "Header end actions should contain prev + next",
+                2,
+                header!!.endHeaderActions.size,
+            )
+            header.endHeaderActions.forEach { action ->
+                assertNotNull("Prev/next should be icon-only", action.icon)
+            }
         } finally {
             org.koin.core.context.stopKoin()
         }
@@ -412,31 +417,27 @@ class ArthurCarAppTest {
 
         assertTrue("Pane must not exceed 2 actions", pane.actions.size <= 2)
 
-        // ActionStrip: ≤2 actions, icon-only (no label buttons).
-        val strip = ActionStrip.Builder()
-            .addAction(
-                Action.Builder()
-                    .setIcon(CarIcon.Builder(IconCompat.createWithBitmap(bitmap)).build())
-                    .setOnClickListener { }
-                    .build(),
-            )
-            .addAction(
-                Action.Builder()
-                    .setIcon(CarIcon.Builder(IconCompat.createWithBitmap(bitmap)).build())
-                    .setOnClickListener { }
-                    .build(),
-            )
-            .build()
-        assertEquals(2, strip.actions.size)
-
+        // Header end actions ≤ 2: icon-only prev/next (preferred over deprecated ActionStrip).
         val header = Header.Builder()
             .setTitle("Arthur")
             .setStartHeaderAction(Action.APP_ICON)
+            .addEndHeaderAction(
+                Action.Builder()
+                    .setIcon(CarIcon.Builder(IconCompat.createWithBitmap(bitmap)).build())
+                    .setOnClickListener { }
+                    .build(),
+            )
+            .addEndHeaderAction(
+                Action.Builder()
+                    .setIcon(CarIcon.Builder(IconCompat.createWithBitmap(bitmap)).build())
+                    .setOnClickListener { }
+                    .build(),
+            )
             .build()
+        assertEquals(2, header.endHeaderActions.size)
 
         val paneTemplate = PaneTemplate.Builder(pane)
             .setHeader(header)
-            .setActionStrip(strip)
             .build()
 
         assertNotNull(paneTemplate)
@@ -444,6 +445,7 @@ class ArthurCarAppTest {
         assertNotNull(paneTemplate.pane.image)
         assertNotNull(paneTemplate.pane.rows[0].image)
         assertEquals(1, paneTemplate.pane.actions.size)
+        assertEquals(2, paneTemplate.header!!.endHeaderActions.size)
     }
 
     @Test

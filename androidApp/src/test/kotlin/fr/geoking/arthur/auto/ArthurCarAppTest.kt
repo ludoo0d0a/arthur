@@ -273,6 +273,12 @@ class ArthurCarAppTest {
             val fullText = row.texts.joinToString(" ") { it.toString() }
             assertTrue("Should contain slide position in dev mode", fullText.contains("["))
 
+            assertTrue("Quote should be on a second pane row", reloadedTemplate.pane.rows.size >= 2)
+            val quoteRow = reloadedTemplate.pane.rows[1]
+            assertEquals("“Be yourself”", quoteRow.title.toString())
+            assertEquals(1, quoteRow.texts.size)
+            assertEquals("— Oscar Wilde", quoteRow.texts[0].toString())
+
             // PaneTemplate: primary play/pause in pane; prev/next as header end actions.
             assertEquals("Pane body should have primary play/pause", 1, reloadedTemplate.pane.actions.size)
             val playPause = reloadedTemplate.pane.actions[0]

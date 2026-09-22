@@ -67,7 +67,7 @@ class ScreensaverSettingsTest {
     }
 
     @Test
-    fun defaultPack_migratesLegacyMuseumRandomToMet() {
+    fun defaultPack_keepsMuseumRandom() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         context.getSharedPreferences("arthur_screensaver", Context.MODE_PRIVATE).edit()
             .putString("default_pack_family", PackFamily.Museum.name)
@@ -75,7 +75,7 @@ class ScreensaverSettingsTest {
             .commit()
         val settings = ScreensaverSettings(context)
         assertEquals(
-            PackSelection(PackFamily.Museum, MuseumTopic.Met.testTagSuffix),
+            PackSelection(PackFamily.Museum, MuseumTopic.Random.testTagSuffix),
             settings.defaultPack.value,
         )
     }

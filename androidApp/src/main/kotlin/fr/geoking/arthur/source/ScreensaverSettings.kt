@@ -47,16 +47,12 @@ class ScreensaverSettings(context: Context) {
 
     /**
      * Former Museum → Wikimedia Street Art tile now lives under Photo → Wikimedia.
-     * Stale Museum/random (removed) → Met.
      */
     private fun migrateLegacySelection(selection: PackSelection): PackSelection {
         if (selection.family == PackFamily.Museum &&
             selection.subId == WikimediaStreetArtSource.ID
         ) {
             return PackSelection(PackFamily.Photo, PhotoTopic.Wikimedia.testTagSuffix)
-        }
-        if (selection.family == PackFamily.Museum && selection.subId == "random") {
-            return PackSelection(PackFamily.Museum, MuseumTopic.Met.testTagSuffix)
         }
         return selection
     }

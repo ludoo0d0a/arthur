@@ -31,7 +31,7 @@ All calls are plain HTTP `GET`, JSON, over a shared OkHttp client
 
 | Pack Family | Identifier | Target Artwork Kind | Primary Sources |
 |---|---|---|---|
-| **Museum** | `museum` | `Painting`, `Sculpture` | Met, Rijksmuseum, Artic, Cleveland, Europeana, Harvard, Smithsonian, Louvre |
+| **Museum** | `museum` | `Painting`, `Sculpture` | Random across **all** museums (incl. Louvre), or one institution |
 | **Painting** | `painting` | `Painting` | Random across museums **except Louvre**, or one institution |
 | **Sculpture** | `sculpture` | `Sculpture` | Same as Painting (Random without Louvre) |
 | **Photo** | `photo` | `Photo` | Pexels, Unsplash, DeviantArt, Wikimedia (+ keyword topics across those four) |
@@ -55,7 +55,7 @@ MainActivity
       │    Museum · Genart · Photo · Video · Sculpture · Painting
       │
       ├── Sub-pack grid (family opened)
-      │    Museum    -> 8 institutions (Met … Louvre); default open = Met
+      │    Museum    -> Random + 8 institutions (Met … Louvre); default open = Met
       │    Painting  -> Random + museums without Louvre
       │    Sculpture -> Random + museums without Louvre
       │    Photo     -> 4 providers (Pexels, Unsplash, DeviantArt, Wikimedia)
@@ -97,6 +97,7 @@ File: [ControlPlaneScreen.kt](../androidApp/src/main/kotlin/fr/geoking/arthur/ui
 
 | Family / sub-pack | Sources queried |
 |---|---|
+| Museum → Random | all museum institutions (**including Louvre**) |
 | Museum → one institution | that single source |
 | Museum → null / default | Met |
 | Painting/Sculpture → Random | museum sources **without Louvre** |
@@ -132,9 +133,10 @@ No pack network calls. Custom fractal uses `CustomFractalStore` only.
 
 ### 4.1 Random vs institution
 
-- **Museum pack**: no Random tile — each institution samples its own catalog.
+- **Museum → Random**: every institution including Louvre; painting + sculpture kinds.
 - **Painting / Sculpture → Random**: all institutions except Louvre; kind-filtered.
-- **Louvre**: Museum pack only (curated ARK lists, no live search).
+- **Louvre**: Museum pack only as a dedicated tile (curated ARK lists, no live search);
+  also included in Museum → Random.
 
 ### 4.2 Museum source endpoints
 

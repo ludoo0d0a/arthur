@@ -98,14 +98,24 @@ fun PackFamily.homeTile(catalog: List<Artwork> = emptyList()): PackTile = PackTi
 )
 
 fun PackFamily.subPackTiles(catalog: List<Artwork> = emptyList()): List<PackTile> = when (this) {
-    PackFamily.Museum -> MuseumTopic.institutions.map { topic ->
-        PackTile(
-            id = "sub_museum_${topic.testTagSuffix}",
-            titleRes = topic.labelRes,
-            coverRes = PackCovers.museum(topic),
-            selection = PackSelection(PackFamily.Museum, topic.testTagSuffix),
-            testTagSuffix = "museum_${topic.testTagSuffix}",
+    PackFamily.Museum -> {
+        val random = PackTile(
+            id = "sub_museum_${MuseumTopic.Random.testTagSuffix}",
+            titleRes = MuseumTopic.Random.labelRes,
+            coverRes = PackCovers.museum(MuseumTopic.Random),
+            selection = PackSelection(PackFamily.Museum, MuseumTopic.Random.testTagSuffix),
+            testTagSuffix = "museum_${MuseumTopic.Random.testTagSuffix}",
         )
+        val institutions = MuseumTopic.institutions.map { topic ->
+            PackTile(
+                id = "sub_museum_${topic.testTagSuffix}",
+                titleRes = topic.labelRes,
+                coverRes = PackCovers.museum(topic),
+                selection = PackSelection(PackFamily.Museum, topic.testTagSuffix),
+                testTagSuffix = "museum_${topic.testTagSuffix}",
+            )
+        }
+        listOf(random) + institutions
     }
     PackFamily.Genart -> GenartSubTopics.map { topic ->
         val selection = PackSelection(PackFamily.Genart, topic.testTagSuffix)
@@ -209,7 +219,12 @@ fun resolvePackPool(catalog: List<Artwork>, selection: PackSelection): List<Artw
             val museumKinds = catalog.filter { art ->
                 art.kind == ArtworkKind.Painting || art.kind == ArtworkKind.Sculpture
             }
-            museumKinds.filter { matchesMuseumTopic(it, topic) }
+            when (topic) {
+                // Museum Random spans every institution, including Louvre.
+                MuseumTopic.Random ->
+                    museumKinds.filter { it.sourceId in MuseumTopic.institutionSourceIds }
+                else -> museumKinds.filter { matchesMuseumTopic(it, topic) }
+            }
         }
         PackFamily.Genart -> {
             val topic = selection.genartTopicOrNull() ?: GenartTopic.Random
@@ -264,7 +279,7 @@ fun resolvePackPool(catalog: List<Artwork>, selection: PackSelection): List<Artw
     }
 
     val isRandom = when (selection.family) {
-        PackFamily.Museum -> false
+        PackFamily.Museum -> selection.museumTopicOrNull() == MuseumTopic.Random
         PackFamily.Personal -> true
         PackFamily.Genart -> (selection.genartTopicOrNull() ?: GenartTopic.Random) == GenartTopic.Random
         PackFamily.Photo ->

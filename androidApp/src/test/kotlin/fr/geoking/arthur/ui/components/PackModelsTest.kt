@@ -186,16 +186,35 @@ class PackModelsTest {
     }
 
     @Test
-    fun subPackTiles_museumListsEveryInstitution_noRandomOrWikimedia() {
+    fun museumRandom_includesAllMuseumSources_excludesBundled() {
+        val louvre = Artwork(
+            id = "louvre-1",
+            title = "Louvre Painting",
+            sourceId = fr.geoking.arthur.shared.source.LouvreSource.ID,
+            kind = ArtworkKind.Painting,
+        )
+        val pool = resolvePackPool(
+            catalog + louvre,
+            PackSelection(PackFamily.Museum, MuseumTopic.Random.testTagSuffix),
+        )
+        assertEquals(
+            setOf("met-1", "rijks-sculpt", "louvre-1"),
+            pool.map { it.id }.toSet(),
+        )
+        assertFalse(pool.any { it.sourceId == BundledPackSource.ID })
+    }
+
+    @Test
+    fun subPackTiles_museumListsRandomThenEveryInstitution_noWikimedia() {
         val tiles = PackFamily.Museum.subPackTiles()
+        assertEquals("museum_random", tiles.first().testTagSuffix)
         val institutionSuffixes = MuseumTopic.institutions.map { "museum_${it.testTagSuffix}" }
-        assertEquals(institutionSuffixes, tiles.map { it.testTagSuffix })
-        assertEquals("museum_met", tiles.first().testTagSuffix)
+        assertEquals(institutionSuffixes, tiles.drop(1).map { it.testTagSuffix })
+        assertEquals(1 + MuseumTopic.institutions.size, tiles.size)
         assertTrue(tiles.any { it.testTagSuffix == "museum_europeana" })
         assertTrue(tiles.any { it.testTagSuffix == "museum_harvard" })
         assertTrue(tiles.any { it.testTagSuffix == "museum_smithsonian" })
         assertTrue(tiles.any { it.testTagSuffix == "museum_louvre" })
-        assertFalse(tiles.any { it.testTagSuffix == "museum_random" })
         assertFalse(tiles.any { it.testTagSuffix == "museum_wikimedia-streetart" })
         assertFalse(tiles.any { it.testTagSuffix.contains("suggestions") })
     }
@@ -269,6 +288,17 @@ class PackModelsTest {
             PackSelection(PackFamily.Genart, GenartTopic.Custom.testTagSuffix).isGenartCustom(),
         )
         assertFalse(PackSelection(PackFamily.Genart).isGenartCustom())
+    }
+
+    @Test
+    fun sourceIdsForAmbientLoad_museumRandom_allInstitutionsIncludingLouvre() {
+        val ids = PackSelection(
+            PackFamily.Museum,
+            MuseumTopic.Random.testTagSuffix,
+        ).sourceIdsForAmbientLoad()!!
+        assertEquals(MuseumTopic.institutions.mapNotNull { it.sourceId }.toSet(), ids.toSet())
+        assertTrue(fr.geoking.arthur.shared.source.LouvreSource.ID in ids)
+        assertFalse(BundledPackSource.ID in ids)
     }
 
     @Test

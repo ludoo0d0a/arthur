@@ -225,10 +225,9 @@ class ArthurCarAppTest {
         val quoteSettings = fr.geoking.arthur.source.QuoteSettings(app)
         quoteSettings.setShowQuotes(true)
 
-        val fakeQuotes = listOf(fr.geoking.arthur.source.Quote("Be yourself", "Oscar Wilde"))
         val quoteRepo = fr.geoking.arthur.source.QuoteRepository(
             context = app,
-            httpGet = { fr.geoking.arthur.source.QuoteRepository.encodeQuotes(fakeQuotes) },
+            httpGet = { """[{"q":"Be yourself","a":"Oscar Wilde"}]""" },
         )
 
         org.koin.core.context.startKoin {
@@ -257,30 +256,76 @@ class ArthurCarAppTest {
             )
             org.robolectric.Robolectric.getForegroundThreadScheduler().advanceToLastPostedRunnable()
             org.robolectric.shadows.ShadowLooper.idleMainLooper()
-            var reloadedTemplate = screen.onGetTemplate() as PaneTemplate
-            repeat(10) {
-                if (reloadedTemplate.pane.isLoading) {
-                    Thread.sleep(50)
-                    org.robolectric.Robolectric.getForegroundThreadScheduler().advanceToLastPostedRunnable()
-                    org.robolectric.shadows.ShadowLooper.idleMainLooper()
-                    reloadedTemplate = screen.onGetTemplate() as PaneTemplate
-                }
+            Thread.sleep(200)
+            org.robolectric.Robolectric.getForegroundThreadScheduler().advanceToLastPostedRunnable()
+            org.robolectric.shadows.ShadowLooper.idleMainLooper()
+            fun requirePane(): PaneTemplate {
+                val template = screen.onGetTemplate()
+                if (template is PaneTemplate) return template
+                val msg = (template as? androidx.car.app.model.MessageTemplate)?.message?.toString()
+                throw AssertionError("Expected PaneTemplate, got ${template::class.java.simpleName}: $msg")
+            }
+            var reloadedTemplate = requirePane()
+            repeat(20) {
+                if (!reloadedTemplate.pane.isLoading) return@repeat
+                Thread.sleep(50)
+                org.robolectric.Robolectric.getForegroundThreadScheduler().advanceToLastPostedRunnable()
+                org.robolectric.shadows.ShadowLooper.idleMainLooper()
+                reloadedTemplate = requirePane()
             }
             assertTrue("Pane should not be loading", !reloadedTemplate.pane.isLoading)
+            repeat(20) {
+                if (screen.debugSnapshot().queryLaunched) return@repeat
+                Thread.sleep(50)
+                org.robolectric.Robolectric.getForegroundThreadScheduler().advanceToLastPostedRunnable()
+                org.robolectric.shadows.ShadowLooper.idleMainLooper()
+            }
+            reloadedTemplate = requirePane()
             val row = reloadedTemplate.pane.rows[0]
             assertNotNull(row)
-            assertTrue(row.texts.isNotEmpty())
-            val fullText = row.texts.joinToString(" ") { it.toString() }
-            assertTrue("Should contain slide position in dev mode", fullText.contains("["))
 
-            assertTrue("Quote should be on a second pane row", reloadedTemplate.pane.rows.size >= 2)
+            assertTrue(
+                "Quote should be on a second pane row (rows=${reloadedTemplate.pane.rows.size}, snapshot=${screen.debugSnapshot()})",
+                reloadedTemplate.pane.rows.size >= 2,
+            )
             val quoteRow = reloadedTemplate.pane.rows[1]
             assertEquals("“Be yourself”", quoteRow.title.toString())
             assertEquals(1, quoteRow.texts.size)
             assertEquals("— Oscar Wilde", quoteRow.texts[0].toString())
 
-            // PaneTemplate: primary play/pause in pane; prev/next as header end actions.
-            assertEquals("Pane body should have primary play/pause", 1, reloadedTemplate.pane.actions.size)
+            assertTrue(
+                "Dev mode should add a 3rd position row (rows=${reloadedTemplate.pane.rows.size})",
+                reloadedTemplate.pane.rows.size >= 3,
+            )
+            val positionRow = reloadedTemplate.pane.rows[2]
+            assertTrue("Position row title should show slide index", positionRow.title.toString().contains("["))
+            val positionText = positionRow.texts.joinToString(" ") { it.toString() }
+            assertTrue("Should include cache metric", positionText.contains("cache:"))
+            assertTrue("Should include live metric", positionText.contains("live:"))
+            assertTrue("Should include seen metric", positionText.contains("seen:"))
+
+            val debugAction = reloadedTemplate.pane.actions.firstOrNull {
+                it.title?.toString() == app.getString(fr.geoking.arthur.R.string.car_ambient_debug)
+            }
+            assertNotNull("Verbose mode should show Debug pane action", debugAction)
+
+            val snapshot = screen.debugSnapshot()
+            assertTrue("Query should have been launched", snapshot.queryLaunched)
+            assertTrue("Rotation pool should be non-empty", snapshot.poolSize > 0)
+            assertTrue(
+                "Bootstrap should report cache or live images",
+                snapshot.cacheCount > 0 || snapshot.liveCount > 0 || snapshot.poolSize > 0,
+            )
+
+            val debugScreen = AmbientDebugScreen(carContext, snapshot)
+            val debugTemplate = debugScreen.onGetTemplate()
+            assertTrue(debugTemplate is androidx.car.app.model.ListTemplate)
+            val debugList = (debugTemplate as androidx.car.app.model.ListTemplate).singleList
+            assertNotNull(debugList)
+            assertTrue("Debug list should list metrics", debugList!!.items.size >= 6)
+
+            // PaneTemplate: primary play/pause + Debug (verbose); prev/next as header end actions.
+            assertEquals("Pane body should have play/pause + Debug", 2, reloadedTemplate.pane.actions.size)
             val playPause = reloadedTemplate.pane.actions[0]
             assertNotNull("Play/pause should be icon-only", playPause.icon)
             assertTrue(
@@ -350,19 +395,171 @@ class ArthurCarAppTest {
             assertTrue("Initially should be playing", screen.isPlaying())
 
             screen.advance(+1, isAuto = true)
+            idleMain()
             assertTrue("Should still be playing after 1 auto-rotation", screen.isPlaying())
 
             screen.advance(+1, isAuto = true)
+            idleMain()
             assertTrue("Should still be playing after 2 auto-rotations", screen.isPlaying())
 
             screen.advance(+1, isAuto = true)
+            idleMain()
             assertTrue("Should pause after 3 consecutive auto-rotations", !screen.isPlaying())
 
             screen.advance(-1, isAuto = false)
+            idleMain()
             assertTrue("Manual step resumes playing and resets counter", screen.isPlaying())
         } finally {
             org.koin.core.context.stopKoin()
         }
+    }
+
+    @Test
+    fun artworkPaneScreen_autoRotationDoesNotRepeatArtworkBeforeCycleEnds() {
+        val owner = object : androidx.lifecycle.LifecycleOwner {
+            override val lifecycle = androidx.lifecycle.LifecycleRegistry(this)
+        }
+        val carContext = androidx.car.app.CarContext.create(owner.lifecycle)
+        attachBaseContext(carContext, org.robolectric.RuntimeEnvironment.getApplication())
+
+        if (org.koin.core.context.GlobalContext.getOrNull() != null) {
+            org.koin.core.context.stopKoin()
+        }
+        val app = org.robolectric.RuntimeEnvironment.getApplication()
+
+        org.koin.core.context.startKoin {
+            modules(
+                org.koin.dsl.module {
+                    single { fr.geoking.arthur.source.RotationSettings(app) }
+                    single { fr.geoking.arthur.source.QuoteSettings(app) }
+                    single { fr.geoking.arthur.source.DeveloperSettings(app) }
+                    single {
+                        fr.geoking.arthur.source.QuoteRepository(
+                            context = app,
+                            httpGet = { fr.geoking.arthur.source.QuoteRepository.encodeQuotes(emptyList()) },
+                        )
+                    }
+                    single { fr.geoking.arthur.source.ArtworkImageCache(app) }
+                    single { fr.geoking.arthur.source.InvalidArtworkStore(app) }
+                    single {
+                        fr.geoking.arthur.shared.engine.ContentEngine(
+                            sources = listOf(fr.geoking.arthur.shared.source.GenartSource()),
+                            packOwnership = fr.geoking.arthur.shared.marketplace.FakePackOwnership().also { it.unlockAll() },
+                        )
+                    }
+                },
+            )
+        }
+
+        try {
+            val screen = ArtworkPaneScreen(
+                carContext = carContext,
+                packSelection = fr.geoking.arthur.ui.components.PackSelection(fr.geoking.arthur.ui.components.PackFamily.Genart),
+            )
+            idleMain()
+            waitUntilLoaded(screen)
+
+            val initialId = screen.currentArtwork()?.id
+            assertNotNull(initialId)
+            assertTrue(screen.debugSnapshot().poolSize >= 3)
+
+            val shown = mutableListOf(initialId!!)
+            repeat(3) {
+                screen.advance(+1, isAuto = true)
+                idleMain()
+                val nextId = screen.currentArtwork()?.id
+                assertNotNull(nextId)
+                assertTrue(
+                    "Auto rotation must not repeat an artwork before the cycle ends (got $nextId in $shown)",
+                    nextId !in shown,
+                )
+                shown += nextId!!
+            }
+            assertEquals(4, shown.size)
+            assertEquals(4, shown.toSet().size)
+        } finally {
+            org.koin.core.context.stopKoin()
+        }
+    }
+
+    @Test
+    fun artworkPaneScreen_hidesDebugActionWhenNotVerbose() {
+        val owner = object : androidx.lifecycle.LifecycleOwner {
+            override val lifecycle = androidx.lifecycle.LifecycleRegistry(this)
+        }
+        val carContext = androidx.car.app.CarContext.create(owner.lifecycle)
+        attachBaseContext(carContext, org.robolectric.RuntimeEnvironment.getApplication())
+
+        if (org.koin.core.context.GlobalContext.getOrNull() != null) {
+            org.koin.core.context.stopKoin()
+        }
+        val app = org.robolectric.RuntimeEnvironment.getApplication()
+        val devSettings = fr.geoking.arthur.source.DeveloperSettings(app)
+        devSettings.setVerbose(false)
+
+        org.koin.core.context.startKoin {
+            modules(
+                org.koin.dsl.module {
+                    single { fr.geoking.arthur.source.RotationSettings(app) }
+                    single { fr.geoking.arthur.source.QuoteSettings(app) }
+                    single { devSettings }
+                    single {
+                        fr.geoking.arthur.source.QuoteRepository(
+                            context = app,
+                            httpGet = { fr.geoking.arthur.source.QuoteRepository.encodeQuotes(emptyList()) },
+                        )
+                    }
+                    single { fr.geoking.arthur.source.ArtworkImageCache(app) }
+                    single { fr.geoking.arthur.source.InvalidArtworkStore(app) }
+                    single {
+                        fr.geoking.arthur.shared.engine.ContentEngine(
+                            sources = listOf(fr.geoking.arthur.shared.source.GenartSource()),
+                            packOwnership = fr.geoking.arthur.shared.marketplace.FakePackOwnership().also { it.unlockAll() },
+                        )
+                    }
+                },
+            )
+        }
+
+        try {
+            val screen = ArtworkPaneScreen(
+                carContext = carContext,
+                packSelection = fr.geoking.arthur.ui.components.PackSelection(fr.geoking.arthur.ui.components.PackFamily.Genart),
+            )
+            idleMain()
+            waitUntilLoaded(screen)
+            val template = screen.onGetTemplate() as PaneTemplate
+            assertEquals("Non-verbose pane should only have play/pause", 1, template.pane.actions.size)
+            val hasDebug = template.pane.actions.any {
+                it.title?.toString() == app.getString(fr.geoking.arthur.R.string.car_ambient_debug)
+            }
+            assertTrue("Debug action must be hidden when verbose is off", !hasDebug)
+        } finally {
+            org.koin.core.context.stopKoin()
+        }
+    }
+
+    private fun idleMain() {
+        org.robolectric.Robolectric.getForegroundThreadScheduler().advanceToLastPostedRunnable()
+        org.robolectric.shadows.ShadowLooper.idleMainLooper()
+        // Drain background IO completions that post back to main.
+        Thread.sleep(50)
+        org.robolectric.Robolectric.getForegroundThreadScheduler().advanceToLastPostedRunnable()
+        org.robolectric.shadows.ShadowLooper.idleMainLooper()
+    }
+
+    private fun waitUntilLoaded(screen: ArtworkPaneScreen) {
+        var template = screen.onGetTemplate()
+        repeat(30) {
+            if (template is PaneTemplate && !template.pane.isLoading && screen.debugSnapshot().queryLaunched) {
+                return
+            }
+            idleMain()
+            template = screen.onGetTemplate()
+        }
+        val pane = template as? PaneTemplate
+        assertTrue("Pane should finish loading", pane != null && !pane.pane.isLoading)
+        assertTrue("Query should have launched", screen.debugSnapshot().queryLaunched)
     }
 
     @Test

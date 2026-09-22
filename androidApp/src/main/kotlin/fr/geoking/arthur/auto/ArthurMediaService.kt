@@ -13,12 +13,14 @@ import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.isGenerative
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
+import fr.geoking.arthur.source.AmbientStillPicker
 import fr.geoking.arthur.source.ArtworkImageCache
 import fr.geoking.arthur.source.DeveloperSettings
 import fr.geoking.arthur.source.InvalidArtworkStore
 import fr.geoking.arthur.source.QuoteRepository
 import fr.geoking.arthur.source.QuoteSettings
 import fr.geoking.arthur.source.RotationSettings
+import fr.geoking.arthur.source.StillImagePrefetcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -37,6 +39,9 @@ import org.koin.android.ext.android.inject
  *
  * Browse: root → source folders → playable art (≤2 levels). Genart/fractal folders use a
  * grid content style so still previews are the primary affordance.
+ *
+ * Bootstrap: disk cache → full catalog query → prefetch neighbors; auto advances use
+ * unseen-first picks and pause after 3 consecutive auto rotations.
  */
 class ArthurMediaService : MediaBrowserServiceCompat() {
     private val contentEngine: ContentEngine by inject()
@@ -53,6 +58,10 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
     private var generation: Long = 0L
     private var playing: Boolean = false
     private var consecutiveAutoRotations: Int = 0
+    private var seenIds: Set<String> = emptySet()
+    private var cacheCount: Int = 0
+    private var liveCount: Int = 0
+    private var queryLaunched: Boolean = false
     private var rotationJob: Job? = null
 
     override fun onCreate() {
@@ -82,7 +91,9 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
                         scope.launch {
                             current = art
                             generation += 1
+                            seenIds = seenIds + art.id
                             publishArtwork(art)
+                            prefetchNeighbors()
                             setPlaying(true)
                         }
                     }
@@ -92,25 +103,86 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
         }
         sessionToken = session.sessionToken
         scope.launch {
+            runCatching { bootstrapCatalog() }
+        }
+    }
+
+    private suspend fun bootstrapCatalog() {
+        val cached = withContext(Dispatchers.IO) {
+            imageCache.loadCachedArtworks(null).distinctBy { it.id }
+        }
+        cacheCount = cached.size
+        if (cached.isNotEmpty()) {
+            catalog = cached
+            current = resolveAmbientArtwork(catalog, null)
+            seenIds = current?.id?.let { setOf(it) }.orEmpty()
+            current?.let { publishArtwork(it) }
+            notifyBrowseChanged()
+            setPlaying(true)
+        }
+
+        queryLaunched = true
+        val live = withContext(Dispatchers.IO) {
             runCatching {
-                catalog = withContext(Dispatchers.IO) {
-                    runCatching {
-                        contentEngine.catalog(
-                            PreparedRotation(
-                                sourceIds = emptyList(),
-                                artworkIds = emptyList(),
-                            ),
-                        )
-                    }.getOrDefault(emptyList())
-                }
-                notifyChildrenChanged(ROOT)
-                for (sourceId in ArthurMediaBrowse.rootSourceIds(catalog)) {
-                    notifyChildrenChanged(ArthurMediaBrowse.folderId(sourceId))
-                }
-                current = resolveAmbientArtwork(catalog, null)
-                current?.let { publishArtwork(it) }
-                setPlaying(true)
+                contentEngine.catalog(
+                    PreparedRotation(sourceIds = emptyList(), artworkIds = emptyList()),
+                )
+            }.getOrDefault(emptyList()).distinctBy { it.id }
+        }
+        liveCount = live.size
+        if (live.isNotEmpty()) {
+            val keepId = current?.id
+            catalog = live
+            current = keepId?.let { id -> live.firstOrNull { it.id == id } }
+                ?: resolveAmbientArtwork(live, null)
+            seenIds = current?.id?.let { setOf(it) }.orEmpty()
+            notifyBrowseChanged()
+            current?.let { publishArtwork(it) }
+        } else if (catalog.isEmpty()) {
+            return
+        }
+        prefetchNeighbors()
+        if (!playing) setPlaying(true)
+    }
+
+    private fun notifyBrowseChanged() {
+        notifyChildrenChanged(ROOT)
+        for (sourceId in ArthurMediaBrowse.rootSourceIds(catalog)) {
+            notifyChildrenChanged(ArthurMediaBrowse.folderId(sourceId))
+        }
+    }
+
+    private suspend fun renewCatalog() {
+        queryLaunched = true
+        val live = withContext(Dispatchers.IO) {
+            runCatching {
+                contentEngine.catalog(
+                    PreparedRotation(sourceIds = emptyList(), artworkIds = emptyList()),
+                )
+            }.getOrDefault(emptyList()).distinctBy { it.id }
+        }
+        liveCount = live.size
+        if (live.isNotEmpty()) {
+            val keepId = current?.id
+            catalog = live
+            if (keepId == null || live.none { it.id == keepId }) {
+                current = resolveAmbientArtwork(live, null)
             }
+            notifyBrowseChanged()
+        }
+    }
+
+    private suspend fun prefetchNeighbors() {
+        val pool = rotationPool()
+        if (pool.isEmpty()) return
+        val index = pool.indexOfFirst { it.id == current?.id }.let { if (it < 0) 0 else it }
+        val currentArt = pool.getOrNull(index)
+        val nextArt = pool.getOrNull(AmbientAlbumArt.advanceIndex(index, pool.size))
+        val prevArt = pool.getOrNull(Math.floorMod(index - 1, pool.size))
+        withContext(Dispatchers.IO) {
+            currentArt?.let { StillImagePrefetcher.ensureCached(imageCache, it, allowNetwork = true) }
+            nextArt?.let { StillImagePrefetcher.ensureCached(imageCache, it, allowNetwork = true) }
+            prevArt?.let { StillImagePrefetcher.ensureCached(imageCache, it, allowNetwork = true) }
         }
     }
 
@@ -147,21 +219,67 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
     private suspend fun advance(delta: Int, userInitiated: Boolean) {
         val pool = rotationPool()
         if (pool.isEmpty()) return
-        val index = pool.indexOfFirst { it.id == current?.id }.let { if (it < 0) 0 else it }
-        val nextIndex = AmbientAlbumArt.nextValidIndex(
-            poolSize = pool.size,
-            currentIndex = index,
-            delta = delta,
-            isInvalidAt = { pool[it].id.let(invalidStore::isInvalid) },
-        )
-        val next = pool[nextIndex]
+
+        val next = if (userInitiated) {
+            val index = pool.indexOfFirst { it.id == current?.id }.let { if (it < 0) 0 else it }
+            val nextIndex = AmbientAlbumArt.nextValidIndex(
+                poolSize = pool.size,
+                currentIndex = index,
+                delta = delta,
+                isInvalidAt = { pool[it].id.let(invalidStore::isInvalid) },
+            )
+            pool[nextIndex]
+        } else {
+            pickAutoNext(pool) ?: return
+        }
+
         current = next
         generation += 1
+        seenIds = seenIds + next.id
+        if (!next.remoteUrl.isNullOrBlank()) {
+            rotationSettings.recordRecentStillId(next.id)
+        }
         publishArtwork(next)
+        prefetchNeighbors()
         if (userInitiated) {
             consecutiveAutoRotations = 0
             if (playing) startRotation() else setPlaying(true)
         }
+    }
+
+    private suspend fun pickAutoNext(pool: List<Artwork>): Artwork? {
+        val eligible = pool.mapNotNull { art ->
+            if (invalidStore.isInvalid(art.id)) null else art.id
+        }.toSet()
+        if (eligible.isEmpty()) return null
+
+        var pickedId = AmbientStillPicker.pickNextRandom(
+            poolIds = pool.map { it.id },
+            currentId = current?.id,
+            seenIds = seenIds,
+            recentIds = rotationSettings.recentStillIds(),
+            eligibleIds = eligible,
+        )
+        val noUnseen = eligible.all { it in seenIds } || pickedId == null
+        if (noUnseen) {
+            renewCatalog()
+            val renewedPool = rotationPool()
+            val renewedEligible = renewedPool.mapNotNull { art ->
+                if (invalidStore.isInvalid(art.id)) null else art.id
+            }.toSet()
+            if (renewedEligible.all { it in seenIds }) {
+                seenIds = current?.id?.let { setOf(it) }.orEmpty()
+            }
+            pickedId = AmbientStillPicker.pickNextRandom(
+                poolIds = renewedPool.map { it.id },
+                currentId = current?.id,
+                seenIds = seenIds,
+                recentIds = rotationSettings.recentStillIds(),
+                eligibleIds = renewedEligible,
+            )
+            return renewedPool.firstOrNull { it.id == pickedId }
+        }
+        return pool.firstOrNull { it.id == pickedId }
     }
 
     private fun rotationPool(): List<Artwork> {
@@ -188,12 +306,18 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
         }
         val quoteText = if (quote != null) {
             "\u201C${quote.text}\u201D" + if (quote.author.isNotBlank()) " \u2014 ${quote.author}" else ""
-        } else null
+        } else {
+            null
+        }
 
         val pool = rotationPool()
         val isDevMode = developerSettings.verbose.value
         val index = pool.indexOfFirst { it.id == art.id }.let { if (it < 0) 0 else it }
-        val slidePos = if (isDevMode && pool.isNotEmpty()) "[${index + 1}/${pool.size}]" else null
+        val slidePos = if (isDevMode && pool.isNotEmpty()) {
+            "[${index + 1}/${pool.size}] cache:$cacheCount live:$liveCount seen:${seenIds.size}"
+        } else {
+            null
+        }
 
         val subtitle = buildString {
             if (art.attribution.isNotBlank()) {
@@ -207,6 +331,27 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
                 if (isNotEmpty()) append(" ")
                 append(slidePos)
             }
+        }
+
+        val description = if (isDevMode) {
+            buildString {
+                append("query=")
+                append(if (queryLaunched) "all" else "pending")
+                append(" pool=")
+                append(pool.size)
+                append(" cache=")
+                append(cacheCount)
+                append(" live=")
+                append(liveCount)
+                append(" seen=")
+                append(seenIds.size)
+                append(" auto=")
+                append(consecutiveAutoRotations)
+                append(" playing=")
+                append(playing)
+            }
+        } else {
+            null
         }
 
         runCatching {
@@ -225,6 +370,10 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
                 .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON_URI, uri)
                 .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, rotationSettings.autoIntervalMs.value)
 
+            if (description != null) {
+                builder.putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_DESCRIPTION, description)
+            }
+
             if (isDevMode && pool.isNotEmpty()) {
                 builder.putLong(MediaMetadataCompat.METADATA_KEY_TRACK_NUMBER, (index + 1).toLong())
                 builder.putLong(MediaMetadataCompat.METADATA_KEY_NUM_TRACKS, pool.size.toLong())
@@ -232,7 +381,7 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
 
             session.setMetadata(builder.build())
             session.setQueue(
-                pool.mapIndexed { index, item ->
+                pool.mapIndexed { queueIndex, item ->
                     val icon = AmbientAlbumArt.contentUri(packageName, item.id, 0L)
                     val desc = MediaDescriptionCompat.Builder()
                         .setMediaId(item.id)
@@ -240,7 +389,7 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
                         .setSubtitle(item.attribution)
                         .setIconUri(icon)
                         .build()
-                    MediaSessionCompat.QueueItem(desc, index.toLong())
+                    MediaSessionCompat.QueueItem(desc, queueIndex.toLong())
                 },
             )
             session.setQueueTitle(getString(R.string.ambient_title))

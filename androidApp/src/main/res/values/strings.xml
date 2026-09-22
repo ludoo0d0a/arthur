@@ -110,6 +110,17 @@
     <string name="car_pause">Pause</string>
     <string name="car_gallery_empty">No artwork in gallery</string>
     <string name="car_error_generic">Unable to show ambient art</string>
+    <string name="car_ambient_debug">Debug</string>
+    <string name="car_ambient_debug_subtitle">Rotation query &amp; cache metrics</string>
+    <string name="car_ambient_debug_query">Query sources</string>
+    <string name="car_ambient_debug_query_pending">Not launched yet</string>
+    <string name="car_ambient_debug_all_sources">All registered sources</string>
+    <string name="car_ambient_debug_live_count">Images returned</string>
+    <string name="car_ambient_debug_pool_size">Rotation pool size</string>
+    <string name="car_ambient_debug_cache_count">Cache bootstrap count</string>
+    <string name="car_ambient_debug_seen">Seen in cycle</string>
+    <string name="car_ambient_debug_auto">Auto counter</string>
+    <string name="car_ambient_debug_current">Current artwork</string>
     <string name="update_available_title">Update available</string>
     <string name="update_available_message">A new version of Arthur is available. Update now to get the latest features and improvements.</string>
     <string name="update_in_progress">Update in progress</string>

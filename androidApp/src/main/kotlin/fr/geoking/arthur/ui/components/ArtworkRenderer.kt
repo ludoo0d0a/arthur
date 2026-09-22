@@ -318,7 +318,7 @@ private fun RemoteStillImage(
                 Image(
                     bitmap = imageBitmap,
                     contentDescription = null,
-                    contentScale = ContentScale.Fit,
+                    contentScale = StillContentScale,
                     modifier = Modifier
                         .fillMaxSize()
                         .testTag("artwork_remote_image"),

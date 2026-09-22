@@ -24,7 +24,7 @@ class ArtworkRendererTest {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun stillArtwork_rendersFittedImageAndBlurredBackground() {
+    fun stillArtwork_rendersSmartScaledImageAndBlurredBackground() {
         val tempFile = File.createTempFile("test_art", ".png").apply {
             deleteOnExit()
             FileOutputStream(this).use { out ->

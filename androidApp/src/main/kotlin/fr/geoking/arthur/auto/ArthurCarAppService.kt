@@ -538,29 +538,18 @@ class ArtworkPaneScreen(
                 .setTitle(art.title.ifBlank { carContext.getString(R.string.app_name) })
 
             val quote = if (quoteSettings.showQuotes.value) currentQuote else null
-            val quoteText = if (quote != null) {
-                "\u201C${quote.text}\u201D" + if (quote.author.isNotBlank()) " \u2014 ${quote.author}" else ""
-            } else null
 
             val isDevMode = developerSettings.verbose.value
             val index = catalog.indexOfFirst { it.id == art.id }.let { if (it < 0) 0 else it }
             val slidePos = if (isDevMode && catalog.isNotEmpty()) "[${index + 1}/${catalog.size}]" else null
 
-            if (art.attribution.isNotBlank()) {
-                val attrLine = if (slidePos != null) "${art.attribution} $slidePos" else art.attribution
-                rowBuilder.addText(attrLine)
-                if (quoteText != null) {
-                    rowBuilder.addText(quoteText)
-                }
-            } else {
-                if (quoteText != null) {
-                    rowBuilder.addText(quoteText)
-                    if (slidePos != null) {
-                        rowBuilder.addText(slidePos)
-                    }
-                } else if (slidePos != null) {
-                    rowBuilder.addText(slidePos)
-                }
+            // Row 1 text line: attribution (+ optional slide). Quote goes on its own pane row.
+            val metaParts = buildList {
+                if (art.attribution.isNotBlank()) add(art.attribution)
+                if (slidePos != null) add(slidePos)
+            }
+            if (metaParts.isNotEmpty()) {
+                rowBuilder.addText(metaParts.joinToString(" "))
             }
             // The big picture is best-effort: if rendering/encoding it fails, the row still
             // shows title/attribution instead of falling back to the whole error template.
@@ -573,6 +562,16 @@ class ArtworkPaneScreen(
                 paneBuilder.setImage(bigPicture)
             }
             paneBuilder.addRow(rowBuilder.build())
+
+            // Dedicated second row so the host can show the full quote + author (max 2 texts/row).
+            if (quote != null && rowLimit >= 2) {
+                val quoteRow = Row.Builder()
+                    .setTitle("\u201C${quote.text}\u201D")
+                if (quote.author.isNotBlank()) {
+                    quoteRow.addText("\u2014 ${quote.author}")
+                }
+                paneBuilder.addRow(quoteRow.build())
+            }
         } else {
             paneBuilder.addRow(
                 Row.Builder()

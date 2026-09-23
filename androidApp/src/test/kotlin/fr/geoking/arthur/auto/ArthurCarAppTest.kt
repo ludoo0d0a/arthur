@@ -164,7 +164,7 @@ class ArthurCarAppTest {
             val listTemplate = template as androidx.car.app.model.ListTemplate
             val list = listTemplate.singleList
             assertNotNull(list)
-            assertEquals(1 + fr.geoking.arthur.source.RotationSettings.OPTIONS_MS.size, list!!.items.size)
+            assertEquals(2 + fr.geoking.arthur.source.RotationSettings.OPTIONS_MS.size, list!!.items.size)
         } finally {
             org.koin.core.context.stopKoin()
         }
@@ -225,10 +225,9 @@ class ArthurCarAppTest {
         val quoteSettings = fr.geoking.arthur.source.QuoteSettings(app)
         quoteSettings.setShowQuotes(true)
 
-        val fakeQuotes = listOf(fr.geoking.arthur.source.Quote("Be yourself", "Oscar Wilde"))
         val quoteRepo = fr.geoking.arthur.source.QuoteRepository(
             context = app,
-            httpGet = { fr.geoking.arthur.source.QuoteRepository.encodeQuotes(fakeQuotes) },
+            httpGet = { """[{"q": "Be yourself", "a": "Oscar Wilde"}]""" },
         )
 
         org.koin.core.context.startKoin {
@@ -260,7 +259,7 @@ class ArthurCarAppTest {
             org.robolectric.shadows.ShadowLooper.idleMainLooper()
             var reloadedTemplate = screen.onGetTemplate() as PaneTemplate
             repeat(30) {
-                if (reloadedTemplate.pane.isLoading || reloadedTemplate.pane.rows.size < 2) {
+                if (reloadedTemplate.pane.isLoading || screen.currentArtwork() == null || reloadedTemplate.pane.rows.size < 2) {
                     org.robolectric.shadows.ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
                     org.robolectric.Robolectric.getForegroundThreadScheduler().advanceToLastPostedRunnable()
                     org.robolectric.shadows.ShadowLooper.idleMainLooper()
@@ -271,7 +270,7 @@ class ArthurCarAppTest {
             val row = reloadedTemplate.pane.rows[0]
             assertNotNull(row)
             assertTrue(row.texts.isNotEmpty())
-            val fullText = row.texts.joinToString(" ") { it.toString() }
+            val fullText = row.texts.joinToString(" ") { it.toCharSequence().toString() }
             assertTrue("Should contain slide position in dev mode", fullText.contains("["))
 
             assertTrue("Quote should be on a second pane row", reloadedTemplate.pane.rows.size >= 2)
@@ -556,6 +555,41 @@ class ArthurCarAppTest {
         val rendered = AmbientStillRenderer.render(photoArt, generation = 1L, imageCache = cache)
         assertNotNull("Renderer should load cached photo from disk", rendered)
         assertEquals(AmbientStillRenderer.SIZE, rendered.width)
+    }
+
+    @Test
+    fun carSettingsScreen_displaysCheckForUpdatesRow() {
+        val owner = object : androidx.lifecycle.LifecycleOwner {
+            override val lifecycle = androidx.lifecycle.LifecycleRegistry(this)
+        }
+        val carContext = androidx.car.app.CarContext.create(owner.lifecycle)
+        attachBaseContext(carContext, org.robolectric.RuntimeEnvironment.getApplication())
+
+        if (org.koin.core.context.GlobalContext.getOrNull() != null) {
+            org.koin.core.context.stopKoin()
+        }
+        val app = org.robolectric.RuntimeEnvironment.getApplication()
+
+        org.koin.core.context.startKoin {
+            modules(
+                org.koin.dsl.module {
+                    single { fr.geoking.arthur.source.RotationSettings(app) }
+                    single { fr.geoking.arthur.source.QuoteSettings(app) }
+                },
+            )
+        }
+
+        try {
+            val screen = CarSettingsScreen(carContext)
+            val template = screen.onGetTemplate() as androidx.car.app.model.ListTemplate
+            val list = template.singleList
+            assertNotNull(list)
+            val checkUpdateRow = list!!.items[1] as androidx.car.app.model.Row
+            assertNotNull(checkUpdateRow.title)
+            assertTrue(checkUpdateRow.title.toString().isNotBlank())
+        } finally {
+            org.koin.core.context.stopKoin()
+        }
     }
 
     @Test

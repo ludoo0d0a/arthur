@@ -111,6 +111,8 @@
     <string name="car_error_generic">Impossible d’afficher l’art ambient</string>
     <string name="update_available_title">Mise à jour disponible</string>
     <string name="update_available_message">Une nouvelle version d’Arthur est disponible. Mettez à jour pour profiter des dernières fonctionnalités.</string>
+    <string name="update_available_car_title">Mise à jour disponible</string>
+    <string name="update_available_car_subtitle">Mettez à jour Arthur sur le Play Store depuis votre téléphone</string>
     <string name="update_in_progress">Mise à jour en cours</string>
     <string name="settings_check_update">Vérifier les mises à jour</string>
     <string name="update_check_up_to_date">Vous êtes à jour</string>

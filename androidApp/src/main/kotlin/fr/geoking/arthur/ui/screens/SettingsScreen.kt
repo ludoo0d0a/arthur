@@ -77,6 +77,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
+import com.mikepenz.aboutlibraries.ui.compose.produceLibraries
 import fr.geoking.arthur.BuildConfig
 import fr.geoking.arthur.R
 import fr.geoking.arthur.UsedApisList
@@ -1082,7 +1083,12 @@ private fun AboutContent(
 
 @Composable
 private fun LicensesContent() {
+    val context = LocalContext.current
+    val libraries by produceLibraries {
+        context.resources.openRawResource(R.raw.aboutlibraries).bufferedReader().use { it.readText() }
+    }
     LibrariesContainer(
+        libraries = libraries,
         modifier = Modifier
             .fillMaxSize()
             .testTag("settings_licenses"),

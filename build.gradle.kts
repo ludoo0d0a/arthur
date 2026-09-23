@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.google.services) apply false
     alias(libs.plugins.firebase.crashlytics) apply false
     alias(libs.plugins.aboutlibraries.android) apply false
+    alias(libs.plugins.version.catalog.update)
 }
 
 tasks.register("clean", Delete::class) {

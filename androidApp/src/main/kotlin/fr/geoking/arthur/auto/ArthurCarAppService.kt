@@ -6,6 +6,8 @@ import android.graphics.Canvas
 import androidx.annotation.DrawableRes
 import androidx.annotation.OptIn
 import androidx.car.app.CarAppService
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory
+import com.google.android.play.core.install.model.UpdateAvailability
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.Session
@@ -159,6 +161,19 @@ class ArthurCarSession : Session() {
  */
 @OptIn(ExperimentalCarApi::class)
 class PackSelectionScreen(carContext: CarContext) : Screen(carContext) {
+    private var isUpdateAvailable = false
+
+    init {
+        runCatching {
+            AppUpdateManagerFactory.create(carContext).appUpdateInfo.addOnSuccessListener { info ->
+                if (info.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
+                    isUpdateAvailable = true
+                    invalidate()
+                }
+            }
+        }
+    }
+
     override fun onGetTemplate(): Template {
         return try {
             buildTemplate()
@@ -206,8 +221,23 @@ class PackSelectionScreen(carContext: CarContext) : Screen(carContext) {
             .addEndHeaderAction(settingsAction)
             .build()
 
-        return SectionedItemTemplate.Builder()
+        val templateBuilder = SectionedItemTemplate.Builder()
             .setHeader(header)
+
+        if (isUpdateAvailable) {
+            val updateItem = GridItem.Builder()
+                .setTitle(carContext.getString(R.string.update_available_car_title))
+                .setText(carContext.getString(R.string.update_available_car_subtitle))
+                .setImage(CarIcon.APP_ICON, GridItem.IMAGE_TYPE_ICON)
+                .build()
+            val updateSection = GridSection.Builder()
+                .setTitle(carContext.getString(R.string.update_available_title))
+                .addItem(updateItem)
+                .build()
+            templateBuilder.addSection(updateSection)
+        }
+
+        return templateBuilder
             .addSection(sectionBuilder.build())
             .build()
     }
@@ -223,6 +253,29 @@ class PackSelectionScreen(carContext: CarContext) : Screen(carContext) {
 class CarSettingsScreen(carContext: CarContext) : Screen(carContext), KoinComponent {
     private val rotationSettings: RotationSettings by inject()
     private val quoteSettings: QuoteSettings by inject()
+    private var updateStatusText: String? = null
+
+    init {
+        checkUpdateStatus()
+    }
+
+    private fun checkUpdateStatus() {
+        runCatching {
+            AppUpdateManagerFactory.create(carContext).appUpdateInfo
+                .addOnSuccessListener { info ->
+                    updateStatusText = if (info.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
+                        carContext.getString(R.string.update_available_car_title)
+                    } else {
+                        carContext.getString(R.string.update_check_up_to_date)
+                    }
+                    invalidate()
+                }
+                .addOnFailureListener {
+                    updateStatusText = carContext.getString(R.string.update_check_up_to_date)
+                    invalidate()
+                }
+        }
+    }
 
     override fun onGetTemplate(): Template {
         return try {
@@ -248,6 +301,17 @@ class CarSettingsScreen(carContext: CarContext) : Screen(carContext), KoinCompon
             invalidate()
         }
         listBuilder.addItem(quoteRowBuilder.build())
+
+        val checkUpdateRowBuilder = Row.Builder()
+            .setTitle(carContext.getString(R.string.settings_check_update))
+        val status = updateStatusText
+        if (status != null) {
+            checkUpdateRowBuilder.addText(status)
+        }
+        checkUpdateRowBuilder.setOnClickListener {
+            checkUpdateStatus()
+        }
+        listBuilder.addItem(checkUpdateRowBuilder.build())
 
         RotationSettings.OPTIONS_MS.forEach { ms ->
             val label = if (ms < 60_000L) {

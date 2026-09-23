@@ -254,12 +254,13 @@ class ArthurCarAppTest {
                 carContext = carContext,
                 packSelection = fr.geoking.arthur.ui.components.PackSelection(fr.geoking.arthur.ui.components.PackFamily.Genart),
             )
+            org.robolectric.shadows.ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
             org.robolectric.Robolectric.getForegroundThreadScheduler().advanceToLastPostedRunnable()
             org.robolectric.shadows.ShadowLooper.idleMainLooper()
             var reloadedTemplate = screen.onGetTemplate() as PaneTemplate
             repeat(30) {
                 if (reloadedTemplate.pane.isLoading || screen.currentArtwork() == null || reloadedTemplate.pane.rows.size < 2) {
-                    Thread.sleep(100)
+                    org.robolectric.shadows.ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
                     org.robolectric.Robolectric.getForegroundThreadScheduler().advanceToLastPostedRunnable()
                     org.robolectric.shadows.ShadowLooper.idleMainLooper()
                     reloadedTemplate = screen.onGetTemplate() as PaneTemplate

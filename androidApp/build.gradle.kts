@@ -141,7 +141,7 @@ dependencies {
     implementation(libs.ktor.client.okhttp)
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.cio)
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+    implementation(libs.kotlinx.serialization.json)
     implementation(libs.revenuecat.purchases)
     implementation(libs.play.app.update)
     implementation(libs.play.app.update.ktx)

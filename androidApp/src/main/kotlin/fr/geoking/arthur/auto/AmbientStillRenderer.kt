@@ -58,10 +58,12 @@ object AmbientStillRenderer {
         val seed = artwork.id.hashCode().toLong() xor (generation * 0x9E3779B9L)
         runCatching {
             when {
-                artwork.kind == ArtworkKind.Genart -> drawGenart(canvas, artwork.id, generation)
+                artwork.kind == ArtworkKind.Genart ->
+                    drawGenerativeWithGradient(canvas) { c -> drawGenart(c, artwork.id, generation) }
                 artwork.kind == ArtworkKind.CustomFractal || CustomFractalSource.isCustomId(artwork.id) ->
-                    drawCustomFractal(canvas, artwork.id, generation)
-                artwork.isGenerative -> drawFractalField(canvas, artwork.id, seed)
+                    drawGenerativeWithGradient(canvas) { c -> drawCustomFractal(c, artwork.id, generation) }
+                artwork.isGenerative ->
+                    drawGenerativeWithGradient(canvas) { c -> drawFractalField(c, artwork.id, seed) }
                 !artwork.localPath.isNullOrBlank() || !artwork.remoteUrl.isNullOrBlank() -> {
                     val (drawn, reason) = drawStillImageWithResult(
                         canvas,
@@ -79,6 +81,20 @@ object AmbientStillRenderer {
             drawStillPlaceholder(canvas, seed, isError = true, errorReason = e.message)
         }
         return bitmap
+    }
+
+    /**
+     * Bake generative content offscreen, then frame it with the same Spotify-style
+     * gradient + aspect-fit padding used for remote stills.
+     */
+    private fun drawGenerativeWithGradient(canvas: Canvas, draw: (Canvas) -> Unit) {
+        val content = Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888)
+        try {
+            draw(Canvas(content))
+            drawBitmapCover(canvas, content)
+        } finally {
+            content.recycle()
+        }
     }
 
     fun renderPlaceholder(artwork: Artwork, generation: Long): Bitmap {
@@ -203,8 +219,8 @@ object AmbientStillRenderer {
         }
         canvas.drawRect(0f, 0f, SIZE.toFloat(), SIZE.toFloat(), gradientPaint)
 
-        // 2. Calculate aspect-fit destination rect with padding so background gradient is visible
-        val padding = (SIZE * 0.05f).toInt()
+        // Aspect-fit with padding so the Spotify-style gradient stays visible on Auto/TV.
+        val padding = (SIZE * 0.08f).toInt()
         val maxDim = SIZE - 2 * padding
         val scale = minOf(maxDim.toFloat() / bmp.width, maxDim.toFloat() / bmp.height)
         val drawW = (bmp.width * scale).toInt().coerceAtLeast(1)

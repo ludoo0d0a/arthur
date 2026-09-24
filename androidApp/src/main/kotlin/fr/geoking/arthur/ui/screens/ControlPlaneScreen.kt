@@ -214,28 +214,44 @@ fun ControlPlaneScreen(
             syncSourceSettings()
             val renewIds = selection.sourceIdsForAmbientLoad()
             val prefetchKey = selection.prefetchKey(museumKind, stockCategory)
-            val cachedPool = packCatalogCache[prefetchKey]
-                ?: imageCache.loadCachedArtworks(renewIds)
-                    .ifEmpty {
+            scope.launch {
+                val preferred: (Artwork) -> Boolean = { art ->
+                    art.isGenerative ||
+                        !art.localPath.isNullOrBlank() ||
+                        imageCache.hasImage(art.id)
+                }
+                val livePool = packCatalogCache[prefetchKey] ?: withContext(Dispatchers.IO) {
+                    runCatching {
+                        contentEngine.catalog(
+                            PreparedRotation(
+                                sourceIds = renewIds.orEmpty(),
+                                artworkIds = emptyList(),
+                            ),
+                        )
+                    }.getOrDefault(emptyList())
+                }.also { loaded ->
+                    if (loaded.isNotEmpty()) packCatalogCache[prefetchKey] = loaded
+                }
+                val cachedPool = livePool.ifEmpty {
+                    withContext(Dispatchers.IO) {
+                        imageCache.loadCachedArtworks(renewIds)
+                    }.ifEmpty {
                         if (selection.allowsGenerativeAmbientFallback()) catalog else emptyList()
                     }
-            val pool = resolvePackPool(cachedPool, selection)
-            val preferred: (Artwork) -> Boolean = { art ->
-                art.isGenerative ||
-                    !art.localPath.isNullOrBlank() ||
-                    imageCache.hasImage(art.id)
-            }
-            val rotationPool = AmbientAlbumArt.sampleRotationPool(
-                pool = pool,
-                isPreferred = preferred,
-            )
-            val chosen = rotationPool.firstOrNull()
-                ?: if (selection.allowsGenerativeAmbientFallback()) {
-                    resolveAmbientArtwork(catalog, artworkId = null)
-                } else {
-                    null
                 }
-            onStartAmbient(chosen, rotationPool, renewIds)
+                val pool = resolvePackPool(cachedPool, selection)
+                val rotationPool = AmbientAlbumArt.sampleRotationPool(
+                    pool = pool,
+                    isPreferred = preferred,
+                )
+                val chosen = rotationPool.firstOrNull()
+                    ?: if (selection.allowsGenerativeAmbientFallback()) {
+                        resolveAmbientArtwork(catalog, artworkId = null)
+                    } else {
+                        null
+                    }
+                onStartAmbient(chosen, rotationPool, renewIds)
+            }
         },
         onStartAmbientArtwork = { artwork ->
             syncSourceSettings()

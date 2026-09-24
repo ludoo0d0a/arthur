@@ -34,8 +34,12 @@ import androidx.lifecycle.LifecycleOwner
 import fr.geoking.arthur.R
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.PreparedRotation
+import fr.geoking.arthur.shared.domain.isGenerative
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
+import fr.geoking.arthur.audio.ZenAudioEngine
+import fr.geoking.arthur.source.AmbientAudioSettings
+import fr.geoking.arthur.source.AmbientStillPicker
 import fr.geoking.arthur.source.ArtworkImageCache
 import fr.geoking.arthur.source.DeveloperSettings
 import fr.geoking.arthur.source.InvalidArtworkStore
@@ -43,9 +47,12 @@ import fr.geoking.arthur.source.Quote
 import fr.geoking.arthur.source.QuoteRepository
 import fr.geoking.arthur.source.QuoteSettings
 import fr.geoking.arthur.source.RotationSettings
+import fr.geoking.arthur.source.StillImagePrefetcher
 import fr.geoking.arthur.ui.components.PackFamily
 import fr.geoking.arthur.ui.components.PackSelection
+import fr.geoking.arthur.ui.components.allowsGenerativeAmbientFallback
 import fr.geoking.arthur.ui.components.resolvePackPool
+import fr.geoking.arthur.ui.components.sourceIdsForAmbientLoad
 import fr.geoking.arthur.ui.components.subPackTiles
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -253,6 +260,7 @@ class PackSelectionScreen(carContext: CarContext) : Screen(carContext) {
 class CarSettingsScreen(carContext: CarContext) : Screen(carContext), KoinComponent {
     private val rotationSettings: RotationSettings by inject()
     private val quoteSettings: QuoteSettings by inject()
+    private val ambientAudioSettings: AmbientAudioSettings by inject()
     private var updateStatusText: String? = null
 
     init {
@@ -301,6 +309,19 @@ class CarSettingsScreen(carContext: CarContext) : Screen(carContext), KoinCompon
             invalidate()
         }
         listBuilder.addItem(quoteRowBuilder.build())
+
+        val soundEnabled = ambientAudioSettings.enabled.value
+        val soundRowBuilder = Row.Builder()
+            .setTitle(carContext.getString(R.string.settings_ambient_sound))
+            .addText(carContext.getString(R.string.settings_ambient_sound_subtitle))
+        if (soundEnabled) {
+            soundRowBuilder.addText("✓")
+        }
+        soundRowBuilder.setOnClickListener {
+            ambientAudioSettings.setEnabled(!soundEnabled)
+            invalidate()
+        }
+        listBuilder.addItem(soundRowBuilder.build())
 
         val checkUpdateRowBuilder = Row.Builder()
             .setTitle(carContext.getString(R.string.settings_check_update))
@@ -404,7 +425,11 @@ class ArtworkPaneScreen(
     private val quoteSettings: QuoteSettings by inject()
     private val quoteRepository: QuoteRepository by inject()
     private val developerSettings: DeveloperSettings by inject()
+    private val ambientAudioSettings: AmbientAudioSettings by inject()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private var zenAudio: ZenAudioEngine? = null
+
+    private val renewSourceIds: List<String> = packSelection.sourceIdsForAmbientLoad().orEmpty()
 
     private var catalog: List<Artwork> = emptyList()
     private var current: Artwork? = null
@@ -412,8 +437,13 @@ class ArtworkPaneScreen(
     private var generation: Long = 0L
     private var isPlaying: Boolean = true
     private var consecutiveAutoRotations: Int = 0
+    private var seenIds: Set<String> = emptySet()
+    private var cacheCount: Int = 0
+    private var liveCount: Int = 0
+    private var queryLaunched: Boolean = false
     private var rotationJob: Job? = null
     private var renderJob: Job? = null
+    private var advanceJob: Job? = null
     private var loaded: Boolean = false
 
     @Volatile
@@ -429,30 +459,135 @@ class ArtworkPaneScreen(
                 override fun onDestroy(owner: LifecycleOwner) {
                     rotationJob?.cancel()
                     renderJob?.cancel()
+                    advanceJob?.cancel()
+                    zenAudio?.destroy()
+                    zenAudio = null
                     scope.cancel()
                 }
             },
         )
         scope.launch {
-            val fullCatalog = withContext(Dispatchers.IO) {
-                runCatching {
-                    contentEngine.catalog(PreparedRotation(emptyList(), emptyList()))
-                }.getOrDefault(emptyList())
-            }
-            catalog = resolvePackPool(fullCatalog, packSelection).ifEmpty { fullCatalog }
-            runCatching {
-                current = if (initialArtworkId != null) {
-                    catalog.firstOrNull { it.id == initialArtworkId }
-                        ?: resolveAmbientArtwork(catalog, null)
-                } else {
-                    resolveAmbientArtwork(catalog, null)
+            runCatching { bootstrapRotation() }
+                .onFailure {
+                    loaded = true
+                    invalidate()
                 }
-                updateQuoteForCurrent()
-                scheduleAsyncRender()
-                if (isPlaying) startRotation()
-            }
+        }
+    }
+
+    private fun audioEngine(): ZenAudioEngine {
+        return zenAudio ?: ZenAudioEngine(carContext, ambientAudioSettings).also { zenAudio = it }
+    }
+
+    private suspend fun bootstrapRotation() {
+        val cachedRaw = withContext(Dispatchers.IO) {
+            imageCache.loadCachedArtworks(renewSourceIds.takeIf { it.isNotEmpty() })
+        }
+        val cachedPool = samplePool(
+            resolvePackPool(cachedRaw, packSelection).distinctBy { it.id }.ifEmpty {
+                if (packSelection.allowsGenerativeAmbientFallback()) {
+                    withContext(Dispatchers.IO) {
+                        runCatching {
+                            contentEngine.catalog(
+                                PreparedRotation(sourceIds = emptyList(), artworkIds = emptyList()),
+                            )
+                        }.getOrDefault(emptyList())
+                    }.let { resolvePackPool(it, packSelection).distinctBy { art -> art.id } }
+                } else {
+                    emptyList()
+                }
+            },
+        )
+        cacheCount = cachedPool.size
+        if (cachedPool.isNotEmpty()) {
+            applyPool(cachedPool, preferInitial = true)
             loaded = true
             invalidate()
+        }
+
+        queryLaunched = true
+        val liveRaw = withContext(Dispatchers.IO) {
+            runCatching {
+                contentEngine.catalog(
+                    PreparedRotation(sourceIds = renewSourceIds, artworkIds = emptyList()),
+                )
+            }.getOrDefault(emptyList())
+        }
+        val livePool = samplePool(resolvePackPool(liveRaw, packSelection).distinctBy { it.id })
+        liveCount = livePool.size
+        if (livePool.isNotEmpty()) {
+            applyPool(livePool, preferInitial = catalog.isEmpty())
+        } else if (catalog.isEmpty() && packSelection.allowsGenerativeAmbientFallback()) {
+            applyPool(cachedPool, preferInitial = true)
+        }
+
+        loaded = true
+        prefetchNeighbors()
+        syncAudio()
+        if (isPlaying) startRotation()
+        invalidate()
+    }
+
+    private fun samplePool(pool: List<Artwork>, seed: Artwork? = current): List<Artwork> {
+        if (pool.isEmpty()) return emptyList()
+        return AmbientAlbumArt.sampleRotationPool(
+            pool = pool,
+            maxSize = AmbientAlbumArt.MAX_AUTO_ROTATION_POOL,
+            seed = seed,
+            isPreferred = { art ->
+                art.isGenerative ||
+                    !art.localPath.isNullOrBlank() ||
+                    imageCache.hasImage(art.id)
+            },
+        )
+    }
+
+    private fun applyPool(pool: List<Artwork>, preferInitial: Boolean) {
+        val previousId = current?.id
+        catalog = pool
+        current = when {
+            preferInitial && initialArtworkId != null ->
+                pool.firstOrNull { it.id == initialArtworkId } ?: resolveAmbientArtwork(pool, null)
+            previousId != null ->
+                pool.firstOrNull { it.id == previousId } ?: resolveAmbientArtwork(pool, null)
+            else -> resolveAmbientArtwork(pool, null)
+        }
+        seenIds = current?.id?.let { setOf(it) }.orEmpty()
+        scope.launch { updateQuoteForCurrent() }
+        scheduleAsyncRender()
+    }
+
+    private suspend fun renewCatalog() {
+        queryLaunched = true
+        val liveRaw = withContext(Dispatchers.IO) {
+            runCatching {
+                contentEngine.catalog(
+                    PreparedRotation(sourceIds = renewSourceIds, artworkIds = emptyList()),
+                )
+            }.getOrDefault(emptyList())
+        }
+        val livePool = samplePool(resolvePackPool(liveRaw, packSelection).distinctBy { it.id })
+        liveCount = livePool.size
+        if (livePool.isNotEmpty()) {
+            val keepId = current?.id
+            catalog = livePool
+            if (keepId == null || livePool.none { it.id == keepId }) {
+                current = resolveAmbientArtwork(livePool, null)
+            }
+        }
+    }
+
+    private suspend fun prefetchNeighbors() {
+        val pool = catalog
+        if (pool.isEmpty()) return
+        val index = pool.indexOfFirst { it.id == current?.id }.let { if (it < 0) 0 else it }
+        val currentArt = pool.getOrNull(index)
+        val nextArt = pool.getOrNull(AmbientAlbumArt.advanceIndex(index, pool.size))
+        val prevArt = pool.getOrNull(Math.floorMod(index - 1, pool.size))
+        withContext(Dispatchers.IO) {
+            currentArt?.let { StillImagePrefetcher.ensureCached(imageCache, it, allowNetwork = true) }
+            nextArt?.let { StillImagePrefetcher.ensureCached(imageCache, it, allowNetwork = true) }
+            prevArt?.let { StillImagePrefetcher.ensureCached(imageCache, it, allowNetwork = true) }
         }
     }
 
@@ -500,22 +635,42 @@ class ArtworkPaneScreen(
         }
     }
 
+    private fun syncAudio() {
+        if (isPlaying && ambientAudioSettings.enabled.value) {
+            audioEngine().start()
+        } else {
+            zenAudio?.stop()
+        }
+    }
+
     fun advance(delta: Int, isAuto: Boolean = false) {
         if (!isAuto) {
             consecutiveAutoRotations = 0
-            // Manual prev/next resumes auto-rotation (same as ArthurMediaService).
             if (!isPlaying) {
                 isPlaying = true
+                syncAudio()
+            }
+            advanceJob?.cancel()
+            advanceJob = scope.launch {
+                applyManualAdvance(delta)
             }
         } else {
             consecutiveAutoRotations += 1
-            // After 3 auto-rotations (4th image shown), pause to respect Android Auto's step limit.
-            if (consecutiveAutoRotations >= 3) {
+            // Pause on the 3rd image shown (2 auto-advances from the first).
+            if (consecutiveAutoRotations >= 2) {
                 isPlaying = false
                 consecutiveAutoRotations = 0
                 rotationJob?.cancel()
+                syncAudio()
+            }
+            advanceJob?.cancel()
+            advanceJob = scope.launch {
+                applyAutoAdvance()
             }
         }
+    }
+
+    private suspend fun applyManualAdvance(delta: Int) {
         if (catalog.isEmpty()) return
         val index = catalog.indexOfFirst { it.id == current?.id }.let { if (it < 0) 0 else it }
         val nextIndex = AmbientAlbumArt.nextValidIndex(
@@ -524,21 +679,69 @@ class ArtworkPaneScreen(
             delta = delta,
             isInvalidAt = { catalog[it].id.let(invalidStore::isInvalid) },
         )
-        current = catalog[nextIndex]
-        generation += 1
-        scope.launch {
-            updateQuoteForCurrent()
-            invalidate()
-        }
-        scheduleAsyncRender()
-        // Restart the interval so a manual skip doesn't get auto-advanced immediately.
+        showArtwork(catalog[nextIndex])
         if (isPlaying) startRotation()
+    }
+
+    private suspend fun applyAutoAdvance() {
+        if (catalog.isEmpty()) return
+        val eligible = catalog.mapNotNull { art ->
+            if (invalidStore.isInvalid(art.id)) null else art.id
+        }.toSet()
+        if (eligible.isEmpty()) return
+
+        var pickedId = AmbientStillPicker.pickNextRandom(
+            poolIds = catalog.map { it.id },
+            currentId = current?.id,
+            seenIds = seenIds,
+            recentIds = rotationSettings.recentStillIds(),
+            eligibleIds = eligible,
+        )
+
+        val noUnseen = eligible.all { it in seenIds } || pickedId == null
+        if (noUnseen) {
+            renewCatalog()
+            val renewedEligible = catalog.mapNotNull { art ->
+                if (invalidStore.isInvalid(art.id)) null else art.id
+            }.toSet()
+            val stillNoUnseen = renewedEligible.all { it in seenIds }
+            if (stillNoUnseen) {
+                seenIds = current?.id?.let { setOf(it) }.orEmpty()
+            }
+            pickedId = AmbientStillPicker.pickNextRandom(
+                poolIds = catalog.map { it.id },
+                currentId = current?.id,
+                seenIds = seenIds,
+                recentIds = rotationSettings.recentStillIds(),
+                eligibleIds = renewedEligible,
+            )
+        }
+
+        val next = catalog.firstOrNull { it.id == pickedId } ?: return
+        showArtwork(next)
+        if (isPlaying) startRotation()
+    }
+
+    private suspend fun showArtwork(art: Artwork) {
+        current = art
+        generation += 1
+        seenIds = seenIds + art.id
+        if (!art.remoteUrl.isNullOrBlank()) {
+            rotationSettings.recordRecentStillId(art.id)
+        }
+        if (ambientAudioSettings.enabled.value) {
+            audioEngine().triggerChime()
+        }
+        updateQuoteForCurrent()
+        scheduleAsyncRender()
+        prefetchNeighbors()
         invalidate()
     }
 
     fun togglePlay() {
         isPlaying = !isPlaying
         consecutiveAutoRotations = 0
+        syncAudio()
         if (isPlaying) startRotation() else rotationJob?.cancel()
         invalidate()
     }
@@ -546,6 +749,25 @@ class ArtworkPaneScreen(
     fun isPlaying(): Boolean = isPlaying
 
     fun currentArtwork(): Artwork? = current
+
+    fun debugSnapshot(): AmbientRotationDebug {
+        val unseen = catalog.count { art ->
+            !invalidStore.isInvalid(art.id) && art.id !in seenIds
+        }
+        return AmbientRotationDebug(
+            querySourceIds = renewSourceIds,
+            cacheCount = cacheCount,
+            liveCount = liveCount,
+            poolSize = catalog.size,
+            seenCount = seenIds.size,
+            unseenCount = unseen,
+            consecutiveAutoRotations = consecutiveAutoRotations,
+            isPlaying = isPlaying,
+            currentArtworkId = current?.id,
+            generation = generation,
+            queryLaunched = queryLaunched,
+        )
+    }
 
     override fun onGetTemplate(): Template {
         return try {
@@ -592,6 +814,8 @@ class ArtworkPaneScreen(
         val art = current
         val paneBuilder = Pane.Builder()
         val rowLimit = paneRowLimit()
+        val isDevMode = developerSettings.verbose.value
+        var rowsUsed = 0
 
         if (art != null && rowLimit > 0) {
             val hasFreshRender = art.id == renderedArtId && generation == renderedGen && renderedBitmap != null
@@ -603,11 +827,13 @@ class ArtworkPaneScreen(
 
             val quote = if (quoteSettings.showQuotes.value) currentQuote else null
 
-            val isDevMode = developerSettings.verbose.value
             val index = catalog.indexOfFirst { it.id == art.id }.let { if (it < 0) 0 else it }
-            val slidePos = if (isDevMode && catalog.isNotEmpty()) "[${index + 1}/${catalog.size}]" else null
+            val slidePos = if (isDevMode && catalog.isNotEmpty()) {
+                "[${index + 1}/${catalog.size}] cache:$cacheCount live:$liveCount"
+            } else {
+                null
+            }
 
-            // Row 1 text line: attribution (+ optional slide). Quote goes on its own pane row.
             val metaParts = buildList {
                 if (art.attribution.isNotBlank()) add(art.attribution)
                 if (slidePos != null) add(slidePos)
@@ -615,8 +841,6 @@ class ArtworkPaneScreen(
             if (metaParts.isNotEmpty()) {
                 rowBuilder.addText(metaParts.joinToString(" "))
             }
-            // The big picture is best-effort: if rendering/encoding it fails, the row still
-            // shows title/attribution instead of falling back to the whole error template.
             val bigPicture = runCatching {
                 val bitmap = if (hasFreshRender) renderedBitmap!! else AmbientStillRenderer.renderPlaceholder(art, generation)
                 CarIcon.Builder(IconCompat.createWithBitmap(bitmap)).build()
@@ -626,15 +850,16 @@ class ArtworkPaneScreen(
                 paneBuilder.setImage(bigPicture)
             }
             paneBuilder.addRow(rowBuilder.build())
+            rowsUsed++
 
-            // Dedicated second row so the host can show the full quote + author (max 2 texts/row).
-            if (quote != null && rowLimit >= 2) {
+            if (quote != null && rowsUsed < rowLimit) {
                 val quoteRow = Row.Builder()
                     .setTitle("\u201C${quote.text}\u201D")
                 if (quote.author.isNotBlank()) {
                     quoteRow.addText("\u2014 ${quote.author}")
                 }
                 paneBuilder.addRow(quoteRow.build())
+                rowsUsed++
             }
         } else {
             paneBuilder.addRow(
@@ -645,8 +870,6 @@ class ArtworkPaneScreen(
             )
         }
 
-        // Pane actions ≤ 2: primary play/pause (icon-only).
-        // Header end actions ≤ 2: prev/next (icon-only) — preferred over deprecated ActionStrip.
         paneBuilder.addAction(
             Action.Builder()
                 .setIcon(
@@ -661,6 +884,16 @@ class ArtworkPaneScreen(
                 .setOnClickListener { togglePlay() }
                 .build(),
         )
+        if (isDevMode) {
+            paneBuilder.addAction(
+                Action.Builder()
+                    .setTitle(carContext.getString(R.string.car_ambient_debug))
+                    .setOnClickListener {
+                        screenManager.push(AmbientDebugScreen(carContext, debugSnapshot()))
+                    }
+                    .build(),
+            )
+        }
 
         val header = Header.Builder()
             .setTitle(title)
@@ -699,5 +932,65 @@ class ArtworkPaneScreen(
         } catch (_: Exception) {
             4
         }
+    }
+}
+
+/** Developer-only ListTemplate with Ambient rotation diagnostics. */
+class AmbientDebugScreen(
+    carContext: CarContext,
+    private val snapshot: AmbientRotationDebug,
+) : Screen(carContext) {
+    override fun onGetTemplate(): Template {
+        return try {
+            buildTemplate()
+        } catch (e: Throwable) {
+            carErrorTemplate(carContext, e)
+        }
+    }
+
+    private fun buildTemplate(): Template {
+        val listBuilder = ItemList.Builder()
+        fun addRow(title: String, detail: String) {
+            listBuilder.addItem(
+                Row.Builder()
+                    .setTitle(title)
+                    .addText(detail)
+                    .build(),
+            )
+        }
+        val queryLabel = if (snapshot.querySourceIds.isEmpty()) {
+            carContext.getString(R.string.car_ambient_debug_all_sources)
+        } else {
+            snapshot.querySourceIds.joinToString(", ")
+        }
+        addRow(
+            carContext.getString(R.string.car_ambient_debug_query),
+            if (snapshot.queryLaunched) queryLabel else carContext.getString(R.string.car_ambient_debug_query_pending),
+        )
+        addRow(carContext.getString(R.string.car_ambient_debug_live_count), snapshot.liveCount.toString())
+        addRow(carContext.getString(R.string.car_ambient_debug_pool_size), snapshot.poolSize.toString())
+        addRow(carContext.getString(R.string.car_ambient_debug_cache_count), snapshot.cacheCount.toString())
+        addRow(
+            carContext.getString(R.string.car_ambient_debug_seen),
+            "${snapshot.seenCount} / unseen ${snapshot.unseenCount}",
+        )
+        addRow(
+            carContext.getString(R.string.car_ambient_debug_auto),
+            "${snapshot.consecutiveAutoRotations} · playing=${snapshot.isPlaying}",
+        )
+        addRow(
+            carContext.getString(R.string.car_ambient_debug_current),
+            "${snapshot.currentArtworkId.orEmpty()} · gen=${snapshot.generation}",
+        )
+
+        return ListTemplate.Builder()
+            .setHeader(
+                Header.Builder()
+                    .setTitle(carContext.getString(R.string.car_ambient_debug))
+                    .setStartHeaderAction(Action.BACK)
+                    .build(),
+            )
+            .setSingleList(listBuilder.build())
+            .build()
     }
 }

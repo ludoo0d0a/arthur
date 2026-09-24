@@ -41,6 +41,7 @@ import fr.geoking.arthur.shared.source.SmithsonianSource
 import fr.geoking.arthur.shared.source.UnsplashSource
 import fr.geoking.arthur.shared.source.WikimediaStreetArtSource
 import fr.geoking.arthur.source.ArtworkImageCache
+import fr.geoking.arthur.source.AmbientAudioSettings
 import fr.geoking.arthur.source.DeveloperSettings
 import fr.geoking.arthur.source.InvalidArtworkStore
 import fr.geoking.arthur.source.MuseumSearchSettings
@@ -134,6 +135,7 @@ val appModule = module {
     single { RotationSettings(androidContext()) }
     single { ScreensaverSettings(androidContext()) }
     single { QuoteSettings(androidContext()) }
+    single { AmbientAudioSettings(androidContext()) }
     single { InvalidArtworkStore(androidContext()) }
     single { RemoteStillNetworkGate(androidContext(), get()) }
     single {

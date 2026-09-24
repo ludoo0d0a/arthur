@@ -33,6 +33,7 @@ import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.shared.marketplace.GenartPackTopics
 import fr.geoking.arthur.shared.marketplace.MarketplaceCatalog
 import fr.geoking.arthur.shared.marketplace.PackOwnership
+import fr.geoking.arthur.source.AmbientAudioSettings
 import fr.geoking.arthur.source.DeveloperSettings
 import fr.geoking.arthur.source.HttpCacheController
 import fr.geoking.arthur.source.MuseumSearchSettings
@@ -67,6 +68,7 @@ class MainActivity : ComponentActivity() {
     private val rotationSettings: RotationSettings by inject()
     private val screensaverSettings: ScreensaverSettings by inject()
     private val quoteSettings: QuoteSettings by inject()
+    private val ambientAudioSettings: AmbientAudioSettings by inject()
 
     private val inAppUpdateHelper by lazy { InAppUpdateHelper(applicationContext) }
 
@@ -110,6 +112,7 @@ class MainActivity : ComponentActivity() {
                         val autoIntervalMs by rotationSettings.autoIntervalMs.collectAsState()
                         val wifiOnlyRemoteStills by rotationSettings.wifiOnlyRemoteStills.collectAsState()
                         val showQuotes by quoteSettings.showQuotes.collectAsState()
+                        val ambientSoundEnabled by ambientAudioSettings.enabled.collectAsState()
                         val isPremium = premium.isPremium
                         // Custom fractal authoring needs touch; TV uses remote only.
                         when {
@@ -147,6 +150,8 @@ class MainActivity : ComponentActivity() {
                                     onWifiOnlyRemoteStillsChange = rotationSettings::setWifiOnlyRemoteStills,
                                     showQuotes = showQuotes,
                                     onShowQuotesChange = quoteSettings::setShowQuotes,
+                                    ambientSoundEnabled = ambientSoundEnabled,
+                                    onAmbientSoundEnabledChange = ambientAudioSettings::setEnabled,
                                     deviantArtUsername = stockPhotoSettings.deviantArtUsername,
                                     onDeviantArtUsernameChange = { stockPhotoSettings.deviantArtUsername = it },
                                     deviantArtPassword = stockPhotoSettings.deviantArtPassword,

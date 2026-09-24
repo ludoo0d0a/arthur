@@ -159,6 +159,8 @@ fun SettingsScreen(
     onWifiOnlyRemoteStillsChange: (Boolean) -> Unit = {},
     showQuotes: Boolean = true,
     onShowQuotesChange: (Boolean) -> Unit = {},
+    ambientSoundEnabled: Boolean = false,
+    onAmbientSoundEnabledChange: (Boolean) -> Unit = {},
     deviantArtUsername: String = "",
     onDeviantArtUsernameChange: (String) -> Unit = {},
     deviantArtPassword: String = "",
@@ -254,6 +256,8 @@ fun SettingsScreen(
                     onWifiOnlyRemoteStillsChange = onWifiOnlyRemoteStillsChange,
                     showQuotes = showQuotes,
                     onShowQuotesChange = onShowQuotesChange,
+                    ambientSoundEnabled = ambientSoundEnabled,
+                    onAmbientSoundEnabledChange = onAmbientSoundEnabledChange,
                     onCheckForUpdate = onCheckForUpdate,
                     onOpenMarketplace = onOpenMarketplace,
                     onNavigate = { screenStack = screenStack + it },
@@ -314,6 +318,8 @@ private fun MainMenu(
     onWifiOnlyRemoteStillsChange: (Boolean) -> Unit,
     showQuotes: Boolean,
     onShowQuotesChange: (Boolean) -> Unit,
+    ambientSoundEnabled: Boolean,
+    onAmbientSoundEnabledChange: (Boolean) -> Unit,
     onCheckForUpdate: (() -> Unit)?,
     onOpenMarketplace: (() -> Unit)?,
     onNavigate: (SettingsScreenPage) -> Unit,
@@ -435,6 +441,31 @@ private fun MainMenu(
                     checked = showQuotes,
                     onCheckedChange = onShowQuotesChange,
                     modifier = Modifier.testTag("settings_show_quotes_switch"),
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .testTag("settings_ambient_sound"),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+                    Text(
+                        text = stringResource(R.string.settings_ambient_sound),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_ambient_sound_subtitle),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = ambientSoundEnabled,
+                    onCheckedChange = onAmbientSoundEnabledChange,
+                    modifier = Modifier.testTag("settings_ambient_sound_switch"),
                 )
             }
             SettingsItem(

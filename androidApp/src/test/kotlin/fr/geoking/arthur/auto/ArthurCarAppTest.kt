@@ -152,6 +152,7 @@ class ArthurCarAppTest {
                 org.koin.dsl.module {
                     single { fr.geoking.arthur.source.RotationSettings(org.robolectric.RuntimeEnvironment.getApplication()) }
                     single { fr.geoking.arthur.source.QuoteSettings(org.robolectric.RuntimeEnvironment.getApplication()) }
+                    single { fr.geoking.arthur.source.AmbientAudioSettings(org.robolectric.RuntimeEnvironment.getApplication()) }
                 },
             )
         }
@@ -164,7 +165,7 @@ class ArthurCarAppTest {
             val listTemplate = template as androidx.car.app.model.ListTemplate
             val list = listTemplate.singleList
             assertNotNull(list)
-            assertEquals(2 + fr.geoking.arthur.source.RotationSettings.OPTIONS_MS.size, list!!.items.size)
+            assertEquals(3 + fr.geoking.arthur.source.RotationSettings.OPTIONS_MS.size, list!!.items.size)
         } finally {
             org.koin.core.context.stopKoin()
         }
@@ -190,6 +191,7 @@ class ArthurCarAppTest {
                 org.koin.dsl.module {
                     single { fr.geoking.arthur.source.RotationSettings(app) }
                     single { quoteSettings }
+                    single { fr.geoking.arthur.source.AmbientAudioSettings(app) }
                 },
             )
         }
@@ -235,6 +237,7 @@ class ArthurCarAppTest {
                 org.koin.dsl.module {
                     single { fr.geoking.arthur.source.RotationSettings(app) }
                     single { quoteSettings }
+                    single { fr.geoking.arthur.source.AmbientAudioSettings(app) }
                     single { devSettings }
                     single { quoteRepo }
                     single { fr.geoking.arthur.source.ArtworkImageCache(app) }
@@ -257,13 +260,20 @@ class ArthurCarAppTest {
             org.robolectric.shadows.ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
             org.robolectric.Robolectric.getForegroundThreadScheduler().advanceToLastPostedRunnable()
             org.robolectric.shadows.ShadowLooper.idleMainLooper()
-            var reloadedTemplate = screen.onGetTemplate() as PaneTemplate
-            repeat(30) {
+            fun requirePane(): PaneTemplate {
+                val template = screen.onGetTemplate()
+                if (template is PaneTemplate) return template
+                val msg = (template as? androidx.car.app.model.MessageTemplate)?.message?.toString()
+                throw AssertionError("Expected PaneTemplate, got ${template::class.java.simpleName}: $msg")
+            }
+            var reloadedTemplate = requirePane()
+            repeat(40) {
                 if (reloadedTemplate.pane.isLoading || screen.currentArtwork() == null || reloadedTemplate.pane.rows.size < 2) {
+                    Thread.sleep(50)
                     org.robolectric.shadows.ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
                     org.robolectric.Robolectric.getForegroundThreadScheduler().advanceToLastPostedRunnable()
                     org.robolectric.shadows.ShadowLooper.idleMainLooper()
-                    reloadedTemplate = screen.onGetTemplate() as PaneTemplate
+                    reloadedTemplate = requirePane()
                 }
             }
             assertTrue("Pane should not be loading", !reloadedTemplate.pane.isLoading)
@@ -280,7 +290,12 @@ class ArthurCarAppTest {
             assertEquals("— Oscar Wilde", quoteRow.texts[0].toString())
 
             // PaneTemplate: primary play/pause in pane; prev/next as header end actions.
-            assertEquals("Pane body should have primary play/pause", 1, reloadedTemplate.pane.actions.size)
+            // Verbose adds Debug as the second pane action (≤2).
+            assertEquals(
+                "Pane body should have play/pause (+ Debug when verbose)",
+                2,
+                reloadedTemplate.pane.actions.size,
+            )
             val playPause = reloadedTemplate.pane.actions[0]
             assertNotNull("Play/pause should be icon-only", playPause.icon)
             assertTrue(
@@ -325,6 +340,7 @@ class ArthurCarAppTest {
                 org.koin.dsl.module {
                     single { rotationSettings }
                     single { fr.geoking.arthur.source.QuoteSettings(app) }
+                    single { fr.geoking.arthur.source.AmbientAudioSettings(app) }
                     single { fr.geoking.arthur.source.DeveloperSettings(app) }
                     single { fr.geoking.arthur.source.QuoteRepository(context = app, httpGet = { fr.geoking.arthur.source.QuoteRepository.encodeQuotes(emptyList()) }) }
                     single { fr.geoking.arthur.source.ArtworkImageCache(app) }
@@ -350,13 +366,10 @@ class ArthurCarAppTest {
             assertTrue("Initially should be playing", screen.isPlaying())
 
             screen.advance(+1, isAuto = true)
-            assertTrue("Should still be playing after 1 auto-rotation", screen.isPlaying())
+            assertTrue("Should still be playing after 1 auto-rotation (2nd image)", screen.isPlaying())
 
             screen.advance(+1, isAuto = true)
-            assertTrue("Should still be playing after 2 auto-rotations", screen.isPlaying())
-
-            screen.advance(+1, isAuto = true)
-            assertTrue("Should pause after 3 consecutive auto-rotations", !screen.isPlaying())
+            assertTrue("Should pause on the 3rd image (2nd auto-rotation)", !screen.isPlaying())
 
             screen.advance(-1, isAuto = false)
             assertTrue("Manual step resumes playing and resets counter", screen.isPlaying())
@@ -575,6 +588,7 @@ class ArthurCarAppTest {
                 org.koin.dsl.module {
                     single { fr.geoking.arthur.source.RotationSettings(app) }
                     single { fr.geoking.arthur.source.QuoteSettings(app) }
+                    single { fr.geoking.arthur.source.AmbientAudioSettings(app) }
                 },
             )
         }
@@ -584,7 +598,8 @@ class ArthurCarAppTest {
             val template = screen.onGetTemplate() as androidx.car.app.model.ListTemplate
             val list = template.singleList
             assertNotNull(list)
-            val checkUpdateRow = list!!.items[1] as androidx.car.app.model.Row
+            // quotes (0) + ambient sound (1) + check update (2) + intervals…
+            val checkUpdateRow = list!!.items[2] as androidx.car.app.model.Row
             assertNotNull(checkUpdateRow.title)
             assertTrue(checkUpdateRow.title.toString().isNotBlank())
         } finally {

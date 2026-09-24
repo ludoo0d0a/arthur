@@ -24,6 +24,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -49,6 +50,7 @@ import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -59,12 +61,14 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.R
+import fr.geoking.arthur.audio.ZenAudioEngine
 import fr.geoking.arthur.auto.AmbientAlbumArt
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.hasDetailContent
 import fr.geoking.arthur.shared.domain.isGenerative
+import fr.geoking.arthur.source.AmbientAudioSettings
 import fr.geoking.arthur.source.AmbientStillPicker
 import fr.geoking.arthur.source.InvalidArtworkStore
 import fr.geoking.arthur.source.Quote
@@ -177,6 +181,24 @@ fun AmbientScreenContent(
     val invalidStore = remember {
         runCatching { GlobalContext.get().get<InvalidArtworkStore>() }.getOrNull()
     }
+    val ambientAudioSettings = remember {
+        runCatching { GlobalContext.get().get<AmbientAudioSettings>() }.getOrNull()
+    }
+    val audioEnabled = ambientAudioSettings?.enabled?.collectAsState()?.value == true
+    val context = LocalContext.current
+    val zenAudio = remember(ambientAudioSettings) {
+        ambientAudioSettings?.let { ZenAudioEngine(context, it) }
+    }
+    DisposableEffect(zenAudio) {
+        onDispose { zenAudio?.destroy() }
+    }
+    LaunchedEffect(isPlaying, isActive, audioEnabled) {
+        if (isPlaying && isActive && audioEnabled) {
+            zenAudio?.start()
+        } else {
+            zenAudio?.stop()
+        }
+    }
 
     fun eligibleIdsForPick(pool: List<Artwork>): Set<String> {
         val invalid = invalidStore?.snapshot().orEmpty()
@@ -227,6 +249,7 @@ fun AmbientScreenContent(
         }
         displayReady = false
         current = nextArt
+        zenAudio?.triggerChime()
         val nextId = nextArt.id
         if (!nextArt.remoteUrl.isNullOrBlank()) {
             rotationSettings?.recordRecentStillId(nextId)

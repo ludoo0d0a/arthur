@@ -6,6 +6,7 @@ import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -70,5 +71,28 @@ class AmbientStillRendererTest {
         } finally {
             tempFile.delete()
         }
+    }
+
+    @Test
+    fun render_genart_framesWithSpotifyGradient() {
+        val artwork = Artwork(
+            id = "genart.particles",
+            title = "Particles",
+            sourceId = "genart",
+            kind = ArtworkKind.Genart,
+        )
+        val rendered = AmbientStillRenderer.render(artwork, generation = 1L)
+        assertEquals(AmbientStillRenderer.SIZE, rendered.width)
+        // Corner pixels come from the gradient frame, not the full-bleed generative bake.
+        val corner = rendered.getPixel(2, 2)
+        val nearCenter = rendered.getPixel(
+            AmbientStillRenderer.SIZE / 2,
+            AmbientStillRenderer.SIZE / 2,
+        )
+        assertTrue(
+            "Corner should differ from center when gradient padding is applied",
+            corner != nearCenter,
+        )
+        rendered.recycle()
     }
 }

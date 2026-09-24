@@ -1,6 +1,5 @@
 package fr.geoking.arthur.ui.components
 
-import android.os.Build
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -28,7 +27,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -39,6 +37,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.R
+import fr.geoking.arthur.auto.AmbientStillRenderer
 import fr.geoking.arthur.fractal.CustomFractalEffectCanvas
 import fr.geoking.arthur.fractal.CustomFractalParams
 import fr.geoking.arthur.fractal.FractalEffectCanvas
@@ -295,25 +294,18 @@ private fun RemoteStillImage(
                     .testTag("artwork_remote_image_container"),
                 contentAlignment = Alignment.Center,
             ) {
-                Image(
-                    bitmap = imageBitmap,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .then(
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                Modifier.blur(25.dp)
-                            } else {
-                                Modifier
-                            },
-                        )
-                        .testTag("artwork_remote_image_bg"),
-                )
+                val (topColor, bottomColor) = remember(bmp) {
+                    AmbientStillRenderer.extractGradientColors(bmp)
+                }
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.25f)),
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color(topColor), Color(bottomColor)),
+                            ),
+                        )
+                        .testTag("artwork_remote_image_bg"),
                 )
                 Image(
                     bitmap = imageBitmap,

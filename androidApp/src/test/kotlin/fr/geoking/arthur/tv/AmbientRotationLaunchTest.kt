@@ -28,7 +28,7 @@ class AmbientRotationLaunchTest {
 
     @Test
     fun prepare_capsPoolToMaxAutoRotation() {
-        val pool = (1..8).map { i ->
+        val pool = (1..35).map { i ->
             Artwork(id = "art-$i", title = "A$i", sourceId = "bundled", kind = ArtworkKind.Photo)
         }
         AmbientRotationLaunch.prepare(pool)

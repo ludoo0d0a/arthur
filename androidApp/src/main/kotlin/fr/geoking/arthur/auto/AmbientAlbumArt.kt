@@ -14,8 +14,12 @@ import java.io.File
 object AmbientAlbumArt {
     /** Default rotation interval (20s). User preference lives in [fr.geoking.arthur.source.RotationSettings]. */
     const val ROTATION_INTERVAL_MS = 20_000L
-    /** Auto-rotation keeps at most this many pieces so next-still preload stays ahead of the timer. */
-    const val MAX_AUTO_ROTATION_POOL = 3
+    /**
+     * Ambient playlist size across phone / TV / Auto / Media canvases.
+     * Cache-preferred items are sampled first; the rest fill up to this cap so rotation
+     * can walk the full list (e.g. debug counter 1/30) before renewing from APIs.
+     */
+    const val MAX_AUTO_ROTATION_POOL = 30
     const val PATH_ART = "art"
     const val AUTHORITY_SUFFIX = ".albumart"
 

@@ -64,8 +64,8 @@ class ArthurMediaMappingTest {
     }
 
     @Test
-    fun sampleRotationPool_capsAtThreeAndPrefersCached() {
-        val pool = (1..6).map { i ->
+    fun sampleRotationPool_capsAtMaxAndPrefersCached() {
+        val pool = (1..35).map { i ->
             Artwork(
                 id = "id-$i",
                 title = "T$i",
@@ -78,9 +78,15 @@ class ArthurMediaMappingTest {
             pool = pool,
             isPreferred = { it.id == "id-4" || it.id == "id-5" },
         )
-        assertEquals(3, sampled.size)
+        assertEquals(AmbientAlbumArt.MAX_AUTO_ROTATION_POOL, sampled.size)
         assertTrue(sampled.first().id == "id-4" || sampled.first().id == "id-5")
         assertTrue(sampled.all { it.id in pool.map { art -> art.id } })
+        // Preferred items appear before non-preferred once the seed/first slot is filled.
+        val preferredIds = setOf("id-4", "id-5")
+        val firstNonPreferred = sampled.indexOfFirst { it.id !in preferredIds }
+        if (firstNonPreferred >= 0) {
+            assertTrue(sampled.take(firstNonPreferred).all { it.id in preferredIds })
+        }
     }
 
     @Test
@@ -92,7 +98,7 @@ class ArthurMediaMappingTest {
             Artwork(id = "d", title = "D", sourceId = "s", kind = ArtworkKind.Photo),
         )
         val sampled = AmbientAlbumArt.sampleRotationPool(pool, seed = pool[2])
-        assertEquals(3, sampled.size)
+        assertEquals(4, sampled.size)
         assertEquals("c", sampled.first().id)
     }
 

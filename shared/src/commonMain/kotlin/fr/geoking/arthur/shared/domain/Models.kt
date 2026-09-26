@@ -94,7 +94,7 @@ data class FreeTierLimits(
      * that Painting/Museum **All** can keep at least one piece from each remote
      * museum after fair round-robin — a tiny prefix cap emptied later Sources.
      */
-    val maxPhotoArtwork: Int = 24,
+    val maxPhotoArtwork: Int = 30,
     val maxFractalPresets: Int = 3,
     /**
      * Cap on free-tier Genart engines. Must cover the full shipped catalog so

@@ -3,7 +3,6 @@ package fr.geoking.arthur.auto
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.RadialGradient
 import android.graphics.Rect
@@ -59,11 +58,11 @@ object AmbientStillRenderer {
         runCatching {
             when {
                 artwork.kind == ArtworkKind.Genart ->
-                    drawGenerativeWithGradient(canvas) { c -> drawGenart(c, artwork.id, generation) }
+                    drawGenart(canvas, artwork.id, generation)
                 artwork.kind == ArtworkKind.CustomFractal || CustomFractalSource.isCustomId(artwork.id) ->
-                    drawGenerativeWithGradient(canvas) { c -> drawCustomFractal(c, artwork.id, generation) }
+                    drawCustomFractal(canvas, artwork.id, generation)
                 artwork.isGenerative ->
-                    drawGenerativeWithGradient(canvas) { c -> drawFractalField(c, artwork.id, seed) }
+                    drawFractalField(canvas, artwork.id, seed)
                 !artwork.localPath.isNullOrBlank() || !artwork.remoteUrl.isNullOrBlank() -> {
                     val (drawn, reason) = drawStillImageWithResult(
                         canvas,
@@ -81,20 +80,6 @@ object AmbientStillRenderer {
             drawStillPlaceholder(canvas, seed, isError = true, errorReason = e.message)
         }
         return bitmap
-    }
-
-    /**
-     * Bake generative content offscreen, then frame it with the same Spotify-style
-     * gradient + aspect-fit padding used for remote stills.
-     */
-    private fun drawGenerativeWithGradient(canvas: Canvas, draw: (Canvas) -> Unit) {
-        val content = Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888)
-        try {
-            draw(Canvas(content))
-            drawBitmapCover(canvas, content)
-        } finally {
-            content.recycle()
-        }
     }
 
     fun renderPlaceholder(artwork: Artwork, generation: Long): Bitmap {
@@ -202,48 +187,18 @@ object AmbientStillRenderer {
         }
     }
 
+    /**
+     * Full-bleed center-crop into the square bake so Auto Media host can
+     * extract vibrant colors for its ambient backdrop (no framed gradient).
+     */
     private fun drawBitmapCover(canvas: Canvas, bmp: Bitmap) {
-        val (topColor, bottomColor) = extractGradientColors(bmp)
-
-        // 1. Draw full-screen Spotify-style linear gradient background
-        val gradientPaint = Paint().apply {
-            shader = LinearGradient(
-                0f,
-                0f,
-                0f,
-                SIZE.toFloat(),
-                topColor,
-                bottomColor,
-                Shader.TileMode.CLAMP,
-            )
-        }
-        canvas.drawRect(0f, 0f, SIZE.toFloat(), SIZE.toFloat(), gradientPaint)
-
-        // Aspect-fit with padding so the Spotify-style gradient stays visible on Auto/TV.
-        val padding = (SIZE * 0.08f).toInt()
-        val maxDim = SIZE - 2 * padding
-        val scale = minOf(maxDim.toFloat() / bmp.width, maxDim.toFloat() / bmp.height)
+        val scale = maxOf(SIZE.toFloat() / bmp.width, SIZE.toFloat() / bmp.height)
         val drawW = (bmp.width * scale).toInt().coerceAtLeast(1)
         val drawH = (bmp.height * scale).toInt().coerceAtLeast(1)
         val left = (SIZE - drawW) / 2
         val top = (SIZE - drawH) / 2
-        val dstRect = Rect(left, top, left + drawW, top + drawH)
-
-        // 3. Draw subtle shadow under the artwork image for depth
-        val shadowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.argb(120, 0, 0, 0)
-        }
-        val shadowOffset = 8
-        val shadowRect = Rect(
-            (left - 4).coerceAtLeast(0),
-            (top + shadowOffset).coerceAtMost(SIZE),
-            (left + drawW + 4).coerceAtMost(SIZE),
-            (top + drawH + shadowOffset).coerceAtMost(SIZE),
-        )
-        canvas.drawRect(shadowRect, shadowPaint)
-
-        // 4. Draw the artwork bitmap aspect-fit
         val srcRect = Rect(0, 0, bmp.width, bmp.height)
+        val dstRect = Rect(left, top, left + drawW, top + drawH)
         canvas.drawBitmap(bmp, srcRect, dstRect, Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG))
     }
 

@@ -141,6 +141,7 @@
     <string name="settings_ambient_sound">Ambient sound</string>
     <string name="settings_ambient_sound_subtitle">Soft pad and chimes during Ambient slideshows</string>
     <string name="car_ambient_debug">Debug</string>
+    <string name="car_ambient_sound_toggle">Toggle ambient sound</string>
     <string name="car_ambient_debug_subtitle">Rotation query &amp; cache metrics</string>
     <string name="car_ambient_debug_query">Query sources</string>
     <string name="car_ambient_debug_query_pending">Not launched yet</string>

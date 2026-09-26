@@ -51,6 +51,53 @@ class ArthurCarAppTest {
     }
 
     @Test
+    fun createAmbientScreen_routesBySoundSetting() {
+        val app = org.robolectric.RuntimeEnvironment.getApplication()
+        val owner = object : androidx.lifecycle.LifecycleOwner {
+            override val lifecycle = androidx.lifecycle.LifecycleRegistry(this)
+        }
+        val carContext = androidx.car.app.CarContext.create(owner.lifecycle)
+        attachBaseContext(carContext, app)
+        if (org.koin.core.context.GlobalContext.getOrNull() != null) {
+            org.koin.core.context.stopKoin()
+        }
+        val audio = fr.geoking.arthur.source.AmbientAudioSettings(app)
+        org.koin.core.context.startKoin {
+            modules(
+                org.koin.dsl.module {
+                    single { audio }
+                    single { fr.geoking.arthur.source.RotationSettings(app) }
+                    single { fr.geoking.arthur.source.QuoteSettings(app) }
+                    single { fr.geoking.arthur.source.DeveloperSettings(app) }
+                    single { fr.geoking.arthur.source.ArtworkImageCache(app) }
+                    single { fr.geoking.arthur.source.InvalidArtworkStore(app) }
+                    single { fr.geoking.arthur.source.QuoteRepository(app, httpGet = { "[]" }) }
+                    single {
+                        fr.geoking.arthur.shared.engine.ContentEngine(
+                            sources = listOf(fr.geoking.arthur.shared.source.GenartSource()),
+                            packOwnership = fr.geoking.arthur.shared.marketplace.FakePackOwnership().also { it.unlockAll() },
+                        )
+                    }
+                },
+            )
+        }
+        try {
+            audio.setEnabled(false)
+            assertTrue(createAmbientScreen(carContext) is ArtworkPaneScreen)
+            audio.setEnabled(true)
+            assertTrue(createAmbientScreen(carContext) is MediaAmbientPlaybackScreen)
+            val media = createAmbientScreen(carContext) as MediaAmbientPlaybackScreen
+            val template = media.onGetTemplate()
+            assertTrue(
+                "Sound-on ambient should use MediaPlaybackTemplate",
+                template is androidx.car.app.media.model.MediaPlaybackTemplate,
+            )
+        } finally {
+            org.koin.core.context.stopKoin()
+        }
+    }
+
+    @Test
     fun session_onCreateScreen_withArtworkId_returnsArtworkPaneScreenWithInitialId() {
         val service = ArthurCarAppService()
         val session = service.onCreateSession()
@@ -289,7 +336,7 @@ class ArthurCarAppTest {
             assertEquals(1, quoteRow.texts.size)
             assertEquals("— Oscar Wilde", quoteRow.texts[0].toString())
 
-            // PaneTemplate: primary play/pause in pane; prev/next as header end actions.
+            // PaneTemplate: primary play/pause in pane; sound toggle + next as header end actions.
             // Verbose adds Debug as the second pane action (≤2).
             assertEquals(
                 "Pane body should have play/pause (+ Debug when verbose)",
@@ -309,12 +356,12 @@ class ArthurCarAppTest {
             val header = reloadedTemplate.header
             assertNotNull("Pane template should have a Header", header)
             assertEquals(
-                "Header end actions should contain prev + next",
+                "Header end actions should contain sound toggle + next",
                 2,
                 header!!.endHeaderActions.size,
             )
             header.endHeaderActions.forEach { action ->
-                assertNotNull("Prev/next should be icon-only", action.icon)
+                assertNotNull("Sound/next should be icon-only", action.icon)
             }
         } finally {
             org.koin.core.context.stopKoin()
@@ -436,7 +483,7 @@ class ArthurCarAppTest {
 
         assertTrue("Pane must not exceed 2 actions", pane.actions.size <= 2)
 
-        // Header end actions ≤ 2: icon-only prev/next (preferred over deprecated ActionStrip).
+        // Header end actions ≤ 2: icon-only sound toggle + next (preferred over deprecated ActionStrip).
         val header = Header.Builder()
             .setTitle("Arthur")
             .setStartHeaderAction(Action.APP_ICON)

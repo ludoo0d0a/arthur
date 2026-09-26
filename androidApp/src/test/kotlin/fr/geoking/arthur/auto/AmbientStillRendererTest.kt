@@ -1,5 +1,6 @@
 package fr.geoking.arthur.auto
 
+import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.Color
 import fr.geoking.arthur.shared.domain.Artwork
@@ -10,9 +11,13 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@Config(sdk = [34], application = Application::class)
 class AmbientStillRendererTest {
 
     @Test
@@ -44,7 +49,7 @@ class AmbientStillRendererTest {
     }
 
     @Test
-    fun render_stillImage_drawsFullSizeBitmapWithGradient() {
+    fun render_stillImage_drawsFullBleedCover() {
         val tempFile = File.createTempFile("test_still_", ".png")
         try {
             val sampleBmp = Bitmap.createBitmap(200, 100, Bitmap.Config.ARGB_8888)
@@ -67,6 +72,12 @@ class AmbientStillRendererTest {
             assertNotNull(rendered)
             assertEquals(AmbientStillRenderer.SIZE, rendered.width)
             assertEquals(AmbientStillRenderer.SIZE, rendered.height)
+            // Landscape source is center-cropped to fill the square — no framed margins.
+            assertEquals(Color.GREEN, rendered.getPixel(2, 2))
+            assertEquals(
+                Color.GREEN,
+                rendered.getPixel(AmbientStillRenderer.SIZE / 2, AmbientStillRenderer.SIZE / 2),
+            )
             rendered.recycle()
         } finally {
             tempFile.delete()
@@ -74,7 +85,7 @@ class AmbientStillRendererTest {
     }
 
     @Test
-    fun render_genart_framesWithSpotifyGradient() {
+    fun render_genart_isFullBleedSquare() {
         val artwork = Artwork(
             id = "genart.particles",
             title = "Particles",
@@ -83,16 +94,10 @@ class AmbientStillRendererTest {
         )
         val rendered = AmbientStillRenderer.render(artwork, generation = 1L)
         assertEquals(AmbientStillRenderer.SIZE, rendered.width)
-        // Corner pixels come from the gradient frame, not the full-bleed generative bake.
-        val corner = rendered.getPixel(2, 2)
-        val nearCenter = rendered.getPixel(
-            AmbientStillRenderer.SIZE / 2,
-            AmbientStillRenderer.SIZE / 2,
-        )
-        assertTrue(
-            "Corner should differ from center when gradient padding is applied",
-            corner != nearCenter,
-        )
+        assertEquals(AmbientStillRenderer.SIZE, rendered.height)
+        // Opaque bake fills the square (no transparent / framed margins).
+        assertTrue(Color.alpha(rendered.getPixel(2, 2)) == 255)
+        assertTrue(Color.alpha(rendered.getPixel(AmbientStillRenderer.SIZE - 3, AmbientStillRenderer.SIZE - 3)) == 255)
         rendered.recycle()
     }
 }

@@ -140,6 +140,7 @@
     <string name="settings_ambient_sound">Son Ambient</string>
     <string name="settings_ambient_sound_subtitle">Pad doux et carillons pendant les diaporamas Ambient</string>
     <string name="car_ambient_debug">Debug</string>
+    <string name="car_ambient_sound_toggle">Activer/désactiver le son Ambient</string>
     <string name="car_ambient_debug_subtitle">Métriques query &amp; cache de rotation</string>
     <string name="car_ambient_debug_query">Sources de la requête</string>
     <string name="car_ambient_debug_query_pending">Pas encore lancée</string>

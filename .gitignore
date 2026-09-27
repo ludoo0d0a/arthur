@@ -22,4 +22,6 @@ playstore/whatsnew/
 *.jks
 .firebase/
 .wrangler/
-geoking-tools/
+
+# Local symlink to shared tools (link-scripts.sh; CI checks out the repo here)
+/geoking-tools

@@ -15,16 +15,12 @@ on:
         description: 'Skip auto-review (only for brand-new apps before first Console review)'
         default: false
         type: boolean
-      cancelLastRunningAction:
-        description: 'Cancel any in-progress run of this workflow'
-        default: true
-        type: boolean
 
 # One pipeline: unit tests → signed AAB → Play. Cancelling supersedes older runs
 # (saves Actions minutes when pushing/dispatching again quickly).
 concurrency:
   group: play-release
-  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.cancelLastRunningAction }}
+  cancel-in-progress: true
 
 jobs:
   release:

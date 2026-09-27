@@ -1,6 +1,7 @@
 la structure doit etre la suivante : 
 
 - musées
+  - aleatoire (image aleatoire sur tout les catalogues des musées)
   - the met (image aleatoire sur tout le catalogue)
   - rijksmuseum (image aleatoire sur tout le catalogue)
   - art insitute (image aleatoire sur tout le catalogue)

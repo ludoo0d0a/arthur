@@ -101,8 +101,9 @@ enum class GenartTopic(
 }
 
 /**
- * Painting / Sculpture subcategory: Random mix across every museum Source, or one
- * specific remote museum Source.
+ * Museum / Painting / Sculpture subcategory: Random mix across museum Sources, or one
+ * specific remote museum Source. Museum → Random includes Louvre; Painting / Sculpture
+ * → Random excludes it (Louvre stays under the Museum pack only).
  */
 enum class MuseumTopic(
     val sourceId: String?,

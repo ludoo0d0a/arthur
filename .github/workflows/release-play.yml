@@ -15,10 +15,16 @@ on:
         description: 'Skip auto-review (only for brand-new apps before first Console review)'
         default: false
         type: boolean
+      cancelLastRunningAction:
+        description: 'Cancel any in-progress run of this workflow'
+        default: true
+        type: boolean
 
+# One pipeline: unit tests → signed AAB → Play. Cancelling supersedes older runs
+# (saves Actions minutes when pushing/dispatching again quickly).
 concurrency:
   group: play-release
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.cancelLastRunningAction }}
 
 jobs:
   release:
@@ -29,6 +35,11 @@ jobs:
       gradle_module: ':androidApp'
       aab_glob: 'androidApp/build/outputs/bundle/release/androidApp-release.aab'
       google_services_path: 'androidApp/google-services.json'
+      unit_test_tasks: >-
+        :shared:testDebugUnitTest
+        :fractal:testDebugUnitTest
+        :genart:testDebugUnitTest
+        :androidApp:testDebugUnitTest
       is_workflow_dispatch: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
       workflow_dispatch_track: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.track || '' }}
       workflow_dispatch_skip_review: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.changesNotSentForReview == 'true' && 'true' || 'false' }}

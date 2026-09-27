@@ -188,6 +188,10 @@ object GenartPackTopics {
         GenartSource.LAVA_SUN,
         GenartSource.SPIRAL_MANDALA,
         GenartSource.CLIFFORD_WASH,
+        GenartSource.PLASMA_NOVA,
+        GenartSource.ENERGY_TENDRILS,
+        GenartSource.NEBULA,
+        GenartSource.ECLIPSE_CORONA,
     )
 
     val ABSTRACT_IDS: Set<String> = setOf(

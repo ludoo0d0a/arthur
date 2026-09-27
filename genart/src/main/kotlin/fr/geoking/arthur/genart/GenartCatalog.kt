@@ -105,6 +105,8 @@ enum class GenartEngineId {
     SpiralMandala,
     FlowRibbons,
     CliffordWash,
+    PlasmaNova,
+    EnergyTendrils,
 }
 
 enum class GenartQuality { Low, Medium, High }

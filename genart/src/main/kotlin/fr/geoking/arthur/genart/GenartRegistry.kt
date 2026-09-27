@@ -13,6 +13,8 @@ import fr.geoking.arthur.genart.engines.MoonEngine
 import fr.geoking.arthur.genart.engines.SpiralMandalaEngine
 import fr.geoking.arthur.genart.engines.FlowRibbonsEngine
 import fr.geoking.arthur.genart.engines.CliffordWashEngine
+import fr.geoking.arthur.genart.engines.PlasmaNovaEngine
+import fr.geoking.arthur.genart.engines.EnergyTendrilsEngine
 import fr.geoking.arthur.genart.engines.DriftingHalosEngine
 import fr.geoking.arthur.genart.engines.AntTrailsEngine
 import fr.geoking.arthur.genart.engines.AuroraWashEngine
@@ -117,6 +119,8 @@ import fr.geoking.arthur.genart.stills.MoonStill
 import fr.geoking.arthur.genart.stills.SpiralMandalaStill
 import fr.geoking.arthur.genart.stills.FlowRibbonsStill
 import fr.geoking.arthur.genart.stills.CliffordWashStill
+import fr.geoking.arthur.genart.stills.PlasmaNovaStill
+import fr.geoking.arthur.genart.stills.EnergyTendrilsStill
 import fr.geoking.arthur.genart.stills.DriftingHalosStill
 import fr.geoking.arthur.genart.stills.AntTrailsStill
 import fr.geoking.arthur.genart.stills.AuroraWashStill
@@ -1392,6 +1396,28 @@ object GenartRegistry {
             },
             renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
                 CliffordWashStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.PlasmaNova,
+            stableId = "genart.plasmanova",
+            title = "#104 - Plasma Nova",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                PlasmaNovaEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                PlasmaNovaStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.EnergyTendrils,
+            stableId = "genart.energytendrils",
+            title = "#105 - Energy Tendrils",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                EnergyTendrilsEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                EnergyTendrilsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
             },
         ),
     )

@@ -203,6 +203,8 @@ detail, stays inside the calm/car-safe principles above:
   starfield backdrop, trail approximated analytically as fading segments behind the current
   position (no per-frame state needed)
 - Matrix rain — shipped as `genart.matrix`: falling vertical streams of Katakana/digit characters with a bright white-green head character and glowing green shadow effect fading down to dark green stream tails over a dark background
+- Plasma nova — shipped as `genart.plasmanova`: trailer-style white-hot core with fibrous magenta/cyan filaments and a soft anamorphic flare; slow expand/breathe cycle, alpha-capped (no strobe)
+- Energy tendrils — shipped as `genart.energytendrils`: branching magenta/violet plasma arms rising from a hot core over a cyan horizon wash; soft bloom pulses only
 
 ## Out of scope / hard (parked)
 

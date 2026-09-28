@@ -447,6 +447,10 @@ internal fun fractalTypeForArtworkId(artworkId: String): FractalType? =
         "celtic" -> FractalType.Celtic
         "buffalo" -> FractalType.Buffalo
         "phoenix" -> FractalType.Phoenix
+        "nova" -> FractalType.Nova
+        "newton" -> FractalType.Newton
+        "mandelbrotglow" -> FractalType.MandelbrotGlow
+        "juliatouch" -> FractalType.JuliaTouch
         else -> null
     }
 

@@ -222,6 +222,7 @@ object GenartPackTopics {
         GenartSource.SPIRAL_MANDALA,
         GenartSource.FLOW_RIBBONS,
         GenartSource.CLIFFORD_WASH,
+        GenartSource.INTERFERENCE_WASH,
     )
 
     val GEOMETRY_IDS: Set<String> = setOf(

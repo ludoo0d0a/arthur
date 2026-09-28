@@ -359,10 +359,10 @@ class FilterChipRowsTest {
     @Test
     fun fractalPresetDefaultCatalog_hasNumberedTitles() {
         val defaultFractals = FractalSource.defaultCatalog()
-        assertEquals(8, defaultFractals.size)
+        assertEquals(12, defaultFractals.size)
         assertTrue(defaultFractals.all { it.title.startsWith("#") })
         assertEquals("#96 - Mandelbrot", defaultFractals.first().title)
-        assertEquals("#103 - Phoenix", defaultFractals.last().title)
+        assertEquals("#107 - Julia Touch", defaultFractals.last().title)
     }
 
     @Test

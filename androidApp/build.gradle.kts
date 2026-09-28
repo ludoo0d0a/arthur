@@ -196,6 +196,11 @@ val phoneFramedScreenshotOutputDir =
         .dir("screenshots/phone/framed")
         .asFile.absolutePath
 
+val genartScreenshotOutputDir =
+    rootProject.layout.projectDirectory
+        .dir("screenshots")
+        .asFile.absolutePath
+
 fun resolveScreenshotLocales(): String {
     val raw = (findProperty("screenshotLocales") as String?)?.trim().orEmpty()
     return when {
@@ -211,6 +216,7 @@ afterEvaluate {
     val framedOnly = screenshotTasks.any { it.contains("generatePhoneScreenshotsFramed") }
     val screenOnly =
         !framedOnly && screenshotTasks.any { it.contains("generatePhoneScreenshots") }
+    val genartOnly = screenshotTasks.any { it.contains("generateGenartScreenshots") }
 
     if (framedOnly) {
         tasks.named<Test>("testDebugUnitTest").configure {
@@ -236,7 +242,23 @@ afterEvaluate {
             systemProperty("roborazzi.test.compare", "false")
         }
     }
-    if (!framedOnly && !screenOnly) {
+    if (genartOnly) {
+        tasks.named<Test>("testDebugUnitTest").configure {
+            filter {
+                includeTestsMatching("fr.geoking.arthur.preview.GenartPreviewScreenshotTest")
+            }
+            systemProperty("screenshot.outputDir", genartScreenshotOutputDir)
+            systemProperty(
+                "genart.screenshot.size",
+                (findProperty("genartScreenshotSize") as String?) ?: "720",
+            )
+            systemProperty(
+                "genart.screenshot.generation",
+                (findProperty("genartScreenshotGeneration") as String?) ?: "7",
+            )
+        }
+    }
+    if (!framedOnly && !screenOnly && !genartOnly) {
         tasks.named<Test>("testDebugUnitTest").configure {
             filter {
                 excludeTestsMatching("fr.geoking.arthur.preview.*")
@@ -272,6 +294,14 @@ tasks.register("generatePhoneScreenshotsFramed") {
     description =
         "Renders phone key screens to screenshots/phone/framed/{lang}/ " +
             "(device chassis; Robolectric + Roborazzi; -PscreenshotLocales=en,fr|all)"
+    dependsOn("testDebugUnitTest")
+}
+
+tasks.register("generateGenartScreenshots") {
+    group = "screenshots"
+    description =
+        "Bakes genart still previews to screenshots/#N-Name.png " +
+            "(-PgenartScreenshotSize=720, -PgenartScreenshotGeneration=7)"
     dependsOn("testDebugUnitTest")
 }
 

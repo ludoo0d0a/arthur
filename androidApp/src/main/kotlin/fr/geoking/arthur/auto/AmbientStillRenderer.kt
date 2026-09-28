@@ -340,7 +340,11 @@ object AmbientStillRenderer {
         val pixels = IntArray(SIZE * SIZE)
         val maxIter = 220
         val type = when {
+            artworkId.contains("mandelbrotglow") -> "mandelbrotglow"
+            artworkId.contains("juliatouch") -> "juliatouch"
             artworkId.contains("phoenix") -> "phoenix"
+            artworkId.contains("newton") -> "newton"
+            artworkId.contains("nova") -> "nova"
             artworkId.contains("julia") -> "julia"
             artworkId.contains("burning") -> "burningship"
             artworkId.contains("tricorn") -> "tricorn"
@@ -350,18 +354,21 @@ object AmbientStillRenderer {
             else -> "mandelbrot"
         }
         val (cx, cy, span) = when (type) {
-            "julia" -> Triple(-0.4 + rnd.nextDouble() * 0.1, 0.6, 2.6)
+            "julia", "juliatouch" -> Triple(-0.4 + rnd.nextDouble() * 0.1, 0.6, 2.6)
             "burningship" -> Triple(-1.75, -0.04, 2.2)
             "tricorn" -> Triple(-0.2, rnd.nextDouble() * 0.04, 2.6)
             "multibrot" -> Triple(0.0, 0.0, 2.4)
             "celtic" -> Triple(-0.5, 0.0, 2.5)
             "buffalo" -> Triple(-0.65, -0.45, 2.4)
             "phoenix" -> Triple(0.0, 0.0, 2.8)
+            "nova" -> Triple(0.0, 0.0, 2.5)
+            "newton" -> Triple(0.0, 0.0, 2.8)
+            "mandelbrotglow" -> Triple(-0.5, 0.0, 2.5)
             else -> Triple(-0.55 + rnd.nextDouble() * 0.08, rnd.nextDouble() * 0.05, 2.6)
         }
         val scale = span / SIZE
         val hueBase = (seed and 0xFF).toInt()
-        val isJuliaLike = type == "julia" || type == "phoenix"
+        val isJuliaLike = type == "julia" || type == "juliatouch" || type == "phoenix" || type == "newton"
         for (py in 0 until SIZE) {
             for (px in 0 until SIZE) {
                 val cr = (px - SIZE / 2.0) * scale + cx
@@ -371,12 +378,12 @@ object AmbientStillRenderer {
                 var prevX = 0.0
                 var prevY = 0.0
                 val jx = when (type) {
-                    "julia" -> cx
+                    "julia", "juliatouch" -> cx
                     "phoenix" -> 0.5667
                     else -> cr
                 }
                 val jy = when (type) {
-                    "julia" -> cy
+                    "julia", "juliatouch" -> cy
                     "phoenix" -> -0.5
                     else -> ci
                 }
@@ -384,10 +391,11 @@ object AmbientStillRenderer {
                 var escaped = false
                 var zr2 = 0.0
                 var zi2 = 0.0
+                var newtonContinuous = -1f
                 while (iter < maxIter) {
                     zr2 = zx * zx
                     zi2 = zy * zy
-                    if (zr2 + zi2 > 4.0) {
+                    if (type != "newton" && zr2 + zi2 > 4.0) {
                         escaped = true
                         break
                     }
@@ -420,23 +428,59 @@ object AmbientStillRenderer {
                             prevX = zx
                             prevY = zy
                         }
+                        "nova" -> {
+                            val z3r = zx * (zr2 - 3.0 * zi2)
+                            val z3i = zy * (3.0 * zr2 - zi2)
+                            nextX = z3r * zx - z3i * zy + jx
+                            nextY = z3r * zy + z3i * zx + jy
+                        }
+                        "newton" -> {
+                            val z2r = zr2 - zi2
+                            val z2i = 2.0 * zx * zy
+                            val invDen = 1.0 / (z2r * z2r + z2i * z2i).coerceAtLeast(1e-12)
+                            nextX = (2.0 / 3.0) * zx + (1.0 / 3.0) * z2r * invDen
+                            nextY = (2.0 / 3.0) * zy + (1.0 / 3.0) * (-z2i * invDen)
+                        }
                         else -> {
                             nextX = zr2 - zi2 + jx
                             nextY = 2.0 * zx * zy + jy
                         }
                     }
-                    zx = nextX
-                    zy = nextY
+                    if (type == "newton") {
+                        val dr = nextX - zx
+                        val di = nextY - zy
+                        zx = nextX
+                        zy = nextY
+                        if (dr * dr + di * di < 1e-10) {
+                            escaped = true
+                            val angle = kotlin.math.atan2(zy, zx)
+                            newtonContinuous =
+                                ((angle / (2.0 * Math.PI) + 0.5 + iter * 0.002) * maxIter * 0.15)
+                                    .toFloat()
+                            break
+                        }
+                    } else {
+                        zx = nextX
+                        zy = nextY
+                    }
                     iter++
                 }
                 pixels[py * SIZE + px] = if (!escaped) {
                     Color.rgb(2, 6, 23)
                 } else {
-                    val power = if (type == "multibrot") 3.0 else 2.0
-                    val logZn = kotlin.math.ln((zr2 + zi2).coerceAtLeast(1e-12)) / 2.0
-                    val nu = kotlin.math.ln((logZn / kotlin.math.ln(2.0)).coerceAtLeast(1e-12)) /
-                        kotlin.math.ln(power)
-                    val continuous = (iter + 1.0 - nu).toFloat()
+                    val power = when (type) {
+                        "multibrot" -> 3.0
+                        "nova" -> 4.0
+                        else -> 2.0
+                    }
+                    val continuous = if (type == "newton" && newtonContinuous >= 0f) {
+                        newtonContinuous
+                    } else {
+                        val logZn = kotlin.math.ln((zr2 + zi2).coerceAtLeast(1e-12)) / 2.0
+                        val nu = kotlin.math.ln((logZn / kotlin.math.ln(2.0)).coerceAtLeast(1e-12)) /
+                            kotlin.math.ln(power)
+                        (iter + 1.0 - nu).toFloat()
+                    }
                     val t = (kotlin.math.ln(1.0 + continuous) / kotlin.math.ln(1.0 + maxIter))
                         .toFloat()
                     val cycles = 6.5f

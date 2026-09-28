@@ -83,13 +83,14 @@
             </intent-filter>
         </activity>
 
-        <!-- Browse-only Auto MediaBrowserService (no startForeground). Re-add
+        <!-- Browse-only Auto MediaLibraryService (no startForeground). Re-add
              FOREGROUND_SERVICE_MEDIA_PLAYBACK + foregroundServiceType when
              actual media playback FGS is implemented, with a Play Console demo video. -->
         <service
             android:name=".auto.ArthurMediaService"
             android:exported="true">
             <intent-filter>
+                <action android:name="androidx.media3.session.MediaLibraryService" />
                 <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>
         </service>

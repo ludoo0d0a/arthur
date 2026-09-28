@@ -1,7 +1,9 @@
 package fr.geoking.arthur.auto
 
 import android.os.Bundle
-import androidx.media.utils.MediaConstants
+import androidx.annotation.OptIn
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.session.MediaConstants
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.source.ArticSource
 import fr.geoking.arthur.shared.source.BundledPackSource
@@ -24,6 +26,7 @@ import fr.geoking.arthur.shared.source.WikimediaStreetArtSource
  * Auto Media browse helpers: ≤2 levels (root folders → playable art), content-style
  * hints so genart/fractal previews show as a grid of stills (IU-1 / SA-1 safe).
  */
+@OptIn(UnstableApi::class)
 object ArthurMediaBrowse {
     const val ROOT = "arthur_root"
     const val FOLDER_PREFIX = "folder:"
@@ -57,24 +60,24 @@ object ArthurMediaBrowse {
     /** Root extras: category folders and playable artwork as grid (previews) with large icons. */
     fun rootExtras(): Bundle = Bundle().apply {
         putInt(
-            MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_BROWSABLE,
-            MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+            MediaConstants.EXTRAS_KEY_CONTENT_STYLE_BROWSABLE,
+            MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
         )
         putInt(
-            MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_PLAYABLE,
-            MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+            MediaConstants.EXTRAS_KEY_CONTENT_STYLE_PLAYABLE,
+            MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
         )
     }
 
     /** Genart / fractal folders: force grid browsables & playables so still previews dominate. */
     fun previewGridExtras(): Bundle = Bundle().apply {
         putInt(
-            MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_PLAYABLE,
-            MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+            MediaConstants.EXTRAS_KEY_CONTENT_STYLE_PLAYABLE,
+            MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
         )
         putInt(
-            MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_BROWSABLE,
-            MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+            MediaConstants.EXTRAS_KEY_CONTENT_STYLE_BROWSABLE,
+            MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
         )
     }
 

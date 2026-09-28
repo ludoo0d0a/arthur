@@ -1,6 +1,7 @@
 package fr.geoking.arthur.auto
 
-import androidx.media.utils.MediaConstants
+import androidx.media3.common.Player
+import androidx.media3.session.MediaConstants
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.source.GenartSource
@@ -12,8 +13,11 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import androidx.annotation.OptIn
+import androidx.media3.common.util.UnstableApi
 
 /** Pure mapping tests for Media browse ids and album-art helpers (no device). */
+@OptIn(UnstableApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class ArthurMediaMappingTest {
@@ -24,16 +28,12 @@ class ArthurMediaMappingTest {
     }
 
     @Test
-    fun playableFlag_isSet() {
+    fun media3ContentStyle_playableAndBrowsableHintsAreDistinct() {
+        assertTrue(MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM != 0)
+        assertTrue(MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM != 0)
         assertTrue(
-            android.support.v4.media.MediaBrowserCompat.MediaItem.FLAG_PLAYABLE != 0,
-        )
-    }
-
-    @Test
-    fun browsableFlag_isSet() {
-        assertTrue(
-            android.support.v4.media.MediaBrowserCompat.MediaItem.FLAG_BROWSABLE != 0,
+            MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM !=
+                MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
         )
     }
 
@@ -169,36 +169,36 @@ class ArthurMediaMappingTest {
 
     @Test
     fun browse_contentStyleConstants_matchAaGridAndList() {
-        // Host content-style hints (MediaConstants) — grid folders and grid playable previews.
-        assertEquals(1, MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM)
-        assertEquals(2, MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM)
+        // Host content-style hints (Media3 MediaConstants) — grid folders and playable previews.
+        assertEquals(1, MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM)
+        assertEquals(2, MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM)
         assertEquals(
             "android.media.browse.CONTENT_STYLE_BROWSABLE_HINT",
-            MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_BROWSABLE,
+            MediaConstants.EXTRAS_KEY_CONTENT_STYLE_BROWSABLE,
         )
         assertEquals(
             "android.media.browse.CONTENT_STYLE_PLAYABLE_HINT",
-            MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_PLAYABLE,
+            MediaConstants.EXTRAS_KEY_CONTENT_STYLE_PLAYABLE,
         )
 
         val rootBundle = ArthurMediaBrowse.rootExtras()
         assertEquals(
-            MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
-            rootBundle.getInt(MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_BROWSABLE),
+            MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+            rootBundle.getInt(MediaConstants.EXTRAS_KEY_CONTENT_STYLE_BROWSABLE),
         )
         assertEquals(
-            MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
-            rootBundle.getInt(MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_PLAYABLE),
+            MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+            rootBundle.getInt(MediaConstants.EXTRAS_KEY_CONTENT_STYLE_PLAYABLE),
         )
 
         val gridBundle = ArthurMediaBrowse.previewGridExtras()
         assertEquals(
-            MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
-            gridBundle.getInt(MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_BROWSABLE),
+            MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+            gridBundle.getInt(MediaConstants.EXTRAS_KEY_CONTENT_STYLE_BROWSABLE),
         )
         assertEquals(
-            MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
-            gridBundle.getInt(MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_PLAYABLE),
+            MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+            gridBundle.getInt(MediaConstants.EXTRAS_KEY_CONTENT_STYLE_PLAYABLE),
         )
     }
 
@@ -266,16 +266,20 @@ class ArthurMediaMappingTest {
 
     @Test
     fun mediaPlaybackActions_includeThreeButtonControls() {
-        val actions = android.support.v4.media.session.PlaybackStateCompat.ACTION_PLAY_PAUSE or
-            android.support.v4.media.session.PlaybackStateCompat.ACTION_PLAY or
-            android.support.v4.media.session.PlaybackStateCompat.ACTION_PAUSE or
-            android.support.v4.media.session.PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
-            android.support.v4.media.session.PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
+        val commands = Player.Commands.Builder()
+            .addAll(
+                Player.COMMAND_PLAY_PAUSE,
+                Player.COMMAND_SEEK_TO_NEXT,
+                Player.COMMAND_SEEK_TO_PREVIOUS,
+                Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM,
+                Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM,
+            )
+            .build()
 
-        assertTrue("Must include ACTION_PLAY_PAUSE", actions and android.support.v4.media.session.PlaybackStateCompat.ACTION_PLAY_PAUSE != 0L)
-        assertTrue("Must include ACTION_PLAY", actions and android.support.v4.media.session.PlaybackStateCompat.ACTION_PLAY != 0L)
-        assertTrue("Must include ACTION_PAUSE", actions and android.support.v4.media.session.PlaybackStateCompat.ACTION_PAUSE != 0L)
-        assertTrue("Must include ACTION_SKIP_TO_PREVIOUS", actions and android.support.v4.media.session.PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS != 0L)
-        assertTrue("Must include ACTION_SKIP_TO_NEXT", actions and android.support.v4.media.session.PlaybackStateCompat.ACTION_SKIP_TO_NEXT != 0L)
+        assertTrue(commands.contains(Player.COMMAND_PLAY_PAUSE))
+        assertTrue(commands.contains(Player.COMMAND_SEEK_TO_NEXT))
+        assertTrue(commands.contains(Player.COMMAND_SEEK_TO_PREVIOUS))
+        assertTrue(commands.contains(Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM))
+        assertTrue(commands.contains(Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM))
     }
 }

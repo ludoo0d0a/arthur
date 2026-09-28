@@ -1,8 +1,8 @@
 package fr.geoking.arthur.auto
 
-import android.support.v4.media.MediaMetadataCompat
+import android.os.Looper
 import android.support.v4.media.session.MediaSessionCompat
-import android.support.v4.media.session.PlaybackStateCompat
+import androidx.annotation.OptIn
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.media.MediaPlaybackManager
@@ -19,6 +19,8 @@ import androidx.car.app.constraints.ConstraintManager
 import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.session.MediaSession
 import fr.geoking.arthur.R
 import fr.geoking.arthur.shared.domain.isGenerative
 import fr.geoking.arthur.source.AmbientAudioSettings
@@ -289,8 +291,9 @@ class ArtworkPaneScreen(
 
 /**
  * Spotify-like host media player ambient: [MediaPlaybackTemplate] driven by a local
- * [MediaSessionCompat] (album art / transport / ambient backdrop from the host).
+ * Media3 [MediaSession] (album art / transport / ambient backdrop from the host).
  */
+@OptIn(UnstableApi::class)
 class MediaAmbientPlaybackScreen(
     carContext: CarContext,
     val packSelection: PackSelection = PackSelection(PackFamily.Museum),
@@ -298,7 +301,26 @@ class MediaAmbientPlaybackScreen(
 ) : Screen(carContext), KoinComponent {
     private val ambientAudioSettings: AmbientAudioSettings by inject()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private val session = MediaSessionCompat(carContext, "ArthurCarAmbient")
+    private val player = AmbientMediaPlayer(
+        Looper.getMainLooper(),
+        object : AmbientMediaPlayer.Callbacks {
+            override fun onPlayWhenReadyChanged(playWhenReady: Boolean) {
+                rotation.setPlaying(playWhenReady)
+            }
+
+            override fun onSkip(delta: Int) {
+                rotation.advance(delta, isAuto = false)
+            }
+
+            override fun onPlayMediaId(mediaId: String) {
+                // Car playback screen has no browse tree; ignore media-id seeks.
+            }
+        },
+    )
+    private val mediaSession: MediaSession =
+        MediaSession.Builder(carContext, player)
+            .setId("ArthurCarAmbient-${System.identityHashCode(this)}")
+            .build()
 
     private val rotation = AmbientRotationController(
         appContext = carContext,
@@ -314,24 +336,17 @@ class MediaAmbientPlaybackScreen(
         if (!ambientAudioSettings.enabled.value) {
             ambientAudioSettings.setEnabled(true)
         }
-        session.setCallback(
-            object : MediaSessionCompat.Callback() {
-                override fun onPlay() = rotation.setPlaying(true)
-                override fun onPause() = rotation.setPlaying(false)
-                override fun onSkipToNext() = rotation.advance(+1, isAuto = false)
-                override fun onSkipToPrevious() = rotation.advance(-1, isAuto = false)
-            },
-        )
-        session.isActive = true
         runCatching {
+            @Suppress("DEPRECATION")
+            val token = MediaSessionCompat.Token.fromToken(mediaSession.platformToken)
             carContext.getCarService(MediaPlaybackManager::class.java)
-                .registerMediaPlaybackToken(session.sessionToken)
+                .registerMediaPlaybackToken(token)
         }
         lifecycle.addObserver(
             object : DefaultLifecycleObserver {
                 override fun onDestroy(owner: LifecycleOwner) {
-                    session.isActive = false
-                    session.release()
+                    mediaSession.release()
+                    player.release()
                     scope.cancel()
                 }
             },
@@ -390,46 +405,14 @@ class MediaAmbientPlaybackScreen(
                     }
                 }
             }
-            val uri = AmbientAlbumArt.contentUri(carContext.packageName, art.id, gen).toString()
-            val subtitle = art.attribution
-            runCatching {
-                session.setMetadata(
-                    MediaMetadataCompat.Builder()
-                        .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, art.id)
-                        .putString(MediaMetadataCompat.METADATA_KEY_TITLE, art.title)
-                        .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE, art.title)
-                        .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, subtitle)
-                        .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, subtitle)
-                        .putString(
-                            MediaMetadataCompat.METADATA_KEY_GENRE,
-                            if (art.isGenerative) "generative" else art.kind.name,
-                        )
-                        .putString(MediaMetadataCompat.METADATA_KEY_ART_URI, uri)
-                        .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, uri)
-                        .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON_URI, uri)
-                        .build(),
-                )
-                session.setPlaybackState(
-                    PlaybackStateCompat.Builder()
-                        .setActions(
-                            PlaybackStateCompat.ACTION_PLAY_PAUSE or
-                                PlaybackStateCompat.ACTION_PLAY or
-                                PlaybackStateCompat.ACTION_PAUSE or
-                                PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
-                                PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS,
-                        )
-                        .setState(
-                            if (playing) {
-                                PlaybackStateCompat.STATE_PLAYING
-                            } else {
-                                PlaybackStateCompat.STATE_PAUSED
-                            },
-                            PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN,
-                            1f,
-                        )
-                        .build(),
-                )
-            }
+            val uri = AmbientAlbumArt.contentUri(carContext.packageName, art.id, gen)
+            player.publish(
+                art = art,
+                artworkUri = uri,
+                subtitle = art.attribution,
+                genre = if (art.isGenerative) "generative" else art.kind.name,
+                playing = playing,
+            )
         }
     }
 }

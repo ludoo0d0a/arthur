@@ -45,6 +45,7 @@ internal class AmbientRotationController(
     private val lifecycle: Lifecycle,
     val packSelection: PackSelection,
     private val initialArtworkId: String?,
+    private val limitAutoRotation: Boolean = true,
     private val onInvalidate: () -> Unit,
     private val onArtworkChanged: ((Artwork, Long, Boolean) -> Unit)? = null,
 ) : KoinComponent {
@@ -313,7 +314,7 @@ internal class AmbientRotationController(
             }
         } else {
             consecutiveAutoRotations += 1
-            if (consecutiveAutoRotations >= 2) {
+            if (limitAutoRotation && consecutiveAutoRotations >= 2) {
                 isPlaying = false
                 consecutiveAutoRotations = 0
                 rotationJob?.cancel()

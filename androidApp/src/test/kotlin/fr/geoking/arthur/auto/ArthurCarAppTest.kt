@@ -369,6 +369,60 @@ class ArthurCarAppTest {
     }
 
     @Test
+    fun mediaAmbientPlaybackScreen_headerHasNoNextActionAndAutoRotationDoesNotPause() {
+        val owner = object : androidx.lifecycle.LifecycleOwner {
+            override val lifecycle = androidx.lifecycle.LifecycleRegistry(this)
+        }
+        val carContext = androidx.car.app.CarContext.create(owner.lifecycle)
+        attachBaseContext(carContext, org.robolectric.RuntimeEnvironment.getApplication())
+
+        if (org.koin.core.context.GlobalContext.getOrNull() != null) {
+            org.koin.core.context.stopKoin()
+        }
+        val app = org.robolectric.RuntimeEnvironment.getApplication()
+        val audioSettings = fr.geoking.arthur.source.AmbientAudioSettings(app)
+        audioSettings.setEnabled(true)
+
+        org.koin.core.context.startKoin {
+            modules(
+                org.koin.dsl.module {
+                    single { fr.geoking.arthur.source.RotationSettings(app) }
+                    single { fr.geoking.arthur.source.QuoteSettings(app) }
+                    single { audioSettings }
+                    single { fr.geoking.arthur.source.DeveloperSettings(app) }
+                    single { fr.geoking.arthur.source.QuoteRepository(context = app, httpGet = { fr.geoking.arthur.source.QuoteRepository.encodeQuotes(emptyList()) }) }
+                    single { fr.geoking.arthur.source.ArtworkImageCache(app) }
+                    single { fr.geoking.arthur.source.InvalidArtworkStore(app) }
+                    single {
+                        fr.geoking.arthur.shared.engine.ContentEngine(
+                            sources = listOf(fr.geoking.arthur.shared.source.GenartSource()),
+                            packOwnership = fr.geoking.arthur.shared.marketplace.FakePackOwnership().also { it.unlockAll() },
+                        )
+                    }
+                },
+            )
+        }
+
+        try {
+            val screen = MediaAmbientPlaybackScreen(carContext)
+            val template = screen.onGetTemplate() as androidx.car.app.media.model.MediaPlaybackTemplate
+            val header = template.header
+            assertNotNull("MediaPlaybackTemplate should have a header", header)
+            assertEquals("Header end actions should only contain sound toggle (1 action, no next action)", 1, header!!.endHeaderActions.size)
+
+            assertTrue("Initially should be playing", screen.isPlaying())
+            screen.advance(+1, isAuto = true)
+            assertTrue("Should still be playing after 1st auto-rotation", screen.isPlaying())
+            screen.advance(+1, isAuto = true)
+            assertTrue("Media player ambient should NOT pause after 2nd auto-rotation", screen.isPlaying())
+            screen.advance(+1, isAuto = true)
+            assertTrue("Media player ambient should NOT pause after 3rd auto-rotation", screen.isPlaying())
+        } finally {
+            org.koin.core.context.stopKoin()
+        }
+    }
+
+    @Test
     fun artworkPaneScreen_autoRotationPausesAfter3PhotosAndManualNavigationResets() {
         val owner = object : androidx.lifecycle.LifecycleOwner {
             override val lifecycle = androidx.lifecycle.LifecycleRegistry(this)

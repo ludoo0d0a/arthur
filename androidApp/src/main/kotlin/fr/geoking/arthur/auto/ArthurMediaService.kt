@@ -199,7 +199,12 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
         playing = value
         if (value) {
             consecutiveAutoRotations = 0
-            if (ambientAudioSettings.enabled.value) zenAudio.start() else zenAudio.stop()
+            if (ambientAudioSettings.enabled.value) {
+                current?.let { zenAudio.setArtwork(it) }
+                zenAudio.start()
+            } else {
+                zenAudio.stop()
+            }
         } else {
             zenAudio.stop()
         }
@@ -253,7 +258,8 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
             rotationSettings.recordRecentStillId(next.id)
         }
         publishArtwork(next)
-        zenAudio.triggerChime()
+        zenAudio.setArtwork(next)
+        zenAudio.triggerTransition()
         prefetchNeighbors()
         if (userInitiated) {
             consecutiveAutoRotations = 0

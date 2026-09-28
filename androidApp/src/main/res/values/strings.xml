@@ -137,7 +137,11 @@
     <string name="settings_image_cache_clear">Clear cache</string>
     <string name="settings_image_cache_cleared">Cache cleared</string>
     <string name="settings_show_quotes">Show quotes</string>
-    <string name="settings_show_quotes_subtitle">Famous quotes beside each Ambient picture (ZenQuotes)</string>
+    <string name="settings_show_quotes_subtitle">Famous quotes beside each Ambient picture</string>
+    <string name="settings_quote_provider">Quote source</string>
+    <string name="settings_quote_provider_subtitle">Language of Ambient quotes</string>
+    <string name="settings_quote_provider_zenquotes">ZenQuotes (English)</string>
+    <string name="settings_quote_provider_lecog">Citation.lecog.fr (French)</string>
     <string name="settings_ambient_sound">Ambient sound</string>
     <string name="settings_ambient_sound_subtitle">Soft pad and chimes during Ambient slideshows</string>
     <string name="car_ambient_debug">Debug</string>

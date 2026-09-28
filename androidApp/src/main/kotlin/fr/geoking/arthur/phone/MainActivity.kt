@@ -112,6 +112,7 @@ class MainActivity : ComponentActivity() {
                         val autoIntervalMs by rotationSettings.autoIntervalMs.collectAsState()
                         val wifiOnlyRemoteStills by rotationSettings.wifiOnlyRemoteStills.collectAsState()
                         val showQuotes by quoteSettings.showQuotes.collectAsState()
+                        val quoteProvider by quoteSettings.provider.collectAsState()
                         val ambientSoundEnabled by ambientAudioSettings.enabled.collectAsState()
                         val isPremium = premium.isPremium
                         // Custom fractal authoring needs touch; TV uses remote only.
@@ -150,6 +151,8 @@ class MainActivity : ComponentActivity() {
                                     onWifiOnlyRemoteStillsChange = rotationSettings::setWifiOnlyRemoteStills,
                                     showQuotes = showQuotes,
                                     onShowQuotesChange = quoteSettings::setShowQuotes,
+                                    quoteProvider = quoteProvider,
+                                    onQuoteProviderChange = quoteSettings::setProvider,
                                     ambientSoundEnabled = ambientSoundEnabled,
                                     onAmbientSoundEnabledChange = ambientAudioSettings::setEnabled,
                                     deviantArtUsername = stockPhotoSettings.deviantArtUsername,

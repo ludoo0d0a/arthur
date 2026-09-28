@@ -71,7 +71,7 @@ class ArthurCarAppTest {
                     single { fr.geoking.arthur.source.DeveloperSettings(app) }
                     single { fr.geoking.arthur.source.ArtworkImageCache(app) }
                     single { fr.geoking.arthur.source.InvalidArtworkStore(app) }
-                    single { fr.geoking.arthur.source.QuoteRepository(app, httpGet = { "[]" }) }
+                    single { fr.geoking.arthur.source.QuoteRepository(app, httpGet = { "[]" }, provider = { fr.geoking.arthur.source.QuoteProvider.ZenQuotes }) }
                     single {
                         fr.geoking.arthur.shared.engine.ContentEngine(
                             sources = listOf(fr.geoking.arthur.shared.source.GenartSource()),
@@ -212,7 +212,7 @@ class ArthurCarAppTest {
             val listTemplate = template as androidx.car.app.model.ListTemplate
             val list = listTemplate.singleList
             assertNotNull(list)
-            assertEquals(3 + fr.geoking.arthur.source.RotationSettings.OPTIONS_MS.size, list!!.items.size)
+            assertEquals(4 + fr.geoking.arthur.source.RotationSettings.OPTIONS_MS.size, list!!.items.size)
         } finally {
             org.koin.core.context.stopKoin()
         }
@@ -277,6 +277,7 @@ class ArthurCarAppTest {
         val quoteRepo = fr.geoking.arthur.source.QuoteRepository(
             context = app,
             httpGet = { """[{"q": "Be yourself", "a": "Oscar Wilde"}]""" },
+            provider = { fr.geoking.arthur.source.QuoteProvider.ZenQuotes },
         )
 
         org.koin.core.context.startKoin {
@@ -389,7 +390,7 @@ class ArthurCarAppTest {
                     single { fr.geoking.arthur.source.QuoteSettings(app) }
                     single { fr.geoking.arthur.source.AmbientAudioSettings(app) }
                     single { fr.geoking.arthur.source.DeveloperSettings(app) }
-                    single { fr.geoking.arthur.source.QuoteRepository(context = app, httpGet = { fr.geoking.arthur.source.QuoteRepository.encodeQuotes(emptyList()) }) }
+                    single { fr.geoking.arthur.source.QuoteRepository(context = app, httpGet = { fr.geoking.arthur.source.QuoteRepository.encodeQuotes(emptyList()) }, provider = { fr.geoking.arthur.source.QuoteProvider.ZenQuotes }) }
                     single { fr.geoking.arthur.source.ArtworkImageCache(app) }
                     single { fr.geoking.arthur.source.InvalidArtworkStore(app) }
                     single {
@@ -645,8 +646,8 @@ class ArthurCarAppTest {
             val template = screen.onGetTemplate() as androidx.car.app.model.ListTemplate
             val list = template.singleList
             assertNotNull(list)
-            // quotes (0) + ambient sound (1) + check update (2) + intervals…
-            val checkUpdateRow = list!!.items[2] as androidx.car.app.model.Row
+            // quotes (0) + quote provider (1) + ambient sound (2) + check update (3) + intervals…
+            val checkUpdateRow = list!!.items[3] as androidx.car.app.model.Row
             assertNotNull(checkUpdateRow.title)
             assertTrue(checkUpdateRow.title.toString().isNotBlank())
         } finally {

@@ -88,6 +88,7 @@ import fr.geoking.arthur.shared.error.ErrorItem
 import fr.geoking.arthur.shared.error.ErrorLogger
 import fr.geoking.arthur.source.ArtworkImageCache
 import fr.geoking.arthur.source.HttpCacheController
+import fr.geoking.arthur.source.QuoteProvider
 import fr.geoking.arthur.source.RotationSettings
 import android.text.format.Formatter
 import org.koin.core.context.GlobalContext
@@ -130,6 +131,7 @@ enum class SettingsScreenPage {
     PhoneRotationInterval,
     TvRotationInterval,
     AutoRotationInterval,
+    QuoteProvider,
     DeviantArtCredentials,
     About,
     Licenses,
@@ -159,6 +161,8 @@ fun SettingsScreen(
     onWifiOnlyRemoteStillsChange: (Boolean) -> Unit = {},
     showQuotes: Boolean = true,
     onShowQuotesChange: (Boolean) -> Unit = {},
+    quoteProvider: QuoteProvider = QuoteProvider.ZenQuotes,
+    onQuoteProviderChange: (QuoteProvider) -> Unit = {},
     ambientSoundEnabled: Boolean = false,
     onAmbientSoundEnabledChange: (Boolean) -> Unit = {},
     deviantArtUsername: String = "",
@@ -207,6 +211,8 @@ fun SettingsScreen(
                             SettingsScreenPage.TvRotationInterval,
                             SettingsScreenPage.AutoRotationInterval ->
                                 stringResource(R.string.screen_rotation_interval)
+                            SettingsScreenPage.QuoteProvider ->
+                                stringResource(R.string.settings_quote_provider)
                             SettingsScreenPage.DeviantArtCredentials -> "DeviantArt Credentials"
                             SettingsScreenPage.About -> stringResource(R.string.screen_about)
                             SettingsScreenPage.Licenses -> stringResource(R.string.screen_licenses)
@@ -256,6 +262,7 @@ fun SettingsScreen(
                     onWifiOnlyRemoteStillsChange = onWifiOnlyRemoteStillsChange,
                     showQuotes = showQuotes,
                     onShowQuotesChange = onShowQuotesChange,
+                    quoteProvider = quoteProvider,
                     ambientSoundEnabled = ambientSoundEnabled,
                     onAmbientSoundEnabledChange = onAmbientSoundEnabledChange,
                     onCheckForUpdate = onCheckForUpdate,
@@ -279,6 +286,10 @@ fun SettingsScreen(
                 SettingsScreenPage.AutoRotationInterval -> RotationIntervalContent(
                     selectedMs = autoIntervalMs,
                     onSelect = onAutoIntervalChange,
+                )
+                SettingsScreenPage.QuoteProvider -> QuoteProviderContent(
+                    selected = quoteProvider,
+                    onSelect = onQuoteProviderChange,
                 )
                 SettingsScreenPage.DeviantArtCredentials -> DeviantArtCredentialsContent(
                     username = deviantArtUsername,
@@ -318,6 +329,7 @@ private fun MainMenu(
     onWifiOnlyRemoteStillsChange: (Boolean) -> Unit,
     showQuotes: Boolean,
     onShowQuotesChange: (Boolean) -> Unit,
+    quoteProvider: QuoteProvider,
     ambientSoundEnabled: Boolean,
     onAmbientSoundEnabledChange: (Boolean) -> Unit,
     onCheckForUpdate: (() -> Unit)?,
@@ -443,6 +455,12 @@ private fun MainMenu(
                     modifier = Modifier.testTag("settings_show_quotes_switch"),
                 )
             }
+            SettingsItem(
+                label = stringResource(R.string.settings_quote_provider),
+                value = quoteProviderLabel(quoteProvider),
+                onClick = { onNavigate(SettingsScreenPage.QuoteProvider) },
+                modifier = Modifier.testTag("settings_quote_provider"),
+            )
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1212,9 +1230,10 @@ private fun SettingsItem(
     label: String,
     value: String? = null,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     ListItem(
-        modifier = Modifier.clickable(onClick = onClick),
+        modifier = modifier.clickable(onClick = onClick),
         headlineContent = { Text(label, style = MaterialTheme.typography.titleSmall) },
         supportingContent = {
             if (value != null) {
@@ -1234,6 +1253,62 @@ private fun SettingsItem(
         },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
     )
+}
+
+@Composable
+private fun QuoteProviderContent(
+    selected: QuoteProvider,
+    onSelect: (QuoteProvider) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp)
+            .testTag("settings_quote_provider_page"),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.settings_quote_provider_subtitle),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        ) {
+            QuoteProvider.entries.forEach { provider ->
+                val isSelected = provider == selected
+                ListItem(
+                    modifier = Modifier
+                        .clickable { onSelect(provider) }
+                        .testTag("quote_provider_${provider.id}"),
+                    headlineContent = {
+                        Text(
+                            quoteProviderLabel(provider),
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                    },
+                    trailingContent = {
+                        if (isSelected) {
+                            Icon(
+                                Icons.Filled.Check,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun quoteProviderLabel(provider: QuoteProvider): String = when (provider) {
+    QuoteProvider.ZenQuotes -> stringResource(R.string.settings_quote_provider_zenquotes)
+    QuoteProvider.CitationLecog -> stringResource(R.string.settings_quote_provider_lecog)
 }
 
 @Composable

@@ -29,6 +29,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.IconCompat
 import fr.geoking.arthur.R
 import fr.geoking.arthur.source.AmbientAudioSettings
+import fr.geoking.arthur.source.QuoteProvider
 import fr.geoking.arthur.source.QuoteSettings
 import fr.geoking.arthur.source.RotationSettings
 import fr.geoking.arthur.ui.components.PackFamily
@@ -297,6 +298,26 @@ class CarSettingsScreen(carContext: CarContext) : Screen(carContext), KoinCompon
             invalidate()
         }
         listBuilder.addItem(quoteRowBuilder.build())
+
+        val provider = quoteSettings.provider.value
+        val providerLabel = when (provider) {
+            QuoteProvider.ZenQuotes ->
+                carContext.getString(R.string.settings_quote_provider_zenquotes)
+            QuoteProvider.CitationLecog ->
+                carContext.getString(R.string.settings_quote_provider_lecog)
+        }
+        val providerRowBuilder = Row.Builder()
+            .setTitle(carContext.getString(R.string.settings_quote_provider))
+            .addText(providerLabel)
+        providerRowBuilder.setOnClickListener {
+            val next = when (provider) {
+                QuoteProvider.ZenQuotes -> QuoteProvider.CitationLecog
+                QuoteProvider.CitationLecog -> QuoteProvider.ZenQuotes
+            }
+            quoteSettings.setProvider(next)
+            invalidate()
+        }
+        listBuilder.addItem(providerRowBuilder.build())
 
         val soundEnabled = ambientAudioSettings.enabled.value
         val soundRowBuilder = Row.Builder()

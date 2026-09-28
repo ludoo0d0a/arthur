@@ -25,4 +25,5 @@ val UsedApisList: List<UsedApi> = listOf(
     UsedApi("Unsplash", "https://unsplash.com/developers"),
     UsedApi("DeviantArt", "https://www.deviantart.com/developers/"),
     UsedApi("ZenQuotes", "https://zenquotes.io/"),
+    UsedApi("Citation.lecog.fr", "https://citation.lecog.fr/"),
 )

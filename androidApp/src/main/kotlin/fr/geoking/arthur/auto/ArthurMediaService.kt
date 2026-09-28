@@ -216,14 +216,7 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
                 delay(rotationSettings.autoIntervalMs.value)
                 if (playing) {
                     consecutiveAutoRotations += 1
-                    // Pause on the 3rd image shown (2 auto-advances from the first).
-                    if (consecutiveAutoRotations >= 2) {
-                        consecutiveAutoRotations = 0
-                        advance(+1, userInitiated = false)
-                        setPlaying(false)
-                    } else {
-                        advance(+1, userInitiated = false)
-                    }
+                    advance(+1, userInitiated = false)
                 }
             }
         }

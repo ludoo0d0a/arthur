@@ -301,6 +301,7 @@ class MediaAmbientPlaybackScreen(
         lifecycle = lifecycle,
         packSelection = packSelection,
         initialArtworkId = initialArtworkId,
+        limitAutoRotation = false,
         onInvalidate = { invalidate() },
         onArtworkChanged = { art, gen, playing -> publishSession(art, gen, playing) },
     )
@@ -334,6 +335,8 @@ class MediaAmbientPlaybackScreen(
         )
     }
 
+    fun advance(delta: Int, isAuto: Boolean = false) = rotation.advance(delta, isAuto)
+
     fun currentArtwork(): fr.geoking.arthur.shared.domain.Artwork? = rotation.current
 
     fun isPlaying(): Boolean = rotation.isPlaying
@@ -360,9 +363,6 @@ class MediaAmbientPlaybackScreen(
                         artworkId = rotation.current?.id,
                     )
                 },
-            )
-            .addEndHeaderAction(
-                ambientNextAction(carContext) { rotation.advance(+1, isAuto = false) },
             )
             .build()
         return MediaPlaybackTemplate.Builder()

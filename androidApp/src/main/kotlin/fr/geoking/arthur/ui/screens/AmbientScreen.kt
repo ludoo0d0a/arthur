@@ -256,8 +256,11 @@ fun AmbientScreenContent(
         }
         val nextSeen = seenIds + nextId
         seenIds = nextSeen
-        if (poolIds.all { it in nextSeen }) {
-            seenIds = emptySet()
+        val unseenCount = poolIds.count { it !in nextSeen }
+        if (unseenCount <= 1 || poolIds.all { it in nextSeen }) {
+            if (poolIds.all { it in nextSeen }) {
+                seenIds = emptySet()
+            }
             renewLatest?.invoke()
         }
         rotationEpoch++

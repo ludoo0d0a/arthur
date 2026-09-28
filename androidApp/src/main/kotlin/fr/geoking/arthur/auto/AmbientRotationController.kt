@@ -213,7 +213,15 @@ internal class AmbientRotationController(
                 )
             }.getOrDefault(emptyList())
         }
-        val livePool = samplePool(resolvePackPool(liveRaw, packSelection).distinctBy { it.id })
+        val currentPoolIds = catalog.map { it.id }.toSet()
+        val rawResolved = resolvePackPool(liveRaw, packSelection).distinctBy { it.id }
+        val distinctLive = rawResolved.filter { it.id !in currentPoolIds }
+        val candidatePool = if (distinctLive.isNotEmpty()) {
+            (catalog + distinctLive).distinctBy { it.id }
+        } else {
+            rawResolved.ifEmpty { catalog }
+        }
+        val livePool = samplePool(candidatePool)
         liveCount = livePool.size
         if (livePool.isNotEmpty()) {
             val keepId = current?.id
@@ -386,6 +394,11 @@ internal class AmbientRotationController(
         prefetchNeighbors()
         notifyArtworkChanged()
         onInvalidate()
+
+        val unseenCount = catalog.count { !invalidStore.isInvalid(it.id) && it.id !in seenIds }
+        if (unseenCount <= 1) {
+            scope.launch { runCatching { renewCatalog() } }
+        }
     }
 
     fun togglePlay() {

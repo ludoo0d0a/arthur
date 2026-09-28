@@ -116,7 +116,13 @@ class AmbientActivity : ComponentActivity() {
                                         contentEngine.catalogFlow(
                                             PreparedRotation(sourceIds = ids, artworkIds = emptyList()),
                                         ).collect { emitted ->
-                                            if (emitted.size >= 2) {
+                                            val currentPoolIds = rotationPool.map { it.id }.toSet()
+                                            val distinctNew = emitted.filter { it.id !in currentPoolIds }
+                                            if (distinctNew.isNotEmpty()) {
+                                                val combinedPool = (rotationPool + distinctNew).distinctBy { it.id }
+                                                rotationPool = AmbientAlbumArt.sampleRotationPool(combinedPool)
+                                                AmbientRotationLaunch.prepare(combinedPool, ids)
+                                            } else if (emitted.size >= 2) {
                                                 rotationPool = AmbientAlbumArt.sampleRotationPool(emitted)
                                                 AmbientRotationLaunch.prepare(emitted, ids)
                                             }

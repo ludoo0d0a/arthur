@@ -136,8 +136,12 @@ class ArtworkPaneScreen(
         }.take(500)
         val logo = CarIcon.Builder(IconCompat.createWithResource(carContext, R.mipmap.ic_launcher)).build()
         return MessageTemplate.Builder(message)
-            .setTitle(carContext.getString(R.string.app_name))
-            .setHeaderAction(Action.APP_ICON)
+            .setHeader(
+                Header.Builder()
+                    .setTitle(carContext.getString(R.string.app_name))
+                    .setStartHeaderAction(Action.APP_ICON)
+                    .build(),
+            )
             .setIcon(logo)
             .setDebugMessage(e)
             .build()
@@ -276,7 +280,7 @@ class ArtworkPaneScreen(
     private fun paneRowLimit(): Int {
         return try {
             carContext.getCarService(ConstraintManager::class.java)
-                ?.getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_PANE) ?: 4
+                .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_PANE)
         } catch (_: Exception) {
             4
         }

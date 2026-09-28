@@ -35,7 +35,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -61,18 +61,21 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import android.content.ClipData
 import android.widget.Toast
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.toClipEntry
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import kotlinx.coroutines.launch
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -921,7 +924,8 @@ fun DeveloperErrorLogScreen(
 @Composable
 private fun ErrorItemCard(item: ErrorItem) {
     var expanded by remember { mutableStateOf(false) }
-    val clipboardManager = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val copiedMessage = stringResource(R.string.dev_error_copied)
 
@@ -1016,8 +1020,12 @@ private fun ErrorItemCard(item: ErrorItem) {
                     }
                     IconButton(
                         onClick = {
-                            clipboardManager.setText(AnnotatedString(fullCopyText))
-                            Toast.makeText(context, copiedMessage, Toast.LENGTH_SHORT).show()
+                            scope.launch {
+                                clipboard.setClipEntry(
+                                    ClipData.newPlainText("error", fullCopyText).toClipEntry(),
+                                )
+                                Toast.makeText(context, copiedMessage, Toast.LENGTH_SHORT).show()
+                            }
                         },
                         modifier = Modifier
                             .size(32.dp)
@@ -1171,7 +1179,7 @@ private fun AboutApiRow(
             )
         }
         Icon(
-            imageVector = Icons.Filled.KeyboardArrowRight,
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(18.dp),
@@ -1195,7 +1203,7 @@ private fun AboutRowClickable(label: String, onClick: () -> Unit) {
             color = MaterialTheme.colorScheme.primary,
         )
         Icon(
-            imageVector = Icons.Filled.KeyboardArrowRight,
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(20.dp),
@@ -1246,7 +1254,7 @@ private fun SettingsItem(
         },
         trailingContent = {
             Icon(
-                Icons.Filled.KeyboardArrowRight,
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )

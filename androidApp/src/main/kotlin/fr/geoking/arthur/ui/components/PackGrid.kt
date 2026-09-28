@@ -31,7 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -278,7 +278,7 @@ fun PackGrid(
     onTileFocused: ((PackTile) -> Unit)? = null,
     isLocked: (PackTile) -> Boolean = { false },
 ) {
-    val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
+    val windowSizeClass = currentWindowAdaptiveInfoV2().windowSizeClass
     val layoutDirection = LocalLayoutDirection.current
 
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {

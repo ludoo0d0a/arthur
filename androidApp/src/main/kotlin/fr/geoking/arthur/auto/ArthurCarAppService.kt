@@ -29,6 +29,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.IconCompat
 import fr.geoking.arthur.R
 import fr.geoking.arthur.source.AmbientAudioSettings
+import fr.geoking.arthur.source.QuoteProvider
 import fr.geoking.arthur.source.QuoteSettings
 import fr.geoking.arthur.source.RotationSettings
 import fr.geoking.arthur.ui.components.PackFamily
@@ -46,7 +47,7 @@ private const val COVER_ICON_SIZE_PX = 512
 internal fun gridContentLimit(carContext: CarContext, maxItems: Int): Int {
     val hostLimit = try {
         carContext.getCarService(ConstraintManager::class.java)
-            ?.getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_GRID) ?: maxItems
+            .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_GRID)
     } catch (_: Exception) {
         maxItems
     }
@@ -85,8 +86,12 @@ internal fun carErrorTemplate(carContext: CarContext, e: Throwable): Template {
     }.take(500)
     val logo = CarIcon.Builder(IconCompat.createWithResource(carContext, R.mipmap.ic_launcher)).build()
     return MessageTemplate.Builder(message)
-        .setTitle(carContext.getString(R.string.app_name))
-        .setHeaderAction(Action.APP_ICON)
+        .setHeader(
+            Header.Builder()
+                .setTitle(carContext.getString(R.string.app_name))
+                .setStartHeaderAction(Action.APP_ICON)
+                .build(),
+        )
         .setIcon(logo)
         .setDebugMessage(e)
         .build()
@@ -191,7 +196,7 @@ class PackSelectionScreen(carContext: CarContext) : Screen(carContext) {
         families.forEach { family ->
             val item = GridItem.Builder()
                 .setTitle(carContext.getString(family.titleRes))
-                .setImage(coverCarIcon(carContext, family.coverRes), GridItem.IMAGE_TYPE_LARGE)
+                .setImage(coverCarIcon(carContext, family.coverRes))
                 .setOnClickListener {
                     screenManager.push(SubPackSelectionScreen(carContext, family))
                 }
@@ -223,9 +228,10 @@ class PackSelectionScreen(carContext: CarContext) : Screen(carContext) {
             val updateItem = GridItem.Builder()
                 .setTitle(carContext.getString(R.string.update_available_car_title))
                 .setText(carContext.getString(R.string.update_available_car_subtitle))
-                .setImage(CarIcon.APP_ICON, GridItem.IMAGE_TYPE_ICON)
+                .setImage(CarIcon.APP_ICON)
                 .build()
             val updateSection = GridSection.Builder()
+                .setItemSize(GridSection.ITEM_SIZE_SMALL)
                 .setTitle(carContext.getString(R.string.update_available_title))
                 .addItem(updateItem)
                 .build()
@@ -297,6 +303,26 @@ class CarSettingsScreen(carContext: CarContext) : Screen(carContext), KoinCompon
             invalidate()
         }
         listBuilder.addItem(quoteRowBuilder.build())
+
+        val provider = quoteSettings.provider.value
+        val providerLabel = when (provider) {
+            QuoteProvider.ZenQuotes ->
+                carContext.getString(R.string.settings_quote_provider_zenquotes)
+            QuoteProvider.CitationLecog ->
+                carContext.getString(R.string.settings_quote_provider_lecog)
+        }
+        val providerRowBuilder = Row.Builder()
+            .setTitle(carContext.getString(R.string.settings_quote_provider))
+            .addText(providerLabel)
+        providerRowBuilder.setOnClickListener {
+            val next = when (provider) {
+                QuoteProvider.ZenQuotes -> QuoteProvider.CitationLecog
+                QuoteProvider.CitationLecog -> QuoteProvider.ZenQuotes
+            }
+            quoteSettings.setProvider(next)
+            invalidate()
+        }
+        listBuilder.addItem(providerRowBuilder.build())
 
         val soundEnabled = ambientAudioSettings.enabled.value
         val soundRowBuilder = Row.Builder()
@@ -381,7 +407,7 @@ class SubPackSelectionScreen(
         tiles.forEach { tile ->
             val item = GridItem.Builder()
                 .setTitle(carContext.getString(tile.titleRes))
-                .setImage(coverCarIcon(carContext, tile.coverRes), GridItem.IMAGE_TYPE_LARGE)
+                .setImage(coverCarIcon(carContext, tile.coverRes))
                 .setOnClickListener {
                     screenManager.push(createAmbientScreen(carContext, tile.selection))
                 }

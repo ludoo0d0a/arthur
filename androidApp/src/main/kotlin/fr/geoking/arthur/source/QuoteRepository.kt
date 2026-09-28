@@ -13,12 +13,14 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 
 /**
- * Fetches a batch of ZenQuotes, caches them (TTL), and cycles one quote per Ambient slide.
- * Failures are soft: [nextQuote] returns null so Ambient can omit the overlay line.
+ * Fetches quotes from the selected [QuoteProvider], caches them (TTL), and cycles
+ * one quote per Ambient slide. Failures are soft: [nextQuote] returns null so
+ * Ambient can omit the overlay line.
  */
 class QuoteRepository(
     context: Context,
     private val httpGet: suspend (url: String) -> String,
+    private val provider: () -> QuoteProvider,
     private val clock: () -> Long = { System.currentTimeMillis() },
 ) {
     private val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -26,12 +28,13 @@ class QuoteRepository(
     private var quotes: List<Quote> = emptyList()
     private var loadedAtMs: Long = 0L
     private var nextIndex: Int = 0
+    private var cachedProviderId: String? = null
 
     init {
         restoreFromPrefs()
     }
 
-    /** Next quote from the cache, refreshing the batch when expired or empty. */
+    /** Next quote from the cache, refreshing the batch when expired, empty, or provider changed. */
     suspend fun nextQuote(): Quote? = mutex.withLock {
         ensureLoadedLocked()
         if (quotes.isEmpty()) return null
@@ -42,27 +45,50 @@ class QuoteRepository(
     }
 
     private suspend fun ensureLoadedLocked() {
+        val wanted = provider()
         val now = clock()
-        if (quotes.isNotEmpty() && now - loadedAtMs < TTL_MS) return
-        val fetched = runCatching { fetchBatch() }.getOrElse { emptyList() }
+        if (
+            quotes.isNotEmpty() &&
+            cachedProviderId == wanted.id &&
+            now - loadedAtMs < TTL_MS
+        ) {
+            return
+        }
+        val fetched = runCatching { fetchBatch(wanted) }.getOrElse { emptyList() }
         if (fetched.isEmpty()) {
-            // Keep stale cache if network failed and we still have quotes.
-            if (quotes.isNotEmpty()) return
+            // Keep stale cache if network failed and we still have quotes for this provider.
+            if (quotes.isNotEmpty() && cachedProviderId == wanted.id) return
             return
         }
         quotes = fetched
         loadedAtMs = now
         nextIndex = 0
+        cachedProviderId = wanted.id
         prefs.edit()
             .putString(KEY_CACHE_JSON, encodeQuotes(quotes))
             .putLong(KEY_CACHE_AT, loadedAtMs)
             .putInt(KEY_INDEX, nextIndex)
+            .putString(KEY_CACHE_PROVIDER, wanted.id)
             .apply()
     }
 
-    private suspend fun fetchBatch(): List<Quote> {
-        val body = httpGet(API_URL)
-        return parseZenQuotes(body)
+    private suspend fun fetchBatch(provider: QuoteProvider): List<Quote> = when (provider) {
+        QuoteProvider.ZenQuotes -> {
+            val body = httpGet(ZENQUOTES_API_URL)
+            parseZenQuotes(body)
+        }
+        QuoteProvider.CitationLecog -> fetchCitationLecogBatch()
+    }
+
+    private suspend fun fetchCitationLecogBatch(): List<Quote> {
+        val out = ArrayList<Quote>(LECOG_BATCH_SIZE)
+        val seen = HashSet<String>()
+        repeat(LECOG_BATCH_SIZE) {
+            val body = runCatching { httpGet(LECOG_API_URL) }.getOrNull() ?: return@repeat
+            val quote = parseCitationLecog(body) ?: return@repeat
+            if (seen.add(quote.text)) out.add(quote)
+        }
+        return out
     }
 
     private fun restoreFromPrefs() {
@@ -73,17 +99,22 @@ class QuoteRepository(
         quotes = parsed
         loadedAtMs = at
         nextIndex = prefs.getInt(KEY_INDEX, 0).coerceIn(0, parsed.lastIndex.coerceAtLeast(0))
+        cachedProviderId = prefs.getString(KEY_CACHE_PROVIDER, null)
     }
 
     companion object {
-        const val SOURCE_ID = "zenquotes"
-        const val API_URL = "https://zenquotes.io/api/quotes"
-        /** Refresh the batch every 4 hours (ZenQuotes recommends looping locally for hours). */
+        const val ZENQUOTES_API_URL = "https://zenquotes.io/api/quotes"
+        const val LECOG_API_URL = "https://citation.lecog.fr/public/api/random-quote.php"
+        /** Prefetch size for Citation.lecog (no batch endpoint; stay well under 100 req/h). */
+        const val LECOG_BATCH_SIZE = 15
+        /** Refresh the batch every 4 hours. */
         const val TTL_MS = 4L * 60L * 60L * 1000L
+
         private const val PREFS = "arthur_quotes_cache"
         private const val KEY_CACHE_JSON = "cache_json"
         private const val KEY_CACHE_AT = "cache_at"
         private const val KEY_INDEX = "next_index"
+        private const val KEY_CACHE_PROVIDER = "cache_provider"
 
         private val json = Json {
             ignoreUnknownKeys = true
@@ -100,6 +131,19 @@ class QuoteRepository(
                     author = obj["a"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty(),
                 )
             }
+
+        internal fun parseCitationLecog(body: String): Quote? {
+            val root = json.parseToJsonElement(body).jsonObject
+            if (root["success"]?.jsonPrimitive?.contentOrNull == "false") return null
+            val data = root["data"]?.jsonObject ?: return null
+            val text = data["text"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
+            if (text.isEmpty()) return null
+            val authorObj = data["author"]?.jsonObject
+            val forename = authorObj?.get("forename")?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
+            val name = authorObj?.get("name")?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
+            val author = listOf(forename, name).filter { it.isNotEmpty() }.joinToString(" ")
+            return Quote(text = text, author = author)
+        }
 
         internal fun parseCachedQuotes(body: String): List<Quote> =
             json.parseToJsonElement(body).jsonArray.mapNotNull { element ->

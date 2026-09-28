@@ -141,11 +141,13 @@ val appModule = module {
     single {
         val client = get<HttpClient>()
         val errorLogger = get<ErrorLogger>()
+        val quoteSettings = get<QuoteSettings>()
         QuoteRepository(
             context = androidContext(),
             httpGet = { url ->
-                safeHttpGet(client, url, QuoteRepository.SOURCE_ID, errorLogger)
+                safeHttpGet(client, url, quoteSettings.provider.value.id, errorLogger)
             },
+            provider = { quoteSettings.provider.value },
         )
     }
     single<PremiumEntitlement> {

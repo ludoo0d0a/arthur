@@ -192,8 +192,9 @@ fun AmbientScreenContent(
     DisposableEffect(zenAudio) {
         onDispose { zenAudio?.destroy() }
     }
-    LaunchedEffect(isPlaying, isActive, audioEnabled) {
+    LaunchedEffect(isPlaying, isActive, audioEnabled, current?.id) {
         if (isPlaying && isActive && audioEnabled) {
+            current?.let { zenAudio?.setArtwork(it) }
             zenAudio?.start()
         } else {
             zenAudio?.stop()
@@ -249,7 +250,8 @@ fun AmbientScreenContent(
         }
         displayReady = false
         current = nextArt
-        zenAudio?.triggerChime()
+        zenAudio?.setArtwork(nextArt)
+        zenAudio?.triggerTransition()
         val nextId = nextArt.id
         if (!nextArt.remoteUrl.isNullOrBlank()) {
             rotationSettings?.recordRecentStillId(nextId)

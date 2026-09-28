@@ -1,12 +1,19 @@
 package fr.geoking.arthur.auto
 
+import android.net.Uri
 import android.os.Bundle
-import android.support.v4.media.MediaBrowserCompat
-import android.support.v4.media.MediaDescriptionCompat
-import android.support.v4.media.MediaMetadataCompat
-import android.support.v4.media.session.MediaSessionCompat
-import android.support.v4.media.session.PlaybackStateCompat
-import androidx.media.MediaBrowserServiceCompat
+import android.os.Looper
+import androidx.annotation.OptIn
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.session.LibraryResult
+import androidx.media3.session.MediaLibraryService
+import androidx.media3.session.MediaSession
+import androidx.media3.session.SessionError
+import com.google.common.collect.ImmutableList
+import com.google.common.util.concurrent.Futures
+import com.google.common.util.concurrent.ListenableFuture
 import fr.geoking.arthur.R
 import fr.geoking.arthur.audio.ZenAudioEngine
 import fr.geoking.arthur.shared.domain.Artwork
@@ -45,7 +52,8 @@ import org.koin.android.ext.android.inject
  * Bootstrap: disk cache → full catalog query → prefetch neighbors; auto advances use
  * unseen-first picks and pause on the 3rd auto-rotated image.
  */
-class ArthurMediaService : MediaBrowserServiceCompat() {
+@OptIn(UnstableApi::class)
+class ArthurMediaService : MediaLibraryService() {
     private val contentEngine: ContentEngine by inject()
     private val rotationSettings: RotationSettings by inject()
     private val imageCache: ArtworkImageCache by inject()
@@ -56,7 +64,8 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
     private val ambientAudioSettings: AmbientAudioSettings by inject()
     private lateinit var zenAudio: ZenAudioEngine
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private lateinit var session: MediaSessionCompat
+    private var librarySession: MediaLibrarySession? = null
+    private lateinit var player: AmbientMediaPlayer
     private var catalog: List<Artwork> = emptyList()
     private var ambientPool: List<Artwork> = emptyList()
     private var current: Artwork? = null
@@ -71,46 +80,49 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
 
     override fun onCreate() {
         super.onCreate()
-        session = MediaSessionCompat(this, "ArthurMedia").apply {
-            setCallback(
-                object : MediaSessionCompat.Callback() {
-                    override fun onPlay() {
+        player = AmbientMediaPlayer(
+            Looper.getMainLooper(),
+            object : AmbientMediaPlayer.Callbacks {
+                override fun onPlayWhenReadyChanged(playWhenReady: Boolean) {
+                    setPlaying(playWhenReady)
+                }
+
+                override fun onSkip(delta: Int) {
+                    scope.launch { advance(delta, userInitiated = true) }
+                }
+
+                override fun onPlayMediaId(mediaId: String) {
+                    if (ArthurMediaBrowse.isFolder(mediaId)) return
+                    val art = catalog.firstOrNull { it.id == mediaId } ?: return
+                    scope.launch {
+                        current = art
+                        generation += 1
+                        seenIds = seenIds + art.id
+                        publishArtwork(art)
+                        prefetchNeighbors()
                         setPlaying(true)
                     }
-
-                    override fun onPause() {
-                        setPlaying(false)
-                    }
-
-                    override fun onSkipToNext() {
-                        scope.launch { advance(+1, userInitiated = true) }
-                    }
-
-                    override fun onSkipToPrevious() {
-                        scope.launch { advance(-1, userInitiated = true) }
-                    }
-
-                    override fun onPlayFromMediaId(mediaId: String?, extras: Bundle?) {
-                        if (mediaId == null || ArthurMediaBrowse.isFolder(mediaId)) return
-                        val art = catalog.firstOrNull { it.id == mediaId } ?: return
-                        scope.launch {
-                            current = art
-                            generation += 1
-                            seenIds = seenIds + art.id
-                            publishArtwork(art)
-                            prefetchNeighbors()
-                            setPlaying(true)
-                        }
-                    }
-                },
-            )
-            isActive = true
-        }
+                }
+            },
+        )
+        librarySession = MediaLibrarySession.Builder(this, player, LibraryCallback())
+            .setId("ArthurMedia")
+            .build()
         zenAudio = ZenAudioEngine(this, ambientAudioSettings)
-        sessionToken = session.sessionToken
         scope.launch {
             runCatching { bootstrapCatalog() }
         }
+    }
+
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? =
+        librarySession
+
+    /**
+     * Keep browse-only / no FGS behavior (Play Console demo video not yet available).
+     * Media3 would otherwise promote a media-playback foreground service while "playing".
+     */
+    override fun onUpdateNotification(session: MediaSession, startInForegroundRequired: Boolean) {
+        // no-op
     }
 
     private suspend fun bootstrapCatalog() {
@@ -154,9 +166,11 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
     }
 
     private fun notifyBrowseChanged() {
-        notifyChildrenChanged(ROOT)
+        val session = librarySession ?: return
+        session.notifyChildrenChanged(ROOT, ArthurMediaBrowse.rootSourceIds(catalog).size, null)
         for (sourceId in ArthurMediaBrowse.rootSourceIds(catalog)) {
-            notifyChildrenChanged(ArthurMediaBrowse.folderId(sourceId))
+            val children = ArthurMediaBrowse.childrenOf(ArthurMediaBrowse.folderId(sourceId), catalog)
+            session.notifyChildrenChanged(ArthurMediaBrowse.folderId(sourceId), children.size, null)
         }
     }
 
@@ -199,13 +213,16 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
         playing = value
         if (value) {
             consecutiveAutoRotations = 0
-            if (ambientAudioSettings.enabled.value) zenAudio.start() else zenAudio.stop()
+            if (ambientAudioSettings.enabled.value) {
+                current?.let { zenAudio.setArtwork(it) }
+                zenAudio.start()
+            } else {
+                zenAudio.stop()
+            }
         } else {
             zenAudio.stop()
         }
-        publishPlayback(
-            if (value) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED,
-        )
+        player.setPlaying(value)
         if (value) startRotation() else rotationJob?.cancel()
     }
 
@@ -246,7 +263,8 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
             rotationSettings.recordRecentStillId(next.id)
         }
         publishArtwork(next)
-        zenAudio.triggerChime()
+        zenAudio.setArtwork(next)
+        zenAudio.triggerTransition()
         prefetchNeighbors()
         if (userInitiated) {
             consecutiveAutoRotations = 0
@@ -320,7 +338,7 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
                 }
             }
         }
-        val uri = AmbientAlbumArt.contentUri(packageName, art.id, gen).toString()
+        val uri = AmbientAlbumArt.contentUri(packageName, art.id, gen)
 
         val quote = if (quoteSettings.showQuotes.value) {
             runCatching { quoteRepository.nextQuote() }.getOrNull()
@@ -377,108 +395,158 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
             null
         }
 
-        runCatching {
-            val builder = MediaMetadataCompat.Builder()
-                .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, art.id)
-                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, art.title)
-                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE, art.title)
-                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, subtitle)
-                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, subtitle)
-                .putString(
-                    MediaMetadataCompat.METADATA_KEY_GENRE,
-                    if (art.isGenerative) "generative" else art.kind.name,
-                )
-                .putString(MediaMetadataCompat.METADATA_KEY_ART_URI, uri)
-                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, uri)
-                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON_URI, uri)
-                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, rotationSettings.autoIntervalMs.value)
-
-            if (description != null) {
-                builder.putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_DESCRIPTION, description)
-            }
-
-            if (isDevMode && pool.isNotEmpty()) {
-                builder.putLong(MediaMetadataCompat.METADATA_KEY_TRACK_NUMBER, (index + 1).toLong())
-                builder.putLong(MediaMetadataCompat.METADATA_KEY_NUM_TRACKS, pool.size.toLong())
-            }
-
-            session.setMetadata(builder.build())
-            session.setQueue(
-                pool.mapIndexed { queueIndex, item ->
-                    val icon = AmbientAlbumArt.contentUri(packageName, item.id, 0L)
-                    val desc = MediaDescriptionCompat.Builder()
-                        .setMediaId(item.id)
-                        .setTitle(item.title)
-                        .setSubtitle(item.attribution)
-                        .setIconUri(icon)
-                        .build()
-                    MediaSessionCompat.QueueItem(desc, queueIndex.toLong())
-                },
-            )
-            session.setQueueTitle(getString(R.string.ambient_title))
+        val queueUris = pool.associate { item ->
+            item.id to AmbientAlbumArt.contentUri(packageName, item.id, 0L)
         }
+        player.publish(
+            art = art,
+            artworkUri = uri,
+            subtitle = subtitle,
+            description = description,
+            genre = if (art.isGenerative) "generative" else art.kind.name,
+            queue = pool,
+            queueUris = queueUris,
+            playing = playing,
+            durationMs = rotationSettings.autoIntervalMs.value,
+            playlistTitle = getString(R.string.ambient_title),
+        )
     }
 
-    private fun publishPlayback(state: Int) {
-        runCatching {
-            session.setPlaybackState(
-                PlaybackStateCompat.Builder()
-                    .setActions(
-                        PlaybackStateCompat.ACTION_PLAY_PAUSE or
-                            PlaybackStateCompat.ACTION_PLAY or
-                            PlaybackStateCompat.ACTION_PAUSE or
-                            PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
-                            PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS,
-                    )
-                    .setState(state, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 1f)
-                    .build(),
-            )
-        }
-    }
-
-    override fun onGetRoot(
-        clientPackageName: String,
-        clientUid: Int,
-        rootHints: Bundle?,
-    ): BrowserRoot = BrowserRoot(ROOT, ArthurMediaBrowse.rootExtras())
-
-    override fun onLoadChildren(
-        parentId: String,
-        result: Result<MutableList<MediaBrowserCompat.MediaItem>>,
-    ) {
-        val children = runCatching { buildChildren(parentId).toMutableList() }.getOrDefault(mutableListOf())
-        result.sendResult(children)
-    }
-
-    private fun buildChildren(parentId: String): List<MediaBrowserCompat.MediaItem> {
+    private fun buildChildren(parentId: String): List<MediaItem> {
         if (parentId == ROOT) {
             return ArthurMediaBrowse.rootSourceIds(catalog).map { sourceId ->
                 val title = ArthurMediaBrowse.folderTitle(sourceId)
                 val extras = if (ArthurMediaBrowse.usesPreviewGrid(sourceId)) {
                     ArthurMediaBrowse.previewGridExtras()
                 } else {
-                    null
+                    Bundle.EMPTY
                 }
-                val desc = MediaDescriptionCompat.Builder()
+                MediaItem.Builder()
                     .setMediaId(ArthurMediaBrowse.folderId(sourceId))
-                    .setTitle(title)
-                    .setSubtitle(catalog.count { it.sourceId == sourceId }.toString() + " pieces")
-                    .setExtras(extras)
+                    .setMediaMetadata(
+                        MediaMetadata.Builder()
+                            .setTitle(title)
+                            .setSubtitle(
+                                catalog.count { it.sourceId == sourceId }.toString() + " pieces",
+                            )
+                            .setIsBrowsable(true)
+                            .setIsPlayable(false)
+                            .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
+                            .setExtras(extras)
+                            .build(),
+                    )
                     .build()
-                MediaBrowserCompat.MediaItem(desc, MediaBrowserCompat.MediaItem.FLAG_BROWSABLE)
             }
         }
 
-        val items = ArthurMediaBrowse.childrenOf(parentId, catalog)
-        return items.map { art ->
+        return ArthurMediaBrowse.childrenOf(parentId, catalog).map { art ->
             val icon = AmbientAlbumArt.contentUri(packageName, art.id, 0L)
-            val desc = MediaDescriptionCompat.Builder()
+            MediaItem.Builder()
                 .setMediaId(art.id)
-                .setTitle(art.title)
-                .setSubtitle(art.attribution)
-                .setIconUri(icon)
+                .setUri(icon)
+                .setMediaMetadata(
+                    MediaMetadata.Builder()
+                        .setTitle(art.title)
+                        .setSubtitle(art.attribution)
+                        .setArtworkUri(icon)
+                        .setIsBrowsable(false)
+                        .setIsPlayable(true)
+                        .build(),
+                )
                 .build()
-            MediaBrowserCompat.MediaItem(desc, MediaBrowserCompat.MediaItem.FLAG_PLAYABLE)
+        }
+    }
+
+    private fun mediaItemForId(mediaId: String): MediaItem? {
+        if (mediaId == ROOT) {
+            return MediaItem.Builder()
+                .setMediaId(ROOT)
+                .setMediaMetadata(
+                    MediaMetadata.Builder()
+                        .setTitle(getString(R.string.app_name))
+                        .setIsBrowsable(true)
+                        .setIsPlayable(false)
+                        .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
+                        .setExtras(ArthurMediaBrowse.rootExtras())
+                        .build(),
+                )
+                .build()
+        }
+        if (ArthurMediaBrowse.isFolder(mediaId)) {
+            val sourceId = ArthurMediaBrowse.sourceIdFromFolder(mediaId) ?: return null
+            val extras = if (ArthurMediaBrowse.usesPreviewGrid(sourceId)) {
+                ArthurMediaBrowse.previewGridExtras()
+            } else {
+                Bundle.EMPTY
+            }
+            return MediaItem.Builder()
+                .setMediaId(mediaId)
+                .setMediaMetadata(
+                    MediaMetadata.Builder()
+                        .setTitle(ArthurMediaBrowse.folderTitle(sourceId))
+                        .setIsBrowsable(true)
+                        .setIsPlayable(false)
+                        .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
+                        .setExtras(extras)
+                        .build(),
+                )
+                .build()
+        }
+        val art = catalog.firstOrNull { it.id == mediaId } ?: return null
+        val icon = AmbientAlbumArt.contentUri(packageName, art.id, 0L)
+        return MediaItem.Builder()
+            .setMediaId(art.id)
+            .setUri(icon)
+            .setMediaMetadata(
+                MediaMetadata.Builder()
+                    .setTitle(art.title)
+                    .setSubtitle(art.attribution)
+                    .setArtworkUri(icon)
+                    .setIsBrowsable(false)
+                    .setIsPlayable(true)
+                    .build(),
+            )
+            .build()
+    }
+
+    private inner class LibraryCallback : MediaLibrarySession.Callback {
+        override fun onGetLibraryRoot(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            params: MediaLibraryService.LibraryParams?,
+        ): ListenableFuture<LibraryResult<MediaItem>> {
+            val root = mediaItemForId(ROOT)!!
+            val rootParams = MediaLibraryService.LibraryParams.Builder()
+                .setExtras(ArthurMediaBrowse.rootExtras())
+                .build()
+            return Futures.immediateFuture(LibraryResult.ofItem(root, rootParams))
+        }
+
+        override fun onGetItem(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            mediaId: String,
+        ): ListenableFuture<LibraryResult<MediaItem>> {
+            val item = mediaItemForId(mediaId)
+                ?: return Futures.immediateFuture(
+                    LibraryResult.ofError(SessionError.ERROR_BAD_VALUE),
+                )
+            return Futures.immediateFuture(LibraryResult.ofItem(item, null))
+        }
+
+        override fun onGetChildren(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            parentId: String,
+            page: Int,
+            pageSize: Int,
+            params: MediaLibraryService.LibraryParams?,
+        ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
+            val all = buildChildren(parentId)
+            val from = (page * pageSize).coerceAtMost(all.size)
+            val to = (from + pageSize).coerceAtMost(all.size)
+            val pageItems = ImmutableList.copyOf(all.subList(from, to))
+            return Futures.immediateFuture(LibraryResult.ofItemList(pageItems, params))
         }
     }
 
@@ -486,7 +554,11 @@ class ArthurMediaService : MediaBrowserServiceCompat() {
         runCatching { rotationJob?.cancel() }
         runCatching { zenAudio.destroy() }
         runCatching { scope.cancel() }
-        runCatching { session.release() }
+        runCatching {
+            librarySession?.release()
+            librarySession = null
+        }
+        runCatching { player.release() }
         super.onDestroy()
     }
 

@@ -2,6 +2,8 @@ package fr.geoking.arthur.audio
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import fr.geoking.arthur.shared.domain.Artwork
+import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.source.AmbientAudioMode
 import fr.geoking.arthur.source.AmbientAudioSettings
 import org.junit.Before
@@ -25,7 +27,9 @@ class ZenAudioEngineTest {
         settings.setEnabled(false)
         val engine = ZenAudioEngine(context, settings)
         engine.start()
+        engine.setArtwork(Artwork("a", "A", sourceId = "x", kind = ArtworkKind.Photo))
         engine.triggerChime()
+        engine.triggerTransition()
         engine.stop()
         engine.destroy()
     }
@@ -35,9 +39,19 @@ class ZenAudioEngineTest {
         settings.setEnabled(true)
         settings.setMode(AmbientAudioMode.PAD_AND_CHIME)
         val engine = ZenAudioEngine(context, settings)
+        engine.setArtwork(Artwork("genart.waves", "Waves", sourceId = "genart", kind = ArtworkKind.Genart))
         engine.start()
-        engine.triggerChime()
+        engine.triggerTransition()
         engine.stop()
+        engine.destroy()
+    }
+
+    @Test
+    fun setArtworkAndTransitionSafeWhenStopped() {
+        settings.setEnabled(true)
+        val engine = ProceduralMusicEngine(context, settings)
+        engine.setArtwork(Artwork("b", "B", sourceId = "y", kind = ArtworkKind.Painting))
+        engine.triggerTransition()
         engine.destroy()
     }
 }

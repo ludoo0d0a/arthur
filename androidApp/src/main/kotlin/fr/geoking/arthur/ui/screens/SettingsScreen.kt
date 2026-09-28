@@ -35,7 +35,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -61,18 +61,21 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import android.content.ClipData
 import android.widget.Toast
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.toClipEntry
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import kotlinx.coroutines.launch
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -88,6 +91,7 @@ import fr.geoking.arthur.shared.error.ErrorItem
 import fr.geoking.arthur.shared.error.ErrorLogger
 import fr.geoking.arthur.source.ArtworkImageCache
 import fr.geoking.arthur.source.HttpCacheController
+import fr.geoking.arthur.source.QuoteProvider
 import fr.geoking.arthur.source.RotationSettings
 import android.text.format.Formatter
 import org.koin.core.context.GlobalContext
@@ -130,6 +134,7 @@ enum class SettingsScreenPage {
     PhoneRotationInterval,
     TvRotationInterval,
     AutoRotationInterval,
+    QuoteProvider,
     DeviantArtCredentials,
     About,
     Licenses,
@@ -159,6 +164,8 @@ fun SettingsScreen(
     onWifiOnlyRemoteStillsChange: (Boolean) -> Unit = {},
     showQuotes: Boolean = true,
     onShowQuotesChange: (Boolean) -> Unit = {},
+    quoteProvider: QuoteProvider = QuoteProvider.ZenQuotes,
+    onQuoteProviderChange: (QuoteProvider) -> Unit = {},
     ambientSoundEnabled: Boolean = false,
     onAmbientSoundEnabledChange: (Boolean) -> Unit = {},
     deviantArtUsername: String = "",
@@ -207,6 +214,8 @@ fun SettingsScreen(
                             SettingsScreenPage.TvRotationInterval,
                             SettingsScreenPage.AutoRotationInterval ->
                                 stringResource(R.string.screen_rotation_interval)
+                            SettingsScreenPage.QuoteProvider ->
+                                stringResource(R.string.settings_quote_provider)
                             SettingsScreenPage.DeviantArtCredentials -> "DeviantArt Credentials"
                             SettingsScreenPage.About -> stringResource(R.string.screen_about)
                             SettingsScreenPage.Licenses -> stringResource(R.string.screen_licenses)
@@ -256,6 +265,7 @@ fun SettingsScreen(
                     onWifiOnlyRemoteStillsChange = onWifiOnlyRemoteStillsChange,
                     showQuotes = showQuotes,
                     onShowQuotesChange = onShowQuotesChange,
+                    quoteProvider = quoteProvider,
                     ambientSoundEnabled = ambientSoundEnabled,
                     onAmbientSoundEnabledChange = onAmbientSoundEnabledChange,
                     onCheckForUpdate = onCheckForUpdate,
@@ -279,6 +289,10 @@ fun SettingsScreen(
                 SettingsScreenPage.AutoRotationInterval -> RotationIntervalContent(
                     selectedMs = autoIntervalMs,
                     onSelect = onAutoIntervalChange,
+                )
+                SettingsScreenPage.QuoteProvider -> QuoteProviderContent(
+                    selected = quoteProvider,
+                    onSelect = onQuoteProviderChange,
                 )
                 SettingsScreenPage.DeviantArtCredentials -> DeviantArtCredentialsContent(
                     username = deviantArtUsername,
@@ -318,6 +332,7 @@ private fun MainMenu(
     onWifiOnlyRemoteStillsChange: (Boolean) -> Unit,
     showQuotes: Boolean,
     onShowQuotesChange: (Boolean) -> Unit,
+    quoteProvider: QuoteProvider,
     ambientSoundEnabled: Boolean,
     onAmbientSoundEnabledChange: (Boolean) -> Unit,
     onCheckForUpdate: (() -> Unit)?,
@@ -443,6 +458,12 @@ private fun MainMenu(
                     modifier = Modifier.testTag("settings_show_quotes_switch"),
                 )
             }
+            SettingsItem(
+                label = stringResource(R.string.settings_quote_provider),
+                value = quoteProviderLabel(quoteProvider),
+                onClick = { onNavigate(SettingsScreenPage.QuoteProvider) },
+                modifier = Modifier.testTag("settings_quote_provider"),
+            )
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -903,7 +924,8 @@ fun DeveloperErrorLogScreen(
 @Composable
 private fun ErrorItemCard(item: ErrorItem) {
     var expanded by remember { mutableStateOf(false) }
-    val clipboardManager = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val copiedMessage = stringResource(R.string.dev_error_copied)
 
@@ -998,8 +1020,12 @@ private fun ErrorItemCard(item: ErrorItem) {
                     }
                     IconButton(
                         onClick = {
-                            clipboardManager.setText(AnnotatedString(fullCopyText))
-                            Toast.makeText(context, copiedMessage, Toast.LENGTH_SHORT).show()
+                            scope.launch {
+                                clipboard.setClipEntry(
+                                    ClipData.newPlainText("error", fullCopyText).toClipEntry(),
+                                )
+                                Toast.makeText(context, copiedMessage, Toast.LENGTH_SHORT).show()
+                            }
                         },
                         modifier = Modifier
                             .size(32.dp)
@@ -1153,7 +1179,7 @@ private fun AboutApiRow(
             )
         }
         Icon(
-            imageVector = Icons.Filled.KeyboardArrowRight,
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(18.dp),
@@ -1177,7 +1203,7 @@ private fun AboutRowClickable(label: String, onClick: () -> Unit) {
             color = MaterialTheme.colorScheme.primary,
         )
         Icon(
-            imageVector = Icons.Filled.KeyboardArrowRight,
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(20.dp),
@@ -1212,9 +1238,10 @@ private fun SettingsItem(
     label: String,
     value: String? = null,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     ListItem(
-        modifier = Modifier.clickable(onClick = onClick),
+        modifier = modifier.clickable(onClick = onClick),
         headlineContent = { Text(label, style = MaterialTheme.typography.titleSmall) },
         supportingContent = {
             if (value != null) {
@@ -1227,13 +1254,69 @@ private fun SettingsItem(
         },
         trailingContent = {
             Icon(
-                Icons.Filled.KeyboardArrowRight,
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
     )
+}
+
+@Composable
+private fun QuoteProviderContent(
+    selected: QuoteProvider,
+    onSelect: (QuoteProvider) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp)
+            .testTag("settings_quote_provider_page"),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.settings_quote_provider_subtitle),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        ) {
+            QuoteProvider.entries.forEach { provider ->
+                val isSelected = provider == selected
+                ListItem(
+                    modifier = Modifier
+                        .clickable { onSelect(provider) }
+                        .testTag("quote_provider_${provider.id}"),
+                    headlineContent = {
+                        Text(
+                            quoteProviderLabel(provider),
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                    },
+                    trailingContent = {
+                        if (isSelected) {
+                            Icon(
+                                Icons.Filled.Check,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun quoteProviderLabel(provider: QuoteProvider): String = when (provider) {
+    QuoteProvider.ZenQuotes -> stringResource(R.string.settings_quote_provider_zenquotes)
+    QuoteProvider.CitationLecog -> stringResource(R.string.settings_quote_provider_lecog)
 }
 
 @Composable

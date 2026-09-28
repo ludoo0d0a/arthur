@@ -15,6 +15,7 @@ fun rememberQuoteRepository(): QuoteRepository {
                 QuoteRepository(
                     context = context,
                     httpGet = { "[]" },
+                    provider = { QuoteProvider.ZenQuotes },
                 )
             }
     }

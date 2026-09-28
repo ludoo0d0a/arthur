@@ -294,7 +294,9 @@ internal class AmbientRotationController(
 
     fun syncAudio() {
         if (isPlaying && ambientAudioSettings.enabled.value) {
-            audioEngine().start()
+            val engine = audioEngine()
+            current?.let { engine.setArtwork(it) }
+            engine.start()
         } else {
             zenAudio?.stop()
         }
@@ -388,7 +390,9 @@ internal class AmbientRotationController(
             rotationSettings.recordRecentStillId(art.id)
         }
         if (ambientAudioSettings.enabled.value) {
-            audioEngine().triggerChime()
+            val engine = audioEngine()
+            engine.setArtwork(art)
+            engine.triggerTransition()
         }
         updateQuoteForCurrent()
         scheduleAsyncRender()

@@ -447,6 +447,8 @@ object AmbientStillRenderer {
                 }
             }
         }
-        canvas.drawBitmap(pixels, 0, SIZE, 0, 0, SIZE, SIZE, false, null)
+        val field = Bitmap.createBitmap(pixels, SIZE, SIZE, Bitmap.Config.ARGB_8888)
+        canvas.drawBitmap(field, 0f, 0f, null)
+        field.recycle()
     }
 }

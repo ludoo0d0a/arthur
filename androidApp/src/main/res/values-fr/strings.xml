@@ -136,7 +136,11 @@
     <string name="settings_image_cache_clear">Effacer le cache</string>
     <string name="settings_image_cache_cleared">Cache effacé</string>
     <string name="settings_show_quotes">Afficher les citations</string>
-    <string name="settings_show_quotes_subtitle">Citations célèbres à côté de chaque image Ambient (ZenQuotes)</string>
+    <string name="settings_show_quotes_subtitle">Citations célèbres à côté de chaque image Ambient</string>
+    <string name="settings_quote_provider">Source des citations</string>
+    <string name="settings_quote_provider_subtitle">Langue des citations Ambient</string>
+    <string name="settings_quote_provider_zenquotes">ZenQuotes (anglais)</string>
+    <string name="settings_quote_provider_lecog">Citation.lecog.fr (français)</string>
     <string name="settings_ambient_sound">Son Ambient</string>
     <string name="settings_ambient_sound_subtitle">Pad doux et carillons pendant les diaporamas Ambient</string>
     <string name="car_ambient_debug">Debug</string>

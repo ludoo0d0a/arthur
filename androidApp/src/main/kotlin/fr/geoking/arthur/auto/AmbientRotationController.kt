@@ -121,7 +121,9 @@ internal class AmbientRotationController(
     }
 
     private fun audioEngine(): ZenAudioEngine {
-        return zenAudio ?: ZenAudioEngine(appContext, ambientAudioSettings).also { zenAudio = it }
+        return (zenAudio ?: ZenAudioEngine(appContext, ambientAudioSettings).also { zenAudio = it }).also {
+            it.setArtwork(current)
+        }
     }
 
     private suspend fun bootstrapRotation() {
@@ -198,6 +200,7 @@ internal class AmbientRotationController(
                 pool.firstOrNull { it.id == previousId } ?: resolveAmbientArtwork(pool, null)
             else -> resolveAmbientArtwork(pool, null)
         }
+        zenAudio?.setArtwork(current)
         seenIds = current?.id?.let { setOf(it) }.orEmpty()
         scope.launch { updateQuoteForCurrent() }
         scheduleAsyncRender()
@@ -220,6 +223,7 @@ internal class AmbientRotationController(
             catalog = livePool
             if (keepId == null || livePool.none { it.id == keepId }) {
                 current = resolveAmbientArtwork(livePool, null)
+                zenAudio?.setArtwork(current)
                 notifyArtworkChanged()
             }
         }
@@ -375,6 +379,7 @@ internal class AmbientRotationController(
         current = art
         generation += 1
         seenIds = seenIds + art.id
+        zenAudio?.setArtwork(art)
         if (!art.remoteUrl.isNullOrBlank()) {
             rotationSettings.recordRecentStillId(art.id)
         }

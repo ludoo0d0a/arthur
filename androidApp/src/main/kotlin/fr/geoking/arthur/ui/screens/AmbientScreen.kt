@@ -192,6 +192,13 @@ fun AmbientScreenContent(
     DisposableEffect(zenAudio) {
         onDispose { zenAudio?.destroy() }
     }
+
+    val shown = if (shouldRotate) current else artwork
+
+    LaunchedEffect(shown) {
+        zenAudio?.setArtwork(shown)
+    }
+
     LaunchedEffect(isPlaying, isActive, audioEnabled) {
         if (isPlaying && isActive && audioEnabled) {
             zenAudio?.start()
@@ -268,7 +275,6 @@ fun AmbientScreenContent(
     val quoteSettings = rememberQuoteSettings()
     val showQuotes by quoteSettings.showQuotes.collectAsState()
     var slideQuote by remember { mutableStateOf<Quote?>(null) }
-    val shown = if (shouldRotate) current else artwork
     var showDetails by remember { mutableStateOf(false) }
     LaunchedEffect(shown?.id) {
         displayReady = false

@@ -69,12 +69,12 @@ internal object LavaSunStill {
             val a = angle + sway
             val length = lengthFrac * minDim
             val halfW = widthFrac * minDim
-            val baseX = cx + cos(a).toFloat() * sunR * 0.92f
-            val baseY = cy + sin(a).toFloat() * sunR * 0.92f
-            val tipX = cx + cos(a).toFloat() * (sunR + length)
-            val tipY = cy + sin(a).toFloat() * (sunR + length)
-            val perpX = (-sin(a)).toFloat()
-            val perpY = cos(a).toFloat()
+            val baseX = cx + cos(a) * sunR * 0.92f
+            val baseY = cy + sin(a) * sunR * 0.92f
+            val tipX = cx + cos(a) * (sunR + length)
+            val tipY = cy + sin(a) * (sunR + length)
+            val perpX = -sin(a)
+            val perpY = cos(a)
             val flame = palette.colorAt(i)
             val fr = (Color.red(flame) + 255) / 2
             val fg = (Color.green(flame) + 100) / 2
@@ -93,8 +93,8 @@ internal object LavaSunStill {
             val path = Path().apply {
                 moveTo(baseX + perpX * halfW, baseY + perpY * halfW)
                 cubicTo(
-                    baseX + perpX * halfW * 1.4f + cos(a).toFloat() * length * 0.35f,
-                    baseY + perpY * halfW * 1.4f + sin(a).toFloat() * length * 0.35f,
+                    baseX + perpX * halfW * 1.4f + cos(a) * length * 0.35f,
+                    baseY + perpY * halfW * 1.4f + sin(a) * length * 0.35f,
                     tipX + perpX * halfW * 0.2f,
                     tipY + perpY * halfW * 0.2f,
                     tipX, tipY,
@@ -102,8 +102,8 @@ internal object LavaSunStill {
                 cubicTo(
                     tipX - perpX * halfW * 0.2f,
                     tipY - perpY * halfW * 0.2f,
-                    baseX - perpX * halfW * 1.4f + cos(a).toFloat() * length * 0.35f,
-                    baseY - perpY * halfW * 1.4f + sin(a).toFloat() * length * 0.35f,
+                    baseX - perpX * halfW * 1.4f + cos(a) * length * 0.35f,
+                    baseY - perpY * halfW * 1.4f + sin(a) * length * 0.35f,
                     baseX - perpX * halfW,
                     baseY - perpY * halfW,
                 )
@@ -127,7 +127,7 @@ internal object LavaSunStill {
             val d = (0.15f + rnd.nextFloat() * 0.55f) * sunR
             val r = (0.08f + rnd.nextFloat() * 0.1f) * sunR
             paint.color = Color.argb((0.25f * dim * 255).toInt().coerceIn(0, 255), 255, 68, 17)
-            canvas.drawCircle(cx + cos(a).toFloat() * d, cy + sin(a).toFloat() * d, r, paint)
+            canvas.drawCircle(cx + cos(a) * d, cy + sin(a) * d, r, paint)
         }
         paint.alpha = 255
     }

@@ -118,8 +118,8 @@ private fun InterferenceWashCpu(
                     val fx = 2.2f + k * 1.15f
                     val fy = 1.7f + k * 0.9f
                     val phase = t * (0.35f + k * 0.08f) + k * 1.7f
-                    field += sin((u * fx + v * fy) * 2f * PI.toFloat() + phase).toFloat()
-                    field += cos((u * fy - v * fx) * 2f * PI.toFloat() - phase * 0.7f).toFloat() * 0.65f
+                    field += sin((u * fx + v * fy) * 2f * PI.toFloat() + phase)
+                    field += cos((u * fy - v * fx) * 2f * PI.toFloat() - phase * 0.7f) * 0.65f
                 }
                 val n = ((field / (bands * 1.65f)) * 0.5f + 0.5f).coerceIn(0f, 1f)
                 val mid = if (n < 0.5f) {

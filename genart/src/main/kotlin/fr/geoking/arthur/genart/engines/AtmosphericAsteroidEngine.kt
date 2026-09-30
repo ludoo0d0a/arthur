@@ -129,7 +129,7 @@ internal fun AtmosphericAsteroidEngine(
                 TonalPalette.mix(Color(0xFFFFAA55), TonalPalette.pick(paletteColors, 0), 0.25f),
                 brightness,
             )
-            val edgeFade = (sin(life * PI.toFloat()).toFloat()).coerceAtLeast(0f)
+            val edgeFade = sin(life * PI.toFloat()).coerceAtLeast(0f)
             drawLine(
                 brush = Brush.linearGradient(
                     colors = listOf(
@@ -167,7 +167,7 @@ internal fun AtmosphericAsteroidEngine(
             val travel = life * 1.35f - 0.15f
             val x = (-0.05f + dirX * travel) * w
             val y = (0.05f + dirY * travel) * h
-            val edgeFade = (sin(life * PI.toFloat()).toFloat()).coerceAtLeast(0f)
+            val edgeFade = sin(life * PI.toFloat()).coerceAtLeast(0f)
             if (edgeFade < 0.02f) return@Canvas
 
             val heat = TonalPalette.brightness(
@@ -195,7 +195,7 @@ internal fun AtmosphericAsteroidEngine(
                 val along = spark.along * trailLen
                 val sx = x - dirX * along + (-dirY) * spark.side * minDim * 0.03f
                 val sy = y - dirY * along + dirX * spark.side * minDim * 0.03f
-                val flicker = 0.5f + 0.5f * sin((phase01(t + spark.phase) * 2f * PI.toFloat())).toFloat()
+                val flicker = 0.5f + 0.5f * sin(phase01(t + spark.phase) * 2f * PI.toFloat())
                 drawCircle(
                     color = TonalPalette.withAlpha(heat, 0.55f * dim * edgeFade * flicker),
                     radius = minDim * 0.006f * spark.sizeMul,

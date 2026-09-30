@@ -58,12 +58,12 @@ internal object AtmosphericAsteroidStill {
         val time = ((phase / (2f * PI.toFloat())) + rotationDeg / 360f)
         val life = ((time % 1f) + 1f) % 1f
         val angle = 0.65f
-        val dirX = cos(angle).toFloat()
-        val dirY = sin(angle).toFloat()
+        val dirX = cos(angle)
+        val dirY = sin(angle)
         val travel = life * 1.35f - 0.15f
         val x = (-0.05f + dirX * travel) * w
         val y = (0.05f + dirY * travel) * h
-        val edgeFade = sin(life * PI.toFloat()).toFloat().coerceAtLeast(0f)
+        val edgeFade = sin(life * PI.toFloat()).coerceAtLeast(0f)
         val tint = palette.colorAt(0)
         val hr = ((Color.red(tint) + 255) / 2)
         val hg = ((Color.green(tint) + 170) / 2)

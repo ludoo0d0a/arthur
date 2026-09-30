@@ -85,7 +85,7 @@ internal object SpiralMandalaStill {
                 for (s in 0 until segmentCount) {
                     val u = s / (segmentCount - 1).toFloat()
                     val theta = u * u * 5.2f * PI.toFloat()
-                    val r = maxR * (1f - exp(-spiralB * theta).toFloat())
+                    val r = maxR * (1f - exp(-spiralB * theta))
                     val a = baseAngle + theta + phaseShift
                     val x = cx + cos(a) * r
                     val y = cy + sin(a) * r

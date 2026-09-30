@@ -524,7 +524,6 @@ private fun PhoneControlPlaneContent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp, vertical = 8.dp),
-                    onOpenMediaPlayer = onStartMediaPlayer,
                     onOpenSettings = onOpenSettings,
                     onOpenMediaPlayer = onOpenMediaPlayer,
                 )

@@ -59,8 +59,8 @@ internal object InterferenceWashStill {
                     val fx = 2.2f + k * 1.15f
                     val fy = 1.7f + k * 0.9f
                     val p = t * (2f * PI.toFloat()) * (0.35f + k * 0.08f) + k * 1.7f
-                    field += sin((u * fx + v * fy) * 2f * PI.toFloat() + p).toFloat()
-                    field += cos((u * fy - v * fx) * 2f * PI.toFloat() - p * 0.7f).toFloat() * 0.65f
+                    field += sin((u * fx + v * fy) * 2f * PI.toFloat() + p)
+                    field += cos((u * fy - v * fx) * 2f * PI.toFloat() - p * 0.7f) * 0.65f
                 }
                 val n = ((field / (bands * 1.65f)) * 0.5f + 0.5f).coerceIn(0f, 1f)
                 val rgb = if (n < 0.5f) lerpArgb(c0, c1, n * 2f) else lerpArgb(c1, c2, (n - 0.5f) * 2f)

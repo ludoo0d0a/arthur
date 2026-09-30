@@ -68,7 +68,7 @@ internal object RainOnGlassStill {
             val alphaBase = 0.32f + rnd.nextFloat() * 0.28f
             val highlightAngle = rnd.nextFloat() * 2f * PI.toFloat()
 
-            val grow = (sin(drift * growFreq + growPhase * 2f * PI.toFloat()).toFloat() + 1f) / 2f
+            val grow = (sin(drift * growFreq + growPhase * 2f * PI.toFloat()) + 1f) / 2f
             val radius = (baseRadiusFrac + growAmpFrac * grow) * w
             val x = x0 * w
             val y = y0 * h

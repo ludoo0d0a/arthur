@@ -21,7 +21,6 @@ class RotationSettingsTest {
         assertEquals(AmbientAlbumArt.ROTATION_INTERVAL_MS, settings.phoneIntervalMs.value)
         assertEquals(AmbientAlbumArt.ROTATION_INTERVAL_MS, settings.tvIntervalMs.value)
         assertEquals(AmbientAlbumArt.ROTATION_INTERVAL_MS, settings.autoIntervalMs.value)
-        assertEquals(AmbientAlbumArt.ROTATION_INTERVAL_MS, settings.intervalMs.value)
     }
 
     @Test

@@ -144,7 +144,7 @@ private fun readRequestBodySnapshot(request: okhttp3.Request): Pair<String?, Boo
 }
 
 private fun readResponseBodySnapshot(response: Response): Pair<String?, Boolean> {
-    if (!isTextualBody(response.body?.contentType())) return null to false
+    if (!isTextualBody(response.body.contentType())) return null to false
     return try {
         val text = response.peekBody(MAX_PEEK_BYTES).string()
         truncateBody(text)

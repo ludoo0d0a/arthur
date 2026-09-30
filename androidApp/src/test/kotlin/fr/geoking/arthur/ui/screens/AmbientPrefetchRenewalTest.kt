@@ -1,6 +1,6 @@
 package fr.geoking.arthur.ui.screens
 
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import fr.geoking.arthur.phone.theme.ArthurTheme
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind

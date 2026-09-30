@@ -306,7 +306,6 @@ class ArthurCarAppTest {
                 packSelection = fr.geoking.arthur.ui.components.PackSelection(fr.geoking.arthur.ui.components.PackFamily.Genart),
             )
             org.robolectric.shadows.ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
-            org.robolectric.Robolectric.getForegroundThreadScheduler().advanceToLastPostedRunnable()
             org.robolectric.shadows.ShadowLooper.idleMainLooper()
             fun requirePane(): PaneTemplate {
                 val template = screen.onGetTemplate()
@@ -319,7 +318,6 @@ class ArthurCarAppTest {
                 if (reloadedTemplate.pane.isLoading || screen.currentArtwork() == null || reloadedTemplate.pane.rows.size < 2) {
                     Thread.sleep(50)
                     org.robolectric.shadows.ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
-                    org.robolectric.Robolectric.getForegroundThreadScheduler().advanceToLastPostedRunnable()
                     org.robolectric.shadows.ShadowLooper.idleMainLooper()
                     reloadedTemplate = requirePane()
                 }
@@ -462,7 +460,7 @@ class ArthurCarAppTest {
                 carContext = carContext,
                 packSelection = fr.geoking.arthur.ui.components.PackSelection(fr.geoking.arthur.ui.components.PackFamily.Genart),
             )
-            org.robolectric.Robolectric.getForegroundThreadScheduler().advanceToLastPostedRunnable()
+            org.robolectric.shadows.ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
             org.robolectric.shadows.ShadowLooper.idleMainLooper()
 
             assertTrue("Initially should be playing", screen.isPlaying())

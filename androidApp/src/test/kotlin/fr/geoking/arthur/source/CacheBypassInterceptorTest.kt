@@ -32,10 +32,10 @@ class CacheBypassInterceptorTest {
             )
 
             val url = server.url("/data")
-            client.newCall(Request.Builder().url(url).build()).execute().use { it.body?.string() }
+            client.newCall(Request.Builder().url(url).build()).execute().use { it.body.string() }
 
             controller.setDisabled(true)
-            val second = client.newCall(Request.Builder().url(url).build()).execute().use { it.body?.string() }
+            val second = client.newCall(Request.Builder().url(url).build()).execute().use { it.body.string() }
 
             // Without the bypass, the second call would be served from the disk cache and
             // MockWebServer would only ever see one request.

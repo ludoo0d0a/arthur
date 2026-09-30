@@ -54,7 +54,7 @@ class DebugInterceptorTest {
             .url(server.url("/objects/1"))
             .header("X-Source-Id", "met")
             .build()
-        client.newCall(request).execute().use { it.body?.string() }
+        client.newCall(request).execute().use { it.body.string() }
 
         val log = debugLogger.stats.value.recentQueries.single()
         assertEquals("met", log.sourceId)
@@ -76,7 +76,7 @@ class DebugInterceptorTest {
                 .build(),
         )
 
-        client.newCall(Request.Builder().url(server.url("/img.jpg")).build()).execute().use { it.body?.string() }
+        client.newCall(Request.Builder().url(server.url("/img.jpg")).build()).execute().use { it.body.string() }
 
         val log = debugLogger.stats.value.recentQueries.single()
         assertNull(log.responseBody)
@@ -121,8 +121,8 @@ class DebugInterceptorTest {
             val url = server.url("/cacheable")
             // Only one response is enqueued: the second call must be served from the disk
             // cache without hitting the network, or MockWebServer would fail with no response.
-            cachingClient.newCall(Request.Builder().url(url).build()).execute().use { it.body?.string() }
-            cachingClient.newCall(Request.Builder().url(url).build()).execute().use { it.body?.string() }
+            cachingClient.newCall(Request.Builder().url(url).build()).execute().use { it.body.string() }
+            cachingClient.newCall(Request.Builder().url(url).build()).execute().use { it.body.string() }
 
             val logs = debugLogger.stats.value.recentQueries
             assertEquals(2, logs.size)

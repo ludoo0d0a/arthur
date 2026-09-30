@@ -204,6 +204,17 @@ class PackSelectionScreen(carContext: CarContext) : Screen(carContext) {
             sectionBuilder.addItem(item)
         }
 
+        val mediaPlayerAction = Action.Builder()
+            .setIcon(
+                CarIcon.Builder(
+                    IconCompat.createWithResource(carContext, R.drawable.ic_play_circle),
+                ).build(),
+            )
+            .setOnClickListener {
+                screenManager.push(createAmbientScreen(carContext))
+            }
+            .build()
+
         val settingsAction = Action.Builder()
             .setIcon(
                 CarIcon.Builder(
@@ -218,6 +229,7 @@ class PackSelectionScreen(carContext: CarContext) : Screen(carContext) {
         val header = Header.Builder()
             .setTitle(carContext.getString(R.string.packs_section))
             .setStartHeaderAction(Action.APP_ICON)
+            .addEndHeaderAction(mediaPlayerAction)
             .addEndHeaderAction(settingsAction)
             .build()
 

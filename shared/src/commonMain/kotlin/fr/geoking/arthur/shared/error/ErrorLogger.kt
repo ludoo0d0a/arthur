@@ -28,6 +28,7 @@ data class ErrorItem(
 class ErrorLogger(
     private val maxCapacity: Int = 200,
     private val clock: () -> Long = { 0L },
+    private val onLogged: ((ErrorItem, Throwable?) -> Unit)? = null,
 ) {
     private val _errors = MutableStateFlow<List<ErrorItem>>(emptyList())
     val errors: StateFlow<List<ErrorItem>> = _errors.asStateFlow()
@@ -63,6 +64,7 @@ class ErrorLogger(
         _errors.update { current ->
             (listOf(item) + current).take(maxCapacity)
         }
+        runCatching { onLogged?.invoke(item, throwable) }
     }
 
     fun getLastErrorForArtwork(artworkId: String): ErrorItem? {

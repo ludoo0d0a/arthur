@@ -125,7 +125,7 @@ private fun DrawScope.drawReed(
     val tipY = h - reedHeight
     val path = Path().apply {
         moveTo(baseX, baseY)
-        quadraticBezierTo(controlX, controlY, tipX, tipY)
+        quadraticTo(controlX, controlY, tipX, tipY)
     }
     val base = TonalPalette.pick(paletteColors, reed.colorIndex)
     val depthFactor = if (reed.depth == 0) 0.55f else 1f

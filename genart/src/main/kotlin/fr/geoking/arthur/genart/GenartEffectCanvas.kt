@@ -50,6 +50,8 @@ fun GenartEffectCanvas(
             .drawWithContent {
                 drawContent()
                 // High-contrast polish: soft center lift + edge vignette (no pixelation).
+                val minDim = size.minDimension
+                if (minDim <= 0f) return@drawWithContent
                 val cx = size.width * 0.5f
                 val cy = size.height * 0.48f
                 drawRect(
@@ -59,7 +61,7 @@ fun GenartEffectCanvas(
                             Color.Transparent,
                         ),
                         center = Offset(cx, cy),
-                        radius = size.minDimension * 0.55f,
+                        radius = (minDim * 0.55f).positiveRadius(),
                     ),
                 )
                 drawRect(
@@ -69,7 +71,7 @@ fun GenartEffectCanvas(
                             Color.Black.copy(alpha = if (isActive) 0.28f else 0.18f),
                         ),
                         center = Offset(cx, cy),
-                        radius = size.minDimension * 0.78f,
+                        radius = (minDim * 0.78f).positiveRadius(),
                     ),
                 )
             },

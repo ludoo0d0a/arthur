@@ -42,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -61,6 +62,7 @@ import fr.geoking.arthur.shared.source.GenartSource
 import fr.geoking.arthur.shared.source.MuseumSearchKind
 import fr.geoking.arthur.shared.source.StockPhotoCategory
 import fr.geoking.arthur.shared.debug.DebugLogger
+import fr.geoking.arthur.source.AmbientAudioSettings
 import fr.geoking.arthur.source.MuseumSearchSettings
 import fr.geoking.arthur.source.ScreensaverSettings
 import fr.geoking.arthur.source.StockPhotoSettings
@@ -116,6 +118,10 @@ fun ControlPlaneScreen(
     val defaultScreensaver by screensaverSettings?.defaultPack?.collectAsState()
         ?: remember { mutableStateOf(null) }
 
+    val ambientAudioSettings = remember {
+        runCatching { GlobalContext.get().get<AmbientAudioSettings>() }.getOrNull()
+    }
+
     val stockCategory = selection.stockCategoryOrNull()
         ?: if (selection.videoSourceOrNull() != null || selection.museumTopicOrNull() != null) {
             StockPhotoCategory.Random
@@ -132,26 +138,97 @@ fun ControlPlaneScreen(
         else -> MuseumSearchKind.All
     }
 
-    fun syncSourceSettings() {
+    fun syncSourceSettings(forSelection: PackSelection = selection) {
+        val cat = forSelection.stockCategoryOrNull()
+            ?: if (forSelection.videoSourceOrNull() != null || forSelection.museumTopicOrNull() != null) {
+                StockPhotoCategory.Random
+            } else {
+                stockPhotoSettings?.category ?: StockPhotoCategory.Random
+            }
+        val kind = when (forSelection.family) {
+            PackFamily.Painting -> MuseumSearchKind.Painting
+            PackFamily.Sculpture -> MuseumSearchKind.Sculpture
+            PackFamily.Museum -> MuseumSearchKind.All
+            PackFamily.Photo -> MuseumSearchKind.Photo
+            PackFamily.Personal -> MuseumSearchKind.Photo
+            else -> MuseumSearchKind.All
+        }
         when {
-            selection.stockCategoryOrNull() != null -> {
+            forSelection.stockCategoryOrNull() != null -> {
                 if (stockPhotoSettings != null) {
-                    stockPhotoSettings.category = stockCategory
+                    stockPhotoSettings.category = cat
                 }
             }
-            selection.videoSourceOrNull() != null -> {
+            forSelection.videoSourceOrNull() != null -> {
                 if (stockPhotoSettings != null) {
                     stockPhotoSettings.category = StockPhotoCategory.Random
                 }
             }
         }
-        // Unsplash supports both Photo and Video — tell it which kind to emit.
         if (stockPhotoSettings != null) {
             stockPhotoSettings.contentKind =
-                if (selection.family == PackFamily.Video) ArtworkKind.Video else ArtworkKind.Photo
+                if (forSelection.family == PackFamily.Video) ArtworkKind.Video else ArtworkKind.Photo
         }
         if (museumSearchSettings != null) {
-            museumSearchSettings.kind = museumKind
+            museumSearchSettings.kind = kind
+        }
+    }
+
+    fun launchAmbient(forSelection: PackSelection) {
+        syncSourceSettings(forSelection)
+        val renewIds = forSelection.sourceIdsForAmbientLoad()
+        val cat = forSelection.stockCategoryOrNull()
+            ?: if (forSelection.videoSourceOrNull() != null || forSelection.museumTopicOrNull() != null) {
+                StockPhotoCategory.Random
+            } else {
+                stockPhotoSettings?.category ?: StockPhotoCategory.Random
+            }
+        val kind = when (forSelection.family) {
+            PackFamily.Painting -> MuseumSearchKind.Painting
+            PackFamily.Sculpture -> MuseumSearchKind.Sculpture
+            PackFamily.Museum -> MuseumSearchKind.All
+            PackFamily.Photo -> MuseumSearchKind.Photo
+            PackFamily.Personal -> MuseumSearchKind.Photo
+            else -> MuseumSearchKind.All
+        }
+        val prefetchKey = forSelection.prefetchKey(kind, cat)
+        scope.launch {
+            val preferred: (Artwork) -> Boolean = { art ->
+                art.isGenerative ||
+                    !art.localPath.isNullOrBlank() ||
+                    imageCache.hasImage(art.id)
+            }
+            val livePool = packCatalogCache[prefetchKey] ?: withContext(Dispatchers.IO) {
+                runCatching {
+                    contentEngine.catalog(
+                        PreparedRotation(
+                            sourceIds = renewIds.orEmpty(),
+                            artworkIds = emptyList(),
+                        ),
+                    )
+                }.getOrDefault(emptyList())
+            }.also { loaded ->
+                if (loaded.isNotEmpty()) packCatalogCache[prefetchKey] = loaded
+            }
+            val cachedPool = livePool.ifEmpty {
+                withContext(Dispatchers.IO) {
+                    imageCache.loadCachedArtworks(renewIds)
+                }.ifEmpty {
+                    if (forSelection.allowsGenerativeAmbientFallback()) catalog else emptyList()
+                }
+            }
+            val pool = resolvePackPool(cachedPool, forSelection)
+            val rotationPool = AmbientAlbumArt.sampleRotationPool(
+                pool = pool,
+                isPreferred = preferred,
+            )
+            val chosen = rotationPool.firstOrNull()
+                ?: if (forSelection.allowsGenerativeAmbientFallback()) {
+                    resolveAmbientArtwork(catalog, artworkId = null)
+                } else {
+                    null
+                }
+            onStartAmbient(chosen, rotationPool, renewIds)
         }
     }
 
@@ -210,49 +287,7 @@ fun ControlPlaneScreen(
         },
         onSelectSubPack = { selection = it },
         onBackToHome = { openedFamily = null },
-        onStartAmbient = {
-            syncSourceSettings()
-            val renewIds = selection.sourceIdsForAmbientLoad()
-            val prefetchKey = selection.prefetchKey(museumKind, stockCategory)
-            scope.launch {
-                val preferred: (Artwork) -> Boolean = { art ->
-                    art.isGenerative ||
-                        !art.localPath.isNullOrBlank() ||
-                        imageCache.hasImage(art.id)
-                }
-                val livePool = packCatalogCache[prefetchKey] ?: withContext(Dispatchers.IO) {
-                    runCatching {
-                        contentEngine.catalog(
-                            PreparedRotation(
-                                sourceIds = renewIds.orEmpty(),
-                                artworkIds = emptyList(),
-                            ),
-                        )
-                    }.getOrDefault(emptyList())
-                }.also { loaded ->
-                    if (loaded.isNotEmpty()) packCatalogCache[prefetchKey] = loaded
-                }
-                val cachedPool = livePool.ifEmpty {
-                    withContext(Dispatchers.IO) {
-                        imageCache.loadCachedArtworks(renewIds)
-                    }.ifEmpty {
-                        if (selection.allowsGenerativeAmbientFallback()) catalog else emptyList()
-                    }
-                }
-                val pool = resolvePackPool(cachedPool, selection)
-                val rotationPool = AmbientAlbumArt.sampleRotationPool(
-                    pool = pool,
-                    isPreferred = preferred,
-                )
-                val chosen = rotationPool.firstOrNull()
-                    ?: if (selection.allowsGenerativeAmbientFallback()) {
-                        resolveAmbientArtwork(catalog, artworkId = null)
-                    } else {
-                        null
-                    }
-                onStartAmbient(chosen, rotationPool, renewIds)
-            }
-        },
+        onStartAmbient = { launchAmbient(selection) },
         onStartAmbientArtwork = { artwork ->
             syncSourceSettings()
             val renewIds = selection.sourceIdsForAmbientLoad()
@@ -267,6 +302,20 @@ fun ControlPlaneScreen(
                 },
             )
             onStartAmbient(artwork, rotationPool, renewIds)
+        },
+        onStartMediaPlayer = {
+            ambientAudioSettings?.setEnabled(true)
+            val mediaSelection = when {
+                openedFamily != null -> selection
+                defaultScreensaver != null -> defaultScreensaver!!
+                else -> PackSelection(PackFamily.Genart, PackFamily.Genart.defaultSubId())
+            }
+            val home = mediaSelection.family.homeTile()
+            if (home.isLocked(packOwnership)) {
+                onOpenMarketplace?.invoke(home.sellablePackId)
+            } else {
+                launchAmbient(mediaSelection)
+            }
         },
         modifier = modifier,
         onCreateCustomFractal = onCreateCustomFractal,
@@ -335,6 +384,7 @@ fun ControlPlaneContent(
     onBackToHome: () -> Unit,
     onStartAmbient: () -> Unit,
     onStartAmbientArtwork: (Artwork) -> Unit = {},
+    onStartMediaPlayer: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     catalog: List<Artwork> = emptyList(),
     startingAmbient: Boolean = false,
@@ -378,6 +428,7 @@ fun ControlPlaneContent(
                 onBackToHome = onBackToHome,
                 onStartAmbient = onStartAmbient,
                 onStartAmbientArtwork = onStartAmbientArtwork,
+                onStartMediaPlayer = onStartMediaPlayer,
                 modifier = Modifier.fillMaxSize(),
                 catalog = catalog,
                 onCreateCustomFractal = onCreateCustomFractal,
@@ -400,6 +451,7 @@ private fun PhoneControlPlaneContent(
     onBackToHome: () -> Unit,
     onStartAmbient: () -> Unit,
     onStartAmbientArtwork: (Artwork) -> Unit,
+    onStartMediaPlayer: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     catalog: List<Artwork> = emptyList(),
     onCreateCustomFractal: (() -> Unit)? = null,
@@ -437,10 +489,25 @@ private fun PhoneControlPlaneContent(
                             )
                         }
                     },
+                    actions = {
+                        if (onStartMediaPlayer != null) {
+                            IconButton(
+                                onClick = onStartMediaPlayer,
+                                modifier = Modifier.testTag("media_player_button"),
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_play_circle),
+                                    contentDescription = stringResource(R.string.cd_media_player),
+                                    tint = scheme.onSurface.copy(alpha = 0.7f),
+                                )
+                            }
+                        }
+                    },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = scheme.surface,
                         titleContentColor = scheme.onSurface,
                         navigationIconContentColor = scheme.onSurface,
+                        actionIconContentColor = scheme.onSurface,
                     ),
                 )
             }
@@ -457,6 +524,7 @@ private fun PhoneControlPlaneContent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp, vertical = 8.dp),
+                    onOpenMediaPlayer = onStartMediaPlayer,
                     onOpenSettings = onOpenSettings,
                     onOpenMediaPlayer = onOpenMediaPlayer,
                 )

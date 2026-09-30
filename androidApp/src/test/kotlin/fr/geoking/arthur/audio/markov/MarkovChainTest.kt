@@ -1,9 +1,12 @@
 package fr.geoking.arthur.audio.markov
 
 import fr.geoking.arthur.audio.MusicPresetResolver
+import fr.geoking.arthur.audio.MusicStyle
+import fr.geoking.arthur.audio.MusicUserPrefs
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.source.GenartSource
+import fr.geoking.arthur.source.AmbientAudioCharacter
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -36,16 +39,36 @@ class MarkovSequencerTest {
     fun sequencerAdvancesAndProducesHarmony() {
         val preset = MusicPresetResolver.resolve(
             Artwork(GenartSource.SNOW, "Snow", sourceId = GenartSource.ID, kind = ArtworkKind.Genart),
+            MusicUserPrefs(character = AmbientAudioCharacter.Melody, stylePreference = MusicStyle.JazzPiano),
         )
         val seq = MarkovSequencer(preset, sessionSalt = 99L)
         var onsets = 0
-        repeat(20_000) {
+        // ~8 s of audio at 44.1 kHz
+        repeat(44_100 * 8) {
             seq.advanceHarmonyClock(44_100)
             if (seq.tickMelody(44_100)) onsets++
         }
-        assertTrue(onsets > 0)
+        assertTrue("expected melodic onsets, got $onsets", onsets >= 6)
         assertTrue(seq.harmonyPartialsHz().isNotEmpty())
         assertNotNull(seq.transitionCue())
+    }
+
+    @Test
+    fun jazzPresetProducesFrequentOnsets() {
+        val preset = MusicPresetResolver.resolve(
+            Artwork("test.jazz", "Jazz", sourceId = "test", kind = ArtworkKind.Photo),
+            MusicUserPrefs(
+                character = AmbientAudioCharacter.Melody,
+                stylePreference = MusicStyle.JazzPiano,
+                complexity = 0.9f,
+            ),
+        )
+        val seq = MarkovSequencer(preset, sessionSalt = 7L)
+        var onsets = 0
+        repeat(44_100 * 6) {
+            if (seq.tickMelody(44_100)) onsets++
+        }
+        assertTrue("onsets=$onsets", onsets >= 5)
     }
 
     @Test

@@ -74,6 +74,7 @@ class GenartCatalogTest {
         assertEquals(GenartEngineId.CliffordWash, GenartCatalog.engineForId("genart.cliffordwash"))
         assertEquals(GenartEngineId.PlasmaNova, GenartCatalog.engineForId("genart.plasmanova"))
         assertEquals(GenartEngineId.EnergyTendrils, GenartCatalog.engineForId("genart.energytendrils"))
+        assertEquals(GenartEngineId.InterferenceWash, GenartCatalog.engineForId("genart.interferencewash"))
     }
 
     @Test
@@ -139,5 +140,6 @@ class GenartCatalogTest {
         assertEquals("#103 - Clifford Wash", GenartCatalog.entries().first { it.id == "genart.cliffordwash" }.title)
         assertEquals("#104 - Plasma Nova", GenartCatalog.entries().first { it.id == "genart.plasmanova" }.title)
         assertEquals("#105 - Energy Tendrils", GenartCatalog.entries().first { it.id == "genart.energytendrils" }.title)
+        assertEquals("#106 - Interference Wash", GenartCatalog.entries().first { it.id == "genart.interferencewash" }.title)
     }
 }

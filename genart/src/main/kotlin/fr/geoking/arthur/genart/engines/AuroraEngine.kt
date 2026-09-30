@@ -125,7 +125,7 @@ internal fun AuroraEngine(
                     val curr = topPoints[k]
                     val midX = (prev.x + curr.x) / 2f
                     val midY = (prev.y + curr.y) / 2f
-                    path.quadraticBezierTo(prev.x, prev.y, midX, midY)
+                    path.quadraticTo(prev.x, prev.y, midX, midY)
                 }
                 path.lineTo(topPoints.last().x, topPoints.last().y)
                 path.lineTo(bottomPoints.last().x, bottomPoints.last().y)
@@ -135,7 +135,7 @@ internal fun AuroraEngine(
                     val curr = bottomReversed[k]
                     val midX = (prev.x + curr.x) / 2f
                     val midY = (prev.y + curr.y) / 2f
-                    path.quadraticBezierTo(prev.x, prev.y, midX, midY)
+                    path.quadraticTo(prev.x, prev.y, midX, midY)
                 }
                 path.lineTo(bottomReversed.last().x, bottomReversed.last().y)
                 path.close()

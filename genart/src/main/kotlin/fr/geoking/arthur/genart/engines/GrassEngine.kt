@@ -112,7 +112,7 @@ private fun DrawScope.drawBlade(
     val tipY = h - bladeHeight
     val path = Path().apply {
         moveTo(baseX, baseY)
-        quadraticBezierTo(controlX, controlY, tipX, tipY)
+        quadraticTo(controlX, controlY, tipX, tipY)
     }
     val base = TonalPalette.pick(paletteColors, blade.colorIndex)
     val depthFactor = if (blade.depth == 0) 0.55f else 1f

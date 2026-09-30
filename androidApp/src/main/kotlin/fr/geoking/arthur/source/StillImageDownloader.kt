@@ -259,7 +259,34 @@ object StillImageDownloader {
         val tempFile = File.createTempFile("still_dl_", ".tmp")
         try {
             downloadToFile(url, tempFile, errorLogger, sourceId, artworkId)
-            return tempFile.readBytes()
+            if (tempFile.length() > MAX_IMAGE_BYTES) {
+                val err = java.io.IOException(
+                    "Image exceeded $MAX_IMAGE_BYTES byte limit after download from $url",
+                )
+                errorLogger?.log(
+                    sourceId = sourceId,
+                    category = ErrorCategory.Payload,
+                    message = err.message ?: "Image too large",
+                    artworkId = artworkId,
+                    url = url,
+                    throwable = err,
+                )
+                throw err
+            }
+            return try {
+                tempFile.readBytes()
+            } catch (oom: OutOfMemoryError) {
+                val err = java.io.IOException("OOM reading downloaded image from $url", oom)
+                errorLogger?.log(
+                    sourceId = sourceId,
+                    category = ErrorCategory.Payload,
+                    message = err.message ?: "OOM reading image",
+                    artworkId = artworkId,
+                    url = url,
+                    throwable = err,
+                )
+                throw err
+            }
         } finally {
             tempFile.delete()
         }

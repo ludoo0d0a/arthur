@@ -29,11 +29,11 @@ import fr.geoking.arthur.genart.seededUnit
 import fr.geoking.arthur.genart.sin01
 import kotlin.math.PI
 import kotlin.math.sin
+import kotlin.random.Random
 
 /**
- * Three depth layers of point-stars (far = many/small/sharp/slow, near = few/large/soft-blurred/
- * fast), each star twinkling on its own independent phase, plus one slow straight-line
- * "satellite" crossing the frame — a parallax star field rather than a single flat scatter.
+ * Three depth layers of point-stars plus soft nebula / galaxy dust so the dark sky
+ * fills the frame (Android Auto album art friendly). Positions re-roll each composition.
  */
 @Composable
 internal fun StarFieldEngine(
@@ -44,14 +44,17 @@ internal fun StarFieldEngine(
     speed: Float,
     modifier: Modifier = Modifier,
 ) {
-    val farCount = qualityCount(quality, low = 70, medium = 120, high = 190)
-    val midCount = qualityCount(quality, low = 24, medium = 42, high = 68)
-    val nearCount = qualityCount(quality, low = 10, medium = 16, high = 26)
+    val layoutSeed = remember { Random.nextInt() }
+    val farCount = qualityCount(quality, low = 90, medium = 150, high = 230)
+    val midCount = qualityCount(quality, low = 32, medium = 55, high = 85)
+    val nearCount = qualityCount(quality, low = 14, medium = 22, high = 34)
+    val dustCount = qualityCount(quality, low = 5, medium = 8, high = 12)
 
-    val farStars = remember(farCount) { starLayer(farCount, seedBase = 1) }
-    val midStars = remember(midCount) { starLayer(midCount, seedBase = 2) }
-    val nearStars = remember(nearCount) { starLayer(nearCount, seedBase = 3) }
-    val satelliteYFrac = remember { seededRange(9001, 0.08f, 0.5f) }
+    val farStars = remember(farCount, layoutSeed) { starLayer(farCount, seedBase = layoutSeed + 1) }
+    val midStars = remember(midCount, layoutSeed) { starLayer(midCount, seedBase = layoutSeed + 2) }
+    val nearStars = remember(nearCount, layoutSeed) { starLayer(nearCount, seedBase = layoutSeed + 3) }
+    val dustClouds = remember(dustCount, layoutSeed) { dustLayer(dustCount, seedBase = layoutSeed + 4) }
+    val satelliteYFrac = remember(layoutSeed) { seededRange(layoutSeed + 9001, 0.08f, 0.5f) }
 
     val transition = rememberInfiniteTransition(label = "starfield")
     val driftT by transition.animateFloat(
@@ -91,6 +94,13 @@ internal fun StarFieldEngine(
                     colors = listOf(Color(0xFF02030A), Color(0xFF000000)),
                 ),
             )
+        }
+        // Soft nebula / galaxy dust — fills dark voids with blurred colour washes.
+        Canvas(modifier = Modifier.fillMaxSize().blur(28.dp)) {
+            drawDustClouds(dustClouds, driftT, paletteColors, brightness, dim)
+        }
+        Canvas(modifier = Modifier.fillMaxSize().blur(14.dp)) {
+            drawDustClouds(dustClouds, driftT * 0.7f + 0.15f, paletteColors, brightness * 0.85f, dim * 0.7f)
         }
         // Far layer: crisp, slow drift, many small dim stars.
         Canvas(modifier = Modifier.fillMaxSize()) {
@@ -146,6 +156,54 @@ private fun starLayer(count: Int, seedBase: Int): List<StarSeed> = List(count) {
     )
 }
 
+private fun dustLayer(count: Int, seedBase: Int): List<DustSeed> = List(count) { i ->
+    val s = i * 131 + seedBase * 77_017
+    DustSeed(
+        xFrac = seededUnit(s + 3),
+        yFrac = seededUnit(s + 11),
+        radiusFrac = seededRange(s + 19, 0.22f, 0.48f),
+        alphaBase = seededRange(s + 29, 0.10f, 0.22f),
+        driftMul = seededRange(s + 37, 0.01f, 0.04f),
+        colorIndex = i,
+    )
+}
+
+private fun DrawScope.drawDustClouds(
+    clouds: List<DustSeed>,
+    driftT: Float,
+    paletteColors: List<Color>,
+    brightness: Float,
+    dim: Float,
+) {
+    val w = size.width
+    val h = size.height
+    val minDim = size.minDimension
+    val drift = phase01(driftT)
+    clouds.forEach { cloud ->
+        val x = phase01(cloud.xFrac + drift * cloud.driftMul) * w
+        val y = cloud.yFrac * h
+        val radius = cloud.radiusFrac * minDim
+        val tint = TonalPalette.brightness(
+            TonalPalette.pick(paletteColors, cloud.colorIndex),
+            brightness * 0.55f,
+        )
+        val alpha = cloud.alphaBase * dim
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(
+                    tint.copy(alpha = alpha),
+                    tint.copy(alpha = alpha * 0.35f),
+                    Color.Transparent,
+                ),
+                center = Offset(x, y),
+                radius = radius,
+            ),
+            radius = radius,
+            center = Offset(x, y),
+        )
+    }
+}
+
 private fun DrawScope.drawStarLayer(
     stars: List<StarSeed>,
     driftT: Float,
@@ -185,5 +243,14 @@ private data class StarSeed(
     val alphaUnit: Float,
     val twinkleFreq: Float,
     val twinklePhase: Float,
+    val colorIndex: Int,
+)
+
+private data class DustSeed(
+    val xFrac: Float,
+    val yFrac: Float,
+    val radiusFrac: Float,
+    val alphaBase: Float,
+    val driftMul: Float,
     val colorIndex: Int,
 )

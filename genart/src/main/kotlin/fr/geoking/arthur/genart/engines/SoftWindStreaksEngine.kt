@@ -100,7 +100,7 @@ internal fun SoftWindStreaksEngine(
                 val endX = x + len * 0.5f
                 val path = Path().apply {
                     moveTo(startX, y)
-                    quadraticBezierTo(x, y - amp, endX, y)
+                    quadraticTo(x, y - amp, endX, y)
                 }
                 val base = TonalPalette.mix(Color(0xFFF5F8FC), TonalPalette.pick(paletteColors, streak.colorIndex), 0.25f)
                 val color = TonalPalette.brightness(base, brightness)

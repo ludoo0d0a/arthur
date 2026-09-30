@@ -2,7 +2,9 @@ package fr.geoking.arthur.audio
 
 import android.content.Context
 import fr.geoking.arthur.shared.domain.Artwork
+import fr.geoking.arthur.shared.error.ErrorLogger
 import fr.geoking.arthur.source.AmbientAudioSettings
+import org.koin.core.context.GlobalContext
 
 /**
  * Thin compatibility wrapper around [ProceduralMusicEngine].
@@ -11,8 +13,9 @@ import fr.geoking.arthur.source.AmbientAudioSettings
 class ZenAudioEngine(
     context: Context,
     audioSettings: AmbientAudioSettings,
+    errorLogger: ErrorLogger? = runCatching { GlobalContext.get().get<ErrorLogger>() }.getOrNull(),
 ) {
-    private val engine = ProceduralMusicEngine(context, audioSettings)
+    private val engine = ProceduralMusicEngine(context, audioSettings, errorLogger)
 
     fun start() = engine.start()
     fun stop() = engine.stop()

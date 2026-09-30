@@ -4,7 +4,9 @@ import androidx.compose.ui.graphics.Color
 
 /**
  * Named ARGB palettes shared by Compose engines and android.graphics still bakers.
- * Ported from Julius AnimationPalettes (copy-extract, no Julius dependency).
+ *
+ * Themes stay visually coherent: blues, amber/orange, soft triads — never rainbow flash.
+ * [fromGeneration] / [paletteFor] pick a random theme per bake / artwork.
  */
 data class AnimationPalette(
     val name: String,
@@ -29,73 +31,134 @@ data class AnimationPalette(
 object AnimationPalettes {
     private val palettes = listOf(
         AnimationPalette(
-            name = "Aurora",
-            colors = listOf(
-                0xFF6366F1.toInt(),
-                0xFF8B5CF6.toInt(),
-                0xFFEC4899.toInt(),
-                0xFF06B6D4.toInt(),
-                0xFF10B981.toInt(),
-            ),
-        ),
-        AnimationPalette(
-            name = "Sunset",
-            colors = listOf(
-                0xFFF97316.toInt(),
-                0xFFF59E0B.toInt(),
-                0xFFFB7185.toInt(),
-                0xFFEF4444.toInt(),
-                0xFFA855F7.toInt(),
-            ),
-        ),
-        AnimationPalette(
             name = "Ocean",
             colors = listOf(
                 0xFF0EA5E9.toInt(),
                 0xFF38BDF8.toInt(),
                 0xFF06B6D4.toInt(),
                 0xFF14B8A6.toInt(),
-                0xFF22D3EE.toInt(),
+                0xFF7DD3FC.toInt(),
+            ),
+        ),
+        AnimationPalette(
+            name = "Deep Blue",
+            colors = listOf(
+                0xFF1E3A8A.toInt(),
+                0xFF2563EB.toInt(),
+                0xFF3B82F6.toInt(),
+                0xFF60A5FA.toInt(),
+                0xFF93C5FD.toInt(),
+            ),
+        ),
+        AnimationPalette(
+            name = "Ice",
+            colors = listOf(
+                0xFF0C4A6E.toInt(),
+                0xFF0284C7.toInt(),
+                0xFF38BDF8.toInt(),
+                0xFFBAE6FD.toInt(),
+                0xFFE0F2FE.toInt(),
+            ),
+        ),
+        AnimationPalette(
+            name = "Teal Mist",
+            colors = listOf(
+                0xFF115E59.toInt(),
+                0xFF0D9488.toInt(),
+                0xFF2DD4BF.toInt(),
+                0xFF99F6E4.toInt(),
+                0xFFCCFBF1.toInt(),
+            ),
+        ),
+        AnimationPalette(
+            name = "Amber Ember",
+            colors = listOf(
+                0xFF9A3412.toInt(),
+                0xFFEA580C.toInt(),
+                0xFFF59E0B.toInt(),
+                0xFFFBBF24.toInt(),
+                0xFFFEF3C7.toInt(),
+            ),
+        ),
+        AnimationPalette(
+            name = "Golden Dusk",
+            colors = listOf(
+                0xFFB45309.toInt(),
+                0xFFD97706.toInt(),
+                0xFFFBBF24.toInt(),
+                0xFFFDE68A.toInt(),
+                0xFFFFFBEB.toInt(),
+            ),
+        ),
+        AnimationPalette(
+            name = "Copper Glow",
+            colors = listOf(
+                0xFF7C2D12.toInt(),
+                0xFFC2410C.toInt(),
+                0xFFFB923C.toInt(),
+                0xFFFDBA74.toInt(),
+                0xFFFFEDD5.toInt(),
             ),
         ),
         AnimationPalette(
             name = "Forest",
             colors = listOf(
-                0xFF22C55E.toInt(),
+                0xFF166534.toInt(),
                 0xFF16A34A.toInt(),
-                0xFF10B981.toInt(),
-                0xFF84CC16.toInt(),
-                0xFF4ADE80.toInt(),
+                0xFF22C55E.toInt(),
+                0xFF86EFAC.toInt(),
+                0xFFDCFCE7.toInt(),
             ),
         ),
         AnimationPalette(
-            name = "Ember",
+            name = "Indigo Night",
             colors = listOf(
-                0xFFEF4444.toInt(),
-                0xFFF97316.toInt(),
-                0xFFFBBF24.toInt(),
-                0xFFDC2626.toInt(),
-                0xFFFB7185.toInt(),
-            ),
-        ),
-        AnimationPalette(
-            name = "Cosmic",
-            colors = listOf(
-                0xFF7C3AED.toInt(),
+                0xFF312E81.toInt(),
+                0xFF4338CA.toInt(),
                 0xFF6366F1.toInt(),
-                0xFF0EA5E9.toInt(),
-                0xFFF472B6.toInt(),
-                0xFFA855F7.toInt(),
+                0xFFA5B4FC.toInt(),
+                0xFFE0E7FF.toInt(),
             ),
         ),
+        AnimationPalette(
+            name = "Soft Violet",
+            colors = listOf(
+                0xFF5B21B6.toInt(),
+                0xFF7C3AED.toInt(),
+                0xFFA78BFA.toInt(),
+                0xFFC4B5FD.toInt(),
+                0xFFEDE9FE.toInt(),
+            ),
+        ),
+        AnimationPalette(
+            name = "Rose Dusk",
+            colors = listOf(
+                0xFF9F1239.toInt(),
+                0xFFBE123C.toInt(),
+                0xFFFB7185.toInt(),
+                0xFFFDA4AF.toInt(),
+                0xFFFFE4E6.toInt(),
+            ),
+        ),
+        AnimationPalette(
+            name = "Slate",
+            colors = listOf(
+                0xFF334155.toInt(),
+                0xFF475569.toInt(),
+                0xFF64748B.toInt(),
+                0xFF94A3B8.toInt(),
+                0xFFE2E8F0.toInt(),
+            ),
+        ),
+        // Legacy Micro index kept for callers that pin the last palette.
         AnimationPalette(
             name = "Micro",
             colors = listOf(
-                0xFFA732FF.toInt(),
-                0xFFB388FF.toInt(),
-                0xFF7C4DFF.toInt(),
-                0xFFD1C4E9.toInt(),
-                0xFF9575CD.toInt(),
+                0xFF4C1D95.toInt(),
+                0xFF6D28D9.toInt(),
+                0xFF8B5CF6.toInt(),
+                0xFFC4B5FD.toInt(),
+                0xFFEDE9FE.toInt(),
             ),
         ),
     )

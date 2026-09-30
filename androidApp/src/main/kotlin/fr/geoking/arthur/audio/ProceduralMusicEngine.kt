@@ -16,13 +16,18 @@ import fr.geoking.arthur.audio.voices.ChimeClusterVoice
 import fr.geoking.arthur.audio.voices.KalimbaPluckVoice
 import fr.geoking.arthur.audio.voices.PluckGuitarVoice
 import fr.geoking.arthur.audio.voices.SinePadVoice
-import fr.geoking.arthur.audio.voices.SoftPianoVoice
+import fr.geoking.arthur.audio.voices.SoftPianoPool
 import fr.geoking.arthur.audio.voices.SoftPulseVoice
 import fr.geoking.arthur.audio.voices.WaveNoiseVoice
 import fr.geoking.arthur.audio.voices.WindTextureVoice
+import fr.geoking.arthur.audio.voices.softLimit
+import fr.geoking.arthur.error.ErrorTrap
 import fr.geoking.arthur.shared.domain.Artwork
-import fr.geoking.arthur.source.AmbientAudioMode
+import fr.geoking.arthur.shared.error.ErrorCategory
+import fr.geoking.arthur.shared.error.ErrorLogger
+import fr.geoking.arthur.source.AmbientAudioCharacter
 import fr.geoking.arthur.source.AmbientAudioSettings
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -42,10 +47,14 @@ import kotlin.random.Random
 class ProceduralMusicEngine(
     context: Context,
     private val audioSettings: AmbientAudioSettings,
+    private val errorLogger: ErrorLogger? = null,
 ) {
     private val appContext = context.applicationContext
     private val audioManager = appContext.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val audioExceptionHandler = errorLogger?.let {
+        ErrorTrap.coroutineHandler(it, sourceId = "ambient_audio")
+    } ?: CoroutineExceptionHandler { _, _ -> }
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + audioExceptionHandler)
 
     private var audioTrack: AudioTrack? = null
     private var synthesisJob: Job? = null
@@ -56,7 +65,9 @@ class ProceduralMusicEngine(
     private var hasAudioFocus = false
 
     @Volatile private var masterVolume: Float = audioSettings.volume.value
-    @Volatile private var audioMode: AmbientAudioMode = audioSettings.mode.value
+    @Volatile private var character: AmbientAudioCharacter = audioSettings.character.value
+    @Volatile private var complexity: Float = audioSettings.complexity.value
+    @Volatile private var stylePreference: MusicStyle? = audioSettings.stylePreference.value
     @Volatile private var isEnabled: Boolean = audioSettings.enabled.value
 
     @Volatile private var preset: MusicPreset? = null
@@ -64,6 +75,7 @@ class ProceduralMusicEngine(
     @Volatile private var crossfadeSamples = 0
     @Volatile private var crossfadeTotal = 0
     @Volatile private var triggerTransitionFlag = false
+    @Volatile private var currentArtwork: Artwork? = null
 
     private val sessionSalt = System.nanoTime()
 
@@ -71,9 +83,10 @@ class ProceduralMusicEngine(
     private var form: ArrangementForm? = null
 
     // Voices (reused across presets)
-    private val padA = SinePadVoice(6f)
-    private val padB = SinePadVoice(12f)
-    private val piano = SoftPianoVoice()
+    private val padA = SinePadVoice(2.5f)
+    private val padB = SinePadVoice(3f)
+    private val fadePad = SinePadVoice(2f)
+    private val piano = SoftPianoPool(4)
     private val guitar = PluckGuitarVoice()
     private val bowl = BowlVoice()
     private val waves = WaveNoiseVoice(11L)
@@ -91,20 +104,50 @@ class ProceduralMusicEngine(
 
     init {
         settingsJob = scope.launch {
-            combine(audioSettings.enabled, audioSettings.volume, audioSettings.mode) { enabled, vol, mode ->
-                Triple(enabled, vol, mode)
-            }.collect { (enabled, vol, mode) ->
-                isEnabled = enabled
-                masterVolume = vol
-                audioMode = mode
-                if (!enabled && isRunning.get()) stop()
+            combine(
+                audioSettings.enabled,
+                audioSettings.volume,
+                audioSettings.character,
+                audioSettings.complexity,
+                audioSettings.stylePreference,
+            ) { enabled, vol, char, comp, stylePref ->
+                SettingsSnapshot(enabled, vol, char, comp, stylePref)
+            }.collect { snap ->
+                val characterChanged = character != snap.character
+                val prefsChanged = characterChanged ||
+                    complexity != snap.complexity ||
+                    stylePreference != snap.stylePreference
+                isEnabled = snap.enabled
+                masterVolume = snap.volume
+                character = snap.character
+                complexity = snap.complexity
+                stylePreference = snap.stylePreference
+                if (!snap.enabled && isRunning.get()) stop()
+                if (prefsChanged && isEnabled) {
+                    currentArtwork?.let { setArtwork(it) }
+                }
             }
         }
     }
 
+    private data class SettingsSnapshot(
+        val enabled: Boolean,
+        val volume: Float,
+        val character: AmbientAudioCharacter,
+        val complexity: Float,
+        val stylePreference: MusicStyle?,
+    )
+
+    private fun userPrefs() = MusicUserPrefs(
+        character = character,
+        stylePreference = stylePreference,
+        complexity = complexity,
+    )
+
     /** Apply artwork-derived preset with crossfade; safe when stopped. */
     fun setArtwork(artwork: Artwork) {
-        val next = MusicPresetResolver.resolve(artwork)
+        currentArtwork = artwork
+        val next = MusicPresetResolver.resolve(artwork, userPrefs())
         if (!isRunning.get()) {
             preset = next
             sequencer = MarkovSequencer(next, sessionSalt)
@@ -136,10 +179,14 @@ class ProceduralMusicEngine(
             return
         }
         if (preset == null) {
-            // Neutral zen bed until first artwork arrives.
-            val fallback = MusicPresetResolver.resolve(
-                Artwork(id = "ambient.default", title = "Ambient", sourceId = "ambient", kind = fr.geoking.arthur.shared.domain.ArtworkKind.Genart),
+            val fallbackArt = Artwork(
+                id = "ambient.default",
+                title = "Ambient",
+                sourceId = "ambient",
+                kind = fr.geoking.arthur.shared.domain.ArtworkKind.Genart,
             )
+            currentArtwork = fallbackArt
+            val fallback = MusicPresetResolver.resolve(fallbackArt, userPrefs())
             preset = fallback
             sequencer = MarkovSequencer(fallback, sessionSalt)
             form = ArrangementForm(fallback.formSeed)
@@ -191,23 +238,28 @@ class ProceduralMusicEngine(
         val pcm = ShortArray(chunk)
         var sampleIndex = 0L
         var pulseClock = 0
-        var outgoingSequencer: MarkovSequencer? = null
         var outgoingPreset: MusicPreset? = null
+        var fadePadChordSet = false
 
         while (scope.isActive && isRunning.get()) {
             val track = audioTrack ?: break
-            val playPad = audioMode == AmbientAudioMode.PAD_AND_CHIME || audioMode == AmbientAudioMode.PAD_ONLY
-            val playEvents = audioMode == AmbientAudioMode.PAD_AND_CHIME || audioMode == AmbientAudioMode.CHIME_ONLY
+            val char = character
+            val playPad = char != AmbientAudioCharacter.Melody
+            val playEvents = true
+            val allowAtmosphereFx = char == AmbientAudioCharacter.Atmosphere
 
-            // Commit pending preset at start of crossfade.
             pendingPreset?.let { next ->
                 if (crossfadeSamples == crossfadeTotal) {
                     outgoingPreset = preset
-                    outgoingSequencer = sequencer
+                    fadePad.setChord(
+                        sequencer?.harmonyPartialsHz()?.ifEmpty { listOf(preset?.rootHz ?: 220f) }
+                            ?: listOf(220f),
+                    )
+                    fadePadChordSet = true
                     preset = next
                     sequencer = MarkovSequencer(next, sessionSalt xor sampleIndex)
                     form = ArrangementForm(next.formSeed)
-                    applyBedVoices(next, sequencer!!)
+                    applyBedVoices(next, sequencer!!, allowAtmosphereFx)
                     pendingPreset = null
                 }
             }
@@ -215,7 +267,7 @@ class ProceduralMusicEngine(
             val activePreset = preset ?: continue
             val seq = sequencer ?: continue
             val arrangement = form ?: continue
-            applyBedVoices(activePreset, seq)
+            applyBedVoices(activePreset, seq, allowAtmosphereFx)
 
             for (i in 0 until chunk) {
                 sampleIndex++
@@ -235,7 +287,6 @@ class ProceduralMusicEngine(
                     }
                 }
 
-                // Soft pulse grid
                 if (playEvents && activePreset.trackMix.pulse > 0.05f) {
                     val samplesPerPulse = (60.0 / activePreset.tempoBpm * sampleRate).toInt().coerceAtLeast(1)
                     pulseClock++
@@ -261,18 +312,24 @@ class ProceduralMusicEngine(
 
                 if (playPad) {
                     bed = padA.render(sampleIndex, sampleRate) * activePreset.trackMix.bed
-                    when (activePreset.style) {
-                        MusicStyle.OceanWaves ->
-                            bed += waves.render(sampleIndex, sampleRate) * activePreset.trackMix.bed * 0.8f
-                        MusicStyle.TibetanBowl, MusicStyle.CosmicDrone ->
-                            bed += bowl.render(sampleIndex, sampleRate) * activePreset.trackMix.bed * 0.6f
-                        MusicStyle.WindChimes ->
-                            bed += wind.render(sampleIndex, sampleRate) * 0.3f
-                        else -> Unit
+                    if (allowAtmosphereFx) {
+                        when (activePreset.style) {
+                            MusicStyle.OceanWaves ->
+                                bed += waves.render(sampleIndex, sampleRate) * activePreset.trackMix.bed * 0.7f
+                            MusicStyle.TibetanBowl, MusicStyle.CosmicDrone ->
+                                bed += bowl.render(sampleIndex, sampleRate) * activePreset.trackMix.bed * 0.5f
+                            MusicStyle.WindChimes ->
+                                bed += wind.render(sampleIndex, sampleRate) * 0.25f
+                            else -> Unit
+                        }
                     }
-                    // Harmony as second detuned pad
                     padB.setChord(seq.harmonyPartialsHz())
                     harmony = padB.render(sampleIndex, sampleRate) * activePreset.trackMix.harmony
+                } else {
+                    // Melody character: still render pads at near-zero so state stays warm, but mute.
+                    padA.render(sampleIndex, sampleRate)
+                    padB.setChord(seq.harmonyPartialsHz())
+                    padB.render(sampleIndex, sampleRate)
                 }
 
                 if (playEvents) {
@@ -281,10 +338,23 @@ class ProceduralMusicEngine(
                             guitar.render(sampleIndex, sampleRate) +
                             kalimba.render(sampleIndex, sampleRate)
                         ) * activePreset.trackMix.melody * arrangement.melodyMul
-                    texture = (
-                        wind.render(sampleIndex, sampleRate) * 0.5f +
-                            waves.render(sampleIndex, sampleRate) * 0.25f
-                        ) * activePreset.trackMix.texture * arrangement.textureMul
+
+                    texture = when {
+                        !allowAtmosphereFx && character == AmbientAudioCharacter.Melody -> 0f
+                        activePreset.style == MusicStyle.OceanWaves ->
+                            waves.render(sampleIndex, sampleRate) *
+                                activePreset.trackMix.texture * arrangement.textureMul
+                        activePreset.style == MusicStyle.WindChimes ->
+                            wind.render(sampleIndex, sampleRate) *
+                                activePreset.trackMix.texture * arrangement.textureMul
+                        allowAtmosphereFx && activePreset.trackMix.texture > 0.02f ->
+                            (
+                                wind.render(sampleIndex, sampleRate) * 0.35f +
+                                    waves.render(sampleIndex, sampleRate) * 0.15f
+                                ) * activePreset.trackMix.texture * arrangement.textureMul
+                        else -> 0f
+                    }
+
                     pulseS = pulse.render(sampleIndex, sampleRate) * activePreset.trackMix.pulse
                     trans = (
                         chimes.render(sampleIndex, sampleRate) +
@@ -294,49 +364,77 @@ class ProceduralMusicEngine(
 
                 var mixed = bed + harmony + melody + texture + pulseS + trans
 
-                // Crossfade from outgoing bed if active
-                if (crossfadeSamples > 0 && outgoingPreset != null && playPad) {
+                // Crossfade using dedicated fade pad (no double-render of padA).
+                if (crossfadeSamples > 0 && outgoingPreset != null) {
                     val t = 1f - crossfadeSamples.toFloat() / crossfadeTotal.toFloat()
-                    val outBed = padA.render(sampleIndex, sampleRate) * (1f - t) * 0.3f
+                    val outBed = if (fadePadChordSet) {
+                        fadePad.render(sampleIndex, sampleRate) * (1f - t) * 0.25f
+                    } else {
+                        0f
+                    }
                     mixed = mixed * t + outBed * (1f - t)
                     crossfadeSamples--
                     if (crossfadeSamples == 0) {
                         outgoingPreset = null
-                        outgoingSequencer = null
+                        fadePadChordSet = false
+                        fadePad.reset()
                     }
                 }
 
-                mixed *= masterVolume
+                mixed = softLimit(mixed * masterVolume)
                 pcm[i] = (mixed.coerceIn(-1f, 1f) * 32767f).toInt().toShort()
             }
-            track.write(pcm, 0, chunk)
+            val written = try {
+                track.write(pcm, 0, chunk)
+            } catch (e: IllegalStateException) {
+                errorLogger?.log(
+                    sourceId = "ambient_audio",
+                    category = ErrorCategory.Unknown,
+                    message = e.message ?: "AudioTrack write failed",
+                    details = e.stackTraceToString().take(500),
+                    throwable = e,
+                )
+                isRunning.set(false)
+                break
+            }
+            if (written < 0) {
+                errorLogger?.log(
+                    sourceId = "ambient_audio",
+                    category = ErrorCategory.Unknown,
+                    message = "AudioTrack write returned $written",
+                )
+                isRunning.set(false)
+                break
+            }
         }
     }
 
-    private fun applyBedVoices(p: MusicPreset, seq: MarkovSequencer) {
+    private fun applyBedVoices(p: MusicPreset, seq: MarkovSequencer, allowAtmosphereFx: Boolean) {
         val partials = seq.harmonyPartialsHz()
         padA.setChord(partials.ifEmpty { listOf(p.rootHz) })
-        when (p.style) {
-            MusicStyle.TibetanBowl, MusicStyle.CosmicDrone -> bowl.setSustain(p.rootHz, true)
-            else -> bowl.setSustain(p.rootHz, false)
-        }
+        val sustainBowl = allowAtmosphereFx &&
+            p.style in setOf(MusicStyle.TibetanBowl, MusicStyle.CosmicDrone)
+        bowl.setSustain(p.rootHz, sustainBowl)
     }
 
     private fun fireMelodyNote(p: MusicPreset, seq: MarkovSequencer) {
         val hz = seq.currentMelodyHz ?: return
         when (p.style) {
             MusicStyle.JazzPiano, MusicStyle.BarAmbience, MusicStyle.NightLounge ->
-                piano.noteOn(hz, 0.45f)
-            MusicStyle.SoftGuitar -> guitar.noteOn(hz, 0.5f)
-            MusicStyle.AfricanPulse -> kalimba.noteOn(hz, 0.55f)
-            MusicStyle.WindChimes -> chimes.noteOn(hz, 0.5f)
-            MusicStyle.TibetanBowl -> bowl.noteOn(hz, 0.4f)
-            MusicStyle.OceanWaves -> piano.noteOn(hz * 0.5f, 0.25f)
-            MusicStyle.CosmicDrone -> chimes.noteOn(hz, 0.3f)
-            MusicStyle.Zen -> {
+                piano.noteOn(hz, 0.55f)
+            MusicStyle.SoftGuitar -> guitar.noteOn(hz, 0.55f)
+            MusicStyle.AfricanPulse -> kalimba.noteOn(hz, 0.6f)
+            MusicStyle.WindChimes -> chimes.noteOn(hz, 0.55f)
+            MusicStyle.TibetanBowl -> bowl.noteOn(hz, 0.45f)
+            MusicStyle.OceanWaves -> piano.noteOn(hz, 0.4f)
+            MusicStyle.CosmicDrone -> {
                 piano.noteOn(hz, 0.35f)
-                if (Random(hz.toBits().toLong()).nextFloat() < 0.3f) {
-                    chimes.noteOn(hz, 0.25f)
+                chimes.noteOn(hz, 0.25f)
+            }
+            MusicStyle.Zen -> {
+                piano.noteOn(hz, 0.5f)
+                if (Random(hz.toBits().toLong()).nextFloat() < 0.2f) {
+                    chimes.noteOn(hz, 0.22f)
                 }
             }
         }
@@ -356,16 +454,15 @@ class ProceduralMusicEngine(
                 chimes.noteCluster(freqs, 0.65f)
             }
             TextureCueKind.ArpeggioCascade -> {
-                piano.noteOn(root, 0.4f)
-                guitar.noteOn(root * 1.5f, 0.35f)
-                kalimba.noteOn(root * 2f, 0.3f)
+                piano.noteOn(root, 0.45f)
+                piano.noteOn(root * 1.25f, 0.35f)
+                guitar.noteOn(root * 1.5f, 0.3f)
             }
             TextureCueKind.ThumbPianoRoll -> {
                 kalimba.noteOn(root, 0.5f)
                 kalimba.noteOn(root * 1.25f, 0.4f)
             }
             TextureCueKind.WaveSwell, TextureCueKind.SoftRain, TextureCueKind.WindGust -> {
-                // Texture voices are continuous; add a soft chime accent.
                 chimes.noteOn(root * 2f, 0.3f)
             }
             TextureCueKind.SilenceBreath -> Unit

@@ -18,6 +18,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.SavedStateRegistry
+import androidx.savedstate.SavedStateRegistryController
+import androidx.savedstate.SavedStateRegistryOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import fr.geoking.arthur.R
 import fr.geoking.arthur.phone.theme.ArthurTheme
 import fr.geoking.arthur.shared.domain.Artwork
@@ -202,19 +210,38 @@ class AmbientActivity : ComponentActivity() {
 }
 
 /** TV Canvas screensaver / Dream — live generative Ambient via Compose. */
-class ArthurDreamService : DreamService() {
+class ArthurDreamService : DreamService(), LifecycleOwner, SavedStateRegistryOwner {
     private val contentEngine: ContentEngine by inject()
     private val rotationSettings: RotationSettings by inject()
     private val screensaverSettings: ScreensaverSettings by inject()
 
+    private val lifecycleRegistry = LifecycleRegistry(this)
+    private val savedStateRegistryController = SavedStateRegistryController.create(this)
+
+    override val lifecycle: Lifecycle
+        get() = lifecycleRegistry
+
+    override val savedStateRegistry: SavedStateRegistry
+        get() = savedStateRegistryController.savedStateRegistry
+
+    override fun onCreate() {
+        super.onCreate()
+        savedStateRegistryController.performRestore(null)
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
+    }
+
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
         isInteractive = false
         isFullscreen = true
         isScreenBright = true
         val fallbackTitle = getString(R.string.app_name)
         setContentView(
             ComposeView(this).apply {
+                setViewTreeLifecycleOwner(this@ArthurDreamService)
+                setViewTreeSavedStateRegistryOwner(this@ArthurDreamService)
                 setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
                 setContent {
                     ArthurTheme {
@@ -239,6 +266,17 @@ class ArthurDreamService : DreamService() {
                 }
             },
         )
+    }
+
+    override fun onDetachedFromWindow() {
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+        super.onDetachedFromWindow()
+    }
+
+    override fun onDestroy() {
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+        super.onDestroy()
     }
 }
 

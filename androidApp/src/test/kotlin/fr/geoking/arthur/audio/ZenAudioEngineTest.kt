@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
-import fr.geoking.arthur.source.AmbientAudioMode
+import fr.geoking.arthur.source.AmbientAudioCharacter
 import fr.geoking.arthur.source.AmbientAudioSettings
 import org.junit.Before
 import org.junit.Test
@@ -19,6 +19,10 @@ class ZenAudioEngineTest {
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
+        context.getSharedPreferences("arthur_ambient_audio", Context.MODE_PRIVATE)
+            .edit()
+            .clear()
+            .commit()
         settings = AmbientAudioSettings(context)
     }
 
@@ -37,7 +41,7 @@ class ZenAudioEngineTest {
     @Test
     fun engineLifecycleWhenEnabledStartsAndStops() {
         settings.setEnabled(true)
-        settings.setMode(AmbientAudioMode.PAD_AND_CHIME)
+        settings.setCharacter(AmbientAudioCharacter.Balanced)
         val engine = ZenAudioEngine(context, settings)
         engine.setArtwork(Artwork("genart.waves", "Waves", sourceId = "genart", kind = ArtworkKind.Genart))
         engine.start()

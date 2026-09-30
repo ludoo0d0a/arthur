@@ -1,6 +1,7 @@
 package fr.geoking.arthur.audio.markov
 
 import fr.geoking.arthur.audio.MusicPreset
+import fr.geoking.arthur.audio.MusicStyle
 import fr.geoking.arthur.audio.banks.HarmonyBank
 import fr.geoking.arthur.audio.banks.HarmonyState
 import fr.geoking.arthur.audio.banks.MelodyBank
@@ -35,13 +36,13 @@ class MarkovSequencer(
     private val pitchChain = MarkovChain.connected(
         states = motifs.indices.toList(),
         random = random,
-        selfBias = 0.25f,
+        selfBias = 0.45f,
         initial = Math.floorMod(preset.melodyBankIndex, motifs.size),
     )
     private val rhythmChain = MarkovChain.connected(
         states = rhythm.tokens.indices.toList(),
         random = random,
-        selfBias = 0.2f,
+        selfBias = 0.25f,
     )
     private val harmonyChain = MarkovChain(
         states = HarmonyState.entries.toList(),
@@ -62,6 +63,17 @@ class MarkovSequencer(
     private var samplesUntilHarmony = 0
     private var currentHarmony = harmonyChain.current
     private var currentDegree: Int? = 0
+    private var lastDegree: Int = 0
+
+    private val melodicStyle: Boolean =
+        preset.style in setOf(
+            MusicStyle.JazzPiano,
+            MusicStyle.Zen,
+            MusicStyle.SoftGuitar,
+            MusicStyle.BarAmbience,
+            MusicStyle.NightLounge,
+            MusicStyle.AfricanPulse,
+        )
 
     val harmonyState: HarmonyState get() = currentHarmony
     val currentMelodyHz: Float?
@@ -74,6 +86,7 @@ class MarkovSequencer(
         motifCursor = 0
         samplesUntilNextNote = 0
         currentDegree = 0
+        lastDegree = 0
     }
 
     fun advanceHarmonyClock(sampleRate: Int) {
@@ -93,21 +106,40 @@ class MarkovSequencer(
             samplesUntilNextNote--
             return false
         }
-        // Consume next degree in motif or pick a new motif.
         if (motifCursor >= activeMotif.degrees.size) {
             activeMotif = motifs[pitchChain.next()]
             motifCursor = 0
         }
-        val degree = activeMotif.degrees[motifCursor++]
+        var degree = activeMotif.degrees[motifCursor++]
         val token = rhythm.tokens[rhythmChain.next()]
-        val quarters = kotlin.math.abs(token).coerceAtLeast(0.25f)
+        val rawQuarters = kotlin.math.abs(token).coerceAtLeast(0.25f)
+        val quarters = if (melodicStyle) rawQuarters.coerceAtMost(1.25f) else rawQuarters
         val isRestToken = token < 0f || degree == MelodyMotif.REST
-        // Density thins activity by sometimes forcing rests (never all notes).
-        val forceRest = random.nextFloat() > (0.35f + preset.density * 0.65f)
-        if (isRestToken || forceRest) {
+
+        // Contour bias: prefer stepwise motion when motif degree leaps wildly mid-phrase.
+        if (!isRestToken && melodicStyle && motifCursor > 1) {
+            val delta = kotlin.math.abs(degree - lastDegree)
+            if (delta > 3 && random.nextFloat() < 0.55f) {
+                degree = lastDegree + if (degree > lastDegree) 1 else -1
+            }
+        }
+
+        // Melodic styles keep most notes sounding.
+        val activityFloor = if (melodicStyle) 0.72f else 0.35f
+        val forceRest = random.nextFloat() > (activityFloor + preset.density * 0.28f)
+        // Occasionally skip rhythm rests in melodic styles so phrases stay singable.
+        val treatAsRest = when {
+            degree == MelodyMotif.REST -> true
+            token < 0f && melodicStyle && random.nextFloat() < 0.45f -> false
+            token < 0f -> true
+            forceRest -> true
+            else -> false
+        }
+        if (treatAsRest) {
             currentDegree = null
         } else {
             currentDegree = degree
+            lastDegree = degree
         }
         val seconds = quarters * (60.0 / preset.tempoBpm.coerceAtLeast(30f))
         samplesUntilNextNote = (seconds * sampleRate).toInt().coerceAtLeast(sampleRate / 32)
@@ -136,7 +168,8 @@ class MarkovSequencer(
         val scale = preset.scaleSemitones
         if (scale.isEmpty()) return preset.rootHz
         val idx = Math.floorMod(degreeIndex, scale.size)
-        val semis = scale[idx] + HarmonyBank.stateSemitones(currentHarmony)
+        val octave = degreeIndex / scale.size
+        val semis = scale[idx] + HarmonyBank.stateSemitones(currentHarmony) + octave * 12
         return preset.rootHz * 2.0.pow(semis / 12.0).toFloat()
     }
 

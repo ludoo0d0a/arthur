@@ -48,6 +48,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -55,6 +56,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.OutlinedTextField
+import fr.geoking.arthur.audio.MusicStyle
+import fr.geoking.arthur.source.AmbientAudioCharacter
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -135,6 +138,7 @@ enum class SettingsScreenPage {
     TvRotationInterval,
     AutoRotationInterval,
     QuoteProvider,
+    AmbientSound,
     DeviantArtCredentials,
     About,
     Licenses,
@@ -168,6 +172,14 @@ fun SettingsScreen(
     onQuoteProviderChange: (QuoteProvider) -> Unit = {},
     ambientSoundEnabled: Boolean = false,
     onAmbientSoundEnabledChange: (Boolean) -> Unit = {},
+    ambientSoundVolume: Float = 0.5f,
+    onAmbientSoundVolumeChange: (Float) -> Unit = {},
+    ambientSoundCharacter: AmbientAudioCharacter = AmbientAudioCharacter.Melody,
+    onAmbientSoundCharacterChange: (AmbientAudioCharacter) -> Unit = {},
+    ambientSoundStylePreference: MusicStyle? = null,
+    onAmbientSoundStylePreferenceChange: (MusicStyle?) -> Unit = {},
+    ambientSoundComplexity: Float = 0.55f,
+    onAmbientSoundComplexityChange: (Float) -> Unit = {},
     deviantArtUsername: String = "",
     onDeviantArtUsernameChange: (String) -> Unit = {},
     deviantArtPassword: String = "",
@@ -216,6 +228,8 @@ fun SettingsScreen(
                                 stringResource(R.string.screen_rotation_interval)
                             SettingsScreenPage.QuoteProvider ->
                                 stringResource(R.string.settings_quote_provider)
+                            SettingsScreenPage.AmbientSound ->
+                                stringResource(R.string.settings_ambient_sound)
                             SettingsScreenPage.DeviantArtCredentials -> "DeviantArt Credentials"
                             SettingsScreenPage.About -> stringResource(R.string.screen_about)
                             SettingsScreenPage.Licenses -> stringResource(R.string.screen_licenses)
@@ -267,7 +281,6 @@ fun SettingsScreen(
                     onShowQuotesChange = onShowQuotesChange,
                     quoteProvider = quoteProvider,
                     ambientSoundEnabled = ambientSoundEnabled,
-                    onAmbientSoundEnabledChange = onAmbientSoundEnabledChange,
                     onCheckForUpdate = onCheckForUpdate,
                     onOpenMarketplace = onOpenMarketplace,
                     onNavigate = { screenStack = screenStack + it },
@@ -293,6 +306,18 @@ fun SettingsScreen(
                 SettingsScreenPage.QuoteProvider -> QuoteProviderContent(
                     selected = quoteProvider,
                     onSelect = onQuoteProviderChange,
+                )
+                SettingsScreenPage.AmbientSound -> AmbientSoundContent(
+                    enabled = ambientSoundEnabled,
+                    onEnabledChange = onAmbientSoundEnabledChange,
+                    volume = ambientSoundVolume,
+                    onVolumeChange = onAmbientSoundVolumeChange,
+                    character = ambientSoundCharacter,
+                    onCharacterChange = onAmbientSoundCharacterChange,
+                    stylePreference = ambientSoundStylePreference,
+                    onStylePreferenceChange = onAmbientSoundStylePreferenceChange,
+                    complexity = ambientSoundComplexity,
+                    onComplexityChange = onAmbientSoundComplexityChange,
                 )
                 SettingsScreenPage.DeviantArtCredentials -> DeviantArtCredentialsContent(
                     username = deviantArtUsername,
@@ -334,7 +359,6 @@ private fun MainMenu(
     onShowQuotesChange: (Boolean) -> Unit,
     quoteProvider: QuoteProvider,
     ambientSoundEnabled: Boolean,
-    onAmbientSoundEnabledChange: (Boolean) -> Unit,
     onCheckForUpdate: (() -> Unit)?,
     onOpenMarketplace: (() -> Unit)?,
     onNavigate: (SettingsScreenPage) -> Unit,
@@ -464,31 +488,16 @@ private fun MainMenu(
                 onClick = { onNavigate(SettingsScreenPage.QuoteProvider) },
                 modifier = Modifier.testTag("settings_quote_provider"),
             )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
-                    .testTag("settings_ambient_sound"),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
-                    Text(
-                        text = stringResource(R.string.settings_ambient_sound),
-                        style = MaterialTheme.typography.titleSmall,
-                    )
-                    Text(
-                        text = stringResource(R.string.settings_ambient_sound_subtitle),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Switch(
-                    checked = ambientSoundEnabled,
-                    onCheckedChange = onAmbientSoundEnabledChange,
-                    modifier = Modifier.testTag("settings_ambient_sound_switch"),
-                )
-            }
+            SettingsItem(
+                label = stringResource(R.string.settings_ambient_sound),
+                value = if (ambientSoundEnabled) {
+                    stringResource(R.string.settings_ambient_sound_character_melody)
+                } else {
+                    stringResource(R.string.settings_ambient_sound_subtitle)
+                },
+                onClick = { onNavigate(SettingsScreenPage.AmbientSound) },
+                modifier = Modifier.testTag("settings_ambient_sound"),
+            )
             SettingsItem(
                 label = "DeviantArt Credentials",
                 onClick = { onNavigate(SettingsScreenPage.DeviantArtCredentials) },
@@ -894,7 +903,8 @@ fun DeveloperErrorLogScreen(
         if (filteredErrors.isEmpty()) {
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .weight(1f)
+                    .fillMaxWidth()
                     .padding(32.dp),
                 contentAlignment = Alignment.Center,
             ) {
@@ -909,7 +919,8 @@ fun DeveloperErrorLogScreen(
             LazyColumn(
                 state = listState,
                 modifier = Modifier
-                    .fillMaxSize()
+                    .weight(1f)
+                    .fillMaxWidth()
                     .verticalScrollbar(listState, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
@@ -1310,6 +1321,152 @@ private fun QuoteProviderContent(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun AmbientSoundContent(
+    enabled: Boolean,
+    onEnabledChange: (Boolean) -> Unit,
+    volume: Float,
+    onVolumeChange: (Float) -> Unit,
+    character: AmbientAudioCharacter,
+    onCharacterChange: (AmbientAudioCharacter) -> Unit,
+    stylePreference: MusicStyle?,
+    onStylePreferenceChange: (MusicStyle?) -> Unit,
+    complexity: Float,
+    onComplexityChange: (Float) -> Unit,
+) {
+    val styleOptions = listOf(
+        null to R.string.settings_ambient_sound_style_auto,
+        MusicStyle.JazzPiano to R.string.settings_ambient_sound_style_jazz,
+        MusicStyle.Zen to R.string.settings_ambient_sound_style_zen,
+        MusicStyle.SoftGuitar to R.string.settings_ambient_sound_style_guitar,
+        MusicStyle.BarAmbience to R.string.settings_ambient_sound_style_bar,
+        MusicStyle.NightLounge to R.string.settings_ambient_sound_style_lounge,
+        MusicStyle.AfricanPulse to R.string.settings_ambient_sound_style_african,
+        MusicStyle.WindChimes to R.string.settings_ambient_sound_style_chimes,
+    )
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp)
+            .testTag("settings_ambient_sound_page"),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.settings_ambient_sound_subtitle),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("settings_ambient_sound_enable_row"),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = stringResource(R.string.settings_ambient_sound_enable),
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.weight(1f).padding(end = 16.dp),
+            )
+            Switch(
+                checked = enabled,
+                onCheckedChange = onEnabledChange,
+                modifier = Modifier.testTag("settings_ambient_sound_switch"),
+            )
+        }
+
+        Text(
+            text = stringResource(R.string.settings_ambient_sound_volume),
+            style = MaterialTheme.typography.titleSmall,
+        )
+        Slider(
+            value = volume,
+            onValueChange = onVolumeChange,
+            valueRange = 0f..1f,
+            enabled = enabled,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("settings_ambient_sound_volume"),
+        )
+
+        Text(
+            text = stringResource(R.string.settings_ambient_sound_character),
+            style = MaterialTheme.typography.titleSmall,
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            FilterChip(
+                selected = character == AmbientAudioCharacter.Melody,
+                onClick = { onCharacterChange(AmbientAudioCharacter.Melody) },
+                enabled = enabled,
+                label = { Text(stringResource(R.string.settings_ambient_sound_character_melody)) },
+                modifier = Modifier.testTag("settings_ambient_character_melody"),
+            )
+            FilterChip(
+                selected = character == AmbientAudioCharacter.Balanced,
+                onClick = { onCharacterChange(AmbientAudioCharacter.Balanced) },
+                enabled = enabled,
+                label = { Text(stringResource(R.string.settings_ambient_sound_character_balanced)) },
+                modifier = Modifier.testTag("settings_ambient_character_balanced"),
+            )
+            FilterChip(
+                selected = character == AmbientAudioCharacter.Atmosphere,
+                onClick = { onCharacterChange(AmbientAudioCharacter.Atmosphere) },
+                enabled = enabled,
+                label = { Text(stringResource(R.string.settings_ambient_sound_character_atmosphere)) },
+                modifier = Modifier.testTag("settings_ambient_character_atmosphere"),
+            )
+        }
+
+        Text(
+            text = stringResource(R.string.settings_ambient_sound_style),
+            style = MaterialTheme.typography.titleSmall,
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            styleOptions.forEach { (style, labelRes) ->
+                FilterChip(
+                    selected = stylePreference == style,
+                    onClick = { onStylePreferenceChange(style) },
+                    enabled = enabled,
+                    label = { Text(stringResource(labelRes)) },
+                    modifier = Modifier.testTag(
+                        "settings_ambient_style_${style?.name ?: "auto"}",
+                    ),
+                )
+            }
+        }
+
+        Text(
+            text = stringResource(R.string.settings_ambient_sound_complexity),
+            style = MaterialTheme.typography.titleSmall,
+        )
+        Text(
+            text = stringResource(R.string.settings_ambient_sound_complexity_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Slider(
+            value = complexity,
+            onValueChange = onComplexityChange,
+            valueRange = 0f..1f,
+            enabled = enabled,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("settings_ambient_sound_complexity"),
+        )
     }
 }
 

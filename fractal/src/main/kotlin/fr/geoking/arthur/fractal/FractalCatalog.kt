@@ -1,7 +1,8 @@
 package fr.geoking.arthur.fractal
 
 /**
- * Fractal Presets (free tier) — Julius-style types.
+ * Fractal Presets (free tier) — Julius-style types, AGSL originals, and
+ * [tbahlai/agsl](https://github.com/tbahlai/agsl) Mandelbrot/Julia ports.
  * Custom Fractal (tap points) is Premium — see [CustomFractalParams].
  */
 enum class FractalPresetType {
@@ -13,6 +14,10 @@ enum class FractalPresetType {
     Celtic,
     Buffalo,
     Phoenix,
+    Nova,
+    Newton,
+    MandelbrotGlow,
+    JuliaTouch,
 }
 
 data class FractalPreset(

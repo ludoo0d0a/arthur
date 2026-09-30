@@ -107,6 +107,7 @@ enum class GenartEngineId {
     CliffordWash,
     PlasmaNova,
     EnergyTendrils,
+    InterferenceWash,
 }
 
 enum class GenartQuality { Low, Medium, High }

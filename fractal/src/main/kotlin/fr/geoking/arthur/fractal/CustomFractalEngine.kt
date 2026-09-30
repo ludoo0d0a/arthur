@@ -55,16 +55,8 @@ object CustomFractalEngine {
         return h
     }
 
-    fun paletteArgb(colorSeed: Int): List<Int> {
-        val rnd = Random(colorSeed.toLong() xor 0xA11CE7L)
-        // Wider, brighter stops so stroke gradients read as luminous ribbons
-        return List(8) { i ->
-            val hue = (colorSeed * 37 + i * 41 + rnd.nextInt(28)) % 360
-            val sat = 0.62f + (i % 4) * 0.09f
-            val value = 0.78f + (i % 3) * 0.08f
-            hsvToRgb(hue.toFloat(), sat.coerceIn(0f, 1f), value.coerceIn(0f, 1f))
-        }
-    }
+    fun paletteArgb(colorSeed: Int): List<Int> =
+        FractalCoherentPalette.escapeArgb(colorSeed, count = 8)
 
     fun frame(
         params: CustomFractalParams,
@@ -237,23 +229,5 @@ object CustomFractalEngine {
         val c = p2 * (3f * omu * u * u)
         val d = p3 * (u * u * u)
         return a + b + c + d
-    }
-
-    private fun hsvToRgb(h: Float, s: Float, v: Float): Int {
-        val c = v * s
-        val x = c * (1f - kotlin.math.abs((h / 60f) % 2f - 1f))
-        val m = v - c
-        val (rp, gp, bp) = when {
-            h < 60f -> Triple(c, x, 0f)
-            h < 120f -> Triple(x, c, 0f)
-            h < 180f -> Triple(0f, c, x)
-            h < 240f -> Triple(0f, x, c)
-            h < 300f -> Triple(x, 0f, c)
-            else -> Triple(c, 0f, x)
-        }
-        val r = ((rp + m) * 255f).toInt().coerceIn(0, 255)
-        val g = ((gp + m) * 255f).toInt().coerceIn(0, 255)
-        val b = ((bp + m) * 255f).toInt().coerceIn(0, 255)
-        return (0xFF shl 24) or (r shl 16) or (g shl 8) or b
     }
 }

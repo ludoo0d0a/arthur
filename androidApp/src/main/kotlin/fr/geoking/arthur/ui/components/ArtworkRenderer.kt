@@ -50,6 +50,8 @@ import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
+import fr.geoking.arthur.shared.error.ErrorCategory
+import fr.geoking.arthur.shared.error.ErrorLogger
 import fr.geoking.arthur.shared.source.FractalSource
 import fr.geoking.arthur.source.SafeBitmapDecoder
 import fr.geoking.arthur.source.DeveloperSettings
@@ -58,7 +60,6 @@ import fr.geoking.arthur.source.RemoteStillCacheOnlyMiss
 import fr.geoking.arthur.source.RemoteStillNetworkGate
 import fr.geoking.arthur.source.StillImageDownloader
 import fr.geoking.arthur.source.rememberArtworkImageCache
-import fr.geoking.arthur.shared.error.ErrorLogger
 import org.koin.core.context.GlobalContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -276,12 +277,38 @@ private fun RemoteStillImage(
             }
         }
         result
-            .onSuccess { bmp -> bitmapState = bmp }
+            .onSuccess { bmp ->
+                val bytes = runCatching { bmp.allocationByteCount.toLong() }.getOrDefault(0L)
+                // RecordingCanvas throws when drawing bitmaps around ~100MB+.
+                if (bytes > 80L * 1024L * 1024L) {
+                    bmp.recycle()
+                    errorLogger?.log(
+                        sourceId = "still_image",
+                        category = ErrorCategory.Payload,
+                        message = "Decoded bitmap too large to draw ($bytes bytes)",
+                        artworkId = artworkId,
+                    )
+                    hasFailed = true
+                    failureReason = "Image too large"
+                } else {
+                    bitmapState = bmp
+                }
+            }
             .onFailure { error ->
                 hasFailed = true
                 failureReason = when (error) {
                     is RemoteStillCacheOnlyMiss -> "Cached image unavailable"
                     else -> error.message ?: error.toString()
+                }
+                if (error !is RemoteStillCacheOnlyMiss) {
+                    errorLogger?.log(
+                        sourceId = "still_image",
+                        category = ErrorCategory.Payload,
+                        message = failureReason ?: "Still decode failed",
+                        artworkId = artworkId,
+                        details = error.stackTraceToString().take(500),
+                        throwable = error,
+                    )
                 }
             }
     }

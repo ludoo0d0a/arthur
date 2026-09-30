@@ -90,3 +90,9 @@ internal fun seededRange(seed: Int, min: Float, max: Float): Float =
 internal fun phase01(t: Float): Float = ((t % 1f) + 1f) % 1f
 
 internal fun sin01(t: Float): Float = ((kotlin.math.sin(t.toDouble()) + 1.0) / 2.0).toFloat()
+
+/**
+ * Android [android.graphics.RadialGradient] requires radius > 0; Compose brushes crash
+ * the process with IllegalArgumentException otherwise (no ErrorLogger hook in draw).
+ */
+internal fun Float.positiveRadius(min: Float = 1f): Float = coerceAtLeast(min)

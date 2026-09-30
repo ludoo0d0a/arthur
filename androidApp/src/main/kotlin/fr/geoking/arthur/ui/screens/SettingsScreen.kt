@@ -903,7 +903,8 @@ fun DeveloperErrorLogScreen(
         if (filteredErrors.isEmpty()) {
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .weight(1f)
+                    .fillMaxWidth()
                     .padding(32.dp),
                 contentAlignment = Alignment.Center,
             ) {
@@ -918,7 +919,8 @@ fun DeveloperErrorLogScreen(
             LazyColumn(
                 state = listState,
                 modifier = Modifier
-                    .fillMaxSize()
+                    .weight(1f)
+                    .fillMaxWidth()
                     .verticalScrollbar(listState, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {

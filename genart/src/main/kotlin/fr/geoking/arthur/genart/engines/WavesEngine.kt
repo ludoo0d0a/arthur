@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
+import fr.geoking.arthur.genart.positiveRadius
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -237,9 +238,10 @@ private fun DrawScope.drawRadialWaves(
     secondaryColor: Color,
 ) {
     val maxRadius = size.width.coerceAtLeast(size.height) * 0.8f
+    if (maxRadius <= 0f) return
     val waveCount = if (isActive) 8 else 5
     for (i in 0 until waveCount) {
-        val radius = (maxRadius / waveCount) * (i + 1) + sin(phase + i) * 20f
+        val radius = ((maxRadius / waveCount) * (i + 1) + sin(phase + i) * 20f).positiveRadius()
         val alpha = (1f - (i / waveCount.toFloat())) * 0.15f
         drawCircle(
             brush = Brush.radialGradient(

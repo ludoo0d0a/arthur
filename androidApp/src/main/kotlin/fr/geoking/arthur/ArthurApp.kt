@@ -18,6 +18,7 @@ import fr.geoking.arthur.source.DebugInterceptor
 import fr.geoking.arthur.source.ForceCacheNetworkInterceptor
 import fr.geoking.arthur.source.HttpCacheController
 import java.io.File
+import fr.geoking.arthur.error.ErrorTrap
 import fr.geoking.arthur.shared.error.ErrorCategory
 import fr.geoking.arthur.shared.error.ErrorClassifier
 import fr.geoking.arthur.shared.error.ErrorLogger
@@ -76,6 +77,10 @@ class ArthurApp : Application() {
             androidContext(this@ArthurApp)
             modules(appModule)
         }
+        // After Koin so ErrorLogger exists; wraps Crashlytics' handler to also fill the error trap.
+        runCatching {
+            ErrorTrap.install(org.koin.core.context.GlobalContext.get().get())
+        }
     }
 }
 
@@ -127,7 +132,12 @@ private suspend fun safeHttpGet(
 }
 
 val appModule = module {
-    single { ErrorLogger(clock = { System.currentTimeMillis() }) }
+    single {
+        ErrorLogger(
+            clock = { System.currentTimeMillis() },
+            onLogged = ErrorTrap.crashlyticsSink(),
+        )
+    }
     single { DebugLogger(clock = { System.currentTimeMillis() }) }
     single { FakePurchasesGateway(premium = false) }
     single<PurchasesGateway> { get<FakePurchasesGateway>() }

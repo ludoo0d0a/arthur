@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
 import fr.geoking.arthur.genart.phase01
+import fr.geoking.arthur.genart.positiveRadius
 import fr.geoking.arthur.genart.qualityCount
 import fr.geoking.arthur.genart.seededRange
 import fr.geoking.arthur.genart.seededUnit
@@ -102,6 +103,7 @@ internal fun PlasmaNovaEngine(
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
+        if (w <= 0f || h <= 0f) return@Canvas
         val minDim = minOf(w, h)
         val center = Offset(w * 0.5f, h * 0.48f)
         drawRect(color = Color(0xFF010106))
@@ -121,7 +123,8 @@ internal fun PlasmaNovaEngine(
             else -> 0.85f + 0.15f * breathe
         }.coerceIn(0.35f, 1f)
         val dim = if (isActive) 1f else 0.55f
-        val reach = hypot(w, h) * 0.42f * expand
+        // expand starts at 0 each loop — RadialGradient crashes if radius <= 0.
+        val reach = (hypot(w, h) * 0.42f * expand).positiveRadius()
         val cyan = Color(0xFF4EFFF8)
         val magenta = Color(0xFFFF2EB8)
         val violet = Color(0xFFB44DFF)
@@ -130,12 +133,13 @@ internal fun PlasmaNovaEngine(
         stars.forEach { star ->
             drawCircle(
                 color = TonalPalette.withAlpha(ice, star.alpha * dim * 0.7f),
-                radius = star.radius,
+                radius = star.radius.positiveRadius(0.5f),
                 center = Offset(star.xFrac * w, star.yFrac * h),
             )
         }
 
         // Outer plasma cloud
+        val outerR = (reach * 1.15f).positiveRadius()
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
@@ -145,9 +149,9 @@ internal fun PlasmaNovaEngine(
                     Color.Transparent,
                 ),
                 center = center,
-                radius = reach * 1.15f,
+                radius = outerR,
             ),
-            radius = reach * 1.15f,
+            radius = outerR,
             center = center,
         )
 
@@ -246,7 +250,8 @@ internal fun PlasmaNovaEngine(
         )
 
         // White-hot core
-        val coreR = minDim * (0.1f + 0.04f * expand) * (0.9f + 0.1f * breathe)
+        val coreR = (minDim * (0.1f + 0.04f * expand) * (0.9f + 0.1f * breathe) * 2.2f)
+            .positiveRadius()
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
@@ -256,9 +261,9 @@ internal fun PlasmaNovaEngine(
                     Color.Transparent,
                 ),
                 center = center,
-                radius = coreR * 2.2f,
+                radius = coreR,
             ),
-            radius = coreR * 2.2f,
+            radius = coreR,
             center = center,
         )
     }

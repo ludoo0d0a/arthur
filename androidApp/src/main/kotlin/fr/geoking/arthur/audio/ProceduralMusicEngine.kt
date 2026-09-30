@@ -21,9 +21,13 @@ import fr.geoking.arthur.audio.voices.SoftPulseVoice
 import fr.geoking.arthur.audio.voices.WaveNoiseVoice
 import fr.geoking.arthur.audio.voices.WindTextureVoice
 import fr.geoking.arthur.audio.voices.softLimit
+import fr.geoking.arthur.error.ErrorTrap
 import fr.geoking.arthur.shared.domain.Artwork
+import fr.geoking.arthur.shared.error.ErrorCategory
+import fr.geoking.arthur.shared.error.ErrorLogger
 import fr.geoking.arthur.source.AmbientAudioCharacter
 import fr.geoking.arthur.source.AmbientAudioSettings
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -43,10 +47,14 @@ import kotlin.random.Random
 class ProceduralMusicEngine(
     context: Context,
     private val audioSettings: AmbientAudioSettings,
+    private val errorLogger: ErrorLogger? = null,
 ) {
     private val appContext = context.applicationContext
     private val audioManager = appContext.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val audioExceptionHandler = errorLogger?.let {
+        ErrorTrap.coroutineHandler(it, sourceId = "ambient_audio")
+    } ?: CoroutineExceptionHandler { _, _ -> }
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + audioExceptionHandler)
 
     private var audioTrack: AudioTrack? = null
     private var synthesisJob: Job? = null
@@ -376,7 +384,28 @@ class ProceduralMusicEngine(
                 mixed = softLimit(mixed * masterVolume)
                 pcm[i] = (mixed.coerceIn(-1f, 1f) * 32767f).toInt().toShort()
             }
-            track.write(pcm, 0, chunk)
+            val written = try {
+                track.write(pcm, 0, chunk)
+            } catch (e: IllegalStateException) {
+                errorLogger?.log(
+                    sourceId = "ambient_audio",
+                    category = ErrorCategory.Unknown,
+                    message = e.message ?: "AudioTrack write failed",
+                    details = e.stackTraceToString().take(500),
+                    throwable = e,
+                )
+                isRunning.set(false)
+                break
+            }
+            if (written < 0) {
+                errorLogger?.log(
+                    sourceId = "ambient_audio",
+                    category = ErrorCategory.Unknown,
+                    message = "AudioTrack write returned $written",
+                )
+                isRunning.set(false)
+                break
+            }
         }
     }
 

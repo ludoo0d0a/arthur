@@ -26,6 +26,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ShaderBrush
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import kotlin.math.abs
 import kotlin.math.atan2
@@ -36,33 +37,7 @@ enum class FractalQuality { Low, Medium, High }
 enum class FractalColorIntensity { Low, Medium, High }
 
 /** Rich multi-stop palette for smooth escape-time gradients (CPU path). */
-private val DefaultPalette = listOf(
-    Color(0xFF060919),
-    Color(0xFF0B1026),
-    Color(0xFF131843),
-    Color(0xFF1B1F5C),
-    Color(0xFF252A75),
-    Color(0xFF2E3A8C),
-    Color(0xFF2142B2),
-    Color(0xFF1D4ED8),
-    Color(0xFF0284C7),
-    Color(0xFF0EA5E9),
-    Color(0xFF06B6D4),
-    Color(0xFF22D3EE),
-    Color(0xFF38BDF8),
-    Color(0xFF67E8F9),
-    Color(0xFF818CF8),
-    Color(0xFFA78BFA),
-    Color(0xFFC084FC),
-    Color(0xFFE879F9),
-    Color(0xFFF472B6),
-    Color(0xFFFB7185),
-    Color(0xFFF87171),
-    Color(0xFFFBBF24),
-    Color(0xFFFDE68A),
-    Color(0xFFFEF08A),
-    Color(0xFFFFF7ED),
-)
+private val DefaultPalette = FractalCoherentPalette.escapeStops(seed = 1, count = 12)
 
 enum class FractalType {
     Mandelbrot,
@@ -101,15 +76,18 @@ fun FractalEffectCanvas(
     isActive: Boolean,
     paletteColors: List<Color> = DefaultPalette,
     quality: FractalQuality = FractalQuality.Medium,
-    colorIntensity: FractalColorIntensity = FractalColorIntensity.High,
+    colorIntensity: FractalColorIntensity = FractalColorIntensity.Medium,
     forceType: FractalType? = null,
+    /** Picks a coherent theme for AGSL Mandelbrot Glow / Julia Touch / escape uniforms. */
+    colorSeed: Int = 1,
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "fractal_zoom")
     val zoomProgress by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(50000, easing = LinearEasing),
+            // Zen: slow infinite zoom (~2.3 min)
+            animation = tween(140_000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "zoomProgress"
@@ -131,6 +109,13 @@ fun FractalEffectCanvas(
         FractalType.entries[zoomCycleCount % FractalType.entries.size]
     }
     val fractalType = forceType ?: cyclingType
+    val resolvedPalette = remember(colorSeed, paletteColors) {
+        if (paletteColors === DefaultPalette || paletteColors.size < 4) {
+            FractalCoherentPalette.escapeStops(colorSeed, count = 12)
+        } else {
+            paletteColors
+        }
+    }
 
     // Dedicated tbahlai/agsl Mandelbrot + Julia ports (API 33+)
     if (FractalAgslShaders.supportsAgsl() &&
@@ -138,11 +123,11 @@ fun FractalEffectCanvas(
     ) {
         when (fractalType) {
             FractalType.MandelbrotGlow -> {
-                MandelbrotBahlaiCanvas(isActive = isActive)
+                MandelbrotBahlaiCanvas(isActive = isActive, colorSeed = colorSeed)
                 return
             }
             FractalType.JuliaTouch -> {
-                JuliaBahlaiCanvas(isActive = isActive)
+                JuliaBahlaiCanvas(isActive = isActive, colorSeed = colorSeed)
                 return
             }
             else -> Unit
@@ -153,7 +138,7 @@ fun FractalEffectCanvas(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(20000, easing = LinearEasing),
+            animation = tween(70_000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "phase"
@@ -181,7 +166,7 @@ fun FractalEffectCanvas(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(28000, easing = LinearEasing),
+            animation = tween(100_000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "juliaDrift",
@@ -227,6 +212,7 @@ fun FractalEffectCanvas(
             quality = quality,
             juliaCx = juliaCx,
             juliaCy = juliaCy,
+            colorSeed = colorSeed,
             modifier = Modifier.fillMaxSize().then(dragModifier),
         )
     } else {
@@ -236,7 +222,7 @@ fun FractalEffectCanvas(
             phase = phase,
             brightness = brightness,
             isActive = isActive,
-            paletteColors = paletteColors,
+            paletteColors = resolvedPalette,
             quality = quality,
             colorIntensity = colorIntensity,
             juliaCx = juliaCx,
@@ -256,10 +242,12 @@ private fun FractalAgslCanvas(
     quality: FractalQuality,
     juliaCx: Float,
     juliaCy: Float,
+    colorSeed: Int,
     modifier: Modifier,
 ) {
     val shader = remember { FractalAgslShaders.createEscapeShader() }
     val brush = remember(shader) { ShaderBrush(shader) }
+    val stops = remember(colorSeed) { FractalCoherentPalette.fourStops(colorSeed) }
     val maxIter = when (quality) {
         FractalQuality.Low -> 160f
         FractalQuality.Medium -> 280f
@@ -277,6 +265,10 @@ private fun FractalAgslCanvas(
         shader.setFloatUniform("iJuliaC", juliaCx, juliaCy)
         shader.setFloatUniform("iPhase", phase)
         shader.setFloatUniform("iBrightness", brightness)
+        shader.setColorUniform("color1", stops[0].toArgb())
+        shader.setColorUniform("color2", stops[1].toArgb())
+        shader.setColorUniform("color3", stops[2].toArgb())
+        shader.setColorUniform("color4", stops[3].toArgb())
         drawRect(brush = brush)
     }
 }
@@ -610,9 +602,9 @@ private fun fractalColor(
     val safePalette = if (paletteColors.size >= 2) paletteColors else DefaultPalette
 
     val cycles = when (intensity) {
-        FractalColorIntensity.Low -> 2.2f
-        FractalColorIntensity.Medium -> 4.5f
-        FractalColorIntensity.High -> 7.5f
+        FractalColorIntensity.Low -> 1.6f
+        FractalColorIntensity.Medium -> 2.4f
+        FractalColorIntensity.High -> 3.2f
     }
 
     val normalized = (ln(1.0 + continuous.toDouble()) / ln(1.0 + maxIter.toDouble())).toFloat()

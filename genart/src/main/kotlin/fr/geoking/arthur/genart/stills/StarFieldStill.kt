@@ -5,6 +5,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.LinearGradient
 import android.graphics.Paint
+import android.graphics.RadialGradient
 import android.graphics.Shader
 import fr.geoking.arthur.genart.AnimationPalette
 import fr.geoking.arthur.genart.GenartStillFx
@@ -43,17 +44,43 @@ internal object StarFieldStill {
 
         val drift = phase + rotationDeg * PI.toFloat() / 180f
 
-        // Dense far / mid / near layers — random positions, soft glow on nearer stars.
-        drawLayer(canvas, rnd, w, h, minDim, count = 140, sizeScale = 1f, alphaScale = 0.75f, blurFrac = 0f, drift = drift, pulse = pulse, palette = palette, colorOffset = 0)
-        drawLayer(canvas, rnd, w, h, minDim, count = 48, sizeScale = 1.85f, alphaScale = 0.95f, blurFrac = 0.012f, drift = drift, pulse = pulse, palette = palette, colorOffset = 70)
-        drawLayer(canvas, rnd, w, h, minDim, count = 18, sizeScale = 2.9f, alphaScale = 1.15f, blurFrac = 0.032f, drift = drift, pulse = pulse, palette = palette, colorOffset = 96)
+        // Soft nebula / galaxy dust — fills most of the dark sky for AA surface coverage.
+        paint.maskFilter = BlurMaskFilter(minDim * 0.08f, BlurMaskFilter.Blur.NORMAL)
+        val dustCount = 10
+        for (i in 0 until dustCount) {
+            val x = rnd.nextFloat() * w
+            val y = rnd.nextFloat() * h
+            val radius = (0.28f + rnd.nextFloat() * 0.38f) * minDim
+            val tint = palette.colorAt(i)
+            val alpha = ((0.12f + rnd.nextFloat() * 0.14f) * (0.85f + 0.15f * pulse) * 255f)
+                .toInt()
+                .coerceIn(0, 255)
+            paint.shader = RadialGradient(
+                x, y, radius.coerceAtLeast(1f),
+                intArrayOf(
+                    Color.argb(alpha, Color.red(tint), Color.green(tint), Color.blue(tint)),
+                    Color.argb((alpha * 0.35f).toInt(), Color.red(tint), Color.green(tint), Color.blue(tint)),
+                    Color.TRANSPARENT,
+                ),
+                floatArrayOf(0f, 0.45f, 1f),
+                Shader.TileMode.CLAMP,
+            )
+            canvas.drawCircle(x, y, radius, paint)
+        }
+        paint.shader = null
+        paint.maskFilter = null
+
+        // Dense far / mid / near layers — random positions per generation.
+        drawLayer(canvas, rnd, w, h, minDim, count = 180, sizeScale = 1f, alphaScale = 0.8f, blurFrac = 0f, drift = drift, pulse = pulse, palette = palette, colorOffset = 0)
+        drawLayer(canvas, rnd, w, h, minDim, count = 64, sizeScale = 1.85f, alphaScale = 0.95f, blurFrac = 0.012f, drift = drift, pulse = pulse, palette = palette, colorOffset = 70)
+        drawLayer(canvas, rnd, w, h, minDim, count = 28, sizeScale = 2.9f, alphaScale = 1.15f, blurFrac = 0.032f, drift = drift, pulse = pulse, palette = palette, colorOffset = 96)
 
         // Extra seeded sparkle dust for near-4K richness.
         GenartStillFx.randomScatter(
             canvas = canvas,
             size = size,
             seed = generation xor 0x51F1E17L,
-            count = 60,
+            count = 90,
             minRadiusFrac = 0.0005f,
             maxRadiusFrac = 0.0016f,
             alphaRange = 0.15f..0.55f,

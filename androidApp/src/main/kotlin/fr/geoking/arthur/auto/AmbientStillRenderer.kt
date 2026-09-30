@@ -10,6 +10,7 @@ import android.graphics.Shader
 import fr.geoking.arthur.fractal.CustomFractalParams
 import fr.geoking.arthur.fractal.CustomFractalQuality
 import fr.geoking.arthur.fractal.CustomFractalStillRenderer
+import fr.geoking.arthur.fractal.FractalCoherentPalette
 import fr.geoking.arthur.genart.GenartCatalog
 import fr.geoking.arthur.genart.GenartStillRenderer
 import fr.geoking.arthur.shared.domain.Artwork
@@ -483,11 +484,9 @@ object AmbientStillRenderer {
                     }
                     val t = (kotlin.math.ln(1.0 + continuous) / kotlin.math.ln(1.0 + maxIter))
                         .toFloat()
-                    val cycles = 6.5f
-                    val hue = ((t * cycles * 360f) + hueBase + continuous * 2.4f).mod(360f)
-                    val sat = 0.62f + 0.28f * (1f - t)
-                    val value = 0.42f + 0.55f * t
-                    Color.HSVToColor(floatArrayOf(hue, sat.coerceIn(0f, 1f), value.coerceIn(0f, 1f)))
+                    val cycles = 2.6f
+                    val u = ((t * cycles) + hueBase / 360f).mod(1f)
+                    FractalCoherentPalette.sampleArgb(seed.toInt(), u)
                 }
             }
         }

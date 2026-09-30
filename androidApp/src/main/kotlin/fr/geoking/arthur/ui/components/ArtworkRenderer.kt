@@ -43,9 +43,11 @@ import fr.geoking.arthur.fractal.CustomFractalParams
 import fr.geoking.arthur.fractal.FractalEffectCanvas
 import fr.geoking.arthur.fractal.FractalQuality
 import fr.geoking.arthur.fractal.FractalType
+import fr.geoking.arthur.genart.AnimationPalettes
 import fr.geoking.arthur.genart.GenartCatalog
 import fr.geoking.arthur.genart.GenartEffectCanvas
 import fr.geoking.arthur.genart.GenartQuality
+import fr.geoking.arthur.genart.TonalPalette
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.source.FractalSource
@@ -86,10 +88,16 @@ fun ArtworkRenderer(
                     val engine = GenartCatalog.engineForId(artwork.id)
                     if (engine != null) {
                         LaunchedEffect(artwork.id) { onDisplayReady?.invoke() }
+                        val palette = remember(artwork.id) {
+                            TonalPalette.fromAnimationPalette(
+                                AnimationPalettes.fromGeneration(artwork.id.hashCode().toLong()),
+                            )
+                        }
                         GenartEffectCanvas(
                             engine = engine,
                             isActive = isActive,
                             quality = quality,
+                            paletteColors = palette,
                         )
                     } else if (!artwork.localPath.isNullOrBlank() || !artwork.remoteUrl.isNullOrBlank()) {
                         RemoteStillImage(
@@ -127,6 +135,7 @@ fun ArtworkRenderer(
                             isActive = isActive,
                             quality = quality.toFractalQuality(),
                             forceType = type,
+                            colorSeed = artwork.id.hashCode(),
                         )
                     } else {
                         LaunchedEffect(artwork.id) { onDisplayReady?.invoke() }

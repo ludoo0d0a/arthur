@@ -26,6 +26,10 @@ object FractalAgslShaders {
         uniform float2 iJuliaC;
         uniform float iPhase;
         uniform float iBrightness;
+        layout(color) uniform half4 color1;
+        layout(color) uniform half4 color2;
+        layout(color) uniform half4 color3;
+        layout(color) uniform half4 color4;
 
         float smoothEscape(float n, float zr2, float zi2, float power) {
             float logZn = log(max(zr2 + zi2, 1e-12)) * 0.5;
@@ -33,14 +37,16 @@ object FractalAgslShaders {
             return n + 1.0 - nu;
         }
 
+        // Coherent 4-stop mix (Mandelbrot Glow style) — no rainbow HSV.
         half3 palette(float t) {
-            float hue = fract(t) * 6.2831853;
-            float3 rgb = 0.55 + 0.45 * float3(
-                cos(hue),
-                cos(hue + 2.094),
-                cos(hue + 4.188)
-            );
-            return half3(rgb);
+            float u = fract(t);
+            if (u < 0.33) {
+                return mix(color1.rgb, color2.rgb, u / 0.33);
+            } else if (u < 0.66) {
+                return mix(color2.rgb, color3.rgb, (u - 0.33) / 0.33);
+            } else {
+                return mix(color3.rgb, color4.rgb, (u - 0.66) / 0.34);
+            }
         }
 
         half4 main(float2 fragCoord) {
@@ -160,9 +166,10 @@ object FractalAgslShaders {
                 return half4(0.008, 0.024, 0.086, 1.0);
             }
 
-            float cycles = 7.5;
+            // Few cycles so the coherent theme stays readable (zen, not flashy).
+            float cycles = 2.8;
             float normalized = log(1.0 + continuous) / log(1.0 + maxIter);
-            float t = fract(normalized * cycles + iPhase + iTime * 0.02);
+            float t = fract(normalized * cycles + iPhase * 0.35 + iTime * 0.004);
             half3 col = palette(t);
             float edge = clamp(continuous / maxIter, 0.0, 1.0);
             float glow = 0.88 + 0.22 * pow(edge, 0.55);

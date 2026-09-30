@@ -21,7 +21,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
@@ -34,10 +33,12 @@ import kotlin.math.sin
  * [tbahlai/agsl](https://github.com/tbahlai/agsl) (ProAndroidDev AGSL article).
  *
  * API 33+ only — callers should fall back to the shared CPU path below that.
+ * Zen pacing: very slow auto-zoom / orbit. Colors from [FractalCoherentPalette].
  */
 @Composable
 internal fun MandelbrotBahlaiCanvas(
     isActive: Boolean,
+    colorSeed: Int = 1,
     modifier: Modifier = Modifier,
 ) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
@@ -51,7 +52,8 @@ internal fun MandelbrotBahlaiCanvas(
         initialValue = 2.5f,
         targetValue = 0.04f,
         animationSpec = infiniteRepeatable(
-            animation = tween(55_000, easing = LinearEasing),
+            // Zen: ~2.5 min full zoom cycle
+            animation = tween(150_000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "autoZoom",
@@ -70,6 +72,7 @@ internal fun MandelbrotBahlaiCanvas(
     }
 
     val shader = remember { FractalAgslShaders.createMandelbrotBahlaiShader() }
+    val stops = remember(colorSeed) { FractalCoherentPalette.fourStops(colorSeed) }
 
     Box(
         modifier = modifier
@@ -77,10 +80,10 @@ internal fun MandelbrotBahlaiCanvas(
             .transformable(state = transformState)
             .drawWithCache {
                 shader.setFloatUniform("size", size.width, size.height)
-                shader.setColorUniform("color1", Color(0xFF000000).toArgb())
-                shader.setColorUniform("color2", Color(0xFF206BCB).toArgb())
-                shader.setColorUniform("color3", Color(0xFFEDFFFF).toArgb())
-                shader.setColorUniform("color4", Color(0xFFFFB000).toArgb())
+                shader.setColorUniform("color1", stops[0].toArgb())
+                shader.setColorUniform("color2", stops[1].toArgb())
+                shader.setColorUniform("color3", stops[2].toArgb())
+                shader.setColorUniform("color4", stops[3].toArgb())
                 val brush = ShaderBrush(shader)
                 onDrawBehind {
                     shader.setFloatUniform("zoom", displayZoom)
@@ -94,6 +97,7 @@ internal fun MandelbrotBahlaiCanvas(
 @Composable
 internal fun JuliaBahlaiCanvas(
     isActive: Boolean,
+    colorSeed: Int = 0,
     modifier: Modifier = Modifier,
 ) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
@@ -106,13 +110,15 @@ internal fun JuliaBahlaiCanvas(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(22_000, easing = LinearEasing),
+            // Zen: ~2 min gentle orbit
+            animation = tween(120_000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "orbit",
     )
 
     val shader = remember { FractalAgslShaders.createJuliaBahlaiShader() }
+    val stops = remember(colorSeed) { FractalCoherentPalette.fourStops(colorSeed) }
 
     Box(
         modifier = modifier
@@ -130,10 +136,10 @@ internal fun JuliaBahlaiCanvas(
             }
             .drawWithCache {
                 shader.setFloatUniform("size", size.width, size.height)
-                shader.setColorUniform("color1", Color(0xFF000000).toArgb())
-                shader.setColorUniform("color2", Color(0xFF206BCB).toArgb())
-                shader.setColorUniform("color3", Color(0xFF00BCD4).toArgb())
-                shader.setColorUniform("color4", Color(0xFFF85A8A).toArgb())
+                shader.setColorUniform("color1", stops[0].toArgb())
+                shader.setColorUniform("color2", stops[1].toArgb())
+                shader.setColorUniform("color3", stops[2].toArgb())
+                shader.setColorUniform("color4", stops[3].toArgb())
                 val brush = ShaderBrush(shader)
                 onDrawBehind {
                     val auto = Offset(

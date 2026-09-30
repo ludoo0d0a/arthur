@@ -6,17 +6,22 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Icon
@@ -38,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -100,8 +106,11 @@ import kotlin.math.abs
  *   API sample (museums / stock). Parent replaces [rotationPool].
  *
  * Navigation while rotating:
- * - Phone: prev / play-pause / next icons; swipe left = next, swipe right = previous
- * - TV: D-pad / arrow left & right; MediaPlayPause toggles rotation
+ * - Sound on (phone & TV): one media row — previous / play-pause / next.
+ *   Phone also keeps swipe; TV focuses play-pause (D-pad left/right between
+ *   controls, OK to activate). Media keys still work as shortcuts.
+ * - Sound off on TV: D-pad left/right skips; MediaPlayPause toggles rotation
+ * - Sound off on phone: swipe left = next, swipe right = previous
  *
  * Display interval starts only after the still is ready (loader time excluded).
  * The next still is warmed into disk cache before it becomes current.
@@ -166,7 +175,8 @@ fun AmbientScreenContent(
     var isPlaying by remember { mutableStateOf(true) }
     var displayReady by remember { mutableStateOf(false) }
     val progress = remember { Animatable(0f) }
-    val focusRequester = remember { FocusRequester() }
+    val rootFocusRequester = remember { FocusRequester() }
+    val playPauseFocusRequester = remember { FocusRequester() }
     val scope = rememberCoroutineScope()
     val latestCurrent by rememberUpdatedState(current)
     val latestPool by rememberUpdatedState(rotatePool)
@@ -503,7 +513,8 @@ fun AmbientScreenContent(
                     },
             )
         }
-        if (shouldRotate) {
+        val showPhoneMediaPlayer = !isTelevision && audioEnabled
+        if (shouldRotate || showPhoneMediaPlayer) {
             val currentIndex = remember(shown?.id, rotatePool) {
                 val idx = rotatePool.indexOfFirst { it.id == shown?.id }
                 if (idx < 0) 1 else idx + 1
@@ -516,12 +527,23 @@ fun AmbientScreenContent(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text(
-                    text = "$currentIndex / $totalCount",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color.White.copy(alpha = 0.9f),
-                    modifier = Modifier.testTag("ambient_counter"),
-                )
+                if (shouldRotate) {
+                    Text(
+                        text = "$currentIndex / $totalCount",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.White.copy(alpha = 0.9f),
+                        modifier = Modifier.testTag("ambient_counter"),
+                    )
+                }
+                if (showPhoneMediaPlayer) {
+                    AmbientMediaPlayerBar(
+                        isPlaying = isPlaying,
+                        canSkip = shouldRotate,
+                        onPrevious = { scope.launch { advanceLatest(-1, false) } },
+                        onPlayPause = { isPlaying = !isPlaying },
+                        onNext = { scope.launch { advanceLatest(+1, false) } },
+                    )
+                }
             }
         }
         if (canOpenDetails) {
@@ -567,6 +589,85 @@ private fun AmbientDetailsButton(
                 contentDescription = null,
                 tint = Color.White.copy(alpha = 0.9f),
             )
+        }
+    }
+}
+
+@Composable
+private fun AmbientMediaPlayerBar(
+    isPlaying: Boolean,
+    canSkip: Boolean,
+    onPrevious: () -> Unit,
+    onPlayPause: () -> Unit,
+    onNext: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val previousDescription = stringResource(R.string.ambient_previous)
+    val playPauseDescription = stringResource(
+        if (isPlaying) R.string.ambient_pause else R.string.ambient_play,
+    )
+    val nextDescription = stringResource(R.string.ambient_next)
+    Box(
+        modifier = modifier.testTag("ambient_media_player"),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .then(
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        Modifier.blur(12.dp)
+                    } else {
+                        Modifier
+                    },
+                )
+                .background(Color.White.copy(alpha = 0.18f), RoundedCornerShape(28.dp)),
+        )
+        Row(
+            modifier = Modifier.padding(horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            IconButton(
+                onClick = onPrevious,
+                enabled = canSkip,
+                modifier = Modifier
+                    .semantics { contentDescription = previousDescription }
+                    .testTag("ambient_media_previous"),
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_car_previous),
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = if (canSkip) 0.9f else 0.35f),
+                )
+            }
+            IconButton(
+                onClick = onPlayPause,
+                modifier = Modifier
+                    .semantics { contentDescription = playPauseDescription }
+                    .testTag("ambient_media_play_pause"),
+            ) {
+                Icon(
+                    painter = painterResource(
+                        if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play_circle,
+                    ),
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.9f),
+                )
+            }
+            IconButton(
+                onClick = onNext,
+                enabled = canSkip,
+                modifier = Modifier
+                    .semantics { contentDescription = nextDescription }
+                    .testTag("ambient_media_next"),
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_car_next),
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = if (canSkip) 0.9f else 0.35f),
+                )
+            }
         }
     }
 }

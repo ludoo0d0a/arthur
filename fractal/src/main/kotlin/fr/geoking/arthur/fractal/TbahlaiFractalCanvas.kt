@@ -60,7 +60,7 @@ internal fun MandelbrotBahlaiCanvas(
     )
     val displayZoom = if (userNavigating) zoom else autoZoom
 
-    val transformState = rememberTransformableState { zoomChange, offsetChange, _ ->
+    val transformState = rememberTransformableState { _, zoomChange, offsetChange, _ ->
         if (!isActive) return@rememberTransformableState
         userNavigating = true
         zoom = (zoom / zoomChange).coerceIn(0.00001f, 5f)

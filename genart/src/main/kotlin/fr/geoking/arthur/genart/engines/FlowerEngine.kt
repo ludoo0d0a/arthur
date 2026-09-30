@@ -103,7 +103,7 @@ internal fun FlowerEngine(
         val stemColor = TonalPalette.brightness(TonalPalette.mix(Color(0xFF3F6B34), Color(0xFF5C8A44), 0.4f), brightness)
         val stemPath = Path().apply {
             moveTo(baseX, baseY)
-            quadraticBezierTo(controlX, controlY, tipX, tipY)
+            quadraticTo(controlX, controlY, tipX, tipY)
         }
         drawPath(
             path = stemPath,

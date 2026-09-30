@@ -114,7 +114,7 @@ internal fun SoftCausticsEngine(
 
                 val path = Path().apply {
                     moveTo(startX, startY)
-                    quadraticBezierTo(ctrlX, ctrlY, endX, endY)
+                    quadraticTo(ctrlX, ctrlY, endX, endY)
                 }
 
                 val shimmer = sin01(timeAngle * streak.shimmerFreq + streak.shimmerPhase)

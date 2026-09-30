@@ -42,6 +42,7 @@ fun TvControlPlaneContent(
     modifier: Modifier = Modifier,
     catalog: List<Artwork> = emptyList(),
     onOpenSettings: (() -> Unit)? = null,
+    onOpenMediaPlayer: (() -> Unit)? = null,
     defaultScreensaverSelection: PackSelection? = null,
     onSetDefaultScreensaver: ((PackSelection) -> Unit)? = null,
     packOwnership: PackOwnership = PackOwnership.NONE,
@@ -79,6 +80,7 @@ fun TvControlPlaneContent(
                 .fillMaxWidth()
                 .padding(horizontal = 48.dp, vertical = 16.dp),
             onOpenSettings = onOpenSettings,
+            onOpenMediaPlayer = onOpenMediaPlayer,
         )
         Column(
             modifier = Modifier

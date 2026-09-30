@@ -391,7 +391,7 @@ class ArthurCarAppTest {
                     single { fr.geoking.arthur.source.QuoteSettings(app) }
                     single { audioSettings }
                     single { fr.geoking.arthur.source.DeveloperSettings(app) }
-                    single { fr.geoking.arthur.source.QuoteRepository(context = app, httpGet = { fr.geoking.arthur.source.QuoteRepository.encodeQuotes(emptyList()) }) }
+                    single { fr.geoking.arthur.source.QuoteRepository(context = app, httpGet = { fr.geoking.arthur.source.QuoteRepository.encodeQuotes(emptyList()) }, provider = { fr.geoking.arthur.source.QuoteProvider.ZenQuotes }) }
                     single { fr.geoking.arthur.source.ArtworkImageCache(app) }
                     single { fr.geoking.arthur.source.InvalidArtworkStore(app) }
                     single {

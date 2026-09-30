@@ -275,6 +275,49 @@ fun ControlPlaneScreen(
         onSetDefaultScreensaver = screensaverSettings?.let { settings -> { settings.setDefaultPack(it) } },
         packOwnership = packOwnership,
         onOpenMarketplace = onOpenMarketplace,
+        onOpenMediaPlayer = {
+            syncSourceSettings()
+            val renewIds = selection.sourceIdsForAmbientLoad()
+            val prefetchKey = selection.prefetchKey(museumKind, stockCategory)
+            scope.launch {
+                val preferred: (Artwork) -> Boolean = { art ->
+                    art.isGenerative ||
+                        !art.localPath.isNullOrBlank() ||
+                        imageCache.hasImage(art.id)
+                }
+                val livePool = packCatalogCache[prefetchKey] ?: withContext(Dispatchers.IO) {
+                    runCatching {
+                        contentEngine.catalog(
+                            PreparedRotation(
+                                sourceIds = renewIds.orEmpty(),
+                                artworkIds = emptyList(),
+                            ),
+                        )
+                    }.getOrDefault(emptyList())
+                }.also { loaded ->
+                    if (loaded.isNotEmpty()) packCatalogCache[prefetchKey] = loaded
+                }
+                val cachedPool = livePool.ifEmpty {
+                    withContext(Dispatchers.IO) {
+                        imageCache.loadCachedArtworks(renewIds)
+                    }.ifEmpty {
+                        if (selection.allowsGenerativeAmbientFallback()) catalog else emptyList()
+                    }
+                }
+                val pool = resolvePackPool(cachedPool, selection)
+                val rotationPool = AmbientAlbumArt.sampleRotationPool(
+                    pool = pool,
+                    isPreferred = preferred,
+                )
+                val chosen = rotationPool.firstOrNull()
+                    ?: if (selection.allowsGenerativeAmbientFallback()) {
+                        resolveAmbientArtwork(catalog, artworkId = null)
+                    } else {
+                        null
+                    }
+                onStartAmbient(chosen, rotationPool, renewIds)
+            }
+        },
     )
 }
 
@@ -301,6 +344,7 @@ fun ControlPlaneContent(
     onSetDefaultScreensaver: ((PackSelection) -> Unit)? = null,
     packOwnership: PackOwnership = PackOwnership.NONE,
     onOpenMarketplace: ((highlightPackId: String?) -> Unit)? = null,
+    onOpenMediaPlayer: (() -> Unit)? = null,
 ) {
     val configuration = LocalConfiguration.current
     val isTelevision = remember(configuration) {
@@ -319,6 +363,7 @@ fun ControlPlaneContent(
                 modifier = Modifier.fillMaxSize(),
                 catalog = catalog,
                 onOpenSettings = onOpenSettings,
+                onOpenMediaPlayer = onOpenMediaPlayer,
                 defaultScreensaverSelection = defaultScreensaverSelection,
                 onSetDefaultScreensaver = onSetDefaultScreensaver,
                 packOwnership = packOwnership,
@@ -337,6 +382,7 @@ fun ControlPlaneContent(
                 catalog = catalog,
                 onCreateCustomFractal = onCreateCustomFractal,
                 onOpenSettings = onOpenSettings,
+                onOpenMediaPlayer = onOpenMediaPlayer,
                 packOwnership = packOwnership,
                 onOpenMarketplace = onOpenMarketplace,
             )
@@ -358,6 +404,7 @@ private fun PhoneControlPlaneContent(
     catalog: List<Artwork> = emptyList(),
     onCreateCustomFractal: (() -> Unit)? = null,
     onOpenSettings: (() -> Unit)? = null,
+    onOpenMediaPlayer: (() -> Unit)? = null,
     packOwnership: PackOwnership = PackOwnership.NONE,
     onOpenMarketplace: ((highlightPackId: String?) -> Unit)? = null,
 ) {
@@ -411,6 +458,7 @@ private fun PhoneControlPlaneContent(
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp, vertical = 8.dp),
                     onOpenSettings = onOpenSettings,
+                    onOpenMediaPlayer = onOpenMediaPlayer,
                 )
                 Text(
                     text = stringResource(R.string.packs_section),

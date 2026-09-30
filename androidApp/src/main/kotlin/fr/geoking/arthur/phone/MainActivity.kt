@@ -114,6 +114,10 @@ class MainActivity : ComponentActivity() {
                         val showQuotes by quoteSettings.showQuotes.collectAsState()
                         val quoteProvider by quoteSettings.provider.collectAsState()
                         val ambientSoundEnabled by ambientAudioSettings.enabled.collectAsState()
+                        val ambientSoundVolume by ambientAudioSettings.volume.collectAsState()
+                        val ambientSoundCharacter by ambientAudioSettings.character.collectAsState()
+                        val ambientSoundStylePreference by ambientAudioSettings.stylePreference.collectAsState()
+                        val ambientSoundComplexity by ambientAudioSettings.complexity.collectAsState()
                         val isPremium = premium.isPremium
                         // Custom fractal authoring needs touch; TV uses remote only.
                         when {
@@ -155,6 +159,14 @@ class MainActivity : ComponentActivity() {
                                     onQuoteProviderChange = quoteSettings::setProvider,
                                     ambientSoundEnabled = ambientSoundEnabled,
                                     onAmbientSoundEnabledChange = ambientAudioSettings::setEnabled,
+                                    ambientSoundVolume = ambientSoundVolume,
+                                    onAmbientSoundVolumeChange = ambientAudioSettings::setVolume,
+                                    ambientSoundCharacter = ambientSoundCharacter,
+                                    onAmbientSoundCharacterChange = ambientAudioSettings::setCharacter,
+                                    ambientSoundStylePreference = ambientSoundStylePreference,
+                                    onAmbientSoundStylePreferenceChange = ambientAudioSettings::setStylePreference,
+                                    ambientSoundComplexity = ambientSoundComplexity,
+                                    onAmbientSoundComplexityChange = ambientAudioSettings::setComplexity,
                                     deviantArtUsername = stockPhotoSettings.deviantArtUsername,
                                     onDeviantArtUsernameChange = { stockPhotoSettings.deviantArtUsername = it },
                                     deviantArtPassword = stockPhotoSettings.deviantArtPassword,

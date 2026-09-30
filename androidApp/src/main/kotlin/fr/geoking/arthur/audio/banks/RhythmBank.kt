@@ -25,15 +25,17 @@ object RhythmBank {
 
     fun patternsFor(style: fr.geoking.arthur.audio.MusicStyle): List<RhythmPattern> =
         when (style) {
-            fr.geoking.arthur.audio.MusicStyle.Zen, fr.geoking.arthur.audio.MusicStyle.TibetanBowl,
-            fr.geoking.arthur.audio.MusicStyle.CosmicDrone, fr.geoking.arthur.audio.MusicStyle.OceanWaves,
+            fr.geoking.arthur.audio.MusicStyle.TibetanBowl,
+            fr.geoking.arthur.audio.MusicStyle.CosmicDrone,
+            fr.geoking.arthur.audio.MusicStyle.OceanWaves,
             -> listOf(sparse, whole, freeish, medium)
+            fr.geoking.arthur.audio.MusicStyle.Zen -> listOf(flowing, medium, swing, freeish)
             fr.geoking.arthur.audio.MusicStyle.JazzPiano, fr.geoking.arthur.audio.MusicStyle.BarAmbience,
             fr.geoking.arthur.audio.MusicStyle.NightLounge,
-            -> listOf(swing, medium, flowing, sparse)
-            fr.geoking.arthur.audio.MusicStyle.SoftGuitar -> listOf(medium, flowing, sparse, whole)
+            -> listOf(flowing, swing, medium, pulseSteady)
+            fr.geoking.arthur.audio.MusicStyle.SoftGuitar -> listOf(flowing, medium, swing, pulseSteady)
             fr.geoking.arthur.audio.MusicStyle.AfricanPulse -> listOf(claveSoft, pulseSteady, flowing, medium)
-            fr.geoking.arthur.audio.MusicStyle.WindChimes -> listOf(freeish, sparse, medium, whole)
+            fr.geoking.arthur.audio.MusicStyle.WindChimes -> listOf(flowing, freeish, medium, swing)
         }
 
     fun pick(style: fr.geoking.arthur.audio.MusicStyle, index: Int): RhythmPattern {

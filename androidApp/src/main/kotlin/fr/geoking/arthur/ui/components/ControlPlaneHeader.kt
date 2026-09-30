@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,12 +24,13 @@ import fr.geoking.arthur.R
 @Composable
 internal fun ControlPlaneHeader(
     modifier: Modifier = Modifier,
+    onOpenMediaPlayer: (() -> Unit)? = null,
     onOpenSettings: (() -> Unit)? = null,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Box(
             modifier = Modifier
@@ -56,6 +58,19 @@ internal fun ControlPlaneHeader(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+        if (onOpenMediaPlayer != null) {
+            IconButton(
+                onClick = onOpenMediaPlayer,
+                modifier = Modifier.testTag("media_player_button"),
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_play_circle),
+                    contentDescription = stringResource(R.string.cd_media_player),
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    modifier = Modifier.size(26.dp),
+                )
+            }
         }
         if (onOpenSettings != null) {
             SettingsButton(onClick = onOpenSettings)

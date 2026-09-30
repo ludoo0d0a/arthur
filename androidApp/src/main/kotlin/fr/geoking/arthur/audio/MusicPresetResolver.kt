@@ -3,30 +3,44 @@ package fr.geoking.arthur.audio
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.marketplace.GenartPackTopics
+import fr.geoking.arthur.source.AmbientAudioCharacter
 import kotlin.math.pow
+
+/** Optional user overrides applied on top of artwork-derived presets. */
+data class MusicUserPrefs(
+    val character: AmbientAudioCharacter = AmbientAudioCharacter.Melody,
+    val stylePreference: MusicStyle? = null,
+    val complexity: Float = 0.55f,
+)
 
 /** Maps [Artwork] → unique [MusicPreset] via topic/kind heuristics + id hash. */
 object MusicPresetResolver {
 
-    fun resolve(artwork: Artwork): MusicPreset {
+    fun resolve(artwork: Artwork, prefs: MusicUserPrefs = MusicUserPrefs()): MusicPreset {
         val seed = stableHash(artwork.id)
-        val style = pickStyle(artwork, seed)
-        val scales = ScaleLibrary.forStyle(style)
+        var style = prefs.stylePreference ?: pickStyle(artwork, seed)
+        style = rebiasStyleForCharacter(style, prefs.character, seed)
+        val scales = ScaleLibrary.forStyle(style, prefs.character)
         val scale = scales[mod(seed, scales.size)]
-        val rootMidi = 45 + mod(seed shr 8, 17) // A2..C4-ish
+        val rootMidi = 48 + mod(seed shr 8, 14) // C3..D4-ish — clearer piano range
         val rootHz = midiToHz(rootMidi.toFloat())
-        val tempo = baseTempo(style) * (0.85f + mod(seed shr 16, 31) / 100f)
-        val density = (0.25f + mod(seed shr 4, 50) / 100f).coerceIn(0.15f, 0.85f)
-        val ornament = (0.1f + mod(seed shr 12, 40) / 100f).coerceIn(0.05f, 0.7f)
-        val mix = defaultMix(style).let { base ->
-            base.copy(
-                bed = (base.bed + delta(seed, 0)).coerceIn(0.15f, 0.7f),
-                harmony = (base.harmony + delta(seed, 1)).coerceIn(0f, 0.5f),
-                melody = (base.melody + delta(seed, 2)).coerceIn(0.05f, 0.55f),
-                texture = (base.texture + delta(seed, 3)).coerceIn(0f, 0.4f),
-                pulse = (base.pulse + delta(seed, 4)).coerceIn(0f, 0.35f),
-            ).clamped()
-        }
+        val tempo = baseTempo(style) * (0.9f + mod(seed shr 16, 21) / 100f)
+        val complexity = prefs.complexity.coerceIn(0f, 1f)
+        val density = (0.4f + complexity * 0.45f + mod(seed shr 4, 15) / 100f).coerceIn(0.25f, 0.95f)
+        val ornament = (0.08f + complexity * 0.35f + mod(seed shr 12, 20) / 100f).coerceIn(0.05f, 0.65f)
+        val mix = applyCharacterMix(
+            defaultMix(style).let { base ->
+                base.copy(
+                    bed = (base.bed + delta(seed, 0)).coerceIn(0f, 0.7f),
+                    harmony = (base.harmony + delta(seed, 1)).coerceIn(0f, 0.5f),
+                    melody = (base.melody + delta(seed, 2)).coerceIn(0.15f, 0.75f),
+                    texture = (base.texture + delta(seed, 3)).coerceIn(0f, 0.4f),
+                    pulse = (base.pulse + delta(seed, 4)).coerceIn(0f, 0.35f),
+                ).clamped()
+            },
+            prefs.character,
+            style,
+        )
         return MusicPreset(
             artworkId = artwork.id,
             style = style,
@@ -51,7 +65,6 @@ object MusicPresetResolver {
                 GenartPackTopics.topicsCoveringEngine(artwork.id)
             else -> emptyList()
         }
-        // Prefer the most specific ambient-audio topic when an engine sits in several packs.
         val ranked = topics.sortedBy { audioTopicPriority(it) }
         val primaryTopicStyles = ranked.firstOrNull()?.let { topicToStyles(it) }.orEmpty()
         if (primaryTopicStyles.isNotEmpty()) {
@@ -59,6 +72,56 @@ object MusicPresetResolver {
         }
         return sourceHeuristics(artwork)
             ?: MusicStyle.entries[mod(seed, MusicStyle.entries.size)]
+    }
+
+    /** Redirect drone-heavy styles toward melodic ones when character is Melody. */
+    internal fun rebiasStyleForCharacter(
+        style: MusicStyle,
+        character: AmbientAudioCharacter,
+        seed: Long,
+    ): MusicStyle {
+        if (character == AmbientAudioCharacter.Atmosphere) return style
+        return when (style) {
+            MusicStyle.CosmicDrone ->
+                if (character == AmbientAudioCharacter.Melody) {
+                    listOf(MusicStyle.JazzPiano, MusicStyle.Zen, MusicStyle.NightLounge)[mod(seed shr 7, 3)]
+                } else {
+                    MusicStyle.Zen
+                }
+            MusicStyle.TibetanBowl ->
+                if (character == AmbientAudioCharacter.Melody) MusicStyle.Zen else style
+            MusicStyle.OceanWaves ->
+                if (character == AmbientAudioCharacter.Melody) {
+                    listOf(MusicStyle.Zen, MusicStyle.SoftGuitar)[mod(seed shr 9, 2)]
+                } else {
+                    style
+                }
+            else -> style
+        }
+    }
+
+    internal fun applyCharacterMix(
+        mix: TrackMix,
+        character: AmbientAudioCharacter,
+        style: MusicStyle,
+    ): TrackMix = when (character) {
+        AmbientAudioCharacter.Melody -> mix.copy(
+            bed = (mix.bed * 0.15f).coerceAtMost(0.08f),
+            harmony = (mix.harmony * 0.35f).coerceAtMost(0.12f),
+            melody = mix.melody.coerceAtLeast(0.55f),
+            texture = 0f,
+            pulse = (mix.pulse * 0.7f).coerceAtMost(0.2f),
+        ).clamped()
+        AmbientAudioCharacter.Balanced -> mix.copy(
+            bed = mix.bed.coerceIn(0.08f, 0.28f),
+            harmony = mix.harmony.coerceIn(0.08f, 0.28f),
+            melody = mix.melody.coerceAtLeast(0.42f),
+            texture = when (style) {
+                MusicStyle.OceanWaves, MusicStyle.WindChimes -> mix.texture.coerceAtMost(0.12f)
+                else -> 0f
+            },
+        ).clamped()
+        AmbientAudioCharacter.Atmosphere -> mix.clamped()
     }
 
     /** Lower = more specific for soundtrack mapping. */
@@ -75,18 +138,18 @@ object MusicPresetResolver {
     }
 
     private fun topicToStyles(topic: String): List<MusicStyle> = when (topic) {
-        GenartPackTopics.WATER -> listOf(MusicStyle.OceanWaves, MusicStyle.Zen)
-        GenartPackTopics.NATURE -> listOf(MusicStyle.Zen, MusicStyle.SoftGuitar, MusicStyle.WindChimes)
+        GenartPackTopics.WATER -> listOf(MusicStyle.Zen, MusicStyle.SoftGuitar, MusicStyle.OceanWaves)
+        GenartPackTopics.NATURE -> listOf(MusicStyle.Zen, MusicStyle.SoftGuitar, MusicStyle.JazzPiano)
         GenartPackTopics.EARTH -> listOf(MusicStyle.SoftGuitar, MusicStyle.Zen, MusicStyle.AfricanPulse)
-        GenartPackTopics.LIFE -> listOf(MusicStyle.SoftGuitar, MusicStyle.AfricanPulse)
-        GenartPackTopics.WEATHER -> listOf(MusicStyle.WindChimes, MusicStyle.OceanWaves, MusicStyle.Zen)
+        GenartPackTopics.LIFE -> listOf(MusicStyle.SoftGuitar, MusicStyle.AfricanPulse, MusicStyle.JazzPiano)
+        GenartPackTopics.WEATHER -> listOf(MusicStyle.WindChimes, MusicStyle.Zen, MusicStyle.JazzPiano)
         GenartPackTopics.ABSTRACT, GenartPackTopics.GEOMETRY, GenartPackTopics.TAPET ->
-            listOf(MusicStyle.JazzPiano, MusicStyle.BarAmbience, MusicStyle.WindChimes)
+            listOf(MusicStyle.JazzPiano, MusicStyle.BarAmbience, MusicStyle.NightLounge)
         GenartPackTopics.PLANETS, GenartPackTopics.SCIFI ->
-            listOf(MusicStyle.CosmicDrone, MusicStyle.TibetanBowl, MusicStyle.Zen)
+            listOf(MusicStyle.JazzPiano, MusicStyle.Zen, MusicStyle.NightLounge)
         GenartPackTopics.FRACTAL, GenartPackTopics.CUSTOM ->
-            listOf(MusicStyle.CosmicDrone, MusicStyle.JazzPiano, MusicStyle.Zen)
-        else -> listOf(MusicStyle.Zen)
+            listOf(MusicStyle.JazzPiano, MusicStyle.Zen, MusicStyle.BarAmbience)
+        else -> listOf(MusicStyle.JazzPiano, MusicStyle.Zen)
     }
 
     private fun sourceHeuristics(artwork: Artwork): MusicStyle? {
@@ -105,30 +168,30 @@ object MusicPresetResolver {
             artwork.kind == ArtworkKind.Painting || artwork.kind == ArtworkKind.Sculpture ->
                 MusicStyle.BarAmbience
             artwork.kind == ArtworkKind.FractalPreset || artwork.kind == ArtworkKind.CustomFractal ->
-                MusicStyle.CosmicDrone
+                MusicStyle.JazzPiano
             else -> null
         }
     }
 
     private fun defaultMix(style: MusicStyle): TrackMix = when (style) {
-        MusicStyle.Zen -> TrackMix(bed = 0.50f, harmony = 0.18f, melody = 0.28f, texture = 0.08f, pulse = 0.04f)
-        MusicStyle.BarAmbience -> TrackMix(bed = 0.42f, harmony = 0.28f, melody = 0.22f, texture = 0.10f, pulse = 0.14f)
-        MusicStyle.JazzPiano -> TrackMix(bed = 0.28f, harmony = 0.35f, melody = 0.40f, texture = 0.05f, pulse = 0.10f)
-        MusicStyle.SoftGuitar -> TrackMix(bed = 0.30f, harmony = 0.25f, melody = 0.38f, texture = 0.06f, pulse = 0.08f)
-        MusicStyle.TibetanBowl -> TrackMix(bed = 0.55f, harmony = 0.20f, melody = 0.18f, texture = 0.12f, pulse = 0.02f)
-        MusicStyle.OceanWaves -> TrackMix(bed = 0.55f, harmony = 0.10f, melody = 0.12f, texture = 0.35f, pulse = 0.02f)
-        MusicStyle.AfricanPulse -> TrackMix(bed = 0.28f, harmony = 0.22f, melody = 0.35f, texture = 0.10f, pulse = 0.28f)
-        MusicStyle.WindChimes -> TrackMix(bed = 0.25f, harmony = 0.10f, melody = 0.30f, texture = 0.35f, pulse = 0.04f)
-        MusicStyle.NightLounge -> TrackMix(bed = 0.40f, harmony = 0.30f, melody = 0.25f, texture = 0.08f, pulse = 0.16f)
-        MusicStyle.CosmicDrone -> TrackMix(bed = 0.60f, harmony = 0.22f, melody = 0.12f, texture = 0.18f, pulse = 0.02f)
+        MusicStyle.Zen -> TrackMix(bed = 0.12f, harmony = 0.14f, melody = 0.58f, texture = 0f, pulse = 0.04f)
+        MusicStyle.BarAmbience -> TrackMix(bed = 0.14f, harmony = 0.22f, melody = 0.52f, texture = 0f, pulse = 0.10f)
+        MusicStyle.JazzPiano -> TrackMix(bed = 0.10f, harmony = 0.20f, melody = 0.62f, texture = 0f, pulse = 0.08f)
+        MusicStyle.SoftGuitar -> TrackMix(bed = 0.12f, harmony = 0.18f, melody = 0.58f, texture = 0f, pulse = 0.06f)
+        MusicStyle.TibetanBowl -> TrackMix(bed = 0.40f, harmony = 0.18f, melody = 0.28f, texture = 0.08f, pulse = 0.02f)
+        MusicStyle.OceanWaves -> TrackMix(bed = 0.28f, harmony = 0.12f, melody = 0.35f, texture = 0.22f, pulse = 0.02f)
+        MusicStyle.AfricanPulse -> TrackMix(bed = 0.10f, harmony = 0.16f, melody = 0.55f, texture = 0f, pulse = 0.24f)
+        MusicStyle.WindChimes -> TrackMix(bed = 0.08f, harmony = 0.10f, melody = 0.48f, texture = 0.18f, pulse = 0.04f)
+        MusicStyle.NightLounge -> TrackMix(bed = 0.14f, harmony = 0.24f, melody = 0.52f, texture = 0f, pulse = 0.12f)
+        MusicStyle.CosmicDrone -> TrackMix(bed = 0.45f, harmony = 0.20f, melody = 0.22f, texture = 0.12f, pulse = 0.02f)
     }
 
     private fun baseTempo(style: MusicStyle): Float = when (style) {
-        MusicStyle.Zen, MusicStyle.TibetanBowl, MusicStyle.CosmicDrone, MusicStyle.OceanWaves -> 48f
-        MusicStyle.WindChimes -> 52f
-        MusicStyle.SoftGuitar, MusicStyle.BarAmbience, MusicStyle.NightLounge -> 64f
-        MusicStyle.JazzPiano -> 72f
-        MusicStyle.AfricanPulse -> 88f
+        MusicStyle.Zen, MusicStyle.TibetanBowl, MusicStyle.CosmicDrone, MusicStyle.OceanWaves -> 56f
+        MusicStyle.WindChimes -> 58f
+        MusicStyle.SoftGuitar, MusicStyle.BarAmbience, MusicStyle.NightLounge -> 68f
+        MusicStyle.JazzPiano -> 76f
+        MusicStyle.AfricanPulse -> 92f
     }
 
     private fun delta(seed: Long, lane: Int): Float =
@@ -154,26 +217,47 @@ object MusicPresetResolver {
         (440.0 * 2.0.pow(((midi - 69.0) / 12.0))).toFloat()
 }
 
-/** Scale degree libraries keyed by style. */
+/** Scale degree libraries keyed by style / character. */
 object ScaleLibrary {
     private val majorPent = intArrayOf(0, 2, 4, 7, 9, 12)
     private val minorPent = intArrayOf(0, 3, 5, 7, 10, 12)
+    private val major = intArrayOf(0, 2, 4, 5, 7, 9, 11, 12)
+    private val naturalMinor = intArrayOf(0, 2, 3, 5, 7, 8, 10, 12)
     private val dorian = intArrayOf(0, 2, 3, 5, 7, 9, 10, 12)
     private val mixolydian = intArrayOf(0, 2, 4, 5, 7, 9, 10, 12)
     private val wholeTone = intArrayOf(0, 2, 4, 6, 8, 10, 12)
     private val hexatonic = intArrayOf(0, 2, 3, 7, 8, 10, 12)
     private val bluesLite = intArrayOf(0, 3, 5, 6, 7, 10, 12)
-    private val bowlPartials = intArrayOf(0, 5, 7, 12, 17, 19) // approximate inharmonic steps
+    private val bowlPartials = intArrayOf(0, 5, 7, 12, 17, 19)
 
-    fun forStyle(style: MusicStyle): List<IntArray> = when (style) {
-        MusicStyle.Zen -> listOf(majorPent, minorPent)
-        MusicStyle.BarAmbience, MusicStyle.NightLounge -> listOf(dorian, bluesLite, mixolydian)
-        MusicStyle.JazzPiano -> listOf(dorian, mixolydian, bluesLite)
-        MusicStyle.SoftGuitar -> listOf(majorPent, mixolydian, dorian)
-        MusicStyle.TibetanBowl -> listOf(bowlPartials, minorPent)
-        MusicStyle.OceanWaves -> listOf(majorPent, wholeTone)
-        MusicStyle.AfricanPulse -> listOf(hexatonic, majorPent, minorPent)
-        MusicStyle.WindChimes -> listOf(wholeTone, majorPent, bowlPartials)
-        MusicStyle.CosmicDrone -> listOf(wholeTone, minorPent, bowlPartials)
+    fun forStyle(
+        style: MusicStyle,
+        character: AmbientAudioCharacter = AmbientAudioCharacter.Melody,
+    ): List<IntArray> {
+        val melodic = listOf(majorPent, minorPent, major, naturalMinor, dorian, mixolydian)
+        if (character != AmbientAudioCharacter.Atmosphere) {
+            return when (style) {
+                MusicStyle.Zen -> listOf(majorPent, minorPent, major)
+                MusicStyle.BarAmbience, MusicStyle.NightLounge -> listOf(dorian, bluesLite, mixolydian, major)
+                MusicStyle.JazzPiano -> listOf(dorian, mixolydian, bluesLite, major)
+                MusicStyle.SoftGuitar -> listOf(majorPent, mixolydian, dorian, major)
+                MusicStyle.TibetanBowl -> listOf(minorPent, majorPent)
+                MusicStyle.OceanWaves -> listOf(majorPent, major, naturalMinor)
+                MusicStyle.AfricanPulse -> listOf(hexatonic, majorPent, minorPent)
+                MusicStyle.WindChimes -> listOf(majorPent, major, mixolydian)
+                MusicStyle.CosmicDrone -> listOf(minorPent, naturalMinor, dorian)
+            }
+        }
+        return when (style) {
+            MusicStyle.Zen -> listOf(majorPent, minorPent)
+            MusicStyle.BarAmbience, MusicStyle.NightLounge -> listOf(dorian, bluesLite, mixolydian)
+            MusicStyle.JazzPiano -> listOf(dorian, mixolydian, bluesLite)
+            MusicStyle.SoftGuitar -> listOf(majorPent, mixolydian, dorian)
+            MusicStyle.TibetanBowl -> listOf(bowlPartials, minorPent)
+            MusicStyle.OceanWaves -> listOf(majorPent, wholeTone)
+            MusicStyle.AfricanPulse -> listOf(hexatonic, majorPent, minorPent)
+            MusicStyle.WindChimes -> listOf(wholeTone, majorPent, bowlPartials)
+            MusicStyle.CosmicDrone -> listOf(wholeTone, minorPent, bowlPartials)
+        }.ifEmpty { melodic }
     }
 }

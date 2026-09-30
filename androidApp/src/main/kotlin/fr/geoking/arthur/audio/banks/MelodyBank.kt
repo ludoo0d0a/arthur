@@ -17,27 +17,43 @@ data class MelodyMotif(
 }
 
 object MelodyBank {
-    private val ascending3 = MelodyMotif("asc3", intArrayOf(0, 1, 2))
-    private val descendingSigh = MelodyMotif("sigh", intArrayOf(4, 2, 0))
-    private val neighbor = MelodyMotif("neighbor", intArrayOf(2, 3, 2, 1))
-    private val leapReturn = MelodyMotif("leap", intArrayOf(0, 4, 2))
-    private val pedalReturn = MelodyMotif("pedal", intArrayOf(0, 2, 0, 3, 0))
-    private val callHigh = MelodyMotif("call", intArrayOf(3, 4, 5))
-    private val responseLow = MelodyMotif("resp", intArrayOf(2, 1, 0))
-    private val longTone = MelodyMotif("long", intArrayOf(0, MelodyMotif.REST, 0))
-    private val question = MelodyMotif("q", intArrayOf(1, 2, 4, MelodyMotif.REST))
-    private val answer = MelodyMotif("a", intArrayOf(3, 1, 0))
-    private val africanRoll = MelodyMotif("afr", intArrayOf(0, 2, 3, 2, 5, 3))
-    private val wholeDrift = MelodyMotif("drift", intArrayOf(0, 1, 2, 3, 2, 1))
+    private val R = MelodyMotif.REST
 
-    private val zen = listOf(ascending3, descendingSigh, neighbor, pedalReturn, longTone)
-    private val jazz = listOf(neighbor, leapReturn, question, answer, descendingSigh)
-    private val guitar = listOf(ascending3, pedalReturn, leapReturn, callHigh, responseLow)
-    private val african = listOf(africanRoll, callHigh, responseLow, ascending3, pedalReturn)
-    private val cosmic = listOf(wholeDrift, longTone, descendingSigh, leapReturn)
-    private val bowl = listOf(longTone, pedalReturn, descendingSigh)
-    private val ocean = listOf(longTone, wholeDrift, ascending3)
-    private val chimes = listOf(leapReturn, callHigh, neighbor, wholeDrift)
+    // Longer phrase motifs with rests and octave jumps (degree + scale length wraps in sequencer).
+    private val ascendingPhrase = MelodyMotif("asc_ph", intArrayOf(0, 1, 2, 3, 4, R, 2))
+    private val descendingSigh = MelodyMotif("sigh", intArrayOf(5, 4, 3, 2, 1, 0))
+    private val neighborWalk = MelodyMotif("neighbor", intArrayOf(2, 3, 2, 1, 2, 0))
+    private val leapReturn = MelodyMotif("leap", intArrayOf(0, 4, 2, 5, 3, 1, 0))
+    private val pedalReturn = MelodyMotif("pedal", intArrayOf(0, 2, 0, 3, 0, 4, 0))
+    private val callHigh = MelodyMotif("call", intArrayOf(3, 4, 5, 4, R))
+    private val responseLow = MelodyMotif("resp", intArrayOf(2, 1, 0, R, 0))
+    private val question = MelodyMotif("q", intArrayOf(1, 2, 4, 5, R))
+    private val answer = MelodyMotif("a", intArrayOf(4, 3, 1, 0))
+    private val arcade = MelodyMotif("arcade", intArrayOf(0, 2, 4, 2, 5, 4, 2, 0))
+    private val waltz = MelodyMotif("waltz", intArrayOf(0, 2, 4, R, 4, 2, 0, R))
+    private val bounce = MelodyMotif("bounce", intArrayOf(0, 4, 0, 5, 2, 4, 0))
+    private val lullaby = MelodyMotif("lull", intArrayOf(4, 2, 0, 2, 4, 5, 4, R, 2, 0))
+    private val stepClimb = MelodyMotif("climb", intArrayOf(0, 1, 2, 1, 2, 3, 2, 3, 4))
+    private val echoPair = MelodyMotif("echo", intArrayOf(0, 2, R, 0, 2, 4, R, 4, 2, 0))
+    private val africanRoll = MelodyMotif("afr", intArrayOf(0, 2, 3, 2, 5, 3, 2, 0))
+    private val wholeDrift = MelodyMotif("drift", intArrayOf(0, 1, 2, 3, 2, 1, 0, R))
+    private val longTone = MelodyMotif("long", intArrayOf(0, R, 0, R, 2))
+    private val chimeLeap = MelodyMotif("chime", intArrayOf(0, 4, R, 5, 2, R, 4, 0))
+
+    private val zen = listOf(
+        ascendingPhrase, descendingSigh, neighborWalk, pedalReturn, lullaby, stepClimb, echoPair,
+    )
+    private val jazz = listOf(
+        neighborWalk, leapReturn, question, answer, descendingSigh, arcade, bounce, waltz, echoPair,
+    )
+    private val guitar = listOf(
+        ascendingPhrase, pedalReturn, leapReturn, callHigh, responseLow, stepClimb, lullaby,
+    )
+    private val african = listOf(africanRoll, callHigh, responseLow, ascendingPhrase, pedalReturn, bounce)
+    private val cosmic = listOf(wholeDrift, longTone, descendingSigh, leapReturn, lullaby)
+    private val bowl = listOf(longTone, pedalReturn, descendingSigh, echoPair)
+    private val ocean = listOf(longTone, wholeDrift, ascendingPhrase, lullaby)
+    private val chimes = listOf(chimeLeap, callHigh, neighborWalk, wholeDrift, leapReturn)
 
     fun motifsFor(style: fr.geoking.arthur.audio.MusicStyle): List<MelodyMotif> =
         when (style) {

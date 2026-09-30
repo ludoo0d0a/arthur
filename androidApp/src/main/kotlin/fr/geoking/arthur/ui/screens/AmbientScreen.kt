@@ -533,6 +533,16 @@ fun AmbientScreenContent(
                     .padding(12.dp),
             )
         }
+        if (!isTelevision && ambientAudioSettings != null) {
+            AmbientSoundToggleButton(
+                enabled = audioEnabled,
+                onToggle = { ambientAudioSettings.setEnabled(!audioEnabled) },
+                modifier = Modifier
+                    .align(if (canOpenDetails) Alignment.TopStart else Alignment.TopEnd)
+                    .statusBarsPadding()
+                    .padding(12.dp),
+            )
+        }
     }
 }
 
@@ -554,6 +564,35 @@ private fun AmbientDetailsButton(
         IconButton(onClick = onClick) {
             Icon(
                 imageVector = Icons.Filled.MoreVert,
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.9f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun AmbientSoundToggleButton(
+    enabled: Boolean,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val description = stringResource(
+        if (enabled) R.string.settings_ambient_sound_enable else R.string.cd_media_player,
+    )
+    Box(
+        modifier = modifier
+            .size(44.dp)
+            .semantics { contentDescription = description }
+            .testTag("ambient_sound_toggle"),
+        contentAlignment = Alignment.Center,
+    ) {
+        AmbientFrostedCircle()
+        IconButton(onClick = onToggle) {
+            Icon(
+                painter = painterResource(
+                    if (enabled) R.drawable.ic_car_sound_on else R.drawable.ic_car_sound_off,
+                ),
                 contentDescription = null,
                 tint = Color.White.copy(alpha = 0.9f),
             )

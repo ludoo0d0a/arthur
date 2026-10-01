@@ -12,16 +12,29 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -466,12 +479,29 @@ private fun PhoneControlPlaneContent(
         onBackToHome()
     }
 
+    val ambientAudioSettings = remember {
+        runCatching { GlobalContext.get().get<AmbientAudioSettings>() }.getOrNull()
+    }
+    val audioEnabled = ambientAudioSettings?.enabled?.collectAsState()?.value == true
+
     Scaffold(
         modifier = modifier
             .fillMaxSize()
             .testTag("control_plane"),
         containerColor = scheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        floatingActionButton = {
+            if (onOpenMediaPlayer != null) {
+                FloatingActionButton(
+                    onClick = onOpenMediaPlayer,
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.testTag("media_player_fab"),
+                ) {
+                    AnimatedEqualizerIcon(isActive = audioEnabled)
+                }
+            }
+        },
         topBar = {
             if (openedFamily != null) {
                 TopAppBar(
@@ -667,6 +697,97 @@ internal fun PackSubPackHeader(
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+        )
+    }
+}
+
+@Composable
+fun AnimatedEqualizerIcon(
+    isActive: Boolean,
+    modifier: Modifier = Modifier,
+    color: Color = LocalContentColor.current,
+) {
+    if (isActive) {
+        val transition = rememberInfiniteTransition(label = "equalizer")
+        val bar1Scale by transition.animateFloat(
+            initialValue = 0.3f,
+            targetValue = 1.0f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(400, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+            label = "bar1",
+        )
+        val bar2Scale by transition.animateFloat(
+            initialValue = 0.2f,
+            targetValue = 0.95f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(520, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+            label = "bar2",
+        )
+        val bar3Scale by transition.animateFloat(
+            initialValue = 0.4f,
+            targetValue = 1.0f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(360, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+            label = "bar3",
+        )
+        EqualizerBars(
+            bar1 = bar1Scale,
+            bar2 = bar2Scale,
+            bar3 = bar3Scale,
+            color = color,
+            modifier = modifier,
+        )
+    } else {
+        EqualizerBars(
+            bar1 = 0.4f,
+            bar2 = 0.85f,
+            bar3 = 0.5f,
+            color = color,
+            modifier = modifier,
+        )
+    }
+}
+
+@Composable
+private fun EqualizerBars(
+    bar1: Float,
+    bar2: Float,
+    bar3: Float,
+    color: Color,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .size(24.dp)
+            .padding(2.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.5.dp),
+        verticalAlignment = Alignment.Bottom,
+    ) {
+        val barWidth = 4.dp
+        val maxHeight = 20.dp
+        Box(
+            modifier = Modifier
+                .width(barWidth)
+                .height(maxHeight * bar1)
+                .background(color, RoundedCornerShape(2.dp)),
+        )
+        Box(
+            modifier = Modifier
+                .width(barWidth)
+                .height(maxHeight * bar2)
+                .background(color, RoundedCornerShape(2.dp)),
+        )
+        Box(
+            modifier = Modifier
+                .width(barWidth)
+                .height(maxHeight * bar3)
+                .background(color, RoundedCornerShape(2.dp)),
         )
     }
 }

@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -26,8 +28,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.ui.draw.clip
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -550,6 +554,7 @@ fun AmbientScreenContent(
                     AmbientMediaPlayerBar(
                         isPlaying = isPlaying,
                         canSkip = shouldRotate,
+                        progress = progress.value,
                         onPrevious = { scope.launch { advanceLatest(-1, false) } },
                         onPlayPause = { isPlaying = !isPlaying },
                         onNext = { scope.launch { advanceLatest(+1, false) } },
@@ -632,6 +637,7 @@ private fun AmbientMediaPlayerBar(
     onPrevious: () -> Unit,
     onPlayPause: () -> Unit,
     onNext: () -> Unit,
+    progress: Float = 0f,
     modifier: Modifier = Modifier,
     playPauseFocusRequester: FocusRequester? = null,
 ) {
@@ -675,49 +681,65 @@ private fun AmbientMediaPlayerBar(
                 )
                 .background(Color.White.copy(alpha = 0.18f), RoundedCornerShape(28.dp)),
         )
-        Row(
-            modifier = Modifier.padding(horizontal = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
         ) {
-            AmbientMediaControlButton(
-                onClick = onPrevious,
-                enabled = canSkip,
-                contentDescription = previousDescription,
-                testTag = "ambient_media_previous",
+            LinearProgressIndicator(
+                progress = { progress.coerceIn(0f, 1f) },
+                modifier = Modifier
+                    .padding(horizontal = 20.dp, vertical = 2.dp)
+                    .fillMaxWidth(0.75f)
+                    .height(3.dp)
+                    .clip(CircleShape)
+                    .testTag("ambient_media_progress"),
+                color = Color.White.copy(alpha = 0.9f),
+                trackColor = Color.White.copy(alpha = 0.25f),
+            )
+            Row(
+                modifier = Modifier.padding(horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
             ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_car_previous),
-                    contentDescription = null,
-                    tint = Color.White.copy(alpha = if (canSkip) 0.9f else 0.35f),
-                )
-            }
-            AmbientMediaControlButton(
-                onClick = onPlayPause,
-                enabled = true,
-                contentDescription = playPauseDescription,
-                testTag = "ambient_media_play_pause",
-                focusRequester = playPauseFocusRequester,
-            ) {
-                Icon(
-                    painter = painterResource(
-                        if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play_circle,
-                    ),
-                    contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.9f),
-                )
-            }
-            AmbientMediaControlButton(
-                onClick = onNext,
-                enabled = canSkip,
-                contentDescription = nextDescription,
-                testTag = "ambient_media_next",
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_car_next),
-                    contentDescription = null,
-                    tint = Color.White.copy(alpha = if (canSkip) 0.9f else 0.35f),
-                )
+                AmbientMediaControlButton(
+                    onClick = onPrevious,
+                    enabled = canSkip,
+                    contentDescription = previousDescription,
+                    testTag = "ambient_media_previous",
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_car_previous),
+                        contentDescription = null,
+                        tint = Color.White.copy(alpha = if (canSkip) 0.9f else 0.35f),
+                    )
+                }
+                AmbientMediaControlButton(
+                    onClick = onPlayPause,
+                    enabled = true,
+                    contentDescription = playPauseDescription,
+                    testTag = "ambient_media_play_pause",
+                    focusRequester = playPauseFocusRequester,
+                ) {
+                    Icon(
+                        painter = painterResource(
+                            if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play_circle,
+                        ),
+                        contentDescription = null,
+                        tint = Color.White.copy(alpha = 0.9f),
+                    )
+                }
+                AmbientMediaControlButton(
+                    onClick = onNext,
+                    enabled = canSkip,
+                    contentDescription = nextDescription,
+                    testTag = "ambient_media_next",
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_car_next),
+                        contentDescription = null,
+                        tint = Color.White.copy(alpha = if (canSkip) 0.9f else 0.35f),
+                    )
+                }
             }
         }
     }

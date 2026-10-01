@@ -83,7 +83,7 @@ class DeviantArtSourceTest {
 
     @Test
     fun blankCredentialsLogAuthenticationError() = runBlocking {
-        val errorLogger = fr.geoking.arthur.shared.error.ErrorLogger { 0L }
+        val errorLogger = fr.geoking.arthur.shared.error.ErrorLogger(clock = { 0L })
         val source = DeviantArtSource(
             clientId = { "" },
             clientSecret = { "secret" },

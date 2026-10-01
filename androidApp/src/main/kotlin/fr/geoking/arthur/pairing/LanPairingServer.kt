@@ -1,6 +1,9 @@
 package fr.geoking.arthur.pairing
 
+import fr.geoking.arthur.shared.domain.BoundingBox
+import fr.geoking.arthur.shared.domain.SpeedCamera
 import fr.geoking.arthur.shared.pairing.PairingCodec
+import fr.geoking.arthur.shared.source.SpeedCameraRepository
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.request.get
@@ -26,7 +29,9 @@ import kotlinx.coroutines.runBlocking
 /** TV-side LAN pairing host (Ktor CIO). */
 class LanPairingServer(
     private val port: Int = DEFAULT_PORT,
+    private val speedCameraRepository: SpeedCameraRepository? = null,
 ) {
+    private val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true; prettyPrint = false }
     private val manifest = AtomicReference<String?>(null)
     private val engine = embeddedServer(CIO, port = port, host = "0.0.0.0") {
         routing {
@@ -41,6 +46,34 @@ class LanPairingServer(
                 PairingCodec.decodeManifest(raw)
                 manifest.set(raw)
                 call.respond(HttpStatusCode.Accepted, "accepted")
+            }
+            get("/api/radars") {
+                val repository = speedCameraRepository
+                if (repository == null) {
+                    call.respond(HttpStatusCode.ServiceUnavailable, "SpeedCameraRepository unavailable")
+                    return@get
+                }
+                val country = call.request.queryParameters["country"]
+                val bboxParam = call.request.queryParameters["bbox"]
+
+                val cameras: List<SpeedCamera> = when {
+                    !country.isNullOrBlank() -> {
+                        repository.getFixedRadarsByCountry(country)
+                    }
+                    !bboxParam.isNullOrBlank() -> {
+                        val parts = bboxParam.split(",").mapNotNull { it.toDoubleOrNull() }
+                        if (parts.size == 4) {
+                            val bbox = BoundingBox(parts[0], parts[1], parts[2], parts[3])
+                            repository.getFixedRadarsByBoundingBox(bbox)
+                        } else {
+                            emptyList()
+                        }
+                    }
+                    else -> emptyList()
+                }
+
+                val responseJson = json.encodeToString(cameras)
+                call.respondText(responseJson, ContentType.Application.Json)
             }
         }
     }

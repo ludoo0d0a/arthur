@@ -40,8 +40,14 @@ import fr.geoking.arthur.shared.source.PixabayVideoSource
 import fr.geoking.arthur.shared.source.RijksmuseumSource
 import fr.geoking.arthur.shared.source.SmithsonianSource
 import fr.geoking.arthur.shared.source.UnsplashSource
+import fr.geoking.arthur.pairing.LanPairingServer
+import fr.geoking.arthur.shared.source.LufopSpeedCameraSource
+import fr.geoking.arthur.shared.source.OverpassSpeedCameraSource
+import fr.geoking.arthur.shared.source.SpeedCameraRepository
 import fr.geoking.arthur.shared.source.WikimediaStreetArtSource
 import fr.geoking.arthur.source.ArtworkImageCache
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 import fr.geoking.arthur.source.AmbientAudioSettings
 import fr.geoking.arthur.source.DeveloperSettings
 import fr.geoking.arthur.source.InvalidArtworkStore
@@ -413,6 +419,43 @@ val appModule = module {
                     header(HttpHeaders.Authorization, "Bearer $apiKey")
                 }
             },
+        )
+    }
+    single {
+        val client = get<HttpClient>()
+        val errorLogger = get<ErrorLogger>()
+        LufopSpeedCameraSource(
+            httpGet = { url -> safeHttpGet(client, url, LufopSpeedCameraSource.ID, errorLogger) },
+            errorLogger = errorLogger,
+        )
+    }
+    single {
+        val client = get<HttpClient>()
+        val errorLogger = get<ErrorLogger>()
+        OverpassSpeedCameraSource(
+            httpPostOrGet = { url, query ->
+                if (query != null) {
+                    val response = client.post(url) {
+                        header("X-Source-Id", OverpassSpeedCameraSource.ID)
+                        setBody(query)
+                    }
+                    response.bodyAsText()
+                } else {
+                    safeHttpGet(client, url, OverpassSpeedCameraSource.ID, errorLogger)
+                }
+            },
+            errorLogger = errorLogger,
+        )
+    }
+    single {
+        SpeedCameraRepository(
+            primarySource = get<LufopSpeedCameraSource>(),
+            fallbackSource = get<OverpassSpeedCameraSource>(),
+        )
+    }
+    single {
+        LanPairingServer(
+            speedCameraRepository = get(),
         )
     }
     single {

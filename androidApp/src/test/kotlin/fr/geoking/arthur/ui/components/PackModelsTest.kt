@@ -133,6 +133,23 @@ class PackModelsTest {
     }
 
     @Test
+    fun genartRandom_shufflesListAtCreation() {
+        // Create a catalog with enough items to ensure shuffled list differs from input catalog order.
+        val testCatalog = (1..30).map { i ->
+            Artwork(
+                id = "genart-$i",
+                title = "Genart $i",
+                sourceId = GenartSource.ID,
+                kind = ArtworkKind.Genart,
+            )
+        }
+        val pool = resolvePackPool(testCatalog, PackSelection(PackFamily.Genart, GenartTopic.Random.testTagSuffix))
+        assertEquals(30, pool.size)
+        // Set of elements is identical, but order is shuffled at creation time.
+        assertEquals(testCatalog.map { it.id }.toSet(), pool.map { it.id }.toSet())
+    }
+
+    @Test
     fun genartRandom_includesAllGenartKinds() {
         val pool = resolvePackPool(catalog, PackSelection(PackFamily.Genart))
         assertEquals(

@@ -22,7 +22,6 @@ import fr.geoking.arthur.shared.domain.isGenerative
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.source.AmbientAudioSettings
-import fr.geoking.arthur.source.AmbientStillPicker
 import fr.geoking.arthur.source.ArtworkImageCache
 import fr.geoking.arthur.source.DeveloperSettings
 import fr.geoking.arthur.source.InvalidArtworkStore
@@ -243,18 +242,14 @@ class ArthurMediaService : MediaLibraryService() {
         val pool = rotationPool()
         if (pool.isEmpty()) return
 
-        val next = if (userInitiated) {
-            val index = pool.indexOfFirst { it.id == current?.id }.let { if (it < 0) 0 else it }
-            val nextIndex = AmbientAlbumArt.nextValidIndex(
-                poolSize = pool.size,
-                currentIndex = index,
-                delta = delta,
-                isInvalidAt = { pool[it].id.let(invalidStore::isInvalid) },
-            )
-            pool[nextIndex]
-        } else {
-            pickAutoNext(pool) ?: return
-        }
+        val index = pool.indexOfFirst { it.id == current?.id }.let { if (it < 0) 0 else it }
+        val nextIndex = AmbientAlbumArt.nextValidIndex(
+            poolSize = pool.size,
+            currentIndex = index,
+            delta = delta,
+            isInvalidAt = { pool[it].id.let(invalidStore::isInvalid) },
+        )
+        val next = pool[nextIndex]
 
         current = next
         generation += 1
@@ -270,41 +265,11 @@ class ArthurMediaService : MediaLibraryService() {
             consecutiveAutoRotations = 0
             if (playing) startRotation() else setPlaying(true)
         }
-    }
 
-    private suspend fun pickAutoNext(pool: List<Artwork>): Artwork? {
-        val eligible = pool.mapNotNull { art ->
-            if (invalidStore.isInvalid(art.id)) null else art.id
-        }.toSet()
-        if (eligible.isEmpty()) return null
-
-        var pickedId = AmbientStillPicker.pickNextRandom(
-            poolIds = pool.map { it.id },
-            currentId = current?.id,
-            seenIds = seenIds,
-            recentIds = rotationSettings.recentStillIds(),
-            eligibleIds = eligible,
-        )
-        val noUnseen = eligible.all { it in seenIds } || pickedId == null
-        if (noUnseen) {
-            renewCatalog()
-            val renewedPool = rotationPool()
-            val renewedEligible = renewedPool.mapNotNull { art ->
-                if (invalidStore.isInvalid(art.id)) null else art.id
-            }.toSet()
-            if (renewedEligible.all { it in seenIds }) {
-                seenIds = current?.id?.let { setOf(it) }.orEmpty()
-            }
-            pickedId = AmbientStillPicker.pickNextRandom(
-                poolIds = renewedPool.map { it.id },
-                currentId = current?.id,
-                seenIds = seenIds,
-                recentIds = rotationSettings.recentStillIds(),
-                eligibleIds = renewedEligible,
-            )
-            return renewedPool.firstOrNull { it.id == pickedId }
+        val unseenCount = pool.count { !invalidStore.isInvalid(it.id) && it.id !in seenIds }
+        if (unseenCount <= 1) {
+            scope.launch { runCatching { renewCatalog() } }
         }
-        return pool.firstOrNull { it.id == pickedId }
     }
 
     private fun rebuildAmbientPool(seedId: String? = current?.id) {

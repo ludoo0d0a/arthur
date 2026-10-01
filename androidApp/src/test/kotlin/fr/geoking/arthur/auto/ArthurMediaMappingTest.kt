@@ -114,7 +114,21 @@ class ArthurMediaMappingTest {
         }
         val sampled = AmbientAlbumArt.sampleRotationPool(pool)
         assertEquals(10, sampled.size)
-        assertEquals(pool.map { it.id }.toSet(), sampled.map { it.id }.toSet())
+        assertEquals(pool.map { it.id }, sampled.map { it.id })
+    }
+
+    @Test
+    fun sampleRotationPool_preservesInputListOrder() {
+        val pool = (1..5).map { i ->
+            Artwork(
+                id = "genart-$i",
+                title = "Genart $i",
+                sourceId = GenartSource.ID,
+                kind = ArtworkKind.Genart,
+            )
+        }
+        val sampled = AmbientAlbumArt.sampleRotationPool(pool)
+        assertEquals(listOf("genart-1", "genart-2", "genart-3", "genart-4", "genart-5"), sampled.map { it.id })
     }
 
     @Test

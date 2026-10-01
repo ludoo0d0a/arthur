@@ -36,8 +36,8 @@ object AmbientAlbumArt {
     ): List<Artwork> {
         if (pool.isEmpty() || maxSize <= 0) return emptyList()
         val effectiveMaxSize = if (pool.all { it.isGenerative }) pool.size else maxSize
-        val preferred = pool.filter(isPreferred).shuffled()
-        val others = pool.filterNot(isPreferred).shuffled()
+        val preferred = pool.filter(isPreferred)
+        val others = pool.filterNot(isPreferred)
         val ordered = ArrayList<Artwork>(effectiveMaxSize.coerceAtMost(pool.size))
         val seedInPool = seed?.takeIf { candidate -> pool.any { it.id == candidate.id } }
         if (seedInPool != null) {

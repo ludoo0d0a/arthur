@@ -32,7 +32,7 @@ jobs:
       aab_glob: 'androidApp/build/outputs/bundle/release/androidApp-release.aab'
       google_services_path: 'androidApp/google-services.json'
       unit_test_tasks: >-
-        :shared:testDebugUnitTest
+        :shared:testAndroidHostTest
         :fractal:testDebugUnitTest
         :genart:testDebugUnitTest
         :androidApp:testDebugUnitTest

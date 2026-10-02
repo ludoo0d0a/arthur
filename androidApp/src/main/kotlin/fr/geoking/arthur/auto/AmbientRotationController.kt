@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
+import fr.geoking.arthur.audio.AmbientAudioFocusHandler
 import fr.geoking.arthur.audio.ZenAudioEngine
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.PreparedRotation
@@ -11,7 +12,6 @@ import fr.geoking.arthur.shared.domain.isGenerative
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.source.AmbientAudioSettings
-import fr.geoking.arthur.source.AmbientStillPicker
 import fr.geoking.arthur.source.ArtworkImageCache
 import fr.geoking.arthur.source.DeveloperSettings
 import fr.geoking.arthur.source.InvalidArtworkStore
@@ -59,6 +59,10 @@ internal class AmbientRotationController(
     private val ambientAudioSettings: AmbientAudioSettings by inject()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var zenAudio: ZenAudioEngine? = null
+    private val audioFocusHandler = AmbientAudioFocusHandler(
+        isPlaying = { isPlaying },
+        setPlaying = { setPlaying(it) },
+    )
 
     private val renewSourceIds: List<String> = packSelection.sourceIdsForAmbientLoad().orEmpty()
 
@@ -122,7 +126,12 @@ internal class AmbientRotationController(
     }
 
     private fun audioEngine(): ZenAudioEngine {
-        return zenAudio ?: ZenAudioEngine(appContext, ambientAudioSettings).also { zenAudio = it }
+        return zenAudio ?: ZenAudioEngine(appContext, ambientAudioSettings).also { engine ->
+            engine.onAudioFocusChanged = { event ->
+                scope.launch { audioFocusHandler.onFocusEvent(event) }
+            }
+            zenAudio = engine
+        }
     }
 
     private suspend fun bootstrapRotation() {
@@ -344,42 +353,7 @@ internal class AmbientRotationController(
     }
 
     private suspend fun applyAutoAdvance() {
-        if (catalog.isEmpty()) return
-        val eligible = catalog.mapNotNull { art ->
-            if (invalidStore.isInvalid(art.id)) null else art.id
-        }.toSet()
-        if (eligible.isEmpty()) return
-
-        var pickedId = AmbientStillPicker.pickNextRandom(
-            poolIds = catalog.map { it.id },
-            currentId = current?.id,
-            seenIds = seenIds,
-            recentIds = rotationSettings.recentStillIds(),
-            eligibleIds = eligible,
-        )
-
-        val noUnseen = eligible.all { it in seenIds } || pickedId == null
-        if (noUnseen) {
-            renewCatalog()
-            val renewedEligible = catalog.mapNotNull { art ->
-                if (invalidStore.isInvalid(art.id)) null else art.id
-            }.toSet()
-            val stillNoUnseen = renewedEligible.all { it in seenIds }
-            if (stillNoUnseen) {
-                seenIds = current?.id?.let { setOf(it) }.orEmpty()
-            }
-            pickedId = AmbientStillPicker.pickNextRandom(
-                poolIds = catalog.map { it.id },
-                currentId = current?.id,
-                seenIds = seenIds,
-                recentIds = rotationSettings.recentStillIds(),
-                eligibleIds = renewedEligible,
-            )
-        }
-
-        val next = catalog.firstOrNull { it.id == pickedId } ?: return
-        showArtwork(next)
-        if (isPlaying) startRotation()
+        applyManualAdvance(delta = +1)
     }
 
     private suspend fun showArtwork(art: Artwork) {

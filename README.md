@@ -19,12 +19,12 @@ Domain language: [`CONTEXT.md`](CONTEXT.md) · Decisions: [`docs/adr/`](docs/adr
 
 ```bash
 export JAVA_HOME="$HOME/.sdkman/candidates/java/21.0.2-open"
-./gradlew :shared:testDebugUnitTest :fractal:testDebugUnitTest :genart:testDebugUnitTest :androidApp:assembleDebug
+./gradlew :shared:testAndroidHostTest :fractal:testDebugUnitTest :genart:testDebugUnitTest :androidApp:assembleDebug
 ```
 
 ## Tests
 
-- Unit: `./gradlew :shared:testDebugUnitTest :fractal:testDebugUnitTest :genart:testDebugUnitTest`
+- Unit: `./gradlew :shared:testAndroidHostTest :fractal:testDebugUnitTest :genart:testDebugUnitTest`
 - UI: `./gradlew :androidApp:connectedDebugAndroidTest` (emulator)
 - E2E (phone): `maestro test maestro/smoke.yaml`
 - Android Auto (DHU): `./scripts/debug-play-dhu.sh --logcat` — see [`docs/android-auto-dhu-debug.md`](docs/android-auto-dhu-debug.md)

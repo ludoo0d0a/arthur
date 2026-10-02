@@ -15,6 +15,7 @@ import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import fr.geoking.arthur.R
+import fr.geoking.arthur.audio.AmbientAudioFocusHandler
 import fr.geoking.arthur.audio.ZenAudioEngine
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.PreparedRotation
@@ -22,7 +23,6 @@ import fr.geoking.arthur.shared.domain.isGenerative
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.source.AmbientAudioSettings
-import fr.geoking.arthur.source.AmbientStillPicker
 import fr.geoking.arthur.source.ArtworkImageCache
 import fr.geoking.arthur.source.DeveloperSettings
 import fr.geoking.arthur.source.InvalidArtworkStore
@@ -77,6 +77,7 @@ class ArthurMediaService : MediaLibraryService() {
     private var liveCount: Int = 0
     private var queryLaunched: Boolean = false
     private var rotationJob: Job? = null
+    private lateinit var audioFocusHandler: AmbientAudioFocusHandler
 
     override fun onCreate() {
         super.onCreate()
@@ -108,7 +109,15 @@ class ArthurMediaService : MediaLibraryService() {
         librarySession = MediaLibrarySession.Builder(this, player, LibraryCallback())
             .setId("ArthurMedia")
             .build()
-        zenAudio = ZenAudioEngine(this, ambientAudioSettings)
+        audioFocusHandler = AmbientAudioFocusHandler(
+            isPlaying = { playing },
+            setPlaying = { setPlaying(it) },
+        )
+        zenAudio = ZenAudioEngine(this, ambientAudioSettings).also { engine ->
+            engine.onAudioFocusChanged = { event ->
+                scope.launch { audioFocusHandler.onFocusEvent(event) }
+            }
+        }
         scope.launch {
             runCatching { bootstrapCatalog() }
         }
@@ -243,18 +252,14 @@ class ArthurMediaService : MediaLibraryService() {
         val pool = rotationPool()
         if (pool.isEmpty()) return
 
-        val next = if (userInitiated) {
-            val index = pool.indexOfFirst { it.id == current?.id }.let { if (it < 0) 0 else it }
-            val nextIndex = AmbientAlbumArt.nextValidIndex(
-                poolSize = pool.size,
-                currentIndex = index,
-                delta = delta,
-                isInvalidAt = { pool[it].id.let(invalidStore::isInvalid) },
-            )
-            pool[nextIndex]
-        } else {
-            pickAutoNext(pool) ?: return
-        }
+        val index = pool.indexOfFirst { it.id == current?.id }.let { if (it < 0) 0 else it }
+        val nextIndex = AmbientAlbumArt.nextValidIndex(
+            poolSize = pool.size,
+            currentIndex = index,
+            delta = delta,
+            isInvalidAt = { pool[it].id.let(invalidStore::isInvalid) },
+        )
+        val next = pool[nextIndex]
 
         current = next
         generation += 1
@@ -270,41 +275,11 @@ class ArthurMediaService : MediaLibraryService() {
             consecutiveAutoRotations = 0
             if (playing) startRotation() else setPlaying(true)
         }
-    }
 
-    private suspend fun pickAutoNext(pool: List<Artwork>): Artwork? {
-        val eligible = pool.mapNotNull { art ->
-            if (invalidStore.isInvalid(art.id)) null else art.id
-        }.toSet()
-        if (eligible.isEmpty()) return null
-
-        var pickedId = AmbientStillPicker.pickNextRandom(
-            poolIds = pool.map { it.id },
-            currentId = current?.id,
-            seenIds = seenIds,
-            recentIds = rotationSettings.recentStillIds(),
-            eligibleIds = eligible,
-        )
-        val noUnseen = eligible.all { it in seenIds } || pickedId == null
-        if (noUnseen) {
-            renewCatalog()
-            val renewedPool = rotationPool()
-            val renewedEligible = renewedPool.mapNotNull { art ->
-                if (invalidStore.isInvalid(art.id)) null else art.id
-            }.toSet()
-            if (renewedEligible.all { it in seenIds }) {
-                seenIds = current?.id?.let { setOf(it) }.orEmpty()
-            }
-            pickedId = AmbientStillPicker.pickNextRandom(
-                poolIds = renewedPool.map { it.id },
-                currentId = current?.id,
-                seenIds = seenIds,
-                recentIds = rotationSettings.recentStillIds(),
-                eligibleIds = renewedEligible,
-            )
-            return renewedPool.firstOrNull { it.id == pickedId }
+        val unseenCount = pool.count { !invalidStore.isInvalid(it.id) && it.id !in seenIds }
+        if (unseenCount <= 1) {
+            scope.launch { runCatching { renewCatalog() } }
         }
-        return pool.firstOrNull { it.id == pickedId }
     }
 
     private fun rebuildAmbientPool(seedId: String? = current?.id) {
@@ -407,7 +382,6 @@ class ArthurMediaService : MediaLibraryService() {
             queue = pool,
             queueUris = queueUris,
             playing = playing,
-            durationMs = rotationSettings.autoIntervalMs.value,
             playlistTitle = getString(R.string.ambient_title),
         )
     }

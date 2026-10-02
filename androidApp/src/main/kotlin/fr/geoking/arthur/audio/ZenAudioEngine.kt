@@ -17,8 +17,14 @@ class ZenAudioEngine(
 ) {
     private val engine = ProceduralMusicEngine(context, audioSettings, errorLogger)
 
+    var onAudioFocusChanged: ((AudioFocusEvent) -> Unit)?
+        get() = engine.onAudioFocusChanged
+        set(value) {
+            engine.onAudioFocusChanged = value
+        }
+
     fun start() = engine.start()
-    fun stop() = engine.stop()
+    fun stop(abandonFocus: Boolean = true) = engine.stop(abandonFocus)
     fun destroy() = engine.destroy()
     fun triggerChime() = engine.triggerChime()
     fun triggerTransition() = engine.triggerTransition()

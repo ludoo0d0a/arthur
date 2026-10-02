@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
+import fr.geoking.arthur.audio.AmbientAudioFocusHandler
 import fr.geoking.arthur.audio.ZenAudioEngine
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.PreparedRotation
@@ -58,6 +59,10 @@ internal class AmbientRotationController(
     private val ambientAudioSettings: AmbientAudioSettings by inject()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var zenAudio: ZenAudioEngine? = null
+    private val audioFocusHandler = AmbientAudioFocusHandler(
+        isPlaying = { isPlaying },
+        setPlaying = { setPlaying(it) },
+    )
 
     private val renewSourceIds: List<String> = packSelection.sourceIdsForAmbientLoad().orEmpty()
 
@@ -121,7 +126,12 @@ internal class AmbientRotationController(
     }
 
     private fun audioEngine(): ZenAudioEngine {
-        return zenAudio ?: ZenAudioEngine(appContext, ambientAudioSettings).also { zenAudio = it }
+        return zenAudio ?: ZenAudioEngine(appContext, ambientAudioSettings).also { engine ->
+            engine.onAudioFocusChanged = { event ->
+                scope.launch { audioFocusHandler.onFocusEvent(event) }
+            }
+            zenAudio = engine
+        }
     }
 
     private suspend fun bootstrapRotation() {

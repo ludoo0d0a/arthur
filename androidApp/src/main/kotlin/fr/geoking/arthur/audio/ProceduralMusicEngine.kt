@@ -64,6 +64,9 @@ class ProceduralMusicEngine(
     private var audioFocusRequest: AudioFocusRequest? = null
     private var hasAudioFocus = false
 
+    /** Notified on focus loss/gain so callers can pause/resume ambient play state. */
+    var onAudioFocusChanged: ((AudioFocusEvent) -> Unit)? = null
+
     @Volatile private var masterVolume: Float = audioSettings.volume.value
     @Volatile private var character: AmbientAudioCharacter = audioSettings.character.value
     @Volatile private var complexity: Float = audioSettings.complexity.value
@@ -197,8 +200,11 @@ class ProceduralMusicEngine(
     }
 
     @Synchronized
-    fun stop() {
-        if (!isRunning.getAndSet(false)) return
+    fun stop(abandonFocus: Boolean = true) {
+        if (!isRunning.getAndSet(false)) {
+            if (abandonFocus) abandonFocus()
+            return
+        }
         synthesisJob?.cancel()
         synthesisJob = null
         runCatching {
@@ -206,7 +212,7 @@ class ProceduralMusicEngine(
             audioTrack?.release()
         }
         audioTrack = null
-        abandonFocus()
+        if (abandonFocus) abandonFocus()
     }
 
     fun destroy() {
@@ -473,13 +479,24 @@ class ProceduralMusicEngine(
         if (audioManager == null) return false
         val listener = AudioManager.OnAudioFocusChangeListener { focusChange ->
             when (focusChange) {
-                AudioManager.AUDIOFOCUS_LOSS,
-                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT,
-                -> stop()
+                AudioManager.AUDIOFOCUS_LOSS -> {
+                    hasAudioFocus = false
+                    // Stop without abandon — focus already revoked by the system.
+                    stop(abandonFocus = false)
+                    onAudioFocusChanged?.invoke(AudioFocusEvent.Lost(transient = false))
+                }
+                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+                    hasAudioFocus = false
+                    stop(abandonFocus = false)
+                    onAudioFocusChanged?.invoke(AudioFocusEvent.Lost(transient = true))
+                }
                 AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK ->
                     audioTrack?.setVolume(0.2f * masterVolume)
-                AudioManager.AUDIOFOCUS_GAIN ->
+                AudioManager.AUDIOFOCUS_GAIN -> {
+                    hasAudioFocus = true
                     audioTrack?.setVolume(1.0f * masterVolume)
+                    onAudioFocusChanged?.invoke(AudioFocusEvent.Gained)
+                }
             }
         }
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

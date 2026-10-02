@@ -15,6 +15,7 @@ import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import fr.geoking.arthur.R
+import fr.geoking.arthur.audio.AmbientAudioFocusHandler
 import fr.geoking.arthur.audio.ZenAudioEngine
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.PreparedRotation
@@ -76,6 +77,7 @@ class ArthurMediaService : MediaLibraryService() {
     private var liveCount: Int = 0
     private var queryLaunched: Boolean = false
     private var rotationJob: Job? = null
+    private lateinit var audioFocusHandler: AmbientAudioFocusHandler
 
     override fun onCreate() {
         super.onCreate()
@@ -107,7 +109,15 @@ class ArthurMediaService : MediaLibraryService() {
         librarySession = MediaLibrarySession.Builder(this, player, LibraryCallback())
             .setId("ArthurMedia")
             .build()
-        zenAudio = ZenAudioEngine(this, ambientAudioSettings)
+        audioFocusHandler = AmbientAudioFocusHandler(
+            isPlaying = { playing },
+            setPlaying = { setPlaying(it) },
+        )
+        zenAudio = ZenAudioEngine(this, ambientAudioSettings).also { engine ->
+            engine.onAudioFocusChanged = { event ->
+                scope.launch { audioFocusHandler.onFocusEvent(event) }
+            }
+        }
         scope.launch {
             runCatching { bootstrapCatalog() }
         }
@@ -372,7 +382,6 @@ class ArthurMediaService : MediaLibraryService() {
             queue = pool,
             queueUris = queueUris,
             playing = playing,
-            durationMs = rotationSettings.autoIntervalMs.value,
             playlistTitle = getString(R.string.ambient_title),
         )
     }

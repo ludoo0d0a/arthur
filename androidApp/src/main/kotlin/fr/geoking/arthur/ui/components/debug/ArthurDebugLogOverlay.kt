@@ -3,11 +3,14 @@ package fr.geoking.arthur.ui.components.debug
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import fr.geoking.arthur.shared.debug.DebugLogger
 import fr.geoking.arthur.shared.debug.DebugQueryItem
 import fr.geoking.arthur.source.HttpCacheController
+import fr.geoking.arthur.source.rememberArtworkImageCache
 import fr.geoking.tools.debugbar.DebugLogOverlay
 import fr.geoking.tools.debugbar.model.HostDataConsumption
 import fr.geoking.tools.debugbar.model.NetworkLog
@@ -24,6 +27,11 @@ fun ArthurDebugLogOverlay(
 ) {
     val stats by debugLogger.stats.collectAsState()
     val cacheDisabled by cacheController.disabled.collectAsState()
+    val imageCache = rememberArtworkImageCache()
+    var cacheStatsTick by remember { mutableIntStateOf(0) }
+    val cacheStats = remember(cacheStatsTick, cacheDisabled) {
+        cacheController.toDebugBarStats(imageCache)
+    }
 
     val mappedLogs = remember(stats.recentQueries) {
         stats.recentQueries.map { it.toDebugBarLog() }
@@ -55,9 +63,15 @@ fun ArthurDebugLogOverlay(
         totalBytesReceived = totalBytesReceived,
         disableCache = cacheDisabled,
         onDisableCacheChange = cacheController::setDisabled,
-        onClearCaches = cacheController::clear,
+        onClearCaches = {
+            cacheController.clear()
+            imageCache.clearAll()
+            cacheStatsTick++
+        },
         onClearLogs = debugLogger::clear,
         onResetDataConsumption = { /* derived from logs; clear logs to reset */ },
+        cacheStats = cacheStats,
+        onRefreshCacheStats = { cacheStatsTick++ },
         modifier = modifier,
     )
 }

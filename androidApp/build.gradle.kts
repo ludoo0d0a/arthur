@@ -102,6 +102,9 @@ android {
         // (FileDescriptor / SharedSecrets). See https://robolectric.org/getting-started/
         unitTests.all {
             it.jvmArgs(
+                // Avoid HotSpot C2 "Field too big for insn" crashes on Apple Silicon
+                // when Robolectric/Roborazzi exercises large Compose trees.
+                "-XX:TieredStopAtLevel=1",
                 "--add-opens=java.base/java.lang=ALL-UNNAMED",
                 "--add-opens=java.base/java.util=ALL-UNNAMED",
                 "--add-opens=java.base/java.io=ALL-UNNAMED",

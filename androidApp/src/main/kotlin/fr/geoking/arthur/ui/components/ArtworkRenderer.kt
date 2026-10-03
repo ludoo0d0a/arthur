@@ -69,9 +69,9 @@ import kotlinx.coroutines.withContext
  * Generative kinds use live Canvas engines; stills prefer local cache then remote URL.
  * Failures show the category icon on a gradient with a warning — never another engine.
  *
- * [onDisplayReady] fires once the still is on screen (or generative/video has started),
- * including after a failed load so Ambient rotation does not wait forever.
- * [onStillFailed] fires when a remote/local still cannot be shown (Ambient may skip).
+ * [onDisplayReady] fires when the still/generative is successfully on screen.
+ * [onStillFailed] fires after silent retries are exhausted and the still cannot be shown.
+ * [silentFailure] hides the Retry UI (Ambient skip); otherwise Retry appears after silent retries.
  */
 @Composable
 fun ArtworkRenderer(
@@ -81,6 +81,7 @@ fun ArtworkRenderer(
     quality: GenartQuality = GenartQuality.High,
     onDisplayReady: (() -> Unit)? = null,
     onStillFailed: (() -> Unit)? = null,
+    silentFailure: Boolean = false,
 ) {
     key(artwork.id) {
         Box(modifier = modifier.fillMaxSize()) {
@@ -108,10 +109,11 @@ fun ArtworkRenderer(
                             kind = artwork.kind,
                             onDisplayReady = onDisplayReady,
                             onStillFailed = onStillFailed,
+                            silentFailure = silentFailure,
                         )
                     } else {
-                        LaunchedEffect(artwork.id) { onDisplayReady?.invoke() }
-                        StillArtworkPlaceholder(kind = artwork.kind, showWarning = true)
+                        LaunchedEffect(artwork.id) { onStillFailed?.invoke() }
+                        StillArtworkPlaceholder(kind = artwork.kind, showWarning = !silentFailure)
                     }
                 }
                 ArtworkKind.CustomFractal -> {
@@ -124,8 +126,8 @@ fun ArtworkRenderer(
                             quality = quality.toFractalQuality(),
                         )
                     } else {
-                        LaunchedEffect(artwork.id) { onDisplayReady?.invoke() }
-                        StillArtworkPlaceholder(kind = artwork.kind, showWarning = true)
+                        LaunchedEffect(artwork.id) { onStillFailed?.invoke() }
+                        StillArtworkPlaceholder(kind = artwork.kind, showWarning = !silentFailure)
                     }
                 }
                 ArtworkKind.FractalPreset -> {
@@ -139,8 +141,8 @@ fun ArtworkRenderer(
                             colorSeed = artwork.id.hashCode(),
                         )
                     } else {
-                        LaunchedEffect(artwork.id) { onDisplayReady?.invoke() }
-                        StillArtworkPlaceholder(kind = artwork.kind, showWarning = true)
+                        LaunchedEffect(artwork.id) { onStillFailed?.invoke() }
+                        StillArtworkPlaceholder(kind = artwork.kind, showWarning = !silentFailure)
                     }
                 }
                 ArtworkKind.Video -> {
@@ -154,8 +156,8 @@ fun ArtworkRenderer(
                             modifier = Modifier.fillMaxSize(),
                         )
                     } else {
-                        LaunchedEffect(artwork.id) { onDisplayReady?.invoke() }
-                        StillArtworkPlaceholder(kind = artwork.kind, showWarning = true)
+                        LaunchedEffect(artwork.id) { onStillFailed?.invoke() }
+                        StillArtworkPlaceholder(kind = artwork.kind, showWarning = !silentFailure)
                     }
                 }
                 else -> {
@@ -167,10 +169,11 @@ fun ArtworkRenderer(
                             kind = artwork.kind,
                             onDisplayReady = onDisplayReady,
                             onStillFailed = onStillFailed,
+                            silentFailure = silentFailure,
                         )
                     } else {
-                        LaunchedEffect(artwork.id) { onDisplayReady?.invoke() }
-                        StillArtworkPlaceholder(kind = artwork.kind, showWarning = true)
+                        LaunchedEffect(artwork.id) { onStillFailed?.invoke() }
+                        StillArtworkPlaceholder(kind = artwork.kind, showWarning = !silentFailure)
                     }
                 }
             }
@@ -201,6 +204,58 @@ fun StillArtworkThumbnail(
     }
 }
 
+/** One UI-level silent retry before Retry button or Ambient skip. */
+internal const val StillImageSilentRetryLimit = 1
+
+internal fun loadStillBitmap(
+    artworkId: String,
+    localPath: String?,
+    remoteUrl: String?,
+    imageCache: fr.geoking.arthur.source.ArtworkImageCache,
+    networkGate: RemoteStillNetworkGate?,
+    errorLogger: ErrorLogger?,
+    invalidStore: InvalidArtworkStore?,
+): Result<android.graphics.Bitmap> {
+    val fromDisk = sequenceOf(
+        localPath,
+        imageCache.localPathOrNull(artworkId),
+    ).filterNotNull().firstNotNullOfOrNull { path ->
+        SafeBitmapDecoder.decodeFile(path)
+    }
+    if (fromDisk != null) return Result.success(fromDisk)
+    // Corrupt oversized cache left a path that wouldn't decode via localPathOrNull;
+    // if raw bytes remain but aren't an image, purge before network attempt.
+    if (imageCache.hasImage(artworkId) && !imageCache.hasDecodableImage(artworkId)) {
+        imageCache.purgeInvalid(artworkId)
+    }
+    val url = remoteUrl?.takeIf { it.isNotBlank() }
+        ?: return Result.failure(IllegalStateException("No image URL provided"))
+    val allowNetwork = networkGate?.canDownloadRemoteStill() ?: true
+    return runCatching {
+        val downloadedFile = imageCache.downloadAndCache(
+            artworkId = artworkId,
+            remoteUrl = url,
+            errorLogger = errorLogger,
+            allowNetwork = allowNetwork,
+        )
+        SafeBitmapDecoder.decodeFile(downloadedFile.absolutePath)
+            ?: run {
+                imageCache.purgeInvalid(artworkId)
+                error("Failed to decode downloaded image file")
+            }
+    }.onFailure { error ->
+        if (error is RemoteStillCacheOnlyMiss) return@onFailure
+        val httpCode = Regex("""HTTP (\d{3})""")
+            .find(error.message.orEmpty())
+            ?.groupValues
+            ?.getOrNull(1)
+            ?.toIntOrNull()
+        if (StillImageDownloader.isNonRetryable(httpCode, error)) {
+            invalidStore?.markInvalid(artworkId)
+        }
+    }
+}
+
 @Composable
 private fun RemoteStillImage(
     artworkId: String,
@@ -210,6 +265,7 @@ private fun RemoteStillImage(
     modifier: Modifier = Modifier,
     onDisplayReady: (() -> Unit)? = null,
     onStillFailed: (() -> Unit)? = null,
+    silentFailure: Boolean = false,
 ) {
     val imageCache = rememberArtworkImageCache()
     val developerSettings = remember {
@@ -225,82 +281,54 @@ private fun RemoteStillImage(
         runCatching { GlobalContext.get().get<InvalidArtworkStore>() }.getOrNull()
     }
     val isVerbose = developerSettings?.verbose?.collectAsState()?.value ?: false
-    var retryCount by remember(artworkId, localPath, remoteUrl) { mutableIntStateOf(0) }
+    var loadGeneration by remember(artworkId, localPath, remoteUrl) { mutableIntStateOf(0) }
     var bitmapState by remember(artworkId, localPath, remoteUrl) {
         mutableStateOf<android.graphics.Bitmap?>(null)
     }
     var hasFailed by remember(artworkId, localPath, remoteUrl) { mutableStateOf(false) }
     var failureReason by remember(artworkId, localPath, remoteUrl) { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(artworkId, localPath, remoteUrl, retryCount) {
+    LaunchedEffect(artworkId, localPath, remoteUrl, loadGeneration) {
         hasFailed = false
         failureReason = null
         bitmapState = null
-        val result = withContext(Dispatchers.IO) {
-            val fromDisk = sequenceOf(
-                localPath,
-                imageCache.localPathOrNull(artworkId),
-            ).filterNotNull().firstNotNullOfOrNull { path ->
-                SafeBitmapDecoder.decodeFile(path)
-            }
-            if (fromDisk != null) return@withContext Result.success(fromDisk)
-            // Corrupt oversized cache left a path that wouldn't decode via localPathOrNull;
-            // if raw bytes remain but aren't an image, purge before network attempt.
-            if (imageCache.hasImage(artworkId) && !imageCache.hasDecodableImage(artworkId)) {
-                imageCache.purgeInvalid(artworkId)
-            }
-            val url = remoteUrl?.takeIf { it.isNotBlank() }
-                ?: return@withContext Result.failure(IllegalStateException("No image URL provided"))
-            val allowNetwork = networkGate?.canDownloadRemoteStill() ?: true
-            runCatching {
-                val downloadedFile = imageCache.downloadAndCache(
+        var attempt = 0
+        while (true) {
+            val result = withContext(Dispatchers.IO) {
+                loadStillBitmap(
                     artworkId = artworkId,
-                    remoteUrl = url,
+                    localPath = localPath,
+                    remoteUrl = remoteUrl,
+                    imageCache = imageCache,
+                    networkGate = networkGate,
                     errorLogger = errorLogger,
-                    allowNetwork = allowNetwork,
+                    invalidStore = invalidStore,
                 )
-                SafeBitmapDecoder.decodeFile(downloadedFile.absolutePath)
-                    ?: run {
-                        imageCache.purgeInvalid(artworkId)
-                        error("Failed to decode downloaded image file")
-                    }
-            }.onFailure { error ->
-                if (error is RemoteStillCacheOnlyMiss) return@onFailure
-                val httpCode = Regex("""HTTP (\d{3})""")
-                    .find(error.message.orEmpty())
-                    ?.groupValues
-                    ?.getOrNull(1)
-                    ?.toIntOrNull()
-                if (StillImageDownloader.isNonRetryable(httpCode, error)) {
-                    invalidStore?.markInvalid(artworkId)
-                }
             }
-        }
-        result
-            .onSuccess { bmp ->
-                val bytes = runCatching { bmp.allocationByteCount.toLong() }.getOrDefault(0L)
+            val successBmp = result.getOrNull()
+            if (successBmp != null) {
+                val bytes = runCatching { successBmp.allocationByteCount.toLong() }.getOrDefault(0L)
                 // RecordingCanvas throws when drawing bitmaps around ~100MB+.
                 if (bytes > 80L * 1024L * 1024L) {
-                    bmp.recycle()
+                    successBmp.recycle()
                     errorLogger?.log(
                         sourceId = "still_image",
                         category = ErrorCategory.Payload,
                         message = "Decoded bitmap too large to draw ($bytes bytes)",
                         artworkId = artworkId,
                     )
-                    hasFailed = true
                     failureReason = "Image too large"
                 } else {
-                    bitmapState = bmp
+                    bitmapState = successBmp
+                    return@LaunchedEffect
                 }
-            }
-            .onFailure { error ->
-                hasFailed = true
+            } else {
+                val error = result.exceptionOrNull()
                 failureReason = when (error) {
                     is RemoteStillCacheOnlyMiss -> "Cached image unavailable"
-                    else -> error.message ?: error.toString()
+                    else -> error?.message ?: error?.toString()
                 }
-                if (error !is RemoteStillCacheOnlyMiss) {
+                if (error != null && error !is RemoteStillCacheOnlyMiss) {
                     errorLogger?.log(
                         sourceId = "still_image",
                         category = ErrorCategory.Payload,
@@ -311,16 +339,24 @@ private fun RemoteStillImage(
                     )
                 }
             }
+            if (attempt < StillImageSilentRetryLimit) {
+                attempt++
+                continue
+            }
+            hasFailed = true
+            return@LaunchedEffect
+        }
     }
 
     LaunchedEffect(bitmapState, hasFailed) {
-        if (bitmapState != null || hasFailed) {
-            onDisplayReady?.invoke()
-            if (hasFailed) onStillFailed?.invoke()
+        when {
+            bitmapState != null -> onDisplayReady?.invoke()
+            hasFailed -> onStillFailed?.invoke()
         }
     }
 
     val bmp = bitmapState
+    val showRetryUi = hasFailed && !silentFailure
     when {
         bmp != null && !hasFailed -> {
             val imageBitmap = remember(bmp) { bmp.asImageBitmap() }
@@ -353,7 +389,7 @@ private fun RemoteStillImage(
                 )
             }
         }
-        hasFailed -> {
+        showRetryUi -> {
             val finalReason = remember(hasFailed, failureReason, isVerbose) {
                 if (!isVerbose) return@remember null
                 val detailedError = errorLogger?.getLastErrorForArtwork(artworkId)
@@ -378,11 +414,12 @@ private fun RemoteStillImage(
                 kind = kind,
                 showWarning = true,
                 errorDetail = finalReason,
-                onRetry = { retryCount++ },
+                onRetry = { loadGeneration++ },
                 modifier = modifier,
             )
         }
         else -> {
+            // Loading, silent retry, or silent failure while Ambient skips.
             Box(modifier = modifier.fillMaxSize()) {
                 StillArtworkPlaceholder(kind = kind, showWarning = false)
                 CircularProgressIndicator(

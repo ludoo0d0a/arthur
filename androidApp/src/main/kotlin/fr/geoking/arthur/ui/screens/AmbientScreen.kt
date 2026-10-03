@@ -82,7 +82,7 @@ import fr.geoking.arthur.source.StillImagePrefetcher
 import fr.geoking.arthur.source.rememberArtworkImageCache
 import fr.geoking.arthur.source.rememberQuoteRepository
 import fr.geoking.arthur.source.rememberQuoteSettings
-import fr.geoking.arthur.ui.components.ArtworkRenderer
+import fr.geoking.arthur.ui.components.ArtworkTransitionHost
 import fr.geoking.arthur.ui.components.StillArtworkPlaceholder
 import fr.geoking.arthur.ui.components.authorForDisplay
 import fr.geoking.arthur.ui.components.sourceLabel
@@ -172,6 +172,8 @@ fun AmbientScreenContent(
     var rotationEpoch by remember { mutableIntStateOf(0) }
     // Preserve seen ids across playlist appends; only reset on a full pool replace.
     var seenIds by remember { mutableStateOf(emptySet<String>()) }
+    /** Session-only ids that failed to display; avoided by [advance] until pool replace. */
+    var failedIds by remember { mutableStateOf(emptySet<String>()) }
     var previousPoolIds by remember { mutableStateOf(emptyList<String>()) }
     var renewIssuedAtPoolSize by remember { mutableIntStateOf(-1) }
     LaunchedEffect(poolIds) {
@@ -181,7 +183,10 @@ fun AmbientScreenContent(
         if (prev.isEmpty()) return@LaunchedEffect
         val isAppend = next.containsAll(prev) && next.size >= prev.size
         seenIds = if (isAppend) seenIds.intersect(next) else emptySet()
-        if (!isAppend) renewIssuedAtPoolSize = -1
+        if (!isAppend) {
+            renewIssuedAtPoolSize = -1
+            failedIds = emptySet()
+        }
     }
     var isPlaying by remember { mutableStateOf(true) }
     var displayReady by remember { mutableStateOf(false) }
@@ -236,31 +241,27 @@ fun AmbientScreenContent(
         }.toSet()
     }
 
-    suspend fun advance(delta: Int) {
+    suspend fun advance(delta: Int, skipId: String? = null) {
         if (!shouldRotate) return
         val pool = latestPool
         val shownId = latestCurrent?.id
         val eligible = eligibleIdsForPick(pool)
         if (eligible.isEmpty()) return
-        val index = pool.indexOfFirst { it.id == shownId }.let { if (it < 0) 0 else it }
-        var steps = 0
-        var idx = index
-        var candidate: Artwork
-        do {
-            idx = if (delta >= 0) {
-                AmbientAlbumArt.advanceIndex(idx, pool.size)
-            } else {
-                Math.floorMod(idx - 1, pool.size)
-            }
-            candidate = pool[idx]
-            steps++
-        } while (candidate.id !in eligible && steps < pool.size)
-        if (candidate.id !in eligible) return
-        val nextArt = candidate
-        val allowNetwork = networkGate?.canDownloadRemoteStill() ?: true
-        withContext(Dispatchers.IO) {
-            StillImagePrefetcher.ensureCached(imageCache, nextArt, allowNetwork = allowNetwork)
+        if (skipId != null) {
+            failedIds = failedIds + skipId
         }
+        val allowNetwork = networkGate?.canDownloadRemoteStill() ?: true
+        val nextArt = withContext(Dispatchers.IO) {
+            pickNextReadyArtwork(
+                pool = pool,
+                fromId = shownId,
+                delta = delta,
+                skipIds = failedIds,
+                eligibleIds = eligible,
+                imageCache = imageCache,
+                allowNetwork = allowNetwork,
+            )
+        } ?: return
         displayReady = false
         current = nextArt
         zenAudio?.setArtwork(nextArt)
@@ -281,7 +282,9 @@ fun AmbientScreenContent(
         rotationEpoch++
     }
 
-    val advanceLatest by rememberUpdatedState(::advance)
+    val advanceLatest by rememberUpdatedState<suspend (Int, String?) -> Unit>(
+        newValue = { delta, skipId -> advance(delta, skipId) },
+    )
     val quoteRepository = rememberQuoteRepository()
     val quoteSettings = rememberQuoteSettings()
     val showQuotes by quoteSettings.showQuotes.collectAsState()
@@ -343,7 +346,7 @@ fun AmbientScreenContent(
                 easing = LinearEasing,
             ),
         )
-        advanceLatest(+1)
+        advanceLatest(+1, null)
     }
 
     LaunchedEffect(tvUsesRootKeys, showDetails) {
@@ -385,11 +388,11 @@ fun AmbientScreenContent(
                             if (event.type != KeyEventType.KeyUp) return@onKeyEvent false
                             when (event.key) {
                                 Key.DirectionRight, Key.MediaSkipForward -> {
-                                    scope.launch { advanceLatest(+1) }
+                                    scope.launch { advanceLatest(+1, null) }
                                     true
                                 }
                                 Key.DirectionLeft, Key.MediaSkipBackward -> {
-                                    scope.launch { advanceLatest(-1) }
+                                    scope.launch { advanceLatest(-1, null) }
                                     true
                                 }
                                 Key.DirectionUp -> {
@@ -415,14 +418,16 @@ fun AmbientScreenContent(
     ) {
         when {
             shown != null -> {
-                ArtworkRenderer(
+                ArtworkTransitionHost(
                     artwork = shown,
                     isActive = ambientActive,
                     quality = GenartQuality.High,
+                    silentFailure = shouldRotate,
                     onDisplayReady = { displayReady = true },
                     onStillFailed = {
                         if (shouldRotate) {
-                            scope.launch { advanceLatest(+1) }
+                            val failedId = shown.id
+                            scope.launch { advanceLatest(+1, failedId) }
                         }
                     },
                     modifier = Modifier.fillMaxSize(),
@@ -539,14 +544,14 @@ fun AmbientScreenContent(
                             when {
                                 abs(totalDragX) >= swipeThresholdPx -> {
                                     if (totalDragX < 0f) {
-                                        scope.launch { advanceLatest(+1) }
+                                        scope.launch { advanceLatest(+1, null) }
                                     } else {
-                                        scope.launch { advanceLatest(-1) }
+                                        scope.launch { advanceLatest(-1, null) }
                                     }
                                 }
                                 // Half-screen tap kept as fallback; icons are primary.
-                                startX < size.width / 2f -> scope.launch { advanceLatest(-1) }
-                                else -> scope.launch { advanceLatest(+1) }
+                                startX < size.width / 2f -> scope.launch { advanceLatest(-1, null) }
+                                else -> scope.launch { advanceLatest(+1, null) }
                             }
                         }
                     },
@@ -588,13 +593,13 @@ fun AmbientScreenContent(
                                     when (key) {
                                         Key.DirectionRight, Key.MediaSkipForward -> {
                                             if (shouldRotate) {
-                                                scope.launch { advanceLatest(+1) }
+                                                scope.launch { advanceLatest(+1, null) }
                                             }
                                             true
                                         }
                                         Key.DirectionLeft, Key.MediaSkipBackward -> {
                                             if (shouldRotate) {
-                                                scope.launch { advanceLatest(-1) }
+                                                scope.launch { advanceLatest(-1, null) }
                                             }
                                             true
                                         }

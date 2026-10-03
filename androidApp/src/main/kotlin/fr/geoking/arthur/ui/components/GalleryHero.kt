@@ -14,7 +14,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -45,16 +44,15 @@ internal fun GalleryHero(
         Box {
             when {
                 artwork != null -> {
-                    key(artwork.id) {
-                        ArtworkRenderer(
-                            artwork = artwork,
-                            isActive = true,
-                            quality = GenartQuality.Medium,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .testTag("gallery_hero_artwork"),
-                        )
-                    }
+                    ArtworkTransitionHost(
+                        artwork = artwork,
+                        isActive = true,
+                        quality = GenartQuality.Medium,
+                        silentFailure = false,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .testTag("gallery_hero_artwork"),
+                    )
                 }
                 livePreview -> {
                     FractalEffectCanvas(isActive = true, quality = FractalQuality.Low)

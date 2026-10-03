@@ -16,28 +16,52 @@ on:
         default: false
         type: boolean
 
-# One pipeline: unit tests → signed AAB → Play. Cancelling supersedes older runs
-# (saves Actions minutes when pushing/dispatching again quickly).
 concurrency:
   group: play-release
   cancel-in-progress: true
 
+# Project-scoped secrets → env. Kept here, not in geoking-ci.
+env:
+  KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 || secrets.SIGNING_KEY }}
+  KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || secrets.KEY_STORE_PASSWORD }}
+  KEY_ALIAS: ${{ secrets.KEY_ALIAS || secrets.ALIAS }}
+  KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+  PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON || secrets.SERVICE_ACCOUNT_JSON }}
+  GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+  WEB_CLIENT_ID: ${{ secrets.WEB_CLIENT_ID }}
+  REVENUECAT_API_KEY: ${{ secrets.REVENUECAT_API_KEY }}
+  PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+  UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+  UNSPLASH_SECRET_KEY: ${{ secrets.UNSPLASH_SECRET_KEY }}
+  PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+  COVERR_API_KEY: ${{ secrets.COVERR_API_KEY }}
+  EUROPEANA_API_KEY: ${{ secrets.EUROPEANA_API_KEY }}
+  HARVARD_API_KEY: ${{ secrets.HARVARD_API_KEY }}
+  SMITHSONIAN_API_KEY: ${{ secrets.SMITHSONIAN_API_KEY }}
+  DEVIANTART_CLIENT_ID: ${{ secrets.DEVIANTART_CLIENT_ID }}
+  DEVIANTART_CLIENT_SECRET: ${{ secrets.DEVIANTART_CLIENT_SECRET }}
+  DEBUG_DEV: ${{ secrets.DEBUG_DEV }}
+
 jobs:
   release:
-    uses: ludoo0d0a/geoking-ci/.github/workflows/release-play.yml@main
-    with:
-      package_name: fr.geoking.arthur
-      gradle_version: wrapper
-      gradle_module: ':androidApp'
-      aab_glob: 'androidApp/build/outputs/bundle/release/androidApp-release.aab'
-      google_services_path: 'androidApp/google-services.json'
-      unit_test_tasks: >-
-        :shared:testAndroidHostTest
-        :fractal:testDebugUnitTest
-        :genart:testDebugUnitTest
-        :androidApp:testDebugUnitTest
-      is_workflow_dispatch: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
-      workflow_dispatch_track: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.track || '' }}
-      workflow_dispatch_skip_review: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.changesNotSentForReview == 'true' && 'true' || 'false' }}
-      version_name_override: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
-    secrets: inherit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Release to Play
+        uses: ludoo0d0a/geoking-ci/actions/gk-release-play@main
+        with:
+          package_name: fr.geoking.arthur
+          gradle_version: wrapper
+          gradle_module: ':androidApp'
+          aab_glob: 'androidApp/build/outputs/bundle/release/androidApp-release.aab'
+          google_services_path: 'androidApp/google-services.json'
+          unit_test_tasks: >-
+            :shared:testAndroidHostTest
+            :fractal:testDebugUnitTest
+            :genart:testDebugUnitTest
+            :androidApp:testDebugUnitTest
+          is_workflow_dispatch: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
+          workflow_dispatch_track: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.track || '' }}
+          workflow_dispatch_skip_review: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.changesNotSentForReview == 'true' && 'true' || 'false' }}
+          version_name_override: ${{ github.ref_type == 'tag' && github.ref_name || '' }}

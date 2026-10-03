@@ -22,14 +22,24 @@ tasks.register<Exec>("copyWebsiteScreenshots") {
     commandLine("scripts/fill_website_screenshots.py")
 }
 
-tasks.register("generateWebsiteScreenshots") {
+// Screen + framed share :androidApp:testDebugUnitTest with different filters /
+// output dirs, so they cannot run in one Gradle invocation. Chain via Exec.
+tasks.register<Exec>("generateWebsiteScreenshots") {
     group = "screenshots"
     description =
-        "Generate framed phone screenshots and sync into website/assets " +
+        "Generate phone (+ framed) screenshots and sync into website/assets " +
             "(-PscreenshotLocales=en,fr|all)"
-    dependsOn(
-        ":androidApp:generatePhoneScreenshots",
-        ":androidApp:generatePhoneScreenshotsFramed",
+    workingDir = rootDir
+    val locales = (findProperty("screenshotLocales") as String?)?.trim().orEmpty()
+        .ifEmpty { "en,fr" }
+    commandLine(
+        "bash",
+        "-lc",
+        """
+        set -euo pipefail
+        ./gradlew :androidApp:generatePhoneScreenshots -PscreenshotLocales=$locales
+        ./gradlew :androidApp:generatePhoneScreenshotsFramed -PscreenshotLocales=$locales
+        ./scripts/fill_website_screenshots.py
+        """.trimIndent(),
     )
-    finalizedBy("copyWebsiteScreenshots")
 }

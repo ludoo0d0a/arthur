@@ -9,5 +9,6 @@ object PatternBank {
         require(RhythmBank.patternsFor(style).isNotEmpty()) { "rhythm empty for $style" }
         require(HarmonyBank.patternsFor(style).isNotEmpty()) { "harmony empty for $style" }
         require(TextureBank.patternsFor(style).isNotEmpty()) { "texture empty for $style" }
+        require(BassBank.patternFor(style, 0).steps.isNotEmpty()) { "bass empty for $style" }
     }
 }

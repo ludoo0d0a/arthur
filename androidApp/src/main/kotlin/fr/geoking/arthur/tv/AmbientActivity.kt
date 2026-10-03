@@ -117,20 +117,26 @@ class AmbientActivity : ComponentActivity() {
                     onNeedRenewPool = if (rotate) {
                         {
                             val ids = AmbientRotationLaunch.renewSourceIds
-                            if (ids != null) {
+                            if (ids != null && !isLoading) {
                                 scope.launch {
                                     isLoading = true
                                     try {
                                         contentEngine.catalogFlow(
                                             PreparedRotation(sourceIds = ids, artworkIds = emptyList()),
                                         ).collect { emitted ->
-                                            val currentPoolIds = rotationPool.map { it.id }.toSet()
-                                            val distinctNew = emitted.filter { it.id !in currentPoolIds }
-                                            if (distinctNew.isNotEmpty()) {
-                                                val combinedPool = (rotationPool + distinctNew).distinctBy { it.id }
-                                                rotationPool = AmbientAlbumArt.sampleRotationPool(combinedPool)
-                                                AmbientRotationLaunch.prepare(combinedPool, ids)
-                                            } else if (emitted.size >= 2) {
+                                            val appended = AmbientAlbumArt.appendToRotationPool(
+                                                current = rotationPool,
+                                                incoming = emitted,
+                                                keepId = artwork?.id,
+                                            )
+                                            if (appended.size > rotationPool.size) {
+                                                rotationPool = appended
+                                                AmbientRotationLaunch.prepare(appended, ids)
+                                            } else if (emitted.size >= 2 &&
+                                                emitted.map { it.id }.toSet() !=
+                                                rotationPool.map { it.id }.toSet()
+                                            ) {
+                                                // No distinct ids — replace with a fresh sample so rotation can continue.
                                                 rotationPool = AmbientAlbumArt.sampleRotationPool(emitted)
                                                 AmbientRotationLaunch.prepare(emitted, ids)
                                             }

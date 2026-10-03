@@ -355,16 +355,24 @@ private fun RemoteStillImage(
         }
         hasFailed -> {
             val finalReason = remember(hasFailed, failureReason, isVerbose) {
-                if (isVerbose) {
-                    val detailedError = errorLogger?.getLastErrorForArtwork(artworkId)
-                    if (detailedError != null) {
-                        "HTTP ${detailedError.statusCode ?: "Unknown"}: ${detailedError.url ?: "No URL"}"
-                    } else {
-                        failureReason
+                if (!isVerbose) return@remember null
+                val detailedError = errorLogger?.getLastErrorForArtwork(artworkId)
+                if (detailedError == null) return@remember failureReason
+                buildString {
+                    detailedError.statusCode?.let { append("HTTP $it") }
+                    detailedError.message.takeIf { it.isNotBlank() }?.let { msg ->
+                        if (isNotEmpty()) append(" — ")
+                        append(msg)
                     }
-                } else {
-                    null
-                }
+                    detailedError.details?.take(240)?.takeIf { it.isNotBlank() }?.let { details ->
+                        if (isNotEmpty()) append('\n')
+                        append(details)
+                    }
+                    detailedError.url?.takeIf { it.isNotBlank() }?.let { url ->
+                        if (isNotEmpty()) append('\n')
+                        append(url)
+                    }
+                }.ifBlank { failureReason }
             }
             StillArtworkPlaceholder(
                 kind = kind,

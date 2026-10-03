@@ -72,6 +72,7 @@ internal class AmbientRotationController(
         private set
     var currentQuote: Quote? = null
         private set
+    private var quotesById: Map<String, Quote> = emptyMap()
     var generation: Long = 0L
         private set
     var isPlaying: Boolean = true
@@ -101,6 +102,8 @@ internal class AmbientRotationController(
 
     private var rotationJob: Job? = null
     private var renderJob: Job? = null
+    private var renewJob: Job? = null
+    private var renewIssuedAtPoolSize: Int = -1
     private var advanceJob: Job? = null
 
     init {
@@ -209,7 +212,10 @@ internal class AmbientRotationController(
             else -> resolveAmbientArtwork(pool, null)
         }
         seenIds = current?.id?.let { setOf(it) }.orEmpty()
-        scope.launch { updateQuoteForCurrent() }
+        scope.launch {
+            bindQuotes(pool, replaceAll = true)
+            onInvalidate()
+        }
         scheduleAsyncRender()
         notifyArtworkChanged()
     }
@@ -223,21 +229,25 @@ internal class AmbientRotationController(
                 )
             }.getOrDefault(emptyList())
         }
-        val currentPoolIds = catalog.map { it.id }.toSet()
         val rawResolved = resolvePackPool(liveRaw, packSelection).distinctBy { it.id }
-        val distinctLive = rawResolved.filter { it.id !in currentPoolIds }
-        val candidatePool = if (distinctLive.isNotEmpty()) {
-            (catalog + distinctLive).distinctBy { it.id }
+        val keepId = current?.id
+        val appended = AmbientAlbumArt.appendToRotationPool(
+            current = catalog,
+            incoming = rawResolved,
+            keepId = keepId,
+        )
+        val livePool = if (appended.size > catalog.size) {
+            appended
         } else {
-            rawResolved.ifEmpty { catalog }
+            samplePool(rawResolved.ifEmpty { catalog })
         }
-        val livePool = samplePool(candidatePool)
         liveCount = livePool.size
         if (livePool.isNotEmpty()) {
-            val keepId = current?.id
             catalog = livePool
+            bindQuotes(livePool, replaceAll = false)
             if (keepId == null || livePool.none { it.id == keepId }) {
                 current = resolveAmbientArtwork(livePool, null)
+                syncCurrentQuote()
                 notifyArtworkChanged()
             }
         }
@@ -291,13 +301,39 @@ internal class AmbientRotationController(
         }
     }
 
-    private suspend fun updateQuoteForCurrent() {
-        if (quoteSettings.showQuotes.value && current != null) {
-            currentQuote = withContext(Dispatchers.IO) {
-                runCatching { quoteRepository.nextQuote() }.getOrNull()
-            }
-        } else {
+    private suspend fun bindQuotes(pool: List<Artwork>, replaceAll: Boolean) {
+        if (!quoteSettings.showQuotes.value) {
+            quotesById = emptyMap()
             currentQuote = null
+            return
+        }
+        val poolIds = pool.map { it.id }
+        val idsToAssign = if (replaceAll) {
+            poolIds
+        } else {
+            poolIds.filter { it !in quotesById }
+        }
+        val assigned = if (idsToAssign.isEmpty()) {
+            emptyMap()
+        } else {
+            withContext(Dispatchers.IO) {
+                runCatching { quoteRepository.quotesForArtworks(idsToAssign) }.getOrDefault(emptyMap())
+            }
+        }
+        val poolIdSet = poolIds.toSet()
+        quotesById = if (replaceAll) {
+            assigned
+        } else {
+            (quotesById + assigned).filterKeys { it in poolIdSet }
+        }
+        syncCurrentQuote()
+    }
+
+    private fun syncCurrentQuote() {
+        currentQuote = if (quoteSettings.showQuotes.value) {
+            current?.id?.let { quotesById[it] }
+        } else {
+            null
         }
     }
 
@@ -368,15 +404,20 @@ internal class AmbientRotationController(
             engine.setArtwork(art)
             engine.triggerTransition()
         }
-        updateQuoteForCurrent()
+        syncCurrentQuote()
         scheduleAsyncRender()
         prefetchNeighbors()
         notifyArtworkChanged()
         onInvalidate()
 
-        val unseenCount = catalog.count { !invalidStore.isInvalid(it.id) && it.id !in seenIds }
-        if (unseenCount <= 1) {
-            scope.launch { runCatching { renewCatalog() } }
+        val validCount = catalog.count { !invalidStore.isInvalid(it.id) }
+        val seenValid = catalog.count { !invalidStore.isInvalid(it.id) && it.id in seenIds }
+        if (AmbientAlbumArt.shouldPrefetchNextPool(seenValid, validCount) &&
+            renewIssuedAtPoolSize != validCount &&
+            renewJob?.isActive != true
+        ) {
+            renewIssuedAtPoolSize = validCount
+            renewJob = scope.launch { runCatching { renewCatalog() } }
         }
     }
 

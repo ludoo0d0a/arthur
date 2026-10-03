@@ -172,8 +172,9 @@ class RemoteCategoryMappingTest {
     @Test
     fun sourceSearchUrlsUseMappedTokens() {
         assertEquals(
-            "https://collectionapi.metmuseum.org/public/collection/v1/search" +
-                "?q=sculpture&medium=Sculpture&hasImages=true&isPublicDomain=true",
+            "https://collectionapi.metmuseum.org/public/collection/v1.1/search" +
+                "?q=sculpture&medium=Sculpture&hasImages=true&isPublicDomain=true" +
+                "&offset=0&limit=${RemoteSample.SEARCH_POOL}",
             MetSource.searchUrl(MuseumSearchKind.Sculpture),
         )
         assertEquals(

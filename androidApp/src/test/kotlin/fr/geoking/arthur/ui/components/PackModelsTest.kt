@@ -79,9 +79,9 @@ class PackModelsTest {
     )
 
     @Test
-    fun museumDefault_metOnly_excludesBundled() {
+    fun museumDefault_random_includesMuseumSources_excludesBundled() {
         val pool = resolvePackPool(catalog, PackSelection(PackFamily.Museum))
-        assertEquals(listOf("met-1"), pool.map { it.id })
+        assertEquals(setOf("met-1", "rijks-sculpt"), pool.map { it.id }.toSet())
         assertFalse(pool.any { it.sourceId == BundledPackSource.ID })
     }
 
@@ -328,9 +328,9 @@ class PackModelsTest {
     }
 
     @Test
-    fun sourceIdsForAmbientLoad_museumNull_defaultsToMet() {
-        val ids = PackSelection(PackFamily.Museum).sourceIdsForAmbientLoad()
-        assertEquals(listOf(MetSource.ID), ids)
+    fun sourceIdsForAmbientLoad_museumNull_defaultsToRandom() {
+        val ids = PackSelection(PackFamily.Museum).sourceIdsForAmbientLoad()!!
+        assertEquals(MuseumTopic.institutions.mapNotNull { it.sourceId }.toSet(), ids.toSet())
     }
 
     @Test

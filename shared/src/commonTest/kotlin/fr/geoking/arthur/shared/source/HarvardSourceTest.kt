@@ -12,6 +12,7 @@ class HarvardSourceTest {
         val url = HarvardSource.searchUrl(
             apiKey = "test-key",
             limit = RemoteSample.SEARCH_POOL,
+            seed = 0,
         )
         val fixtures = mapOf(
             url to """
@@ -60,6 +61,16 @@ class HarvardSourceTest {
                 "?apikey=k&classification=Photographs&hasimage=1&q=imagepermissionlevel%3A0&size=20" +
                 "&page=1&sort=random&fields=id,title,primaryimageurl,people,classification,url,images",
             HarvardSource.searchUrl(apiKey = "k", kind = MuseumSearchKind.Photo),
+        )
+    }
+
+    @Test
+    fun searchUrlIncludesRandomSeed() {
+        assertEquals(
+            "https://api.harvardartmuseums.org/object" +
+                "?apikey=k&classification=Paintings&hasimage=1&q=imagepermissionlevel%3A0&size=20" +
+                "&page=1&sort=random:99&fields=id,title,primaryimageurl,people,classification,url,images",
+            HarvardSource.searchUrl(apiKey = "k", seed = 99),
         )
     }
 }

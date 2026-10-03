@@ -5,8 +5,9 @@ import kotlin.random.Random
 /**
  * Ambient / catalog variety helpers for remote museum (and stock) Sources.
  *
- * Prefer a provider random endpoint when one exists; otherwise sample a large
- * search window and renew via a new page offset or a fresh [load] call.
+ * Prefer a provider random endpoint / sort when one exists (Harvard, Europeana,
+ * Smithsonian, Artic `random_score`); otherwise jump to a random search window
+ * and sample down to the Source limit.
  */
 object RemoteSample {
 
@@ -26,8 +27,27 @@ object RemoteSample {
     /** Upper bound for 0-based start offsets (Smithsonian), in result rows. */
     const val MAX_START = 200
 
+    /**
+     * Cleveland Open Access accepts large `skip` values; empty deep pages fall
+     * back to [fetchWindow]'s first-offset retry.
+     */
+    const val CLEVELAND_MAX_START = 5_000
+
     /** Europeana refuses `start` beyond the first 1000 hits (use cursor past that). */
     const val EUROPEANA_MAX_START = 940
+
+    /**
+     * Met v1.1 search: `offset + limit` must not exceed 10_000.
+     * With [SEARCH_POOL] as limit, keep start ≤ 10_000 − pool.
+     */
+    const val MET_MAX_START = 10_000 - SEARCH_POOL
+
+    /**
+     * Seed for provider random sorts (`sort=random:SEED`, `sort=random_SEED`,
+     * Artic `random_score.seed`). Always non-negative.
+     */
+    fun randomSeed(random: Random = Random.Default): Int =
+        random.nextInt(Int.MAX_VALUE)
 
     /**
      * Random subset of [items] (size [count]).
@@ -106,6 +126,18 @@ object RemoteSample {
             fetch(firstOffset)
         } else {
             body
+        }
+    }
+
+    /** RFC 3986 unreserved-safe percent-encoding for query parameter values. */
+    fun percentEncode(value: String): String = buildString(value.length + 16) {
+        for (ch in value) {
+            when (ch) {
+                in 'A'..'Z', in 'a'..'z', in '0'..'9', '-', '_', '.', '~' -> append(ch)
+                ' ' -> append("%20")
+                else -> append('%')
+                    .append(ch.code.toString(16).uppercase().padStart(2, '0'))
+            }
         }
     }
 }

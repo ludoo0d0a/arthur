@@ -83,6 +83,24 @@ class QuoteRepositoryTest {
     }
 
     @Test
+    fun quotesForArtworks_assignsOnePerId() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        context.getSharedPreferences("arthur_quotes_cache", Context.MODE_PRIVATE).edit().clear().commit()
+        val repo = QuoteRepository(
+            context = context,
+            httpGet = { """[{"q":"First","a":"A"},{"q":"Second","a":"B"}]""" },
+            provider = { QuoteProvider.ZenQuotes },
+            clock = { 1_000L },
+        )
+        val assigned = repo.quotesForArtworks(listOf("img-1", "img-2", "img-3"))
+        assertEquals(Quote("First", "A"), assigned["img-1"])
+        assertEquals(Quote("Second", "B"), assigned["img-2"])
+        assertEquals(Quote("First", "A"), assigned["img-3"])
+        // Same pool lookup stays stable — nextQuote continues after the assignment cursor.
+        assertEquals(Quote("Second", "B"), repo.nextQuote())
+    }
+
+    @Test
     fun nextQuote_usesCacheWithinTtl() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<Context>()
         context.getSharedPreferences("arthur_quotes_cache", Context.MODE_PRIVATE).edit().clear().commit()
@@ -168,5 +186,29 @@ class QuoteRepositoryTest {
             """{"success":true,"data":{"text":"Hello","author":{"forename":"René","name":"Descartes"}}}""",
         )
         assertEquals(Quote("Hello", "René Descartes"), quote)
+    }
+
+    @Test
+    fun sanitizeQuoteText_stripsBrTags() {
+        assertEquals(
+            "Line one Line two",
+            QuoteRepository.sanitizeQuoteText("Line one<br>Line two"),
+        )
+        assertEquals(
+            "A B C",
+            QuoteRepository.sanitizeQuoteText("A<br/>B<br />C"),
+        )
+        assertEquals(
+            "Hello world",
+            QuoteRepository.sanitizeQuoteText("Hello<br>world"),
+        )
+    }
+
+    @Test
+    fun parseCitationLecog_stripsBrInText() {
+        val quote = QuoteRepository.parseCitationLecog(
+            """{"success":true,"data":{"text":"Je pense,<br>donc je suis.","author":{"forename":"René","name":"Descartes"}}}""",
+        )
+        assertEquals(Quote("Je pense, donc je suis.", "René Descartes"), quote)
     }
 }

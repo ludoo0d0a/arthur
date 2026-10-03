@@ -29,7 +29,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -78,6 +77,7 @@ import fr.geoking.arthur.shared.debug.DebugLogger
 import fr.geoking.arthur.source.AmbientAudioSettings
 import fr.geoking.arthur.source.MuseumSearchSettings
 import fr.geoking.arthur.source.ScreensaverSettings
+import fr.geoking.arthur.source.StillImagePrefetcher
 import fr.geoking.arthur.source.StockPhotoSettings
 import fr.geoking.arthur.source.rememberArtworkImageCache
 import fr.geoking.arthur.ui.components.ArtworkCard
@@ -120,6 +120,7 @@ fun ControlPlaneScreen(
     var catalog by remember { mutableStateOf(initialCatalog.orEmpty()) }
     var openedFamily by remember { mutableStateOf<PackFamily?>(null) }
     var selection by remember { mutableStateOf(PackSelection(PackFamily.Museum)) }
+    var startingSelection by remember { mutableStateOf<PackSelection?>(null) }
     val packCatalogCache = remember { mutableMapOf<String, List<Artwork>>() }
     val imageCache = rememberArtworkImageCache()
     val scope = rememberCoroutineScope()
@@ -188,6 +189,8 @@ fun ControlPlaneScreen(
     }
 
     fun launchAmbient(forSelection: PackSelection) {
+        if (startingSelection != null) return
+        startingSelection = forSelection
         syncSourceSettings(forSelection)
         val renewIds = forSelection.sourceIdsForAmbientLoad()
         val cat = forSelection.stockCategoryOrNull()
@@ -206,42 +209,52 @@ fun ControlPlaneScreen(
         }
         val prefetchKey = forSelection.prefetchKey(kind, cat)
         scope.launch {
-            val preferred: (Artwork) -> Boolean = { art ->
-                art.isGenerative ||
-                    !art.localPath.isNullOrBlank() ||
-                    imageCache.hasImage(art.id)
-            }
-            val livePool = packCatalogCache[prefetchKey] ?: withContext(Dispatchers.IO) {
-                runCatching {
-                    contentEngine.catalog(
-                        PreparedRotation(
-                            sourceIds = renewIds.orEmpty(),
-                            artworkIds = emptyList(),
-                        ),
-                    )
-                }.getOrDefault(emptyList())
-            }.also { loaded ->
-                if (loaded.isNotEmpty()) packCatalogCache[prefetchKey] = loaded
-            }
-            val cachedPool = livePool.ifEmpty {
-                withContext(Dispatchers.IO) {
-                    imageCache.loadCachedArtworks(renewIds)
-                }.ifEmpty {
-                    if (forSelection.allowsGenerativeAmbientFallback()) catalog else emptyList()
+            try {
+                val preferred: (Artwork) -> Boolean = { art ->
+                    art.isGenerative ||
+                        !art.localPath.isNullOrBlank() ||
+                        imageCache.hasImage(art.id)
                 }
-            }
-            val pool = resolvePackPool(cachedPool, forSelection)
-            val rotationPool = AmbientAlbumArt.sampleRotationPool(
-                pool = pool,
-                isPreferred = preferred,
-            )
-            val chosen = rotationPool.firstOrNull()
-                ?: if (forSelection.allowsGenerativeAmbientFallback()) {
-                    resolveAmbientArtwork(catalog, artworkId = null)
-                } else {
-                    null
+                val livePool = packCatalogCache[prefetchKey] ?: withContext(Dispatchers.IO) {
+                    runCatching {
+                        contentEngine.catalog(
+                            PreparedRotation(
+                                sourceIds = renewIds.orEmpty(),
+                                artworkIds = emptyList(),
+                            ),
+                        )
+                    }.getOrDefault(emptyList())
+                }.also { loaded ->
+                    if (loaded.isNotEmpty()) packCatalogCache[prefetchKey] = loaded
                 }
-            onStartAmbient(chosen, rotationPool, renewIds)
+                val cachedPool = livePool.ifEmpty {
+                    withContext(Dispatchers.IO) {
+                        imageCache.loadCachedArtworks(renewIds)
+                    }.ifEmpty {
+                        if (forSelection.allowsGenerativeAmbientFallback()) catalog else emptyList()
+                    }
+                }
+                val pool = resolvePackPool(cachedPool, forSelection)
+                val rotationPool = AmbientAlbumArt.sampleRotationPool(
+                    pool = pool,
+                    isPreferred = preferred,
+                )
+                val chosen = rotationPool.firstOrNull()
+                    ?: if (forSelection.allowsGenerativeAmbientFallback()) {
+                        resolveAmbientArtwork(catalog, artworkId = null)
+                    } else {
+                        null
+                    }
+                if (chosen != null &&
+                    !chosen.isGenerative &&
+                    chosen.kind != ArtworkKind.Video
+                ) {
+                    StillImagePrefetcher.ensureCached(imageCache, chosen, allowNetwork = true)
+                }
+                onStartAmbient(chosen, rotationPool, renewIds)
+            } finally {
+                startingSelection = null
+            }
         }
     }
 
@@ -337,49 +350,8 @@ fun ControlPlaneScreen(
         onSetDefaultScreensaver = screensaverSettings?.let { settings -> { settings.setDefaultPack(it) } },
         packOwnership = packOwnership,
         onOpenMarketplace = onOpenMarketplace,
-        onOpenMediaPlayer = {
-            syncSourceSettings()
-            val renewIds = selection.sourceIdsForAmbientLoad()
-            val prefetchKey = selection.prefetchKey(museumKind, stockCategory)
-            scope.launch {
-                val preferred: (Artwork) -> Boolean = { art ->
-                    art.isGenerative ||
-                        !art.localPath.isNullOrBlank() ||
-                        imageCache.hasImage(art.id)
-                }
-                val livePool = packCatalogCache[prefetchKey] ?: withContext(Dispatchers.IO) {
-                    runCatching {
-                        contentEngine.catalog(
-                            PreparedRotation(
-                                sourceIds = renewIds.orEmpty(),
-                                artworkIds = emptyList(),
-                            ),
-                        )
-                    }.getOrDefault(emptyList())
-                }.also { loaded ->
-                    if (loaded.isNotEmpty()) packCatalogCache[prefetchKey] = loaded
-                }
-                val cachedPool = livePool.ifEmpty {
-                    withContext(Dispatchers.IO) {
-                        imageCache.loadCachedArtworks(renewIds)
-                    }.ifEmpty {
-                        if (selection.allowsGenerativeAmbientFallback()) catalog else emptyList()
-                    }
-                }
-                val pool = resolvePackPool(cachedPool, selection)
-                val rotationPool = AmbientAlbumArt.sampleRotationPool(
-                    pool = pool,
-                    isPreferred = preferred,
-                )
-                val chosen = rotationPool.firstOrNull()
-                    ?: if (selection.allowsGenerativeAmbientFallback()) {
-                        resolveAmbientArtwork(catalog, artworkId = null)
-                    } else {
-                        null
-                    }
-                onStartAmbient(chosen, rotationPool, renewIds)
-            }
-        },
+        startingSelection = startingSelection,
+        onOpenMediaPlayer = { launchAmbient(selection) },
     )
 }
 
@@ -400,7 +372,7 @@ fun ControlPlaneContent(
     onStartMediaPlayer: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     catalog: List<Artwork> = emptyList(),
-    startingAmbient: Boolean = false,
+    startingSelection: PackSelection? = null,
     onCreateCustomFractal: (() -> Unit)? = null,
     onOpenSettings: (() -> Unit)? = null,
     defaultScreensaverSelection: PackSelection? = null,
@@ -431,6 +403,7 @@ fun ControlPlaneContent(
                 onSetDefaultScreensaver = onSetDefaultScreensaver,
                 packOwnership = packOwnership,
                 onOpenMarketplace = onOpenMarketplace,
+                startingSelection = startingSelection,
             )
         } else {
             PhoneControlPlaneContent(
@@ -449,6 +422,7 @@ fun ControlPlaneContent(
                 onOpenMediaPlayer = onOpenMediaPlayer,
                 packOwnership = packOwnership,
                 onOpenMarketplace = onOpenMarketplace,
+                startingSelection = startingSelection,
             )
         }
     }
@@ -472,6 +446,7 @@ private fun PhoneControlPlaneContent(
     onOpenMediaPlayer: (() -> Unit)? = null,
     packOwnership: PackOwnership = PackOwnership.NONE,
     onOpenMarketplace: ((highlightPackId: String?) -> Unit)? = null,
+    startingSelection: PackSelection? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
     var searchQuery by remember(openedFamily, selection) { mutableStateOf("") }
@@ -602,6 +577,7 @@ private fun PhoneControlPlaneContent(
                         }
                     },
                     isLocked = { it.isLocked(packOwnership) },
+                    startingSelection = startingSelection,
                     modifier = Modifier.weight(if (isGenartFamily) 0.38f else 1f),
                     contentPadding = PaddingValues(
                         start = 20.dp,

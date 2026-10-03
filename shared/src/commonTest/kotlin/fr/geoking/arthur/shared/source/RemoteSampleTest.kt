@@ -48,4 +48,14 @@ class RemoteSampleTest {
         assertEquals(60, RemoteSample.nextStart(cursor = 3, pageSize = 20, maxStart = 60))
         assertEquals(0, RemoteSample.nextStart(cursor = 4, pageSize = 20, maxStart = 60))
     }
+
+    @Test
+    fun randomSeedIsZeroForZeroRandom() {
+        assertEquals(0, RemoteSample.randomSeed(ZeroRandom))
+    }
+
+    @Test
+    fun percentEncodeEscapesJsonPunctuation() {
+        assertEquals("%7B%22a%22%3A1%7D", RemoteSample.percentEncode("""{"a":1}"""))
+    }
 }

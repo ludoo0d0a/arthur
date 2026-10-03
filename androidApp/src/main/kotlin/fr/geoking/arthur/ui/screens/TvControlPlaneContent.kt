@@ -47,6 +47,7 @@ fun TvControlPlaneContent(
     onSetDefaultScreensaver: ((PackSelection) -> Unit)? = null,
     packOwnership: PackOwnership = PackOwnership.NONE,
     onOpenMarketplace: ((highlightPackId: String?) -> Unit)? = null,
+    startingSelection: PackSelection? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
     val firstTileFocus = remember { FocusRequester() }
@@ -131,6 +132,7 @@ fun TvControlPlaneContent(
                         }
                     },
                     isLocked = { it.isLocked(packOwnership) },
+                    startingSelection = startingSelection,
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(bottom = 24.dp),
                     firstTileFocusRequester = firstTileFocus,

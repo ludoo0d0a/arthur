@@ -10,7 +10,11 @@ class EuropeanaSourceTest {
     @Test
     fun loadsArtworkFromEuropeanaFixtures() = runBlocking {
         val fixtures = mapOf(
-            EuropeanaSource.searchUrl(limit = RemoteSample.SEARCH_POOL, apiKey = "test-key") to """
+            EuropeanaSource.searchUrl(
+                limit = RemoteSample.SEARCH_POOL,
+                apiKey = "test-key",
+                seed = 0,
+            ) to """
                 {
                   "items": [
                     {
@@ -56,7 +60,11 @@ class EuropeanaSourceTest {
     @Test
     fun prefersIsShownByOverPreviewAndSkipsMissingImage() = runBlocking {
         val fixtures = mapOf(
-            EuropeanaSource.searchUrl(limit = RemoteSample.SEARCH_POOL, apiKey = "test-key") to """
+            EuropeanaSource.searchUrl(
+                limit = RemoteSample.SEARCH_POOL,
+                apiKey = "test-key",
+                seed = 0,
+            ) to """
                 {
                   "items": [
                     {
@@ -91,6 +99,16 @@ class EuropeanaSourceTest {
                 "?query=sculpture&theme=art&reusability=open&media=true&qf=TYPE%3AIMAGE" +
                 "&rows=20&start=1&profile=standard",
             EuropeanaSource.searchUrl(kind = MuseumSearchKind.Sculpture),
+        )
+    }
+
+    @Test
+    fun searchUrlIncludesRandomSortSeed() {
+        assertEquals(
+            "https://api.europeana.eu/record/v2/search.json" +
+                "?query=sculpture&theme=art&reusability=open&media=true&qf=TYPE%3AIMAGE" +
+                "&rows=20&start=1&profile=standard&sort=random_42%2Basc",
+            EuropeanaSource.searchUrl(kind = MuseumSearchKind.Sculpture, seed = 42),
         )
     }
 }

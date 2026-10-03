@@ -86,11 +86,8 @@ class MetSourceTest {
 
     @Test
     fun samplesRandomObjectIdsInsteadOfPrefix() = runBlocking {
-        val fixtures = mutableMapOf(
-            MetSource.SEARCH_URL to """{"total":5,"objectIDs":[1,2,3,4,5]}""",
-        )
-        for (id in 1..5) {
-            fixtures[MetSource.objectUrl(id)] = """
+        val objectFixtures = (1..5).associate { id ->
+            MetSource.objectUrl(id) to """
                 {
                   "objectID": $id,
                   "isPublicDomain": true,
@@ -100,7 +97,12 @@ class MetSourceTest {
                 }
             """.trimIndent()
         }
-        val httpGet: suspend (String) -> String = { url -> fixtures.getValue(url) }
+        val httpGet: suspend (String) -> String = { url ->
+            when {
+                url.contains("/search") -> """{"total":5,"objectIDs":[1,2,3,4,5]}"""
+                else -> objectFixtures.getValue(url)
+            }
+        }
         val prefixIds = MetSource(httpGet = httpGet, limit = 2, random = ZeroRandom)
             .load()
             .map { it.id }
@@ -115,11 +117,18 @@ class MetSourceTest {
     }
 
     @Test
-    fun searchUrlIncludesCategoryMedium() {
+    fun searchUrlIncludesCategoryMediumAndPaging() {
         assertEquals(
-            "https://collectionapi.metmuseum.org/public/collection/v1/search" +
-                "?q=sculpture&medium=Sculpture&hasImages=true&isPublicDomain=true",
+            "https://collectionapi.metmuseum.org/public/collection/v1.1/search" +
+                "?q=sculpture&medium=Sculpture&hasImages=true&isPublicDomain=true" +
+                "&offset=0&limit=${RemoteSample.SEARCH_POOL}",
             MetSource.searchUrl(MuseumSearchKind.Sculpture),
+        )
+        assertEquals(
+            "https://collectionapi.metmuseum.org/public/collection/v1.1/search" +
+                "?q=sculpture&medium=Sculpture&hasImages=true&isPublicDomain=true" +
+                "&offset=120&limit=60",
+            MetSource.searchUrl(MuseumSearchKind.Sculpture, limit = 60, offset = 120),
         )
     }
 
@@ -153,29 +162,32 @@ class MetSourceTest {
     @Test
     fun cachesHydratedObjectsAcrossLoads() = runBlocking {
         val objectId = 436121
-        val fixtures = mapOf(
-            MetSource.SEARCH_URL to """{"total":1,"objectIDs":[$objectId]}""",
-            MetSource.objectUrl(objectId) to """
-                {
-                  "objectID": $objectId,
-                  "isPublicDomain": true,
-                  "title": "Wheat Field with Cypresses",
-                  "artistDisplayName": "Vincent van Gogh",
-                  "primaryImage": "https://images.metmuseum.org/CRDImages/ep/original/DT1567.jpg"
-                }
-            """.trimIndent(),
-        )
+        val objectPayload = """
+            {
+              "objectID": $objectId,
+              "isPublicDomain": true,
+              "title": "Wheat Field with Cypresses",
+              "artistDisplayName": "Vincent van Gogh",
+              "primaryImage": "https://images.metmuseum.org/CRDImages/ep/original/DT1567.jpg"
+            }
+        """.trimIndent()
+        val searchPayload = """{"total":1,"objectIDs":[$objectId]}"""
         val callCounts = mutableMapOf<String, Int>()
         val source = MetSource(
             httpGet = { url ->
                 callCounts[url] = (callCounts[url] ?: 0) + 1
-                fixtures.getValue(url)
+                when {
+                    url.contains("/search") -> searchPayload
+                    url == MetSource.objectUrl(objectId) -> objectPayload
+                    else -> error("unexpected url: $url")
+                }
             },
             random = ZeroRandom,
         )
         source.load()
         source.load()
-        assertEquals(2, callCounts[MetSource.SEARCH_URL])
+        val searchCalls = callCounts.filterKeys { it.contains("/search") }.values.sum()
+        assertEquals(2, searchCalls)
         assertEquals(1, callCounts[MetSource.objectUrl(objectId)])
     }
 
@@ -205,4 +217,35 @@ class MetSourceTest {
         assertEquals(1, art.size)
         assertEquals(ArtworkKind.Sculpture, art[0].kind)
     }
+
+    @Test
+    fun usesRandomSearchOffsetAcrossLoads() = runBlocking {
+        val seenOffsets = mutableSetOf<Int>()
+        val source = MetSource(
+            httpGet = { url ->
+                if (url.contains("/search")) {
+                    val offset = Regex("offset=(\\d+)").find(url)?.groupValues?.get(1)?.toInt() ?: -1
+                    seenOffsets.add(offset)
+                    """{"total":120,"objectIDs":[1]}"""
+                } else {
+                    publicDomainObject(1)
+                }
+            },
+            limit = 1,
+            random = Random(42),
+        )
+        repeat(8) { source.load() }
+        assertTrue(seenOffsets.size > 1, "expected multiple offsets, got $seenOffsets")
+        assertTrue(seenOffsets.all { it % RemoteSample.SEARCH_POOL == 0 })
+    }
+
+    private fun publicDomainObject(id: Int): String = """
+        {
+          "objectID": $id,
+          "isPublicDomain": true,
+          "title": "Work $id",
+          "artistDisplayName": "Artist",
+          "primaryImage": "https://images.metmuseum.org/$id.jpg"
+        }
+    """.trimIndent()
 }

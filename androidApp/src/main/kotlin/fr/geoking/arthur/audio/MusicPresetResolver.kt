@@ -22,7 +22,8 @@ object MusicPresetResolver {
         style = rebiasStyleForCharacter(style, prefs.character, seed)
         val scales = ScaleLibrary.forStyle(style, prefs.character)
         val scale = scales[mod(seed, scales.size)]
-        val rootMidi = 48 + mod(seed shr 8, 14) // C3..D4-ish — clearer piano range
+        // Lower root leaves room for melody above bass (C2..A3-ish → ~65–220 Hz fundamental band).
+        val rootMidi = 45 + mod(seed shr 8, 14)
         val rootHz = midiToHz(rootMidi.toFloat())
         val tempo = baseTempo(style) * (0.9f + mod(seed shr 16, 21) / 100f)
         val complexity = prefs.complexity.coerceIn(0f, 1f)
@@ -34,6 +35,7 @@ object MusicPresetResolver {
                     bed = (base.bed + delta(seed, 0)).coerceIn(0f, 0.7f),
                     harmony = (base.harmony + delta(seed, 1)).coerceIn(0f, 0.5f),
                     melody = (base.melody + delta(seed, 2)).coerceIn(0.15f, 0.75f),
+                    bass = (base.bass + delta(seed, 5)).coerceIn(0.1f, 0.65f),
                     texture = (base.texture + delta(seed, 3)).coerceIn(0f, 0.4f),
                     pulse = (base.pulse + delta(seed, 4)).coerceIn(0f, 0.35f),
                 ).clamped()
@@ -107,21 +109,41 @@ object MusicPresetResolver {
     ): TrackMix = when (character) {
         AmbientAudioCharacter.Melody -> mix.copy(
             bed = (mix.bed * 0.15f).coerceAtMost(0.08f),
-            harmony = (mix.harmony * 0.35f).coerceAtMost(0.12f),
+            harmony = (mix.harmony * 0.55f).coerceIn(0.08f, 0.18f),
             melody = mix.melody.coerceAtLeast(0.55f),
+            bass = mix.bass.coerceIn(0.35f, 0.55f),
             texture = 0f,
-            pulse = (mix.pulse * 0.7f).coerceAtMost(0.2f),
+            pulse = 0.02f,
+            transition = mix.transition.coerceAtMost(0.25f),
         ).clamped()
         AmbientAudioCharacter.Balanced -> mix.copy(
-            bed = mix.bed.coerceIn(0.08f, 0.28f),
-            harmony = mix.harmony.coerceIn(0.08f, 0.28f),
+            bed = mix.bed.coerceIn(0.08f, 0.22f),
+            harmony = mix.harmony.coerceIn(0.10f, 0.26f),
             melody = mix.melody.coerceAtLeast(0.42f),
+            bass = mix.bass.coerceIn(0.28f, 0.48f),
             texture = when (style) {
-                MusicStyle.OceanWaves, MusicStyle.WindChimes -> mix.texture.coerceAtMost(0.12f)
+                MusicStyle.OceanWaves, MusicStyle.WindChimes -> mix.texture.coerceAtMost(0.10f)
                 else -> 0f
             },
+            pulse = mix.pulse.coerceAtMost(0.06f),
+            transition = mix.transition.coerceAtMost(0.30f),
         ).clamped()
-        AmbientAudioCharacter.Atmosphere -> mix.clamped()
+        AmbientAudioCharacter.Atmosphere -> mix.copy(
+            bed = mix.bed.coerceIn(0.28f, 0.55f),
+            harmony = mix.harmony.coerceIn(0.12f, 0.28f),
+            melody = mix.melody.coerceIn(0.12f, 0.28f),
+            bass = mix.bass.coerceIn(0.22f, 0.42f),
+            texture = when (style) {
+                MusicStyle.OceanWaves, MusicStyle.WindChimes -> mix.texture.coerceIn(0.18f, 0.38f)
+                MusicStyle.TibetanBowl, MusicStyle.CosmicDrone -> mix.texture.coerceIn(0.08f, 0.22f)
+                else -> mix.texture.coerceIn(0.06f, 0.20f)
+            },
+            pulse = when (style) {
+                MusicStyle.AfricanPulse -> mix.pulse.coerceAtMost(0.12f)
+                else -> 0.02f
+            },
+            transition = mix.transition.coerceAtMost(0.35f),
+        ).clamped()
     }
 
     /** Lower = more specific for soundtrack mapping. */
@@ -174,16 +196,26 @@ object MusicPresetResolver {
     }
 
     private fun defaultMix(style: MusicStyle): TrackMix = when (style) {
-        MusicStyle.Zen -> TrackMix(bed = 0.12f, harmony = 0.14f, melody = 0.58f, texture = 0f, pulse = 0.04f)
-        MusicStyle.BarAmbience -> TrackMix(bed = 0.14f, harmony = 0.22f, melody = 0.52f, texture = 0f, pulse = 0.10f)
-        MusicStyle.JazzPiano -> TrackMix(bed = 0.10f, harmony = 0.20f, melody = 0.62f, texture = 0f, pulse = 0.08f)
-        MusicStyle.SoftGuitar -> TrackMix(bed = 0.12f, harmony = 0.18f, melody = 0.58f, texture = 0f, pulse = 0.06f)
-        MusicStyle.TibetanBowl -> TrackMix(bed = 0.40f, harmony = 0.18f, melody = 0.28f, texture = 0.08f, pulse = 0.02f)
-        MusicStyle.OceanWaves -> TrackMix(bed = 0.28f, harmony = 0.12f, melody = 0.35f, texture = 0.22f, pulse = 0.02f)
-        MusicStyle.AfricanPulse -> TrackMix(bed = 0.10f, harmony = 0.16f, melody = 0.55f, texture = 0f, pulse = 0.24f)
-        MusicStyle.WindChimes -> TrackMix(bed = 0.08f, harmony = 0.10f, melody = 0.48f, texture = 0.18f, pulse = 0.04f)
-        MusicStyle.NightLounge -> TrackMix(bed = 0.14f, harmony = 0.24f, melody = 0.52f, texture = 0f, pulse = 0.12f)
-        MusicStyle.CosmicDrone -> TrackMix(bed = 0.45f, harmony = 0.20f, melody = 0.22f, texture = 0.12f, pulse = 0.02f)
+        MusicStyle.Zen ->
+            TrackMix(bed = 0.12f, harmony = 0.16f, melody = 0.58f, bass = 0.40f, texture = 0f, pulse = 0.02f)
+        MusicStyle.BarAmbience ->
+            TrackMix(bed = 0.12f, harmony = 0.20f, melody = 0.52f, bass = 0.42f, texture = 0f, pulse = 0.04f)
+        MusicStyle.JazzPiano ->
+            TrackMix(bed = 0.10f, harmony = 0.18f, melody = 0.60f, bass = 0.45f, texture = 0f, pulse = 0.04f)
+        MusicStyle.SoftGuitar ->
+            TrackMix(bed = 0.12f, harmony = 0.16f, melody = 0.56f, bass = 0.38f, texture = 0f, pulse = 0.02f)
+        MusicStyle.TibetanBowl ->
+            TrackMix(bed = 0.42f, harmony = 0.18f, melody = 0.22f, bass = 0.30f, texture = 0.12f, pulse = 0.02f)
+        MusicStyle.OceanWaves ->
+            TrackMix(bed = 0.32f, harmony = 0.14f, melody = 0.20f, bass = 0.28f, texture = 0.28f, pulse = 0.02f)
+        MusicStyle.AfricanPulse ->
+            TrackMix(bed = 0.10f, harmony = 0.14f, melody = 0.52f, bass = 0.40f, texture = 0f, pulse = 0.18f)
+        MusicStyle.WindChimes ->
+            TrackMix(bed = 0.14f, harmony = 0.12f, melody = 0.40f, bass = 0.22f, texture = 0.22f, pulse = 0.02f)
+        MusicStyle.NightLounge ->
+            TrackMix(bed = 0.12f, harmony = 0.22f, melody = 0.52f, bass = 0.44f, texture = 0f, pulse = 0.06f)
+        MusicStyle.CosmicDrone ->
+            TrackMix(bed = 0.48f, harmony = 0.20f, melody = 0.18f, bass = 0.35f, texture = 0.14f, pulse = 0.02f)
     }
 
     private fun baseTempo(style: MusicStyle): Float = when (style) {
@@ -237,10 +269,10 @@ object ScaleLibrary {
         val melodic = listOf(majorPent, minorPent, major, naturalMinor, dorian, mixolydian)
         if (character != AmbientAudioCharacter.Atmosphere) {
             return when (style) {
-                MusicStyle.Zen -> listOf(majorPent, minorPent, major)
+                MusicStyle.Zen -> listOf(majorPent, minorPent, major, naturalMinor)
                 MusicStyle.BarAmbience, MusicStyle.NightLounge -> listOf(dorian, bluesLite, mixolydian, major)
                 MusicStyle.JazzPiano -> listOf(dorian, mixolydian, bluesLite, major)
-                MusicStyle.SoftGuitar -> listOf(majorPent, mixolydian, dorian, major)
+                MusicStyle.SoftGuitar -> listOf(majorPent, mixolydian, dorian, major, naturalMinor)
                 MusicStyle.TibetanBowl -> listOf(minorPent, majorPent)
                 MusicStyle.OceanWaves -> listOf(majorPent, major, naturalMinor)
                 MusicStyle.AfricanPulse -> listOf(hexatonic, majorPent, minorPent)
@@ -249,12 +281,12 @@ object ScaleLibrary {
             }
         }
         return when (style) {
-            MusicStyle.Zen -> listOf(majorPent, minorPent)
+            MusicStyle.Zen -> listOf(majorPent, minorPent, naturalMinor)
             MusicStyle.BarAmbience, MusicStyle.NightLounge -> listOf(dorian, bluesLite, mixolydian)
             MusicStyle.JazzPiano -> listOf(dorian, mixolydian, bluesLite)
             MusicStyle.SoftGuitar -> listOf(majorPent, mixolydian, dorian)
             MusicStyle.TibetanBowl -> listOf(bowlPartials, minorPent)
-            MusicStyle.OceanWaves -> listOf(majorPent, wholeTone)
+            MusicStyle.OceanWaves -> listOf(majorPent, wholeTone, naturalMinor)
             MusicStyle.AfricanPulse -> listOf(hexatonic, majorPent, minorPent)
             MusicStyle.WindChimes -> listOf(wholeTone, majorPent, bowlPartials)
             MusicStyle.CosmicDrone -> listOf(wholeTone, minorPent, bowlPartials)

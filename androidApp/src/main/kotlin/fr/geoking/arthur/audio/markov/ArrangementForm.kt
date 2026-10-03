@@ -28,6 +28,7 @@ class ArrangementForm(
     )
     private var index = 0
     private var samplesRemaining = 0
+    private var lastSampleRate = 44_100
 
     var section: FormSection = FormSection.Intro
         private set
@@ -37,7 +38,7 @@ class ArrangementForm(
         get() = when (section) {
             FormSection.Intro -> 0.4f
             FormSection.A -> 1f
-            FormSection.B -> 0.45f
+            FormSection.B -> 0.55f
             FormSection.Bridge -> 0.2f
         }
 
@@ -52,24 +53,46 @@ class ArrangementForm(
 
     fun forceBridge(sampleRate: Int, seconds: Float = 2.5f) {
         section = FormSection.Bridge
+        lastSampleRate = sampleRate
         samplesRemaining = (seconds * sampleRate).toInt().coerceAtLeast(1)
     }
 
     fun tick(sampleRate: Int) {
+        lastSampleRate = sampleRate
         if (samplesRemaining > 0) {
             samplesRemaining--
-            if (samplesRemaining == 0) advance()
+            if (samplesRemaining == 0) advance(sampleRate)
             return
         }
         // First tick: schedule Intro length.
         scheduleCurrent(sampleRate)
     }
 
-    private fun advance() {
+    /** Samples remaining in the current section (0 if not yet scheduled). */
+    fun samplesUntilSectionChange(): Int = samplesRemaining
+
+    /** Fast-forward arrangement clock by [frames] samples. */
+    fun skipSamples(frames: Int, sampleRate: Int) {
+        if (frames <= 0) return
+        lastSampleRate = sampleRate
+        var left = frames
+        while (left > 0) {
+            if (samplesRemaining <= 0) {
+                scheduleCurrent(sampleRate)
+            }
+            if (samplesRemaining <= 0) break
+            val step = minOf(left, samplesRemaining)
+            samplesRemaining -= step
+            left -= step
+            if (samplesRemaining == 0) advance(sampleRate)
+        }
+    }
+
+    private fun advance(sampleRate: Int) {
         index = (index + 1) % cycle.size
         section = cycle[index]
         samplesRemaining = 0
-        scheduleCurrent(44_100) // length set with nominal SR; tick() refreshes
+        scheduleCurrent(sampleRate)
     }
 
     private fun scheduleCurrent(sampleRate: Int) {

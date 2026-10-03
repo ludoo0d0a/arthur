@@ -132,6 +132,13 @@ class ArthurMediaMappingTest {
     }
 
     @Test
+    fun shouldPrefetchNextPool_matchesSourcePageLead() {
+        assertFalse(AmbientAlbumArt.shouldPrefetchNextPool(17, 20))
+        assertTrue(AmbientAlbumArt.shouldPrefetchNextPool(18, 20))
+        assertTrue(AmbientAlbumArt.shouldPrefetchNextPool(19, 20))
+    }
+
+    @Test
     fun authority_usesPackageSuffix() {
         assertEquals("fr.geoking.arthur.albumart", AmbientAlbumArt.authority("fr.geoking.arthur"))
     }

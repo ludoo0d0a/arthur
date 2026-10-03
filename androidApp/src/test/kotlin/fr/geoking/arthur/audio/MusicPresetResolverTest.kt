@@ -90,6 +90,27 @@ class MusicPresetResolverTest {
         assertTrue(preset.style == MusicStyle.Zen || preset.style == MusicStyle.SoftGuitar)
         assertEquals(0f, preset.trackMix.texture, 0.001f)
         assertTrue(preset.trackMix.melody >= 0.55f)
+        assertTrue(preset.trackMix.bass >= 0.35f)
+        assertTrue(preset.trackMix.pulse <= 0.05f)
+    }
+
+    @Test
+    fun atmosphereMixKeepsBedTextureBass() {
+        val art = Artwork(
+            id = "pexels-1",
+            title = "Ocean sunset",
+            sourceId = "pexels",
+            kind = ArtworkKind.Photo,
+        )
+        val preset = MusicPresetResolver.resolve(
+            art,
+            MusicUserPrefs(character = AmbientAudioCharacter.Atmosphere),
+        )
+        assertTrue(preset.trackMix.bed >= 0.28f)
+        assertTrue(preset.trackMix.texture >= 0.18f)
+        assertTrue(preset.trackMix.bass >= 0.22f)
+        assertTrue(preset.trackMix.melody <= 0.28f)
+        assertTrue(preset.trackMix.pulse <= 0.05f)
     }
 
     @Test
@@ -112,7 +133,14 @@ class MusicPresetResolverTest {
 
     @Test
     fun melodyCharacterClampsBed() {
-        val mix = TrackMix(bed = 0.5f, harmony = 0.3f, melody = 0.3f, texture = 0.2f, pulse = 0.1f)
+        val mix = TrackMix(
+            bed = 0.5f,
+            harmony = 0.3f,
+            melody = 0.3f,
+            bass = 0.4f,
+            texture = 0.2f,
+            pulse = 0.1f,
+        )
         val applied = MusicPresetResolver.applyCharacterMix(
             mix,
             AmbientAudioCharacter.Melody,
@@ -121,5 +149,6 @@ class MusicPresetResolverTest {
         assertTrue(applied.bed <= 0.08f)
         assertEquals(0f, applied.texture, 0.001f)
         assertTrue(applied.melody >= 0.55f)
+        assertTrue(applied.bass >= 0.35f)
     }
 }

@@ -15,8 +15,8 @@ import kotlinx.serialization.json.Json
  * Smithsonian Open Access Remote Source (API key required).
  * Prefers CC0 media with images; blank [apiKey] yields an empty catalog.
  *
- * Search: `GET /openaccess/api/v1.0/search?q=…&api_key=…`
- * No native random: each [load] picks a random `start` and samples the window.
+ * Search: `GET /openaccess/api/v1.0/search?q=…&api_key=…&sort=random`
+ * Native random sort — each [load] reshuffles and samples the window.
  */
 class SmithsonianSource(
     private val httpGet: suspend (url: String) -> String,
@@ -32,9 +32,6 @@ class SmithsonianSource(
     // Rotates which MuseumSearchKind target this Source hydrates each load() call
     // — defers the other target(s) to the next call instead of fetching them all now.
     private var targetCursor = 0
-
-    // Advances each load() call so "load more" pages forward instead of re-sampling.
-    private var startCursor = 0
 
     override suspend fun load(): List<Artwork> {
         if (apiKey.isBlank()) {
@@ -52,14 +49,14 @@ class SmithsonianSource(
                 random,
                 nextTargetIndex = { targetCursor++ },
             ) { target, perKind ->
-                val start = RemoteSample.nextStart(startCursor++, RemoteSample.SEARCH_POOL)
-                val payload = RemoteSample.fetchWindow(
-                    randomOffset = start,
-                    firstOffset = 0,
-                    fetch = { s ->
-                        httpGet(searchUrl(apiKey, RemoteSample.SEARCH_POOL, target, start = s))
-                    },
-                    isEmpty = ::looksEmptySmithsonian,
+                val payload = httpGet(
+                    searchUrl(
+                        apiKey,
+                        RemoteSample.SEARCH_POOL,
+                        target,
+                        start = 0,
+                        sort = "random",
+                    ),
                 )
                 val page = json.decodeFromString<SmithsonianSearchPage>(payload)
                 RemoteSample.sample(
@@ -79,11 +76,6 @@ class SmithsonianSource(
             )
         }.getOrDefault(emptyList())
     }
-
-    private fun looksEmptySmithsonian(payload: String): Boolean =
-        runCatching {
-            json.decodeFromString<SmithsonianSearchPage>(payload).response?.rows.isNullOrEmpty()
-        }.getOrDefault(true)
 
     private fun toArtwork(row: SmithsonianRow, searchKind: MuseumSearchKind): Artwork? {
         val recordId = row.url?.takeIf { it.isNotBlank() }
@@ -149,6 +141,7 @@ class SmithsonianSource(
             kind: MuseumSearchKind = MuseumSearchKind.Painting,
             /** Smithsonian result offset; first item is 0. */
             start: Int = 0,
+            sort: String = "relevancy",
         ): String {
             val q = RemoteCategoryMapping.museumParams(kind, RemoteProvider.Smithsonian).query
                 .orEmpty()
@@ -166,6 +159,7 @@ class SmithsonianSource(
                 "?q=$encoded" +
                 "&rows=$limit" +
                 "&start=$start" +
+                "&sort=$sort" +
                 "&api_key=$apiKey"
         }
     }

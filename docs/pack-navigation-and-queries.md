@@ -119,8 +119,10 @@ File: [AmbientActivity.kt](../androidApp/src/main/kotlin/fr/geoking/arthur/tv/Am
   `artwork_unavailable` messages. Technical `errorDetail` only when Developer → Verbose.
 - **Dream**: `loadDreamAmbient` loads `sourceIdsForAmbientLoad()` for the screensaver
   pack; empty selection pool → placeholder (Genart may still resolve from catalog).
-- **On pool renew**: `ContentEngine.catalog(sourceIds = renewSourceIds)` for the
-  original Control Plane sources only.
+- **On pool renew**: when within `POOL_RENEW_LEAD` (2) of the playlist end
+  (~19th/20th of a `DEFAULT_LIMIT` page), `ContentEngine.catalog(sourceIds =
+  renewSourceIds)` fetches the next sample and **appends** distinct ids to the
+  current playlist (capped at `MAX_PLAYLIST_SIZE` = 60).
 - **Per still**: `StillImagePrefetcher.ensureCached()` → disk image cache. Videos stream via ExoPlayer.
 
 ### 3.3 ArtworkDetailScreen / Custom fractal editor
@@ -141,31 +143,38 @@ No pack network calls. Custom fractal uses `CustomFractalStore` only.
 ### 4.2 Museum source endpoints
 
 #### The Met (`met`)
-- `MetSource` — `GET …/search` + `GET …/objects/{id}`
-- Params: `q`, `medium`, `hasImages=true`, `isPublicDomain=true`
+- `MetSource` — `GET …/v1.1/search` + `GET …/v1/objects/{id}`
+- Params: `q`, `medium`, `hasImages=true`, `isPublicDomain=true`, `offset`, `limit`
+- Variety: random `offset` window (no native sort) + sample
 
 #### Harvard (`harvard`)
 - `HarvardSource` — `GET https://api.harvardartmuseums.org/object`
-- Params: `apikey`, `classification`, `hasimage`, `q=imagepermissionlevel:0`, `size`, `page`, `sort=random`
+- Params: `apikey`, `classification`, `hasimage`, `q=imagepermissionlevel:0`, `size`, `page`, `sort=random:SEED`
+- Variety: native `sort=random:SEED` each load
 
 #### Art Institute of Chicago (`artic`)
 - `ArticSource` — search + IIIF image assembly
+- Variety: Elasticsearch `function_score` + `random_score` seed each load
 
 #### Cleveland (`cleveland`)
 - `ClevelandSource` — `cc0=1`, `has_image=1`, `type`, `limit`, `skip`
+- Variety: random deep `skip` (no native sort) + sample
 
 #### Rijksmuseum (`rijksmuseum`)
 - `RijksmuseumSource` — Linked Art search + object hydration
+- Variety: explore `next.id` frontier, then random known page + sample
 
 #### Smithsonian (`smithsonian`)
-- `SmithsonianSource` — Solr `q` + `rows` / `start` + `api_key`
+- `SmithsonianSource` — Solr `q` + `rows` / `start` + `sort=random` + `api_key`
+- Variety: native `sort=random` each load
 
 #### Europeana (`europeana`)
-- `EuropeanaSource` — `query`, `theme`, `reusability=open`, `media`, `qf=TYPE:IMAGE`
+- `EuropeanaSource` — `query`, `theme`, `reusability=open`, `media`, `qf=TYPE:IMAGE`, `sort=random_SEED+asc`
+- Variety: native seeded random sort each load
 
 #### Louvre (`louvre`)
 - `LouvreSource` — curated `PAINTING_ARKS` / `SCULPTURE_ARKS` → per-ARK JSON
-- No public search API
+- No public search API — sample curated list
 
 ---
 

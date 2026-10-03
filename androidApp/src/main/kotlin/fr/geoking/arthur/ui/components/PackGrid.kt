@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -122,6 +123,7 @@ internal fun packGridLayout(
 private fun PackSelectedPlayOverlay(
     visible: Boolean,
     testTagSuffix: String,
+    loading: Boolean = false,
 ) {
     // File-level caller so AnimatedVisibility is not ColumnScope-bound.
     AnimatedVisibility(
@@ -136,14 +138,23 @@ private fun PackSelectedPlayOverlay(
                 .background(Color.Black.copy(alpha = 0.35f)),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_play_circle),
-                contentDescription = stringResource(R.string.start_ambient),
-                tint = Color.White,
-                modifier = Modifier
-                    .size(56.dp)
-                    .testTag("pack_tile_play_$testTagSuffix"),
-            )
+            if (loading) {
+                CircularProgressIndicator(
+                    color = Color.White,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .testTag("pack_tile_loading_$testTagSuffix"),
+                )
+            } else {
+                Icon(
+                    painter = painterResource(R.drawable.ic_play_circle),
+                    contentDescription = stringResource(R.string.start_ambient),
+                    tint = Color.White,
+                    modifier = Modifier
+                        .size(56.dp)
+                        .testTag("pack_tile_play_$testTagSuffix"),
+                )
+            }
         }
     }
 }
@@ -161,6 +172,7 @@ fun PackCoverTile(
     onFocusSelect: (() -> Unit)? = null,
     maxCoverSize: Dp = Dp.Unspecified,
     locked: Boolean = false,
+    loading: Boolean = false,
 ) {
     val scheme = MaterialTheme.colorScheme
     val interactionSource = remember { MutableInteractionSource() }
@@ -241,8 +253,9 @@ fun PackCoverTile(
                     }
                 }
                 PackSelectedPlayOverlay(
-                    visible = showPlay && !tileLocked,
+                    visible = (showPlay || loading) && !tileLocked,
                     testTagSuffix = tile.testTagSuffix,
+                    loading = loading,
                 )
             }
         }
@@ -277,6 +290,7 @@ fun PackGrid(
     selectOnFocus: Boolean = false,
     onTileFocused: ((PackTile) -> Unit)? = null,
     isLocked: (PackTile) -> Boolean = { false },
+    startingSelection: PackSelection? = null,
 ) {
     val windowSizeClass = currentWindowAdaptiveInfoV2().windowSizeClass
     val layoutDirection = LocalLayoutDirection.current
@@ -317,6 +331,7 @@ fun PackGrid(
                     onFocusSelect = onTileFocused?.let { focused -> { focused(tile) } },
                     maxCoverSize = layout.maxCoverSize,
                     locked = isLocked(tile),
+                    loading = startingSelection == tile.selection,
                 )
             }
         }

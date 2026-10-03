@@ -28,7 +28,7 @@ enum class PackFamily(
 /**
  * Selected pack for Ambient: a [PackFamily] plus optional subcategory.
  * [subId] null means the family's home tile was started directly, with no sub-pack
- * chosen — Museum defaults to Met; other families behave like **Random**.
+ * chosen — Museum and most families behave like **Random** (Genart → All).
  */
 data class PackSelection(
     val family: PackFamily,
@@ -72,7 +72,7 @@ private val GenartSubTopics = listOf(
 /** Default sub-pack id when opening a family on the Control Plane. */
 fun PackFamily.defaultSubId(): String = when (this) {
     PackFamily.Genart -> GenartTopic.All.testTagSuffix
-    PackFamily.Museum -> MuseumTopic.Met.testTagSuffix
+    PackFamily.Museum -> MuseumTopic.Random.testTagSuffix
     PackFamily.Personal -> "all"
     PackFamily.Photo,
     PackFamily.Video,
@@ -215,7 +215,7 @@ fun PackFamily.subPackTiles(catalog: List<Artwork> = emptyList()): List<PackTile
 fun resolvePackPool(catalog: List<Artwork>, selection: PackSelection): List<Artwork> {
     val pool = when (selection.family) {
         PackFamily.Museum -> {
-            val topic = selection.museumTopicOrNull() ?: MuseumTopic.Met
+            val topic = selection.museumTopicOrNull() ?: MuseumTopic.Random
             val museumKinds = catalog.filter { art ->
                 art.kind == ArtworkKind.Painting || art.kind == ArtworkKind.Sculpture
             }
@@ -279,7 +279,7 @@ fun resolvePackPool(catalog: List<Artwork>, selection: PackSelection): List<Artw
     }
 
     val isRandom = when (selection.family) {
-        PackFamily.Museum -> selection.museumTopicOrNull() == MuseumTopic.Random
+        PackFamily.Museum -> (selection.museumTopicOrNull() ?: MuseumTopic.Random) == MuseumTopic.Random
         PackFamily.Personal -> true
         PackFamily.Genart -> (selection.genartTopicOrNull() ?: GenartTopic.Random) == GenartTopic.Random
         PackFamily.Photo ->
@@ -361,8 +361,7 @@ fun PackSelection.videoSourceOrNull(): VideoTopic? =
 fun PackSelection.sourceIdsForAmbientLoad(): List<String>? = when (family) {
     PackFamily.Museum -> {
         when (val topic = museumTopicOrNull()) {
-            null -> listOf(MuseumTopic.Met.sourceId!!)
-            MuseumTopic.Random -> MuseumTopic.institutions.mapNotNull { it.sourceId }
+            null, MuseumTopic.Random -> MuseumTopic.institutions.mapNotNull { it.sourceId }
             else -> listOfNotNull(topic.sourceId)
         }
     }

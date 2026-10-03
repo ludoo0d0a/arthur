@@ -145,11 +145,11 @@ class QuoteRepository(
         internal fun parseZenQuotes(body: String): List<Quote> =
             json.parseToJsonElement(body).jsonArray.mapNotNull { element ->
                 val obj = element.jsonObject
-                val text = obj["q"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
+                val text = sanitizeQuoteText(obj["q"]?.jsonPrimitive?.contentOrNull.orEmpty())
                 if (text.isEmpty()) null
                 else Quote(
                     text = text,
-                    author = obj["a"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty(),
+                    author = sanitizeQuoteText(obj["a"]?.jsonPrimitive?.contentOrNull.orEmpty()),
                 )
             }
 
@@ -157,7 +157,7 @@ class QuoteRepository(
             val root = json.parseToJsonElement(body).jsonObject
             if (root["success"]?.jsonPrimitive?.contentOrNull == "false") return null
             val data = root["data"]?.jsonObject ?: return null
-            val text = data["text"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
+            val text = sanitizeQuoteText(data["text"]?.jsonPrimitive?.contentOrNull.orEmpty())
             if (text.isEmpty()) return null
             val authorObj = data["author"]?.jsonObject
             val forename = authorObj?.get("forename")?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
@@ -169,13 +169,23 @@ class QuoteRepository(
         internal fun parseCachedQuotes(body: String): List<Quote> =
             json.parseToJsonElement(body).jsonArray.mapNotNull { element ->
                 val obj = element.jsonObject
-                val text = obj["text"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
+                val text = sanitizeQuoteText(obj["text"]?.jsonPrimitive?.contentOrNull.orEmpty())
                 if (text.isEmpty()) null
                 else Quote(
                     text = text,
-                    author = obj["author"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty(),
+                    author = sanitizeQuoteText(obj["author"]?.jsonPrimitive?.contentOrNull.orEmpty()),
                 )
             }
+
+        /** Strip HTML line breaks and collapse leftover whitespace from quote APIs. */
+        internal fun sanitizeQuoteText(raw: String): String =
+            raw
+                .replace(BR_TAG_REGEX, " ")
+                .replace(WHITESPACE_REGEX, " ")
+                .trim()
+
+        private val BR_TAG_REGEX = Regex("""(?i)<br\s*/?>""")
+        private val WHITESPACE_REGEX = Regex("""\s+""")
 
         internal fun encodeQuotes(quotes: List<Quote>): String =
             buildJsonArray {

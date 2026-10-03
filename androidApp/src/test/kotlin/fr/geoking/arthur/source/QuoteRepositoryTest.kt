@@ -187,4 +187,28 @@ class QuoteRepositoryTest {
         )
         assertEquals(Quote("Hello", "René Descartes"), quote)
     }
+
+    @Test
+    fun sanitizeQuoteText_stripsBrTags() {
+        assertEquals(
+            "Line one Line two",
+            QuoteRepository.sanitizeQuoteText("Line one<br>Line two"),
+        )
+        assertEquals(
+            "A B C",
+            QuoteRepository.sanitizeQuoteText("A<br/>B<br />C"),
+        )
+        assertEquals(
+            "Hello world",
+            QuoteRepository.sanitizeQuoteText("Hello<br>world"),
+        )
+    }
+
+    @Test
+    fun parseCitationLecog_stripsBrInText() {
+        val quote = QuoteRepository.parseCitationLecog(
+            """{"success":true,"data":{"text":"Je pense,<br>donc je suis.","author":{"forename":"René","name":"Descartes"}}}""",
+        )
+        assertEquals(Quote("Je pense, donc je suis.", "René Descartes"), quote)
+    }
 }

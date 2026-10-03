@@ -111,14 +111,21 @@ class ProceduralMusicEngine(
     private val chimes = ChimeClusterVoice()
     private val kalimba = KalimbaPluckVoice()
 
-    private val sampleRate = 44100
-    private val bufferSize = AudioTrack.getMinBufferSize(
-        sampleRate,
-        AudioFormat.CHANNEL_OUT_MONO,
-        AudioFormat.ENCODING_PCM_16BIT,
-    ).coerceAtLeast(4096)
+    /** Device-native rate when available (often 48000); avoids system resampling. */
+    private var sampleRate: Int = resolveSampleRate()
+    private var useFloatPcm: Boolean = true
+    private var bufferSizeBytes: Int = 0
 
     private enum class DuckPhase { Idle, Down, Hold, Up }
+
+    private fun resolveSampleRate(): Int {
+        val fromProp = audioManager
+            ?.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE)
+            ?.toIntOrNull()
+        if (fromProp != null && fromProp in 22_050..96_000) return fromProp
+        val native = AudioTrack.getNativeOutputSampleRate(AudioManager.STREAM_MUSIC)
+        return if (native in 22_050..96_000) native else 48_000
+    }
 
     init {
         settingsJob = scope.launch {
@@ -237,21 +244,45 @@ class ProceduralMusicEngine(
     }
 
     private fun initAudioTrack() {
+        sampleRate = resolveSampleRate()
         val audioAttributes = AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_MEDIA)
             .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
             .build()
+
+        // Prefer float PCM; fall back to 16-bit if the device rejects it.
+        useFloatPcm = true
+        var encoding = AudioFormat.ENCODING_PCM_FLOAT
+        var minBuf = AudioTrack.getMinBufferSize(
+            sampleRate,
+            AudioFormat.CHANNEL_OUT_MONO,
+            encoding,
+        )
+        if (minBuf <= 0) {
+            useFloatPcm = false
+            encoding = AudioFormat.ENCODING_PCM_16BIT
+            minBuf = AudioTrack.getMinBufferSize(
+                sampleRate,
+                AudioFormat.CHANNEL_OUT_MONO,
+                encoding,
+            )
+        }
+        bufferSizeBytes = minBuf.coerceAtLeast(if (useFloatPcm) 8192 else 4096)
+
         val audioFormat = AudioFormat.Builder()
             .setSampleRate(sampleRate)
-            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+            .setEncoding(encoding)
             .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
             .build()
-        audioTrack = AudioTrack.Builder()
+        val builder = AudioTrack.Builder()
             .setAudioAttributes(audioAttributes)
             .setAudioFormat(audioFormat)
-            .setBufferSizeInBytes(bufferSize)
+            .setBufferSizeInBytes(bufferSizeBytes)
             .setTransferMode(AudioTrack.MODE_STREAM)
-            .build()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            builder.setPerformanceMode(AudioTrack.PERFORMANCE_MODE_LOW_LATENCY)
+        }
+        audioTrack = builder.build()
     }
 
     private fun beginDuck() {
@@ -305,7 +336,8 @@ class ProceduralMusicEngine(
 
     private suspend fun renderAudioLoop() {
         val chunk = 2048
-        val pcm = ShortArray(chunk)
+        val pcmFloat = FloatArray(chunk)
+        val pcmShort = ShortArray(chunk)
         var sampleIndex = 0L
         var pulseClock = 0
         var crossfading = false
@@ -314,11 +346,10 @@ class ProceduralMusicEngine(
             val track = audioTrack ?: break
             val char = character
             val atmosphere = char == AmbientAudioCharacter.Atmosphere
-            val playEvents = true
+            val sr = sampleRate
 
             pendingPreset?.let { next ->
                 if (crossfadeSamples == crossfadeTotal) {
-                    // Soft swap: release old voices (they decay), fade new mix in over crossfade window.
                     releaseLeadVoices()
                     crossfading = true
                     preset = next
@@ -338,28 +369,31 @@ class ProceduralMusicEngine(
             padA.setGlideSeconds(glide)
             padB.setGlideSeconds(glide)
 
-            val mix = activePreset.trackMix
-            val melodyGain = mix.melody
-            val bassGain = mix.bass
-            val bedGain = mix.bed
-            val harmonyGain = mix.harmony
-            val textureGain = mix.texture
-            val pulseGain = mix.pulse
-            val transitionGain = mix.transition
-
-            // Mute pad contribution for Melody character via near-zero bed/harmony already in mix.
+            val trackMix = activePreset.trackMix
+            val melodyGain = trackMix.melody
+            val bassGain = trackMix.bass
+            val bedGain = trackMix.bed
+            val harmonyGain = trackMix.harmony
+            val textureGain = trackMix.texture
+            val pulseGain = trackMix.pulse
+            val transitionGain = trackMix.transition
             val padAudible = bedGain > 0.02f || harmonyGain > 0.02f || atmosphere
+            val root = activePreset.rootHz
+            waves.setRootHz(root)
+            wind.setRootHz(root)
+            val vol = masterVolume
 
+            // Interleaved events + mix (sample-accurate note-ons). Voices use SinLut + early-outs.
             for (i in 0 until chunk) {
                 sampleIndex++
-                arrangement.tick(sampleRate)
-                seq.advanceHarmonyClock(sampleRate)
+                arrangement.tick(sr)
+                seq.advanceHarmonyClock(sr)
 
                 if (seq.harmonyChanged) {
                     applyBedVoices(activePreset, seq, atmosphere)
                 }
 
-                if (playEvents && seq.tickMelody(sampleRate)) {
+                if (seq.tickMelody(sr)) {
                     fireMelodyNote(activePreset, seq, atmosphere)
                     when (seq.nextOrnament()) {
                         OrnamentKind.Grace -> seq.currentMelodyHz?.let { chimes.noteOn(it * 1.5f, 0.28f) }
@@ -372,15 +406,15 @@ class ProceduralMusicEngine(
                     }
                 }
 
-                if (bassGain > 0.02f && seq.tickBass(sampleRate)) {
+                if (bassGain > 0.02f && seq.tickBass(sr)) {
                     seq.currentBassFrequencyHz?.let { hz ->
                         val vel = if (atmosphere) 0.35f else 0.55f
                         bass.noteOn(hz, vel * bassGain.coerceAtMost(1f))
                     }
                 }
 
-                if (playEvents && pulseGain > 0.05f) {
-                    val samplesPerPulse = (60.0 / activePreset.tempoBpm * sampleRate).toInt().coerceAtLeast(1)
+                if (pulseGain > 0.05f) {
+                    val samplesPerPulse = (60.0 / activePreset.tempoBpm * sr).toInt().coerceAtLeast(1)
                     pulseClock++
                     if (pulseClock >= samplesPerPulse) {
                         pulseClock = 0
@@ -394,129 +428,106 @@ class ProceduralMusicEngine(
                     triggerTransitionFlag = false
                     beginDuck()
                 }
-
-                // Fire soft transition cue at bottom of duck.
                 if (pendingTransitionCue && duckPhase == DuckPhase.Hold && duckSamples == duckTotal) {
                     pendingTransitionCue = false
-                    if (playEvents) fireTransition(activePreset, seq)
+                    fireTransition(activePreset, seq)
                 }
 
-                var bed = 0f
-                var harmony = 0f
-                var melody = 0f
-                var bassS = 0f
-                var texture = 0f
-                var pulseS = 0f
-                var trans = 0f
-
-                val root = activePreset.rootHz
-                waves.setRootHz(root)
-                wind.setRootHz(root)
+                var mixed = 0f
 
                 if (padAudible) {
                     if (bedGain > 0.02f) {
-                        bed = padA.render(sampleIndex, sampleRate) * bedGain
+                        mixed += padA.render(sampleIndex, sr) * bedGain
                     } else {
-                        padA.render(sampleIndex, sampleRate)
+                        padA.render(sampleIndex, sr)
                     }
                     if (harmonyGain > 0.02f) {
-                        padB.setChord(seq.harmonyPartialsHz())
-                        harmony = padB.render(sampleIndex, sampleRate) * harmonyGain
+                        mixed += padB.render(sampleIndex, sr) * harmonyGain
                     } else {
-                        padB.setChord(seq.harmonyPartialsHz())
-                        padB.render(sampleIndex, sampleRate)
+                        padB.render(sampleIndex, sr)
                     }
                 } else {
-                    padA.render(sampleIndex, sampleRate)
-                    padB.setChord(seq.harmonyPartialsHz())
-                    padB.render(sampleIndex, sampleRate)
+                    padA.render(sampleIndex, sr)
+                    padB.render(sampleIndex, sr)
                 }
 
-                if (bassGain > 0.02f) {
-                    bassS = bass.render(sampleIndex, sampleRate) * bassGain
+                if (bassGain > 0.02f && bass.isAudible()) {
+                    mixed += bass.render(sampleIndex, sr) * bassGain
                 }
 
-                if (playEvents) {
-                    if (melodyGain > 0.02f) {
-                        melody = (
-                            piano.render(sampleIndex, sampleRate) +
-                                guitar.render(sampleIndex, sampleRate) +
-                                kalimba.render(sampleIndex, sampleRate)
-                            ) * melodyGain * arrangement.melodyMul
-                    }
+                if (melodyGain > 0.02f &&
+                    (piano.isAudible() || guitar.isAudible() || kalimba.isAudible())
+                ) {
+                    mixed += (
+                        piano.render(sampleIndex, sr) +
+                            guitar.render(sampleIndex, sr) +
+                            kalimba.render(sampleIndex, sr)
+                        ) * melodyGain * arrangement.melodyMul
+                }
 
-                    // Single texture layer — never double-count waves in bed + texture.
-                    texture = if (textureGain > 0.02f) {
-                        when (activePreset.style) {
-                            MusicStyle.OceanWaves ->
-                                waves.render(sampleIndex, sampleRate) *
-                                    textureGain * arrangement.textureMul
-                            MusicStyle.WindChimes ->
-                                wind.render(sampleIndex, sampleRate) *
-                                    textureGain * arrangement.textureMul
-                            MusicStyle.TibetanBowl, MusicStyle.CosmicDrone ->
-                                if (atmosphere) {
-                                    wind.render(sampleIndex, sampleRate) *
-                                        textureGain * arrangement.textureMul * 0.45f
-                                } else {
-                                    0f
-                                }
-                            else -> if (atmosphere) {
-                                (
-                                    wind.render(sampleIndex, sampleRate) * 0.35f +
-                                        waves.render(sampleIndex, sampleRate) * 0.12f
-                                    ) * textureGain * arrangement.textureMul
-                            } else {
-                                0f
-                            }
+                if (textureGain > 0.02f) {
+                    val texMul = textureGain * arrangement.textureMul
+                    mixed += when (activePreset.style) {
+                        MusicStyle.OceanWaves -> waves.render(sampleIndex, sr) * texMul
+                        MusicStyle.WindChimes -> wind.render(sampleIndex, sr) * texMul
+                        MusicStyle.TibetanBowl, MusicStyle.CosmicDrone ->
+                            if (atmosphere) wind.render(sampleIndex, sr) * texMul * 0.45f else 0f
+                        else -> if (atmosphere) {
+                            wind.render(sampleIndex, sr) * texMul * 0.35f +
+                                waves.render(sampleIndex, sr) * texMul * 0.12f
+                        } else {
+                            0f
                         }
-                    } else {
-                        0f
-                    }
-
-                    // Bowl sustain is part of bed for Atmosphere bowl/drone styles (not texture).
-                    if (atmosphere &&
-                        activePreset.style in setOf(MusicStyle.TibetanBowl, MusicStyle.CosmicDrone) &&
-                        bedGain > 0.02f
-                    ) {
-                        bed += bowl.render(sampleIndex, sampleRate) * bedGain * 0.45f
-                    }
-
-                    if (pulseGain > 0.02f) {
-                        pulseS = pulse.render(sampleIndex, sampleRate) * pulseGain
-                    }
-                    if (transitionGain > 0.02f) {
-                        trans = (
-                            chimes.render(sampleIndex, sampleRate) +
-                                bowl.render(sampleIndex, sampleRate) * 0.25f
-                            ) * transitionGain
-                    } else {
-                        // Still advance chime/bowl state lightly if transition muted.
-                        chimes.render(sampleIndex, sampleRate)
                     }
                 }
 
-                var mixed = bed + harmony + melody + bassS + texture + pulseS + trans
+                if (atmosphere &&
+                    activePreset.style in setOf(MusicStyle.TibetanBowl, MusicStyle.CosmicDrone) &&
+                    bedGain > 0.02f &&
+                    bowl.isAudible()
+                ) {
+                    mixed += bowl.render(sampleIndex, sr) * bedGain * 0.45f
+                }
 
-                // Artwork crossfade: releasing old voices + cosine fade-in of new mix.
+                if (pulseGain > 0.02f && pulse.isAudible()) {
+                    mixed += pulse.render(sampleIndex, sr) * pulseGain
+                }
+
+                if (transitionGain > 0.02f) {
+                    if (chimes.isAudible() || bowl.isAudible()) {
+                        mixed += (
+                            chimes.render(sampleIndex, sr) +
+                                bowl.render(sampleIndex, sr) * 0.25f
+                            ) * transitionGain
+                    }
+                } else if (chimes.isAudible()) {
+                    chimes.render(sampleIndex, sr)
+                }
+
                 if (crossfading && crossfadeSamples > 0) {
                     val t = 1f - crossfadeSamples.toFloat() / crossfadeTotal.toFloat()
                     val fadeIn = (0.5f - 0.5f * kotlin.math.cos(Math.PI.toFloat() * t)).coerceIn(0f, 1f)
                     mixed *= fadeIn
                     crossfadeSamples--
-                    if (crossfadeSamples == 0) {
-                        crossfading = false
-                    }
+                    if (crossfadeSamples == 0) crossfading = false
                 }
 
                 advanceDuck()
-                mixed *= duckGain()
+                mixed = softLimit(mixed * duckGain() * vol)
 
-                mixed = softLimit(mixed * masterVolume)
-                pcm[i] = (mixed.coerceIn(-1f, 1f) * 32767f).toInt().toShort()
+                if (useFloatPcm) {
+                    pcmFloat[i] = mixed.coerceIn(-1f, 1f)
+                } else {
+                    pcmShort[i] = (mixed.coerceIn(-1f, 1f) * 32767f).toInt().toShort()
+                }
             }
+
             val written = try {
-                track.write(pcm, 0, chunk)
+                if (useFloatPcm) {
+                    track.write(pcmFloat, 0, chunk, AudioTrack.WRITE_BLOCKING)
+                } else {
+                    track.write(pcmShort, 0, chunk)
+                }
             } catch (e: IllegalStateException) {
                 errorLogger?.log(
                     sourceId = "ambient_audio",

@@ -115,11 +115,18 @@ class MetSourceTest {
     }
 
     @Test
-    fun searchUrlIncludesCategoryMedium() {
+    fun searchUrlIncludesCategoryMediumAndPaging() {
         assertEquals(
-            "https://collectionapi.metmuseum.org/public/collection/v1/search" +
-                "?q=sculpture&medium=Sculpture&hasImages=true&isPublicDomain=true",
+            "https://collectionapi.metmuseum.org/public/collection/v1.1/search" +
+                "?q=sculpture&medium=Sculpture&hasImages=true&isPublicDomain=true" +
+                "&offset=0&limit=${RemoteSample.SEARCH_POOL}",
             MetSource.searchUrl(MuseumSearchKind.Sculpture),
+        )
+        assertEquals(
+            "https://collectionapi.metmuseum.org/public/collection/v1.1/search" +
+                "?q=sculpture&medium=Sculpture&hasImages=true&isPublicDomain=true" +
+                "&offset=120&limit=60",
+            MetSource.searchUrl(MuseumSearchKind.Sculpture, limit = 60, offset = 120),
         )
     }
 
@@ -153,29 +160,32 @@ class MetSourceTest {
     @Test
     fun cachesHydratedObjectsAcrossLoads() = runBlocking {
         val objectId = 436121
-        val fixtures = mapOf(
-            MetSource.SEARCH_URL to """{"total":1,"objectIDs":[$objectId]}""",
-            MetSource.objectUrl(objectId) to """
-                {
-                  "objectID": $objectId,
-                  "isPublicDomain": true,
-                  "title": "Wheat Field with Cypresses",
-                  "artistDisplayName": "Vincent van Gogh",
-                  "primaryImage": "https://images.metmuseum.org/CRDImages/ep/original/DT1567.jpg"
-                }
-            """.trimIndent(),
-        )
+        val objectPayload = """
+            {
+              "objectID": $objectId,
+              "isPublicDomain": true,
+              "title": "Wheat Field with Cypresses",
+              "artistDisplayName": "Vincent van Gogh",
+              "primaryImage": "https://images.metmuseum.org/CRDImages/ep/original/DT1567.jpg"
+            }
+        """.trimIndent()
+        val searchPayload = """{"total":1,"objectIDs":[$objectId]}"""
         val callCounts = mutableMapOf<String, Int>()
         val source = MetSource(
             httpGet = { url ->
                 callCounts[url] = (callCounts[url] ?: 0) + 1
-                fixtures.getValue(url)
+                when {
+                    url.contains("/search") -> searchPayload
+                    url == MetSource.objectUrl(objectId) -> objectPayload
+                    else -> error("unexpected url: $url")
+                }
             },
             random = ZeroRandom,
         )
         source.load()
         source.load()
-        assertEquals(2, callCounts[MetSource.SEARCH_URL])
+        val searchCalls = callCounts.filterKeys { it.contains("/search") }.values.sum()
+        assertEquals(2, searchCalls)
         assertEquals(1, callCounts[MetSource.objectUrl(objectId)])
     }
 
@@ -205,4 +215,36 @@ class MetSourceTest {
         assertEquals(1, art.size)
         assertEquals(ArtworkKind.Sculpture, art[0].kind)
     }
+
+    @Test
+    fun pagesForwardOnRepeatedLoad() = runBlocking {
+        val page0 = MetSource.searchUrl(MuseumSearchKind.Painting, offset = 0)
+        val page1 = MetSource.searchUrl(
+            MuseumSearchKind.Painting,
+            offset = RemoteSample.SEARCH_POOL,
+        )
+        val fixtures = mapOf(
+            page0 to """{"total":120,"objectIDs":[1]}""",
+            page1 to """{"total":120,"objectIDs":[2]}""",
+            MetSource.objectUrl(1) to publicDomainObject(1),
+            MetSource.objectUrl(2) to publicDomainObject(2),
+        )
+        val source = MetSource(
+            httpGet = { url -> fixtures.getValue(url) },
+            limit = 1,
+            random = ZeroRandom,
+        )
+        assertEquals(listOf("met-1"), source.load().map { it.id })
+        assertEquals(listOf("met-2"), source.load().map { it.id })
+    }
+
+    private fun publicDomainObject(id: Int): String = """
+        {
+          "objectID": $id,
+          "isPublicDomain": true,
+          "title": "Work $id",
+          "artistDisplayName": "Artist",
+          "primaryImage": "https://images.metmuseum.org/$id.jpg"
+        }
+    """.trimIndent()
 }

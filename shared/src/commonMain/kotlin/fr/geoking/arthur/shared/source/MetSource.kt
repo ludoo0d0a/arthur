@@ -11,11 +11,12 @@ import kotlinx.serialization.json.Json
  * The Met Collection API Remote Source (no API key).
  * Open-access works with images only; [httpGet] is injected so unit tests use fixtures.
  *
- * Search returns the full matching ID list (no native random). Each [load] samples a
- * random subset, then hydrates those objects — renew Ambient by calling [load] again.
+ * Search is paginated ([offset]/[limit]); each [load] advances the window and samples
+ * a subset, then hydrates those objects — renew Ambient by calling [load] again.
  *
- * Search contract: `GET /public/collection/v1/search`
- * (`q`, `medium`, `hasImages`, `isPublicDomain`) — tokens from [RemoteCategoryMapping].
+ * Search contract: `GET /public/collection/v1.1/search`
+ * (`q`, `medium`, `hasImages`, `isPublicDomain`, `offset`, `limit`) —
+ * tokens from [RemoteCategoryMapping].
  */
 class MetSource(
     private val httpGet: suspend (url: String) -> String,
@@ -30,9 +31,11 @@ class MetSource(
     // — defers the other target(s) to the next call instead of fetching them all now.
     private var targetCursor = 0
 
-    // Met's search endpoint has no page/offset param — it always returns the same full
-    // ID list, so repeated random samples frequently overlap. Caching resolved objects
-    // avoids re-running the per-object hydration call for ids seen before.
+    // Advances each load() call so "load more" pages forward instead of re-sampling.
+    private var startCursor = 0
+
+    // Caching resolved objects avoids re-running the per-object hydration call for ids
+    // seen again when search windows overlap across renewals.
     private val hydratedCache = mutableMapOf<Int, Artwork>()
 
     override suspend fun load(): List<Artwork> = load(limit = limit)
@@ -44,8 +47,20 @@ class MetSource(
             random,
             nextTargetIndex = { targetCursor++ },
         ) { target, perKind ->
-            val searchJson = httpGet(searchUrl(target))
-            val ids = RemoteSample.sample(parseSearchIds(searchJson), perKind, random)
+            val offset = RemoteSample.nextStart(
+                startCursor++,
+                pageSize = RemoteSample.SEARCH_POOL,
+                maxStart = RemoteSample.MET_MAX_START,
+            )
+            val payload = RemoteSample.fetchWindow(
+                randomOffset = offset,
+                firstOffset = 0,
+                fetch = { o ->
+                    httpGet(searchUrl(target, limit = RemoteSample.SEARCH_POOL, offset = o))
+                },
+                isEmpty = ::looksEmptyMet,
+            )
+            val ids = RemoteSample.sample(parseSearchIds(payload), perKind, random)
             ids.mapNotNull { objectId ->
                 hydratedCache[objectId]
                     ?: runCatching { loadArtwork(objectId, target) }.getOrNull()
@@ -53,6 +68,9 @@ class MetSource(
             }
         }
     }.getOrDefault(emptyList())
+
+    private fun looksEmptyMet(payload: String): Boolean =
+        runCatching { parseSearchIds(payload).isEmpty() }.getOrDefault(true)
 
     private suspend fun loadArtwork(objectId: Int, searchKind: MuseumSearchKind): Artwork? {
         val payload = runCatching { httpGet(objectUrl(objectId)) }.getOrNull() ?: return null
@@ -87,12 +105,17 @@ class MetSource(
 
         private val json = Json { ignoreUnknownKeys = true }
 
-        fun searchUrl(kind: MuseumSearchKind = MuseumSearchKind.Painting): String {
+        fun searchUrl(
+            kind: MuseumSearchKind = MuseumSearchKind.Painting,
+            limit: Int = RemoteSample.SEARCH_POOL,
+            offset: Int = 0,
+        ): String {
             val params = RemoteCategoryMapping.museumParams(kind, RemoteProvider.Met)
             val q = params.query.orEmpty()
             val medium = params.medium.orEmpty()
-            return "https://collectionapi.metmuseum.org/public/collection/v1/search" +
-                "?q=$q&medium=$medium&hasImages=true&isPublicDomain=true"
+            return "https://collectionapi.metmuseum.org/public/collection/v1.1/search" +
+                "?q=$q&medium=$medium&hasImages=true&isPublicDomain=true" +
+                "&offset=$offset&limit=$limit"
         }
 
         fun objectUrl(objectId: Int): String =

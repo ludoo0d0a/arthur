@@ -141,8 +141,8 @@ No pack network calls. Custom fractal uses `CustomFractalStore` only.
 ### 4.2 Museum source endpoints
 
 #### The Met (`met`)
-- `MetSource` — `GET …/search` + `GET …/objects/{id}`
-- Params: `q`, `medium`, `hasImages=true`, `isPublicDomain=true`
+- `MetSource` — `GET …/v1.1/search` (paginated) + `GET …/v1/objects/{id}`
+- Params: `q`, `medium`, `hasImages=true`, `isPublicDomain=true`, `offset`, `limit`
 
 #### Harvard (`harvard`)
 - `HarvardSource` — `GET https://api.harvardartmuseums.org/object`

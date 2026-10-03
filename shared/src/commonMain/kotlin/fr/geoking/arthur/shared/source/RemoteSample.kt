@@ -30,6 +30,12 @@ object RemoteSample {
     const val EUROPEANA_MAX_START = 940
 
     /**
+     * Met v1.1 search: `offset + limit` must not exceed 10_000.
+     * With [SEARCH_POOL] as limit, keep start ≤ 10_000 − pool.
+     */
+    const val MET_MAX_START = 10_000 - SEARCH_POOL
+
+    /**
      * Random subset of [items] (size [count]).
      * Uses index draws (not [List.shuffled]) so a [Random] that always returns 0
      * yields a stable prefix — useful for fixture tests.

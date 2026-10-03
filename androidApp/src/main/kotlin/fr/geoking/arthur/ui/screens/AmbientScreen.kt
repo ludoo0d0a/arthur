@@ -17,21 +17,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.ui.draw.clip
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -109,10 +104,10 @@ import kotlin.math.abs
  *   API sample (museums / stock). Parent replaces [rotationPool].
  *
  * Navigation while rotating:
- * - Sound on (phone & TV): one media row — previous / play-pause / next.
- *   Phone also keeps swipe; TV focuses play-pause (D-pad left/right between
- *   controls, OK to activate). Media keys still work as shortcuts.
- * - Sound off on TV: D-pad left/right skips; MediaPlayPause toggles rotation
+ * - Sound on (phone & TV): bottom icons only — mute + info (no media transport bar).
+ *   Phone keeps swipe; TV focuses mute (OK toggles sound). D-pad left/right skips,
+ *   up opens info. Media keys still work as shortcuts.
+ * - Sound off on TV: D-pad left/right skips; MediaPlayPause toggles rotation; up = info
  * - Sound off on phone: swipe left = next, swipe right = previous
  *
  * Display interval starts only after the still is ready (loader time excluded).
@@ -179,7 +174,7 @@ fun AmbientScreenContent(
     var displayReady by remember { mutableStateOf(false) }
     val progress = remember { Animatable(0f) }
     val rootFocusRequester = remember { FocusRequester() }
-    val playPauseFocusRequester = remember { FocusRequester() }
+    val soundFocusRequester = remember { FocusRequester() }
     val scope = rememberCoroutineScope()
     val latestCurrent by rememberUpdatedState(current)
     val latestPool by rememberUpdatedState(rotatePool)
@@ -198,8 +193,10 @@ fun AmbientScreenContent(
         runCatching { GlobalContext.get().get<AmbientAudioSettings>() }.getOrNull()
     }
     val audioEnabled = ambientAudioSettings?.enabled?.collectAsState()?.value == true
-    val showMediaPlayer = audioEnabled
-    val tvUsesRootKeys = isTelevision && shouldRotate && !showMediaPlayer
+    // audioEnabled implies settings are present (null settings → audioEnabled is false).
+    val bottomAudioSettings = ambientAudioSettings?.takeIf { audioEnabled }
+    val showBottomChrome = bottomAudioSettings != null
+    val tvUsesRootKeys = isTelevision && shouldRotate && !showBottomChrome
     val context = LocalContext.current
     val zenAudio = remember(ambientAudioSettings) {
         ambientAudioSettings?.let { ZenAudioEngine(context, it) }
@@ -336,14 +333,14 @@ fun AmbientScreenContent(
         advanceLatest(+1)
     }
 
-    LaunchedEffect(tvUsesRootKeys) {
-        if (tvUsesRootKeys) {
+    LaunchedEffect(tvUsesRootKeys, showDetails) {
+        if (tvUsesRootKeys && !showDetails) {
             rootFocusRequester.requestFocus()
         }
     }
-    LaunchedEffect(isTelevision, showMediaPlayer) {
-        if (isTelevision && showMediaPlayer) {
-            playPauseFocusRequester.requestFocus()
+    LaunchedEffect(isTelevision, showBottomChrome, shown?.id, showDetails) {
+        if (isTelevision && showBottomChrome && !showDetails) {
+            soundFocusRequester.requestFocus()
         }
     }
 
@@ -381,6 +378,14 @@ fun AmbientScreenContent(
                                 Key.DirectionLeft, Key.MediaSkipBackward -> {
                                     scope.launch { advanceLatest(-1) }
                                     true
+                                }
+                                Key.DirectionUp -> {
+                                    if (canOpenDetails) {
+                                        showDetails = true
+                                        true
+                                    } else {
+                                        false
+                                    }
                                 }
                                 Key.MediaPlayPause, Key.MediaPlay, Key.MediaPause -> {
                                     isPlaying = !isPlaying
@@ -426,19 +431,23 @@ fun AmbientScreenContent(
                 .matchParentSize()
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.45f)),
+                        colors = listOf(
+                            if (slideQuote != null) Color.Black.copy(alpha = 0.4f) else Color.Transparent,
+                            Color.Transparent,
+                            Color.Transparent,
+                            Color.Black.copy(alpha = 0.45f),
+                        ),
                     ),
                 ),
         )
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(28.dp)
-                .padding(bottom = if (showMediaPlayer) 72.dp else 0.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            val quote = slideQuote
-            if (quote != null) {
+        val quote = slideQuote
+        if (quote != null) {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(28.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
                 Text(
                     text = "\u201C${quote.text}\u201D",
                     style = MaterialTheme.typography.bodyLarge.copy(fontStyle = FontStyle.Italic),
@@ -458,6 +467,14 @@ fun AmbientScreenContent(
                     )
                 }
             }
+        }
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(28.dp)
+                .padding(bottom = if (showBottomChrome) 56.dp else 0.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
             if (sourceLabel.isNotEmpty()) {
                 Text(
                     text = sourceLabel,
@@ -522,7 +539,7 @@ fun AmbientScreenContent(
                     },
             )
         }
-        val showTransportChrome = shouldRotate || showMediaPlayer
+        val showTransportChrome = shouldRotate || showBottomChrome
         if (showTransportChrome) {
             val currentIndex = remember(shown?.id, rotatePool) {
                 val idx = rotatePool.indexOfFirst { it.id == shown?.id }
@@ -544,26 +561,60 @@ fun AmbientScreenContent(
                         modifier = Modifier.testTag("ambient_counter"),
                     )
                 }
-                if (showMediaPlayer) {
-                    AmbientMediaPlayerBar(
-                        isPlaying = isPlaying,
-                        canSkip = shouldRotate,
-                        progress = progress.value,
-                        onPrevious = { scope.launch { advanceLatest(-1) } },
-                        onPlayPause = { isPlaying = !isPlaying },
-                        onNext = { scope.launch { advanceLatest(+1) } },
-                        playPauseFocusRequester = if (isTelevision) {
-                            playPauseFocusRequester
-                        } else {
-                            null
-                        },
-                    )
+                if (bottomAudioSettings != null) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        AmbientSoundToggleButton(
+                            enabled = true,
+                            onToggle = { bottomAudioSettings.setEnabled(false) },
+                            focusRequester = if (isTelevision) soundFocusRequester else null,
+                            onTvKeyEvent = if (isTelevision) {
+                                { key ->
+                                    when (key) {
+                                        Key.DirectionRight, Key.MediaSkipForward -> {
+                                            if (shouldRotate) {
+                                                scope.launch { advanceLatest(+1) }
+                                            }
+                                            true
+                                        }
+                                        Key.DirectionLeft, Key.MediaSkipBackward -> {
+                                            if (shouldRotate) {
+                                                scope.launch { advanceLatest(-1) }
+                                            }
+                                            true
+                                        }
+                                        Key.DirectionUp -> {
+                                            if (canOpenDetails) {
+                                                showDetails = true
+                                                true
+                                            } else {
+                                                false
+                                            }
+                                        }
+                                        Key.MediaPlayPause, Key.MediaPlay, Key.MediaPause -> {
+                                            isPlaying = !isPlaying
+                                            true
+                                        }
+                                        else -> false
+                                    }
+                                }
+                            } else {
+                                null
+                            },
+                        )
+                        if (canOpenDetails) {
+                            AmbientDetailsButton(
+                                onClick = { showDetails = true },
+                                focusable = !isTelevision,
+                            )
+                        }
+                    }
                 }
             }
         }
-        // Keep details out of the TV focus path when the media row is present —
-        // one horizontal control strip is enough for D-pad.
-        if (canOpenDetails && !(isTelevision && showMediaPlayer)) {
+        if (canOpenDetails && !showBottomChrome) {
             AmbientDetailsButton(
                 onClick = { showDetails = true },
                 focusable = !isTelevision,
@@ -573,7 +624,7 @@ fun AmbientScreenContent(
                     .padding(12.dp),
             )
         }
-        if (!isTelevision && ambientAudioSettings != null) {
+        if (!isTelevision && !showBottomChrome && ambientAudioSettings != null) {
             AmbientSoundToggleButton(
                 enabled = audioEnabled,
                 onToggle = { ambientAudioSettings.setEnabled(!audioEnabled) },
@@ -616,7 +667,7 @@ private fun AmbientDetailsButton(
                 ),
         ) {
             Icon(
-                imageVector = Icons.Filled.MoreVert,
+                imageVector = Icons.Filled.Info,
                 contentDescription = null,
                 tint = Color.White.copy(alpha = 0.9f),
             )
@@ -625,161 +676,18 @@ private fun AmbientDetailsButton(
 }
 
 @Composable
-private fun AmbientMediaPlayerBar(
-    isPlaying: Boolean,
-    canSkip: Boolean,
-    onPrevious: () -> Unit,
-    onPlayPause: () -> Unit,
-    onNext: () -> Unit,
-    progress: Float = 0f,
-    modifier: Modifier = Modifier,
-    playPauseFocusRequester: FocusRequester? = null,
-) {
-    val previousDescription = stringResource(R.string.ambient_previous)
-    val playPauseDescription = stringResource(
-        if (isPlaying) R.string.ambient_pause else R.string.ambient_play,
-    )
-    val nextDescription = stringResource(R.string.ambient_next)
-    Box(
-        modifier = modifier
-            .onKeyEvent { event ->
-                if (event.type != KeyEventType.KeyUp) return@onKeyEvent false
-                when (event.key) {
-                    Key.MediaSkipBackward -> {
-                        if (canSkip) onPrevious()
-                        true
-                    }
-                    Key.MediaSkipForward -> {
-                        if (canSkip) onNext()
-                        true
-                    }
-                    Key.MediaPlayPause, Key.MediaPlay, Key.MediaPause -> {
-                        onPlayPause()
-                        true
-                    }
-                    else -> false
-                }
-            }
-            .testTag("ambient_media_player"),
-        contentAlignment = Alignment.Center,
-    ) {
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .then(
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        Modifier.blur(12.dp)
-                    } else {
-                        Modifier
-                    },
-                )
-                .background(Color.White.copy(alpha = 0.18f), RoundedCornerShape(28.dp)),
-        )
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
-        ) {
-            LinearProgressIndicator(
-                progress = { progress.coerceIn(0f, 1f) },
-                modifier = Modifier
-                    .padding(horizontal = 20.dp, vertical = 2.dp)
-                    .fillMaxWidth(0.75f)
-                    .height(3.dp)
-                    .clip(CircleShape)
-                    .testTag("ambient_media_progress"),
-                color = Color.White.copy(alpha = 0.9f),
-                trackColor = Color.White.copy(alpha = 0.25f),
-            )
-            Row(
-                modifier = Modifier.padding(horizontal = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-            ) {
-                AmbientMediaControlButton(
-                    onClick = onPrevious,
-                    enabled = canSkip,
-                    contentDescription = previousDescription,
-                    testTag = "ambient_media_previous",
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_car_previous),
-                        contentDescription = null,
-                        tint = Color.White.copy(alpha = if (canSkip) 0.9f else 0.35f),
-                    )
-                }
-                AmbientMediaControlButton(
-                    onClick = onPlayPause,
-                    enabled = true,
-                    contentDescription = playPauseDescription,
-                    testTag = "ambient_media_play_pause",
-                    focusRequester = playPauseFocusRequester,
-                ) {
-                    Icon(
-                        painter = painterResource(
-                            if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play_circle,
-                        ),
-                        contentDescription = null,
-                        tint = Color.White.copy(alpha = 0.9f),
-                    )
-                }
-                AmbientMediaControlButton(
-                    onClick = onNext,
-                    enabled = canSkip,
-                    contentDescription = nextDescription,
-                    testTag = "ambient_media_next",
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_car_next),
-                        contentDescription = null,
-                        tint = Color.White.copy(alpha = if (canSkip) 0.9f else 0.35f),
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun AmbientMediaControlButton(
-    onClick: () -> Unit,
-    enabled: Boolean,
-    contentDescription: String,
-    testTag: String,
-    modifier: Modifier = Modifier,
-    focusRequester: FocusRequester? = null,
-    content: @Composable () -> Unit,
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val focused by interactionSource.collectIsFocusedAsState()
-    IconButton(
-        onClick = onClick,
-        enabled = enabled,
-        interactionSource = interactionSource,
-        modifier = modifier
-            .then(
-                if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier,
-            )
-            .border(
-                width = if (focused) 3.dp else 0.dp,
-                color = if (focused) Color.White else Color.Transparent,
-                shape = CircleShape,
-            )
-            .semantics { this.contentDescription = contentDescription }
-            .testTag(testTag),
-    ) {
-        content()
-    }
-}
-
-@Composable
 private fun AmbientSoundToggleButton(
     enabled: Boolean,
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
+    focusRequester: FocusRequester? = null,
+    onTvKeyEvent: ((Key) -> Boolean)? = null,
 ) {
     val description = stringResource(
         if (enabled) R.string.settings_ambient_sound_enable else R.string.cd_media_player,
     )
+    val interactionSource = remember { MutableInteractionSource() }
+    val focused by interactionSource.collectIsFocusedAsState()
     Box(
         modifier = modifier
             .size(44.dp)
@@ -788,7 +696,43 @@ private fun AmbientSoundToggleButton(
         contentAlignment = Alignment.Center,
     ) {
         AmbientFrostedCircle()
-        IconButton(onClick = onToggle) {
+        IconButton(
+            onClick = onToggle,
+            interactionSource = interactionSource,
+            modifier = Modifier
+                .then(
+                    if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier,
+                )
+                .then(
+                    if (onTvKeyEvent != null) {
+                        Modifier.onKeyEvent { event ->
+                            val handled = when (event.key) {
+                                Key.DirectionLeft,
+                                Key.DirectionRight,
+                                Key.DirectionUp,
+                                Key.MediaSkipBackward,
+                                Key.MediaSkipForward,
+                                Key.MediaPlayPause,
+                                Key.MediaPlay,
+                                Key.MediaPause,
+                                -> true
+                                else -> false
+                            }
+                            if (!handled) return@onKeyEvent false
+                            // Consume KeyDown so D-pad does not move focus away from mute.
+                            if (event.type != KeyEventType.KeyUp) return@onKeyEvent true
+                            onTvKeyEvent(event.key)
+                        }
+                    } else {
+                        Modifier
+                    },
+                )
+                .border(
+                    width = if (focused) 3.dp else 0.dp,
+                    color = if (focused) Color.White else Color.Transparent,
+                    shape = CircleShape,
+                ),
+        ) {
             Icon(
                 painter = painterResource(
                     if (enabled) R.drawable.ic_car_sound_on else R.drawable.ic_car_sound_off,

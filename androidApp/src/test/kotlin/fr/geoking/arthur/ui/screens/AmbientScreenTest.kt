@@ -30,10 +30,11 @@ class AmbientScreenTest {
         attribution = "Artist Name",
         sourceId = "genart",
         kind = ArtworkKind.Genart,
+        description = "A sample description for details",
     )
 
     @Test
-    fun ambientScreen_whenMediaPlayerActive_displaysProgressBar() {
+    fun ambientScreen_whenSoundOn_displaysBottomSoundAndInfoIcons_withoutMediaBar() {
         stopKoin()
         val context = ApplicationProvider.getApplicationContext<Context>()
         val audioSettings = AmbientAudioSettings(context)
@@ -60,8 +61,10 @@ class AmbientScreenTest {
                 }
             }
 
-            composeTestRule.onNodeWithTag("ambient_media_player").assertExists()
-            composeTestRule.onNodeWithTag("ambient_media_progress").assertExists()
+            composeTestRule.onNodeWithTag("ambient_sound_toggle").assertExists()
+            composeTestRule.onNodeWithTag("ambient_details").assertExists()
+            composeTestRule.onNodeWithTag("ambient_media_player").assertDoesNotExist()
+            composeTestRule.onNodeWithTag("ambient_media_progress").assertDoesNotExist()
         } finally {
             stopKoin()
         }

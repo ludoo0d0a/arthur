@@ -275,8 +275,10 @@ fun AmbientScreenContent(
     val quoteRepository = rememberQuoteRepository()
     val quoteSettings = rememberQuoteSettings()
     val showQuotes by quoteSettings.showQuotes.collectAsState()
-    var slideQuote by remember { mutableStateOf<Quote?>(null) }
+    val quoteProvider by quoteSettings.provider.collectAsState()
+    var quotesById by remember { mutableStateOf<Map<String, Quote>>(emptyMap()) }
     val shown = if (shouldRotate) current else artwork
+    val slideQuote = if (showQuotes) shown?.id?.let { quotesById[it] } else null
     var showDetails by remember { mutableStateOf(false) }
     LaunchedEffect(shown?.id) {
         displayReady = false
@@ -284,13 +286,18 @@ fun AmbientScreenContent(
     }
     val ambientActive = isActive && !showDetails
 
-    LaunchedEffect(shown?.id, showQuotes) {
-        if (!showQuotes || shown == null) {
-            slideQuote = null
+    LaunchedEffect(poolIds, artwork?.id, showQuotes, quoteProvider) {
+        if (!showQuotes) {
+            quotesById = emptyMap()
             return@LaunchedEffect
         }
-        slideQuote = withContext(Dispatchers.IO) {
-            quoteRepository.nextQuote()
+        val ids = poolIds.ifEmpty { listOfNotNull(artwork?.id) }
+        if (ids.isEmpty()) {
+            quotesById = emptyMap()
+            return@LaunchedEffect
+        }
+        quotesById = withContext(Dispatchers.IO) {
+            runCatching { quoteRepository.quotesForArtworks(ids) }.getOrDefault(emptyMap())
         }
     }
 

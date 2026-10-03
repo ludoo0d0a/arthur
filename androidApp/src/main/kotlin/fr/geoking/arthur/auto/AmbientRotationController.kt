@@ -72,6 +72,7 @@ internal class AmbientRotationController(
         private set
     var currentQuote: Quote? = null
         private set
+    private var quotesById: Map<String, Quote> = emptyMap()
     var generation: Long = 0L
         private set
     var isPlaying: Boolean = true
@@ -209,7 +210,10 @@ internal class AmbientRotationController(
             else -> resolveAmbientArtwork(pool, null)
         }
         seenIds = current?.id?.let { setOf(it) }.orEmpty()
-        scope.launch { updateQuoteForCurrent() }
+        scope.launch {
+            bindQuotes(pool, replaceAll = true)
+            onInvalidate()
+        }
         scheduleAsyncRender()
         notifyArtworkChanged()
     }
@@ -236,8 +240,10 @@ internal class AmbientRotationController(
         if (livePool.isNotEmpty()) {
             val keepId = current?.id
             catalog = livePool
+            bindQuotes(livePool, replaceAll = false)
             if (keepId == null || livePool.none { it.id == keepId }) {
                 current = resolveAmbientArtwork(livePool, null)
+                syncCurrentQuote()
                 notifyArtworkChanged()
             }
         }
@@ -291,13 +297,39 @@ internal class AmbientRotationController(
         }
     }
 
-    private suspend fun updateQuoteForCurrent() {
-        if (quoteSettings.showQuotes.value && current != null) {
-            currentQuote = withContext(Dispatchers.IO) {
-                runCatching { quoteRepository.nextQuote() }.getOrNull()
-            }
-        } else {
+    private suspend fun bindQuotes(pool: List<Artwork>, replaceAll: Boolean) {
+        if (!quoteSettings.showQuotes.value) {
+            quotesById = emptyMap()
             currentQuote = null
+            return
+        }
+        val poolIds = pool.map { it.id }
+        val idsToAssign = if (replaceAll) {
+            poolIds
+        } else {
+            poolIds.filter { it !in quotesById }
+        }
+        val assigned = if (idsToAssign.isEmpty()) {
+            emptyMap()
+        } else {
+            withContext(Dispatchers.IO) {
+                runCatching { quoteRepository.quotesForArtworks(idsToAssign) }.getOrDefault(emptyMap())
+            }
+        }
+        val poolIdSet = poolIds.toSet()
+        quotesById = if (replaceAll) {
+            assigned
+        } else {
+            (quotesById + assigned).filterKeys { it in poolIdSet }
+        }
+        syncCurrentQuote()
+    }
+
+    private fun syncCurrentQuote() {
+        currentQuote = if (quoteSettings.showQuotes.value) {
+            current?.id?.let { quotesById[it] }
+        } else {
+            null
         }
     }
 
@@ -368,7 +400,7 @@ internal class AmbientRotationController(
             engine.setArtwork(art)
             engine.triggerTransition()
         }
-        updateQuoteForCurrent()
+        syncCurrentQuote()
         scheduleAsyncRender()
         prefetchNeighbors()
         notifyArtworkChanged()

@@ -13,9 +13,9 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 
 /**
- * Fetches quotes from the selected [QuoteProvider], caches them (TTL), and cycles
- * one quote per Ambient slide. Failures are soft: [nextQuote] returns null so
- * Ambient can omit the overlay line.
+ * Fetches quotes from the selected [QuoteProvider], caches them (TTL), and assigns
+ * one quote per artwork when an Ambient pool loads. Failures are soft: assignment
+ * returns an empty map so Ambient can omit the overlay line.
  */
 class QuoteRepository(
     context: Context,
@@ -34,14 +34,35 @@ class QuoteRepository(
         restoreFromPrefs()
     }
 
+    /**
+     * Stable quote map for a rotation pool: one entry per artwork id, cycling the
+     * cached batch. Call when the list loads (not on each slide advance).
+     */
+    suspend fun quotesForArtworks(artworkIds: List<String>): Map<String, Quote> = mutex.withLock {
+        if (artworkIds.isEmpty()) return emptyMap()
+        ensureLoadedLocked()
+        if (quotes.isEmpty()) return emptyMap()
+        val result = LinkedHashMap<String, Quote>(artworkIds.size)
+        for (id in artworkIds) {
+            result[id] = takeNextLocked()
+        }
+        prefs.edit().putInt(KEY_INDEX, nextIndex).apply()
+        result
+    }
+
     /** Next quote from the cache, refreshing the batch when expired, empty, or provider changed. */
     suspend fun nextQuote(): Quote? = mutex.withLock {
         ensureLoadedLocked()
         if (quotes.isEmpty()) return null
-        val quote = quotes[nextIndex % quotes.size]
-        nextIndex = (nextIndex + 1) % quotes.size
+        val quote = takeNextLocked()
         prefs.edit().putInt(KEY_INDEX, nextIndex).apply()
         quote
+    }
+
+    private fun takeNextLocked(): Quote {
+        val quote = quotes[nextIndex % quotes.size]
+        nextIndex = (nextIndex + 1) % quotes.size
+        return quote
     }
 
     private suspend fun ensureLoadedLocked() {

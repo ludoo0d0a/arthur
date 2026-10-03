@@ -26,6 +26,7 @@ import fr.geoking.arthur.source.AmbientAudioSettings
 import fr.geoking.arthur.source.ArtworkImageCache
 import fr.geoking.arthur.source.DeveloperSettings
 import fr.geoking.arthur.source.InvalidArtworkStore
+import fr.geoking.arthur.source.Quote
 import fr.geoking.arthur.source.QuoteRepository
 import fr.geoking.arthur.source.QuoteSettings
 import fr.geoking.arthur.source.RotationSettings
@@ -77,6 +78,7 @@ class ArthurMediaService : MediaLibraryService() {
     private var liveCount: Int = 0
     private var queryLaunched: Boolean = false
     private var rotationJob: Job? = null
+    private var quotesById: Map<String, Quote> = emptyMap()
     private lateinit var audioFocusHandler: AmbientAudioFocusHandler
 
     override fun onCreate() {
@@ -142,6 +144,7 @@ class ArthurMediaService : MediaLibraryService() {
         if (cached.isNotEmpty()) {
             catalog = cached
             rebuildAmbientPool()
+            bindQuotes(replaceAll = true)
             current = resolveAmbientArtwork(ambientPool.ifEmpty { catalog }, null)
             seenIds = current?.id?.let { setOf(it) }.orEmpty()
             current?.let { publishArtwork(it) }
@@ -162,6 +165,7 @@ class ArthurMediaService : MediaLibraryService() {
             val keepId = current?.id
             catalog = live
             rebuildAmbientPool(seedId = keepId)
+            bindQuotes(replaceAll = true)
             current = keepId?.let { id -> ambientPool.firstOrNull { it.id == id } }
                 ?: resolveAmbientArtwork(ambientPool.ifEmpty { live }, null)
             seenIds = current?.id?.let { setOf(it) }.orEmpty()
@@ -197,6 +201,7 @@ class ArthurMediaService : MediaLibraryService() {
             val keepId = current?.id
             catalog = live
             rebuildAmbientPool(seedId = keepId)
+            bindQuotes(replaceAll = false)
             if (keepId == null || ambientPool.none { it.id == keepId }) {
                 current = resolveAmbientArtwork(ambientPool.ifEmpty { live }, null)
             }
@@ -303,6 +308,43 @@ class ArthurMediaService : MediaLibraryService() {
         generative.ifEmpty { catalog }
     }
 
+    private suspend fun bindQuotes(replaceAll: Boolean) {
+        if (!quoteSettings.showQuotes.value) {
+            quotesById = emptyMap()
+            return
+        }
+        val pool = rotationPool()
+        val poolIds = pool.map { it.id }
+        val idsToAssign = if (replaceAll) {
+            poolIds
+        } else {
+            poolIds.filter { it !in quotesById }
+        }
+        val assigned = if (idsToAssign.isEmpty()) {
+            emptyMap()
+        } else {
+            withContext(Dispatchers.IO) {
+                runCatching { quoteRepository.quotesForArtworks(idsToAssign) }.getOrDefault(emptyMap())
+            }
+        }
+        val poolIdSet = poolIds.toSet()
+        quotesById = if (replaceAll) {
+            assigned
+        } else {
+            (quotesById + assigned).filterKeys { it in poolIdSet }
+        }
+    }
+
+    private suspend fun quoteFor(art: Artwork): Quote? {
+        if (!quoteSettings.showQuotes.value) return null
+        quotesById[art.id]?.let { return it }
+        val assigned = withContext(Dispatchers.IO) {
+            runCatching { quoteRepository.quotesForArtworks(listOf(art.id)) }.getOrDefault(emptyMap())
+        }
+        quotesById = quotesById + assigned
+        return assigned[art.id]
+    }
+
     private suspend fun publishArtwork(art: Artwork) {
         val gen = generation
         withContext(Dispatchers.IO) {
@@ -315,11 +357,7 @@ class ArthurMediaService : MediaLibraryService() {
         }
         val uri = AmbientAlbumArt.contentUri(packageName, art.id, gen)
 
-        val quote = if (quoteSettings.showQuotes.value) {
-            runCatching { quoteRepository.nextQuote() }.getOrNull()
-        } else {
-            null
-        }
+        val quote = quoteFor(art)
         val quoteText = if (quote != null) {
             "\u201C${quote.text}\u201D" + if (quote.author.isNotBlank()) " \u2014 ${quote.author}" else ""
         } else {

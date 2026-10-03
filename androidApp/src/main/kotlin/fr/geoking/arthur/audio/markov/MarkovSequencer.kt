@@ -215,15 +215,22 @@ class MarkovSequencer(
 
         if (!isRestToken && melodicStyle && motifCursor > 1) {
             val delta = kotlin.math.abs(degree - lastDegree)
-            if (delta > 3 && random.nextFloat() < 0.65f) {
+            // Prefer stepwise motion; large leaps sound shrill and less singable.
+            if (delta > 2 && random.nextFloat() < 0.78f) {
                 degree = lastDegree + if (degree > lastDegree) 1 else -1
             }
         }
 
-        // Bias toward chord tones (scale degrees 0, 2, 4) for melodic cohesion.
-        if (!isRestToken && !atmosphere && random.nextFloat() < 0.60f) {
+        // Keep motifs in a mid register (avoid high scale degrees that pierce).
+        if (!isRestToken && degree != MelodyMotif.REST) {
+            val maxDegree = (preset.scaleSemitones.size - 1).coerceAtLeast(0).coerceAtMost(4)
+            degree = degree.coerceIn(0, maxDegree)
+        }
+
+        // Bias toward current-chord tones for melodic cohesion.
+        if (!isRestToken && !atmosphere && random.nextFloat() < 0.78f) {
             degree = snapToChordTone(degree)
-        } else if (!isRestToken && atmosphere && random.nextFloat() < 0.75f) {
+        } else if (!isRestToken && atmosphere && random.nextFloat() < 0.85f) {
             degree = snapToChordTone(degree)
         }
 
@@ -282,34 +289,52 @@ class MarkovSequencer(
     private fun snapToChordTone(degree: Int): Int {
         val scale = preset.scaleSemitones
         if (scale.isEmpty()) return degree
-        val chordDegrees = intArrayOf(0, 2, 4).filter { it < scale.size }
-        if (chordDegrees.isEmpty()) return 0
-        // Prefer nearest chord tone in scale-degree space.
-        var best = chordDegrees[0]
-        var bestDist = Int.MAX_VALUE
+        val chordRootSemi = HarmonyBank.stateSemitones(currentHarmony)
+        // Triad / soft-7th tones of the *current* chord (semitones from key root).
+        val chordTonePcs = intArrayOf(0, 3, 4, 7, 10)
+            .map { Math.floorMod(chordRootSemi + it, 12) }
+            .toSet()
         val wrapped = Math.floorMod(degree, scale.size)
-        for (cd in chordDegrees) {
+        var best = wrapped
+        var bestDist = Int.MAX_VALUE
+        for (i in scale.indices) {
+            val pc = Math.floorMod(scale[i], 12)
+            if (pc !in chordTonePcs) continue
             val d = kotlin.math.min(
-                kotlin.math.abs(wrapped - cd),
-                scale.size - kotlin.math.abs(wrapped - cd),
+                kotlin.math.abs(wrapped - i),
+                scale.size - kotlin.math.abs(wrapped - i),
             )
             if (d < bestDist) {
                 bestDist = d
-                best = cd
+                best = i
             }
         }
-        val octave = degree / scale.size
-        return best + octave * scale.size
+        if (bestDist == Int.MAX_VALUE) {
+            // Fallback: tonic triad degrees in scale space.
+            val fallback = intArrayOf(0, 2, 4).firstOrNull { it < scale.size } ?: 0
+            best = fallback
+        }
+        return best
     }
 
     private fun degreeToHz(degreeIndex: Int): Float {
         val scale = preset.scaleSemitones
-        if (scale.isEmpty()) return preset.rootHz
-        val idx = Math.floorMod(degreeIndex, scale.size)
-        val octave = degreeIndex / scale.size
+        if (scale.isEmpty()) return preset.rootHz.coerceIn(MELODY_MIN_HZ, MELODY_MAX_HZ)
+        val capped = degreeIndex.coerceIn(0, (scale.size - 1).coerceAtMost(4))
+        val idx = Math.floorMod(capped, scale.size)
         // Melody sits one octave above root for clarity over bass.
-        val semis = scale[idx] + HarmonyBank.stateSemitones(currentHarmony) + octave * 12 + 12
-        return preset.rootHz * 2.0.pow(semis / 12.0).toFloat()
+        val semis = scale[idx] + HarmonyBank.stateSemitones(currentHarmony) + 12
+        var hz = preset.rootHz * 2.0.pow(semis / 12.0).toFloat()
+        // Fold piercing highs into a warm mid register (~C4–E5).
+        while (hz > MELODY_MAX_HZ) hz *= 0.5f
+        return hz.coerceIn(MELODY_MIN_HZ, MELODY_MAX_HZ)
+    }
+
+    companion object {
+        /** Soft floor so melody stays above muddy bass. */
+        const val MELODY_MIN_HZ = 180f
+        /** Cap bright tops — above ~E5 ambient piano/chimes get harsh in-car. */
+        const val MELODY_MAX_HZ = 660f
     }
 
     private fun harmonyTransitions(): Map<HarmonyState, Map<HarmonyState, Float>> {

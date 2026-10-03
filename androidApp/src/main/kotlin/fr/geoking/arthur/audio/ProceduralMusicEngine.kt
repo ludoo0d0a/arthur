@@ -479,12 +479,18 @@ class ProceduralMusicEngine(
                             if (allowOrnaments) {
                                 when (seq.nextOrnament()) {
                                     OrnamentKind.Grace ->
-                                        seq.currentMelodyHz?.let { chimes.noteOn(it * 1.5f, 0.28f) }
+                                        seq.currentMelodyHz?.let {
+                                            // Soft fifth above, still under the melody ceiling.
+                                            val grace = (it * 1.5f)
+                                                .coerceAtMost(MarkovSequencer.MELODY_MAX_HZ)
+                                            chimes.noteOn(grace, 0.22f)
+                                        }
                                     OrnamentKind.Roll ->
                                         seq.currentMelodyHz?.let { kalimba.noteOn(it, 0.35f) }
                                     OrnamentKind.DoubleStrike -> seq.currentMelodyHz?.let {
                                         piano.noteOn(it, 0.30f)
-                                        chimes.noteOn(it * 2f, 0.20f)
+                                        // Same register echo — avoid octave-up chime glare.
+                                        chimes.noteOn(it, 0.16f)
                                     }
                                     OrnamentKind.None -> Unit
                                 }
@@ -733,20 +739,28 @@ class ProceduralMusicEngine(
                 val scale = p.scaleSemitones
                 val freqs = (0 until 3).map { i ->
                     val semi = scale[Math.floorMod(i + p.melodyBankIndex, scale.size)]
-                    root * 2.0.pow((semi + 12) / 12.0).toFloat()
+                    (root * 2.0.pow((semi + 12) / 12.0).toFloat())
+                        .coerceAtMost(MarkovSequencer.MELODY_MAX_HZ)
                 }
                 chimes.noteCluster(freqs, 0.40f)
             }
             TextureCueKind.ArpeggioCascade -> {
-                piano.noteOn(root * 2f, 0.35f)
-                piano.noteOn(root * 2.5f, 0.28f)
+                val a = (root * 2f).coerceAtMost(MarkovSequencer.MELODY_MAX_HZ)
+                val b = (root * 2.5f).coerceAtMost(MarkovSequencer.MELODY_MAX_HZ)
+                piano.noteOn(a, 0.35f)
+                piano.noteOn(b, 0.28f)
             }
             TextureCueKind.ThumbPianoRoll -> {
-                kalimba.noteOn(root * 2f, 0.4f)
-                kalimba.noteOn(root * 2.5f, 0.32f)
+                val a = (root * 2f).coerceAtMost(MarkovSequencer.MELODY_MAX_HZ)
+                val b = (root * 2.5f).coerceAtMost(MarkovSequencer.MELODY_MAX_HZ)
+                kalimba.noteOn(a, 0.4f)
+                kalimba.noteOn(b, 0.32f)
             }
             TextureCueKind.WaveSwell, TextureCueKind.SoftRain, TextureCueKind.WindGust -> {
-                chimes.noteOn(root * 2f, 0.22f)
+                chimes.noteOn(
+                    (root * 2f).coerceAtMost(MarkovSequencer.MELODY_MAX_HZ),
+                    0.22f,
+                )
             }
             TextureCueKind.SilenceBreath -> Unit
         }

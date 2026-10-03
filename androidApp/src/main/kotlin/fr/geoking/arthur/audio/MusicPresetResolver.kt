@@ -22,8 +22,9 @@ object MusicPresetResolver {
         style = rebiasStyleForCharacter(style, prefs.character, seed)
         val scales = ScaleLibrary.forStyle(style, prefs.character)
         val scale = scales[mod(seed, scales.size)]
-        // Lower root leaves room for melody above bass (C2..A3-ish → ~65–220 Hz fundamental band).
-        val rootMidi = 45 + mod(seed shr 8, 14)
+        // Lower root leaves room for melody above bass (F#2..E3 → ~92–165 Hz),
+        // so melody (+1 oct, capped) stays warm rather than piercing.
+        val rootMidi = 42 + mod(seed shr 8, 12)
         val rootHz = midiToHz(rootMidi.toFloat())
         val tempo = baseTempo(style) * (0.9f + mod(seed shr 16, 21) / 100f)
         val complexity = prefs.complexity.coerceIn(0f, 1f)

@@ -44,10 +44,14 @@ class MarkovSequencerTest {
         val seq = MarkovSequencer(preset, sessionSalt = 99L, character = AmbientAudioCharacter.Melody)
         var onsets = 0
         var bassHits = 0
+        var maxMelodyHz = 0f
         // ~8 s of audio at 44.1 kHz
         repeat(44_100 * 8) {
             seq.advanceHarmonyClock(44_100)
-            if (seq.tickMelody(44_100)) onsets++
+            if (seq.tickMelody(44_100)) {
+                onsets++
+                seq.currentMelodyHz?.let { maxMelodyHz = maxOf(maxMelodyHz, it) }
+            }
             if (seq.tickBass(44_100)) bassHits++
         }
         assertTrue("expected melodic onsets, got $onsets", onsets >= 6)
@@ -57,6 +61,43 @@ class MarkovSequencerTest {
         val bassHz = seq.currentBassFrequencyHz
         assertNotNull(bassHz)
         assertTrue("bass out of range: $bassHz", bassHz!! in 40f..140f)
+        assertTrue(
+            "melody too bright: $maxMelodyHz",
+            maxMelodyHz in MarkovSequencer.MELODY_MIN_HZ..MarkovSequencer.MELODY_MAX_HZ,
+        )
+    }
+
+    @Test
+    fun melodyStaysInWarmRegisterAcrossStyles() {
+        val styles = listOf(
+            MusicStyle.JazzPiano,
+            MusicStyle.Zen,
+            MusicStyle.SoftGuitar,
+            MusicStyle.WindChimes,
+            MusicStyle.AfricanPulse,
+        )
+        for (style in styles) {
+            val preset = MusicPresetResolver.resolve(
+                Artwork("test.warm.$style", "Warm", sourceId = "test", kind = ArtworkKind.Photo),
+                MusicUserPrefs(
+                    character = AmbientAudioCharacter.Melody,
+                    stylePreference = style,
+                    complexity = 0.9f,
+                ),
+            )
+            val seq = MarkovSequencer(preset, sessionSalt = 123L, character = AmbientAudioCharacter.Melody)
+            repeat(44_100 * 10) {
+                seq.advanceHarmonyClock(44_100)
+                if (seq.tickMelody(44_100)) {
+                    val hz = seq.currentMelodyHz
+                    assertNotNull(hz)
+                    assertTrue(
+                        "$style melody out of warm band: $hz",
+                        hz!! in MarkovSequencer.MELODY_MIN_HZ..MarkovSequencer.MELODY_MAX_HZ,
+                    )
+                }
+            }
+        }
     }
 
     @Test

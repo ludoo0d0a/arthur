@@ -58,6 +58,29 @@ class AmbientMediaPlayerTest {
         Shadows.shadowOf(Looper.getMainLooper()).idle()
 
         assertEquals(20_000L, player.duration)
+        assertEquals(0L, player.currentPosition)
+    }
+
+    @Test
+    fun setPlaying_false_freezesProgressPosition() {
+        val player = AmbientMediaPlayer(Looper.getMainLooper(), noopCallbacks)
+        player.publish(
+            art = art,
+            artworkUri = Uri.parse("content://test/art"),
+            subtitle = "GeoKing",
+            playing = true,
+            durationMs = 20_000L,
+        )
+        Shadows.shadowOf(Looper.getMainLooper()).idle()
+
+        player.setPlaying(false)
+        Shadows.shadowOf(Looper.getMainLooper()).idle()
+
+        val frozen = player.currentPosition
+        assertEquals(frozen, player.currentPosition)
+        Thread.sleep(30)
+        Shadows.shadowOf(Looper.getMainLooper()).idle()
+        assertEquals(frozen, player.currentPosition)
     }
 
     @Test

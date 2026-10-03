@@ -463,6 +463,9 @@ internal class AmbientRotationController(
 
     fun showQuotes(): Boolean = quoteSettings.showQuotes.value
 
+    /** Slide length for AA media progress (matches auto-rotation interval). */
+    fun slideDurationMs(): Long = rotationSettings.autoIntervalMs.value
+
     fun imageCache(): ArtworkImageCache = imageCache
 
     fun invalidStore(): InvalidArtworkStore = invalidStore

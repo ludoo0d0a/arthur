@@ -415,6 +415,7 @@ class MediaAmbientPlaybackScreen(
                 subtitle = lines.artist,
                 genre = if (art.isGenerative) "generative" else art.kind.name,
                 playing = playing,
+                durationMs = rotation.slideDurationMs(),
             )
         }
     }

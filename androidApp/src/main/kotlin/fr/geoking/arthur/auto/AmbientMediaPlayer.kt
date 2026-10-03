@@ -33,6 +33,9 @@ internal class AmbientMediaPlayer(
     private var currentIndex: Int = 0
     private var playlist: List<MediaItemData> = emptyList()
     private var playlistTitle: String? = null
+    private var durationMs: Long = C.TIME_UNSET
+    /** Base position at last state invalidate; Media3 extrapolates while playing. */
+    private var contentPositionMs: Long = 0L
 
     fun publish(
         art: Artwork,
@@ -49,6 +52,8 @@ internal class AmbientMediaPlayer(
     ) {
         this.playWhenReady = playing
         this.playlistTitle = playlistTitle
+        this.durationMs = durationMs
+        this.contentPositionMs = 0L
         val displayTitle = title?.takeIf { it.isNotBlank() } ?: art.title
         val items = queue.ifEmpty { listOf(art) }
         currentIndex = items.indexOfFirst { it.id == art.id }.let { if (it < 0) 0 else it }
@@ -86,6 +91,7 @@ internal class AmbientMediaPlayer(
 
     fun setPlaying(playing: Boolean) {
         if (playWhenReady == playing) return
+        freezePositionIfPlaying()
         playWhenReady = playing
         invalidateState()
     }
@@ -120,6 +126,11 @@ internal class AmbientMediaPlayer(
                     currentIndex.coerceIn(0, playlist.lastIndex)
                 },
             )
+        if (durationMs != C.TIME_UNSET && durationMs > 0) {
+            // AA progress bar needs duration + an advancing content position.
+            builder.setContentPositionMs(contentPositionMs.coerceIn(0L, durationMs))
+            builder.setContentBufferedPositionMs(PositionSupplier.getConstant(durationMs))
+        }
         if (!playlistTitle.isNullOrBlank()) {
             builder.setPlaylistMetadata(
                 MediaMetadata.Builder().setTitle(playlistTitle).build(),
@@ -129,6 +140,7 @@ internal class AmbientMediaPlayer(
     }
 
     override fun handleSetPlayWhenReady(playWhenReady: Boolean): ListenableFuture<*> {
+        freezePositionIfPlaying()
         this.playWhenReady = playWhenReady
         callbacks.onPlayWhenReadyChanged(playWhenReady)
         invalidateState()
@@ -138,10 +150,20 @@ internal class AmbientMediaPlayer(
     override fun handlePrepare(): ListenableFuture<*> = Futures.immediateVoidFuture()
 
     override fun handleStop(): ListenableFuture<*> {
+        freezePositionIfPlaying()
         playWhenReady = false
+        contentPositionMs = 0L
         callbacks.onPlayWhenReadyChanged(false)
         invalidateState()
         return Futures.immediateVoidFuture()
+    }
+
+    private fun freezePositionIfPlaying() {
+        if (!playWhenReady || durationMs == C.TIME_UNSET || durationMs <= 0) return
+        val pos = currentPosition
+        if (pos != C.TIME_UNSET) {
+            contentPositionMs = pos.coerceIn(0L, durationMs)
+        }
     }
 
     override fun handleSeek(

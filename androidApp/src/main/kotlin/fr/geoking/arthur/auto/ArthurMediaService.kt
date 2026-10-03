@@ -408,6 +408,7 @@ class ArthurMediaService : MediaLibraryService() {
             queue = pool,
             queueUris = queueUris,
             playing = playing,
+            durationMs = rotationSettings.autoIntervalMs.value,
             playlistTitle = getString(R.string.ambient_title),
         )
     }

@@ -246,7 +246,8 @@ class ArthurCarAppTest {
         try {
             val screen = CarSettingsScreen(carContext)
             val listTemplate = screen.onGetTemplate() as androidx.car.app.model.ListTemplate
-            val item = listTemplate.singleList!!.items[0] as androidx.car.app.model.Row
+            // check update (0), quotes (1), …
+            val item = listTemplate.singleList!!.items[1] as androidx.car.app.model.Row
             item.onClickDelegate!!.sendClick(object : androidx.car.app.OnDoneCallback {
                 override fun onSuccess(response: androidx.car.app.serialization.Bundleable?) {}
                 override fun onFailure(response: androidx.car.app.serialization.Bundleable) {}
@@ -698,10 +699,17 @@ class ArthurCarAppTest {
             val template = screen.onGetTemplate() as androidx.car.app.model.ListTemplate
             val list = template.singleList
             assertNotNull(list)
-            // quotes (0) + quote provider (1) + ambient sound (2) + check update (3) + intervals…
-            val checkUpdateRow = list!!.items[3] as androidx.car.app.model.Row
+            // check update (0) + quotes (1) + quote provider (2) + ambient sound (3) + intervals…
+            val checkUpdateRow = list!!.items[0] as androidx.car.app.model.Row
             assertNotNull(checkUpdateRow.title)
-            assertTrue(checkUpdateRow.title.toString().isNotBlank())
+            assertEquals(
+                carContext.getString(fr.geoking.arthur.R.string.settings_check_update),
+                checkUpdateRow.title.toString(),
+            )
+            assertEquals(
+                carContext.getString(fr.geoking.arthur.R.string.screen_settings),
+                template.header?.title.toString(),
+            )
         } finally {
             org.koin.core.context.stopKoin()
         }

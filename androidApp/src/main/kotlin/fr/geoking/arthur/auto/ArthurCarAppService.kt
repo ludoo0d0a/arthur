@@ -9,6 +9,7 @@ import androidx.car.app.CarAppService
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.install.model.UpdateAvailability
 import androidx.car.app.CarContext
+import androidx.car.app.CarToast
 import androidx.car.app.Screen
 import androidx.car.app.Session
 import androidx.car.app.annotations.ExperimentalCarApi
@@ -161,14 +162,15 @@ class ArthurCarSession : Session() {
  */
 @OptIn(ExperimentalCarApi::class)
 class PackSelectionScreen(carContext: CarContext) : Screen(carContext) {
-    private var isUpdateAvailable = false
-
     init {
         runCatching {
             AppUpdateManagerFactory.create(carContext).appUpdateInfo.addOnSuccessListener { info ->
                 if (info.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
-                    isUpdateAvailable = true
-                    invalidate()
+                    CarToast.makeText(
+                        carContext,
+                        carContext.getString(R.string.update_available_car_subtitle),
+                        CarToast.LENGTH_LONG,
+                    ).show()
                 }
             }
         }
@@ -233,59 +235,41 @@ class PackSelectionScreen(carContext: CarContext) : Screen(carContext) {
             .addEndHeaderAction(settingsAction)
             .build()
 
-        val templateBuilder = SectionedItemTemplate.Builder()
+        return SectionedItemTemplate.Builder()
             .setHeader(header)
-
-        if (isUpdateAvailable) {
-            val updateItem = GridItem.Builder()
-                .setTitle(carContext.getString(R.string.update_available_car_title))
-                .setText(carContext.getString(R.string.update_available_car_subtitle))
-                .setImage(CarIcon.APP_ICON)
-                .build()
-            val updateSection = GridSection.Builder()
-                .setItemSize(GridSection.ITEM_SIZE_SMALL)
-                .setTitle(carContext.getString(R.string.update_available_title))
-                .addItem(updateItem)
-                .build()
-            templateBuilder.addSection(updateSection)
-        }
-
-        return templateBuilder
             .addSection(sectionBuilder.build())
             .build()
     }
 }
 
-/**
- * Screen displaying the sub-packs / topics for a given [PackFamily].
- */
-@OptIn(ExperimentalCarApi::class)
-/**
- * Screen displaying application settings (such as rotation interval) in Android Auto.
- */
+/** Application settings on Android Auto (updates, quotes, ambient sound, rotation). */
 class CarSettingsScreen(carContext: CarContext) : Screen(carContext), KoinComponent {
     private val rotationSettings: RotationSettings by inject()
     private val quoteSettings: QuoteSettings by inject()
     private val ambientAudioSettings: AmbientAudioSettings by inject()
     private var updateStatusText: String? = null
 
-    init {
-        checkUpdateStatus()
-    }
-
-    private fun checkUpdateStatus() {
+    private fun checkUpdateStatus(showToast: Boolean) {
         runCatching {
             AppUpdateManagerFactory.create(carContext).appUpdateInfo
                 .addOnSuccessListener { info ->
-                    updateStatusText = if (info.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
-                        carContext.getString(R.string.update_available_car_title)
+                    val status = if (info.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
+                        carContext.getString(R.string.update_available_car_subtitle)
                     } else {
                         carContext.getString(R.string.update_check_up_to_date)
+                    }
+                    updateStatusText = status
+                    if (showToast) {
+                        CarToast.makeText(carContext, status, CarToast.LENGTH_LONG).show()
                     }
                     invalidate()
                 }
                 .addOnFailureListener {
-                    updateStatusText = carContext.getString(R.string.update_check_up_to_date)
+                    val status = carContext.getString(R.string.update_check_up_to_date)
+                    updateStatusText = status
+                    if (showToast) {
+                        CarToast.makeText(carContext, status, CarToast.LENGTH_SHORT).show()
+                    }
                     invalidate()
                 }
         }
@@ -302,6 +286,18 @@ class CarSettingsScreen(carContext: CarContext) : Screen(carContext), KoinCompon
     private fun buildTemplate(): Template {
         val currentInterval = rotationSettings.autoIntervalMs.value
         val listBuilder = ItemList.Builder()
+
+        // Keep "Check for updates" first so it stays visible under host list limits.
+        val checkUpdateRowBuilder = Row.Builder()
+            .setTitle(carContext.getString(R.string.settings_check_update))
+        val status = updateStatusText
+        if (status != null) {
+            checkUpdateRowBuilder.addText(status)
+        }
+        checkUpdateRowBuilder.setOnClickListener {
+            checkUpdateStatus(showToast = true)
+        }
+        listBuilder.addItem(checkUpdateRowBuilder.build())
 
         val showQuotes = quoteSettings.showQuotes.value
         val quoteRowBuilder = Row.Builder()
@@ -349,17 +345,6 @@ class CarSettingsScreen(carContext: CarContext) : Screen(carContext), KoinCompon
         }
         listBuilder.addItem(soundRowBuilder.build())
 
-        val checkUpdateRowBuilder = Row.Builder()
-            .setTitle(carContext.getString(R.string.settings_check_update))
-        val status = updateStatusText
-        if (status != null) {
-            checkUpdateRowBuilder.addText(status)
-        }
-        checkUpdateRowBuilder.setOnClickListener {
-            checkUpdateStatus()
-        }
-        listBuilder.addItem(checkUpdateRowBuilder.build())
-
         RotationSettings.OPTIONS_MS.forEach { ms ->
             val label = if (ms < 60_000L) {
                 carContext.getString(R.string.rotation_interval_seconds, (ms / 1_000L).toInt())
@@ -383,7 +368,7 @@ class CarSettingsScreen(carContext: CarContext) : Screen(carContext), KoinCompon
         }
 
         val header = Header.Builder()
-            .setTitle(carContext.getString(R.string.screen_rotation_interval))
+            .setTitle(carContext.getString(R.string.screen_settings))
             .setStartHeaderAction(Action.BACK)
             .build()
 
@@ -394,6 +379,8 @@ class CarSettingsScreen(carContext: CarContext) : Screen(carContext), KoinCompon
     }
 }
 
+/** Sub-packs / topics for a given [PackFamily]. */
+@OptIn(ExperimentalCarApi::class)
 class SubPackSelectionScreen(
     carContext: CarContext,
     val family: PackFamily,

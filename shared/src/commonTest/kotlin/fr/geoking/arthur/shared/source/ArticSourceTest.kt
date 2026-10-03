@@ -2,13 +2,14 @@ package fr.geoking.arthur.shared.source
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlinx.coroutines.runBlocking
 
 class ArticSourceTest {
     @Test
     fun loadsArtworkFromArticFixtures() = runBlocking {
         val fixtures = mapOf(
-            ArticSource.searchUrl(limit = RemoteSample.SEARCH_POOL) to """
+            ArticSource.searchUrl(limit = RemoteSample.SEARCH_POOL, seed = 0) to """
                 {
                   "data": [
                     {
@@ -42,7 +43,7 @@ class ArticSourceTest {
     @Test
     fun skipsNonPublicDomainOrMissingImage() = runBlocking {
         val fixtures = mapOf(
-            ArticSource.searchUrl(limit = RemoteSample.SEARCH_POOL) to """
+            ArticSource.searchUrl(limit = RemoteSample.SEARCH_POOL, seed = 0) to """
                 {
                   "data": [
                     {
@@ -91,5 +92,14 @@ class ArticSourceTest {
                 "date_display,medium_display",
             ArticSource.searchUrl(kind = MuseumSearchKind.Sculpture),
         )
+    }
+
+    @Test
+    fun searchUrlIncludesRandomScoreSeed() {
+        val url = ArticSource.searchUrl(kind = MuseumSearchKind.Sculpture, seed = 42)
+        assertTrue(url.contains("q=sculpture"))
+        assertTrue(url.contains("random_score"))
+        assertTrue(url.contains(RemoteSample.percentEncode("\"seed\":42")))
+        assertTrue(!url.contains("&page="))
     }
 }

@@ -15,8 +15,8 @@ import kotlinx.serialization.json.Json
  * Harvard Art Museums Remote Source (API key required).
  * Objects with images only; blank [apiKey] yields an empty catalog.
  *
- * Search: `GET /object?classification=…&hasimage=1&apikey=…`
- * No native random: each [load] picks a random page and samples the window.
+ * Search: `GET /object?classification=…&hasimage=1&apikey=…&sort=random[:SEED]`
+ * Native random sort — each [load] uses a fresh seed and samples the window.
  */
 class HarvardSource(
     private val httpGet: suspend (url: String) -> String,
@@ -32,9 +32,6 @@ class HarvardSource(
     // Rotates which MuseumSearchKind target this Source hydrates each load() call
     // — defers the other target(s) to the next call instead of fetching them all now.
     private var targetCursor = 0
-
-    // Advances each load() call so "load more" pages forward instead of re-sampling.
-    private var pageCursor = 0
 
     override suspend fun load(): List<Artwork> {
         if (apiKey.isBlank()) {
@@ -52,14 +49,9 @@ class HarvardSource(
                 random,
                 nextTargetIndex = { targetCursor++ },
             ) { target, perKind ->
-                val pageIndex = RemoteSample.nextPage(pageCursor++)
-                val payload = RemoteSample.fetchWindow(
-                    randomOffset = pageIndex,
-                    firstOffset = 1,
-                    fetch = { p ->
-                        httpGet(searchUrl(apiKey, RemoteSample.SEARCH_POOL, target, page = p))
-                    },
-                    isEmpty = ::looksEmptyHarvard,
+                val seed = RemoteSample.randomSeed(random)
+                val payload = httpGet(
+                    searchUrl(apiKey, RemoteSample.SEARCH_POOL, target, page = 1, seed = seed),
                 )
                 val page = json.decodeFromString<HarvardObjectPage>(payload)
                 RemoteSample.sample(
@@ -79,11 +71,6 @@ class HarvardSource(
             )
         }.getOrDefault(emptyList())
     }
-
-    private fun looksEmptyHarvard(payload: String): Boolean =
-        runCatching {
-            json.decodeFromString<HarvardObjectPage>(payload).records.isNullOrEmpty()
-        }.getOrDefault(true)
 
     private fun toArtwork(item: HarvardObject, searchKind: MuseumSearchKind): Artwork? {
         val objectId = item.id ?: return null
@@ -121,10 +108,13 @@ class HarvardSource(
             kind: MuseumSearchKind = MuseumSearchKind.Painting,
             /** Harvard page index; first page is 1. */
             page: Int = 1,
+            /** When set, uses reproducible `sort=random:SEED`; otherwise `sort=random`. */
+            seed: Int? = null,
         ): String {
             val classification = RemoteCategoryMapping.museumParams(kind, RemoteProvider.Harvard)
                 .type
                 .orEmpty()
+            val sort = if (seed != null) "random:$seed" else "random"
             // hasimage=1 alone still returns permission-gated records with null
             // primaryimageurl (esp. Photographs). Level 0 = publicly viewable.
             return "https://api.harvardartmuseums.org/object" +
@@ -134,7 +124,7 @@ class HarvardSource(
                 "&q=imagepermissionlevel%3A0" +
                 "&size=$limit" +
                 "&page=$page" +
-                "&sort=random" +
+                "&sort=$sort" +
                 "&fields=id,title,primaryimageurl,people,classification,url,images"
         }
     }
@@ -157,15 +147,12 @@ internal data class HarvardObject(
 )
 
 @Serializable
-internal data class HarvardImage(
-    @SerialName("baseimageurl") val baseImageUrl: String? = null,
-    val width: Int? = null,
-    val height: Int? = null,
-    val alttext: String? = null,
-)
-
-@Serializable
 internal data class HarvardPerson(
     val role: String? = null,
     val displayname: String? = null,
+)
+
+@Serializable
+internal data class HarvardImage(
+    @SerialName("baseimageurl") val baseImageUrl: String? = null,
 )

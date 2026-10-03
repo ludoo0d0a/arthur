@@ -16,7 +16,8 @@ import kotlinx.serialization.json.jsonPrimitive
  * Rijksmuseum Remote Source via the public Linked Art Search API (no API key).
  * [httpGet] is injected so unit tests use fixtures.
  *
- * Search returns ordered IDs (no native random). Each [load] samples a random subset.
+ * Search returns ordered IDs (no native random / offset). Each [load] explores the
+ * Linked Art `next.id` frontier first, then picks a random known page and samples.
  *
  * Image URLs often live behind `shows` → VisualItem → DigitalObject → `access_point`
  * rather than inline `representation`.
@@ -34,9 +35,11 @@ class RijksmuseumSource(
     // — defers the other target(s) to the next call instead of fetching them all now.
     private var targetCursor = 0
 
-    // Per-target `next.id` page cursor: advances forward through search results
-    // instead of re-fetching the same first-page window on every load().
-    private val nextPageUrls = mutableMapOf<Int, String>()
+    // Per-target search page URLs discovered via Linked Art `next.id`.
+    private val discoveredPages = mutableMapOf<Int, MutableList<String>>()
+
+    // Unvisited `next.id` to fetch before falling back to a random known page.
+    private val exploreFrontier = mutableMapOf<Int, String?>()
 
     // Avoids re-running the (possibly multi-hop) object+image hydration chain for an
     // objectId this Source instance has already resolved successfully.
@@ -49,9 +52,20 @@ class RijksmuseumSource(
         if (searchTargets.isEmpty()) return@runCatching emptyList()
         val targetIndex = (targetCursor++).mod(searchTargets.size)
         val (baseSearchUrl, fallbackKind) = searchTargets[targetIndex]
-        val searchUrl = nextPageUrls[targetIndex] ?: baseSearchUrl
+        val pages = discoveredPages.getOrPut(targetIndex) { mutableListOf(baseSearchUrl) }
+        val frontier = exploreFrontier[targetIndex]
+        val searchUrl = when {
+            frontier != null && frontier in pages -> frontier
+            else -> pages[random.nextInt(pages.size)]
+        }
+        exploreFrontier[targetIndex] = null
         val searchJson = httpGet(searchUrl)
-        nextPageUrls[targetIndex] = parseNextPageUrl(searchJson) ?: baseSearchUrl
+        parseNextPageUrl(searchJson)?.let { next ->
+            if (next !in pages) {
+                pages.add(next)
+                exploreFrontier[targetIndex] = next
+            }
+        }
         val ids = RemoteSample.sample(parseSearchIds(searchJson), limit, random)
         val results = mutableListOf<Artwork>()
         for (objectId in ids) {

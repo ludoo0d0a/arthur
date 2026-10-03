@@ -86,11 +86,8 @@ class MetSourceTest {
 
     @Test
     fun samplesRandomObjectIdsInsteadOfPrefix() = runBlocking {
-        val fixtures = mutableMapOf(
-            MetSource.SEARCH_URL to """{"total":5,"objectIDs":[1,2,3,4,5]}""",
-        )
-        for (id in 1..5) {
-            fixtures[MetSource.objectUrl(id)] = """
+        val objectFixtures = (1..5).associate { id ->
+            MetSource.objectUrl(id) to """
                 {
                   "objectID": $id,
                   "isPublicDomain": true,
@@ -100,7 +97,12 @@ class MetSourceTest {
                 }
             """.trimIndent()
         }
-        val httpGet: suspend (String) -> String = { url -> fixtures.getValue(url) }
+        val httpGet: suspend (String) -> String = { url ->
+            when {
+                url.contains("/search") -> """{"total":5,"objectIDs":[1,2,3,4,5]}"""
+                else -> objectFixtures.getValue(url)
+            }
+        }
         val prefixIds = MetSource(httpGet = httpGet, limit = 2, random = ZeroRandom)
             .load()
             .map { it.id }
@@ -217,25 +219,24 @@ class MetSourceTest {
     }
 
     @Test
-    fun pagesForwardOnRepeatedLoad() = runBlocking {
-        val page0 = MetSource.searchUrl(MuseumSearchKind.Painting, offset = 0)
-        val page1 = MetSource.searchUrl(
-            MuseumSearchKind.Painting,
-            offset = RemoteSample.SEARCH_POOL,
-        )
-        val fixtures = mapOf(
-            page0 to """{"total":120,"objectIDs":[1]}""",
-            page1 to """{"total":120,"objectIDs":[2]}""",
-            MetSource.objectUrl(1) to publicDomainObject(1),
-            MetSource.objectUrl(2) to publicDomainObject(2),
-        )
+    fun usesRandomSearchOffsetAcrossLoads() = runBlocking {
+        val seenOffsets = mutableSetOf<Int>()
         val source = MetSource(
-            httpGet = { url -> fixtures.getValue(url) },
+            httpGet = { url ->
+                if (url.contains("/search")) {
+                    val offset = Regex("offset=(\\d+)").find(url)?.groupValues?.get(1)?.toInt() ?: -1
+                    seenOffsets.add(offset)
+                    """{"total":120,"objectIDs":[1]}"""
+                } else {
+                    publicDomainObject(1)
+                }
+            },
             limit = 1,
-            random = ZeroRandom,
+            random = Random(42),
         )
-        assertEquals(listOf("met-1"), source.load().map { it.id })
-        assertEquals(listOf("met-2"), source.load().map { it.id })
+        repeat(8) { source.load() }
+        assertTrue(seenOffsets.size > 1, "expected multiple offsets, got $seenOffsets")
+        assertTrue(seenOffsets.all { it % RemoteSample.SEARCH_POOL == 0 })
     }
 
     private fun publicDomainObject(id: Int): String = """

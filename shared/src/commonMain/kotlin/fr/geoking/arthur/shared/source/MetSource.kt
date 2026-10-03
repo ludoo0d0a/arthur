@@ -11,8 +11,8 @@ import kotlinx.serialization.json.Json
  * The Met Collection API Remote Source (no API key).
  * Open-access works with images only; [httpGet] is injected so unit tests use fixtures.
  *
- * Search is paginated ([offset]/[limit]); each [load] advances the window and samples
- * a subset, then hydrates those objects — renew Ambient by calling [load] again.
+ * No native random: each [load] jumps to a random [offset] window, samples a subset,
+ * then hydrates those objects — renew Ambient by calling [load] again.
  *
  * Search contract: `GET /public/collection/v1.1/search`
  * (`q`, `medium`, `hasImages`, `isPublicDomain`, `offset`, `limit`) —
@@ -31,9 +31,6 @@ class MetSource(
     // — defers the other target(s) to the next call instead of fetching them all now.
     private var targetCursor = 0
 
-    // Advances each load() call so "load more" pages forward instead of re-sampling.
-    private var startCursor = 0
-
     // Caching resolved objects avoids re-running the per-object hydration call for ids
     // seen again when search windows overlap across renewals.
     private val hydratedCache = mutableMapOf<Int, Artwork>()
@@ -47,10 +44,10 @@ class MetSource(
             random,
             nextTargetIndex = { targetCursor++ },
         ) { target, perKind ->
-            val offset = RemoteSample.nextStart(
-                startCursor++,
+            val offset = RemoteSample.randomStart(
                 pageSize = RemoteSample.SEARCH_POOL,
                 maxStart = RemoteSample.MET_MAX_START,
+                random = random,
             )
             val payload = RemoteSample.fetchWindow(
                 randomOffset = offset,

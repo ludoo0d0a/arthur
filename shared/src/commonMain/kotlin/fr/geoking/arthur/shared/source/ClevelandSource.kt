@@ -13,7 +13,8 @@ import kotlinx.serialization.json.Json
  * CC0 works with JPEG images only; [httpGet] is injected for fixtures.
  *
  * Search: `GET /api/artworks/?type=…` — `type` codes from [RemoteCategoryMapping].
- * No native random: each [load] uses a random `skip` and samples the window.
+ * No native random: each [load] jumps to a random `skip` deep in the catalog
+ * and samples the window (empty deep pages retry at skip=0).
  */
 class ClevelandSource(
     private val httpGet: suspend (url: String) -> String,
@@ -28,9 +29,6 @@ class ClevelandSource(
     // — defers the other target(s) to the next call instead of fetching them all now.
     private var targetCursor = 0
 
-    // Advances each load() call so "load more" pages forward instead of re-sampling.
-    private var startCursor = 0
-
     override suspend fun load(): List<Artwork> = runCatching {
         MuseumLoad.acrossTargets(
             kind(),
@@ -38,7 +36,11 @@ class ClevelandSource(
             random,
             nextTargetIndex = { targetCursor++ },
         ) { target, perKind ->
-            val skip = RemoteSample.nextStart(startCursor++, RemoteSample.SEARCH_POOL)
+            val skip = RemoteSample.randomStart(
+                pageSize = RemoteSample.SEARCH_POOL,
+                maxStart = RemoteSample.CLEVELAND_MAX_START,
+                random = random,
+            )
             val payload = RemoteSample.fetchWindow(
                 randomOffset = skip,
                 firstOffset = 0,

@@ -16,7 +16,7 @@ import kotlinx.serialization.json.Json
  * [httpGet] should send `X-Api-Key: <apiKey>` (preferred over deprecated `wskey`).
  *
  * Search: `GET /record/v2/search.json?query=…&reusability=open&media=true&qf=TYPE:IMAGE`
- * No native random: each [load] picks a random `start` and samples the window.
+ * Native random via `sort=random_SEED+asc` — each [load] uses a fresh seed.
  */
 class EuropeanaSource(
     private val httpGet: suspend (url: String) -> String,
@@ -32,9 +32,6 @@ class EuropeanaSource(
     // Rotates which MuseumSearchKind target this Source hydrates each load() call
     // — defers the other target(s) to the next call instead of fetching them all now.
     private var targetCursor = 0
-
-    // Advances each load() call so "load more" pages forward instead of re-sampling.
-    private var startCursor = 0
 
     override suspend fun load(): List<Artwork> {
         if (apiKey.isBlank()) {
@@ -52,16 +49,15 @@ class EuropeanaSource(
                 random,
                 nextTargetIndex = { targetCursor++ },
             ) { target, perKind ->
-                val start = 1 + RemoteSample.nextStart(
-                    cursor = startCursor++,
-                    pageSize = RemoteSample.SEARCH_POOL,
-                    maxStart = RemoteSample.EUROPEANA_MAX_START,
-                )
-                val payload = RemoteSample.fetchWindow(
-                    randomOffset = start,
-                    firstOffset = 1,
-                    fetch = { s -> httpGet(searchUrl(RemoteSample.SEARCH_POOL, target, start = s, apiKey = apiKey)) },
-                    isEmpty = ::looksEmptyEuropeana,
+                val seed = RemoteSample.randomSeed(random)
+                val payload = httpGet(
+                    searchUrl(
+                        limit = RemoteSample.SEARCH_POOL,
+                        kind = target,
+                        start = 1,
+                        apiKey = apiKey,
+                        seed = seed,
+                    ),
                 )
                 val page = json.decodeFromString<EuropeanaSearchPage>(payload)
                 RemoteSample.sample(page.items.mapNotNull { toArtwork(it, target) }, perKind, random)
@@ -77,11 +73,6 @@ class EuropeanaSource(
             )
         }.getOrDefault(emptyList())
     }
-
-    private fun looksEmptyEuropeana(payload: String): Boolean =
-        runCatching {
-            json.decodeFromString<EuropeanaSearchPage>(payload).items.isEmpty()
-        }.getOrDefault(true)
 
     private fun toArtwork(item: EuropeanaItem, searchKind: MuseumSearchKind): Artwork? {
         val recordId = item.id?.takeIf { it.isNotBlank() } ?: return null
@@ -119,16 +110,19 @@ class EuropeanaSource(
             /** Europeana result offset; first item is 1. */
             start: Int = 1,
             apiKey: String = "",
+            /** When set, uses `sort=random_SEED+asc` for a fresh random order. */
+            seed: Int? = null,
         ): String {
             val params = RemoteCategoryMapping.museumParams(kind, RemoteProvider.Europeana)
             val rawQuery = params.query.orEmpty().ifBlank { "*" }
             val query = rawQuery.replace(" ", "%20")
             val themeParam = params.medium?.takeIf { it.isNotBlank() }?.let { "&theme=$it" }.orEmpty()
             val wskeyParam = if (apiKey.isNotBlank()) "&wskey=$apiKey" else ""
+            val sortParam = if (seed != null) "&sort=random_${seed}%2Basc" else ""
             // Encode qf value so `TYPE:IMAGE` survives strict URL parsers.
             return "https://api.europeana.eu/record/v2/search.json" +
                 "?query=$query$themeParam&reusability=open&media=true&qf=TYPE%3AIMAGE" +
-                "&rows=$limit&start=$start&profile=standard$wskeyParam"
+                "&rows=$limit&start=$start&profile=standard$sortParam$wskeyParam"
         }
     }
 }

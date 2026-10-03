@@ -12,7 +12,8 @@ import kotlinx.serialization.json.Json
  * Musée du Louvre Remote Source (no API key).
  * Louvre publishes per-object JSON (`…/ark:/53355/{id}.json`) but no search API,
  * so Arthur loads a curated open-access ARK list and hydrates titles/images from JSON.
- * Each [load] samples a random subset of the curated list.
+ * No search API — each [load] samples a random subset of the curated ARK list
+ * (best variety possible without a live catalog query).
  *
  * Follow Louvre Collections ToS for image reuse; attribution is required.
  */

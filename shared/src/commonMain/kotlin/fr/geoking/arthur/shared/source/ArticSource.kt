@@ -12,8 +12,8 @@ import kotlinx.serialization.json.Json
  * Art Institute of Chicago Remote Source (no API key).
  * Public-domain works with IIIF images only; [httpGet] is injected for fixtures.
  *
- * Search: `GET /api/v1/artworks/search?q=…` — `q` from [RemoteCategoryMapping].
- * No native random: each [load] picks a random page and samples the hits.
+ * Search: `GET /api/v1/artworks/search` with Elasticsearch `function_score` +
+ * `random_score` (official random pattern) — each [load] uses a fresh seed.
  */
 class ArticSource(
     private val httpGet: suspend (url: String) -> String,
@@ -28,9 +28,6 @@ class ArticSource(
     // — defers the other target(s) to the next call instead of fetching them all now.
     private var targetCursor = 0
 
-    // Advances each load() call so "load more" pages forward instead of re-sampling.
-    private var pageCursor = 0
-
     override suspend fun load(): List<Artwork> = runCatching {
         MuseumLoad.acrossTargets(
             kind(),
@@ -38,15 +35,9 @@ class ArticSource(
             random,
             nextTargetIndex = { targetCursor++ },
         ) { target, perKind ->
-            val pageIndex = RemoteSample.nextPage(
-                cursor = pageCursor++,
-                maxPage = RemoteSample.maxPageForHitWindow(),
-            )
-            val payload = RemoteSample.fetchWindow(
-                randomOffset = pageIndex,
-                firstOffset = 1,
-                fetch = { page -> httpGet(searchUrl(RemoteSample.SEARCH_POOL, target, page = page)) },
-                isEmpty = ::looksEmptyArtic,
+            val seed = RemoteSample.randomSeed(random)
+            val payload = httpGet(
+                searchUrl(limit = RemoteSample.SEARCH_POOL, kind = target, seed = seed),
             )
             val page = json.decodeFromString<ArticSearchPage>(payload)
             val iiifBase = page.config?.iiifUrl?.takeIf { it.isNotBlank() } ?: DEFAULT_IIIF_BASE
@@ -56,11 +47,6 @@ class ArticSource(
             RemoteSample.sample(mapped, perKind, random)
         }
     }.getOrDefault(emptyList())
-
-    private fun looksEmptyArtic(payload: String): Boolean =
-        runCatching {
-            json.decodeFromString<ArticSearchPage>(payload).data.isEmpty()
-        }.getOrDefault(true)
 
     private fun toArtwork(
         item: ArticArtwork,
@@ -99,20 +85,37 @@ class ArticSource(
 
         private val json = Json { ignoreUnknownKeys = true }
 
+        /**
+         * @param seed when non-null, wraps the query in Elasticsearch
+         * `function_score` + `random_score` (Artic's documented random pattern).
+         */
         fun searchUrl(
             limit: Int = DEFAULT_LIMIT,
             kind: MuseumSearchKind = MuseumSearchKind.Painting,
             page: Int = 1,
+            seed: Int? = null,
         ): String {
             val q = RemoteCategoryMapping.museumParams(kind, RemoteProvider.Artic).query.orEmpty()
-            // Percent-encode brackets — raw `query[term]…` breaks some HTTP stacks.
-            return "https://api.artic.edu/api/v1/artworks/search" +
-                "?q=$q" +
-                "&query%5Bterm%5D%5Bis_public_domain%5D=true" +
-                "&limit=$limit" +
-                "&page=$page" +
+            val fields =
                 "&fields=id,title,artist_display,image_id,is_public_domain,description," +
-                "date_display,medium_display"
+                    "date_display,medium_display"
+            return if (seed != null) {
+                val queryJson =
+                    """{"function_score":{"query":{"bool":{"must":[{"term":{"is_public_domain":true}},{"exists":{"field":"image_id"}}]}},"boost_mode":"replace","random_score":{"field":"id","seed":$seed}}}"""
+                "https://api.artic.edu/api/v1/artworks/search" +
+                    "?q=$q" +
+                    "&query=${RemoteSample.percentEncode(queryJson)}" +
+                    "&limit=$limit" +
+                    fields
+            } else {
+                // Percent-encode brackets — raw `query[term]…` breaks some HTTP stacks.
+                "https://api.artic.edu/api/v1/artworks/search" +
+                    "?q=$q" +
+                    "&query%5Bterm%5D%5Bis_public_domain%5D=true" +
+                    "&limit=$limit" +
+                    "&page=$page" +
+                    fields
+            }
         }
 
         fun collectionPageUrl(objectId: Int): String =

@@ -13,6 +13,7 @@ class SmithsonianSourceTest {
         val url = SmithsonianSource.searchUrl(
             apiKey = "test-key",
             limit = RemoteSample.SEARCH_POOL,
+            sort = "random",
         )
         val fixtures = mapOf(
             url to """
@@ -88,11 +89,16 @@ class SmithsonianSourceTest {
 
     @Test
     fun searchUrlEncodesQuery() {
-        val url = SmithsonianSource.searchUrl(apiKey = "k", kind = MuseumSearchKind.Sculpture)
+        val url = SmithsonianSource.searchUrl(
+            apiKey = "k",
+            kind = MuseumSearchKind.Sculpture,
+            sort = "random",
+        )
         assertTrue(url.contains("api_key=k"))
         assertTrue(url.contains("sculpture"))
         assertTrue(url.contains("online_media_type%3AImages"))
         assertTrue(url.contains("start=0"))
+        assertTrue(url.contains("sort=random"))
         assertFalse(url.contains("unit_code"))
     }
 

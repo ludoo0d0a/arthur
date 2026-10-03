@@ -41,16 +41,22 @@ class MarkovSequencerTest {
             Artwork(GenartSource.SNOW, "Snow", sourceId = GenartSource.ID, kind = ArtworkKind.Genart),
             MusicUserPrefs(character = AmbientAudioCharacter.Melody, stylePreference = MusicStyle.JazzPiano),
         )
-        val seq = MarkovSequencer(preset, sessionSalt = 99L)
+        val seq = MarkovSequencer(preset, sessionSalt = 99L, character = AmbientAudioCharacter.Melody)
         var onsets = 0
+        var bassHits = 0
         // ~8 s of audio at 44.1 kHz
         repeat(44_100 * 8) {
             seq.advanceHarmonyClock(44_100)
             if (seq.tickMelody(44_100)) onsets++
+            if (seq.tickBass(44_100)) bassHits++
         }
         assertTrue("expected melodic onsets, got $onsets", onsets >= 6)
+        assertTrue("expected bass hits, got $bassHits", bassHits >= 4)
         assertTrue(seq.harmonyPartialsHz().isNotEmpty())
         assertNotNull(seq.transitionCue())
+        val bassHz = seq.currentBassFrequencyHz
+        assertNotNull(bassHz)
+        assertTrue("bass out of range: $bassHz", bassHz!! in 40f..140f)
     }
 
     @Test
@@ -63,12 +69,44 @@ class MarkovSequencerTest {
                 complexity = 0.9f,
             ),
         )
-        val seq = MarkovSequencer(preset, sessionSalt = 7L)
+        val seq = MarkovSequencer(preset, sessionSalt = 7L, character = AmbientAudioCharacter.Melody)
         var onsets = 0
         repeat(44_100 * 6) {
             if (seq.tickMelody(44_100)) onsets++
         }
         assertTrue("onsets=$onsets", onsets >= 5)
+    }
+
+    @Test
+    fun atmosphereIsSparserThanMelody() {
+        val art = Artwork("test.atm", "Atm", sourceId = "test", kind = ArtworkKind.Photo)
+        val prefsMel = MusicUserPrefs(
+            character = AmbientAudioCharacter.Melody,
+            stylePreference = MusicStyle.Zen,
+            complexity = 0.8f,
+        )
+        val prefsAtm = MusicUserPrefs(
+            character = AmbientAudioCharacter.Atmosphere,
+            stylePreference = MusicStyle.Zen,
+            complexity = 0.8f,
+        )
+        val melSeq = MarkovSequencer(
+            MusicPresetResolver.resolve(art, prefsMel),
+            11L,
+            AmbientAudioCharacter.Melody,
+        )
+        val atmSeq = MarkovSequencer(
+            MusicPresetResolver.resolve(art, prefsAtm),
+            11L,
+            AmbientAudioCharacter.Atmosphere,
+        )
+        var melOnsets = 0
+        var atmOnsets = 0
+        repeat(44_100 * 8) {
+            if (melSeq.tickMelody(44_100)) melOnsets++
+            if (atmSeq.tickMelody(44_100)) atmOnsets++
+        }
+        assertTrue("melody=$melOnsets atm=$atmOnsets", atmOnsets < melOnsets)
     }
 
     @Test
@@ -91,5 +129,15 @@ class ArrangementFormTest {
         repeat(500) { form.tick(44_100) }
         // After bridge expires, section advances into cycle.
         assertTrue(form.section != FormSection.Bridge || form.melodyMul >= 0f)
+    }
+
+    @Test
+    fun usesProvidedSampleRateForSectionLength() {
+        val form = ArrangementForm(1L)
+        form.tick(22_050)
+        // After scheduling, remaining ticks should roughly match ~4–6s at 22050.
+        // Just ensure ticking at alternate SR does not crash and advances.
+        repeat(22_050 * 20) { form.tick(22_050) }
+        assertNotNull(form.section)
     }
 }

@@ -7,36 +7,64 @@ enum class ChordQuality(val intervals: IntArray) {
     Sus2(intArrayOf(0, 2, 7)),
     OpenTriad(intArrayOf(0, 4, 7)),
     JazzDrop(intArrayOf(0, 10, 14, 17)),
+    Minor7(intArrayOf(0, 3, 7, 10)),
+    Dom7(intArrayOf(0, 4, 7, 10)),
     ParallelThirds(intArrayOf(0, 4)),
     ParallelFourths(intArrayOf(0, 5)),
 }
 
-/** Roman-ish progression state for the harmony Markov chain. */
+/** Roman-ish progression state for the harmony chain. */
 enum class HarmonyState {
-    I, IV, V, Ii, BVII, Pedal
+    I, IV, V, Ii, Vi, BVII, Pedal
 }
 
 data class HarmonyPattern(
     val id: String,
     val qualities: List<ChordQuality>,
     val progression: List<HarmonyState>,
+    /** Prefer walking the progression in order (refrain) vs free Markov. */
+    val sequential: Boolean = true,
 )
 
 object HarmonyBank {
     private val zenPads = HarmonyPattern(
         "zen_pads",
-        listOf(ChordQuality.RootFifth, ChordQuality.Sus2, ChordQuality.Add9),
-        listOf(HarmonyState.I, HarmonyState.Pedal, HarmonyState.IV, HarmonyState.I),
+        listOf(ChordQuality.RootFifth, ChordQuality.Sus2, ChordQuality.Add9, ChordQuality.OpenTriad),
+        listOf(HarmonyState.I, HarmonyState.V, HarmonyState.Vi, HarmonyState.IV),
+    )
+    private val classicalCadence = HarmonyPattern(
+        "classical_iv_v",
+        listOf(ChordQuality.OpenTriad, ChordQuality.Add9, ChordQuality.RootFifth),
+        listOf(HarmonyState.I, HarmonyState.IV, HarmonyState.V, HarmonyState.I),
     )
     private val jazzProg = HarmonyPattern(
         "jazz_ii_v",
-        listOf(ChordQuality.JazzDrop, ChordQuality.OpenTriad, ChordQuality.Add9),
-        listOf(HarmonyState.Ii, HarmonyState.V, HarmonyState.I, HarmonyState.IV),
+        listOf(ChordQuality.Minor7, ChordQuality.Dom7, ChordQuality.JazzDrop, ChordQuality.OpenTriad),
+        listOf(HarmonyState.Ii, HarmonyState.V, HarmonyState.I, HarmonyState.Vi),
+    )
+    private val jazzTurnaround = HarmonyPattern(
+        "jazz_turn",
+        listOf(ChordQuality.Minor7, ChordQuality.Dom7, ChordQuality.Add9),
+        listOf(HarmonyState.I, HarmonyState.Vi, HarmonyState.Ii, HarmonyState.V),
+    )
+    private val blues12 = HarmonyPattern(
+        "blues_12",
+        listOf(ChordQuality.Dom7, ChordQuality.OpenTriad, ChordQuality.RootFifth),
+        listOf(
+            HarmonyState.I, HarmonyState.I, HarmonyState.I, HarmonyState.I,
+            HarmonyState.IV, HarmonyState.IV, HarmonyState.I, HarmonyState.I,
+            HarmonyState.V, HarmonyState.IV, HarmonyState.I, HarmonyState.V,
+        ),
     )
     private val barWarm = HarmonyPattern(
         "bar_warm",
-        listOf(ChordQuality.OpenTriad, ChordQuality.Add9, ChordQuality.Sus2),
+        listOf(ChordQuality.OpenTriad, ChordQuality.Add9, ChordQuality.Sus2, ChordQuality.Minor7),
         listOf(HarmonyState.I, HarmonyState.BVII, HarmonyState.IV, HarmonyState.I),
+    )
+    private val balladPop = HarmonyPattern(
+        "ballad_pop",
+        listOf(ChordQuality.OpenTriad, ChordQuality.Add9, ChordQuality.Sus2),
+        listOf(HarmonyState.I, HarmonyState.V, HarmonyState.Vi, HarmonyState.IV),
     )
     private val guitarOpen = HarmonyPattern(
         "guitar_open",
@@ -56,25 +84,25 @@ object HarmonyBank {
     private val bowl = HarmonyPattern(
         "bowl",
         listOf(ChordQuality.RootFifth, ChordQuality.Add9),
-        listOf(HarmonyState.Pedal, HarmonyState.I, HarmonyState.Pedal),
+        listOf(HarmonyState.Pedal, HarmonyState.I, HarmonyState.Pedal, HarmonyState.IV),
     )
     private val ocean = HarmonyPattern(
         "ocean",
-        listOf(ChordQuality.Sus2, ChordQuality.RootFifth),
-        listOf(HarmonyState.Pedal, HarmonyState.IV, HarmonyState.I),
+        listOf(ChordQuality.Sus2, ChordQuality.RootFifth, ChordQuality.Add9),
+        listOf(HarmonyState.Pedal, HarmonyState.IV, HarmonyState.I, HarmonyState.Pedal),
     )
 
     fun patternsFor(style: fr.geoking.arthur.audio.MusicStyle): List<HarmonyPattern> =
         when (style) {
-            fr.geoking.arthur.audio.MusicStyle.Zen -> listOf(zenPads, ocean, bowl)
-            fr.geoking.arthur.audio.MusicStyle.JazzPiano -> listOf(jazzProg, barWarm)
+            fr.geoking.arthur.audio.MusicStyle.Zen -> listOf(zenPads, classicalCadence, balladPop, ocean)
+            fr.geoking.arthur.audio.MusicStyle.JazzPiano -> listOf(jazzProg, jazzTurnaround, blues12)
             fr.geoking.arthur.audio.MusicStyle.BarAmbience, fr.geoking.arthur.audio.MusicStyle.NightLounge ->
-                listOf(barWarm, jazzProg, zenPads)
-            fr.geoking.arthur.audio.MusicStyle.SoftGuitar -> listOf(guitarOpen, zenPads)
+                listOf(barWarm, jazzProg, blues12, balladPop)
+            fr.geoking.arthur.audio.MusicStyle.SoftGuitar -> listOf(guitarOpen, balladPop, classicalCadence, zenPads)
             fr.geoking.arthur.audio.MusicStyle.AfricanPulse -> listOf(africanPar, guitarOpen)
             fr.geoking.arthur.audio.MusicStyle.CosmicDrone -> listOf(cosmic, bowl, zenPads)
             fr.geoking.arthur.audio.MusicStyle.TibetanBowl -> listOf(bowl, zenPads, cosmic)
-            fr.geoking.arthur.audio.MusicStyle.OceanWaves -> listOf(ocean, zenPads)
+            fr.geoking.arthur.audio.MusicStyle.OceanWaves -> listOf(ocean, zenPads, balladPop)
             fr.geoking.arthur.audio.MusicStyle.WindChimes -> listOf(zenPads, cosmic, ocean)
         }
 
@@ -89,6 +117,7 @@ object HarmonyBank {
         HarmonyState.Ii -> 2
         HarmonyState.IV -> 5
         HarmonyState.V -> 7
+        HarmonyState.Vi -> 9
         HarmonyState.BVII -> 10
     }
 }

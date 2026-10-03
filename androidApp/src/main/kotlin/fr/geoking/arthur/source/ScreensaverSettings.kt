@@ -58,7 +58,7 @@ class ScreensaverSettings(context: Context) {
     }
 
     companion object {
-        val DEFAULT_PACK_SELECTION = PackSelection(PackFamily.Museum, MuseumTopic.Met.testTagSuffix)
+        val DEFAULT_PACK_SELECTION = PackSelection(PackFamily.Museum, MuseumTopic.Random.testTagSuffix)
 
         private const val PREFS = "arthur_screensaver"
         private const val KEY_FAMILY = "default_pack_family"

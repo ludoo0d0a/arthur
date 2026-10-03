@@ -8,6 +8,15 @@
 captures/
 .cxx/
 
+# JVM crash / replay dumps
+hs_err_pid*.log
+replay_pid*.log
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+
 # geoking-tools
 scripts/.keystore-credentials
 scripts/.play-service-account.json

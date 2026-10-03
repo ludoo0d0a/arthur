@@ -166,6 +166,7 @@ dependencies {
     implementation(libs.play.app.update.ktx)
     implementation(libs.aboutlibraries.compose.m3)
     implementation("fr.geoking.tools:debug-bar")
+    implementation("fr.geoking.tools:in-app-update")
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)

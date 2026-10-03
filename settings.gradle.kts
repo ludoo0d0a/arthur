@@ -36,6 +36,8 @@ if (gkToolsRoot != null) {
         dependencySubstitution {
             substitute(module("fr.geoking.tools:debug-bar"))
                 .using(project(":debug-bar"))
+            substitute(module("fr.geoking.tools:in-app-update"))
+                .using(project(":in-app-update"))
         }
     }
 }

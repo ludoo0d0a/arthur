@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -24,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.google.android.play.core.install.model.InstallStatus
 import fr.geoking.arthur.BuildConfig
+import fr.geoking.arthur.R
 import fr.geoking.arthur.billing.PurchasesGateway
 import fr.geoking.arthur.fractal.CustomFractalStore
 import fr.geoking.arthur.phone.theme.ArthurTheme
@@ -51,9 +53,11 @@ import fr.geoking.arthur.ui.screens.ControlPlaneScreen
 import fr.geoking.arthur.ui.screens.CustomFractalEditorScreen
 import fr.geoking.arthur.ui.screens.MarketplaceScreen
 import fr.geoking.arthur.ui.screens.SettingsScreen
-import fr.geoking.arthur.update.CheckFeedback
 import fr.geoking.arthur.update.InAppUpdateHelper
+import fr.geoking.tools.inappupdate.CheckFeedback
+import fr.geoking.tools.inappupdate.UpdateNotificationSpec
 import org.koin.android.ext.android.inject
+
 class MainActivity : ComponentActivity() {
     private val contentEngine: ContentEngine by inject()
     private val premium: PremiumEntitlement by inject()
@@ -70,7 +74,19 @@ class MainActivity : ComponentActivity() {
     private val quoteSettings: QuoteSettings by inject()
     private val ambientAudioSettings: AmbientAudioSettings by inject()
 
-    private val inAppUpdateHelper by lazy { InAppUpdateHelper(applicationContext) }
+    private val inAppUpdateHelper by lazy {
+        InAppUpdateHelper(
+            context = applicationContext,
+            notificationSpec = UpdateNotificationSpec(
+                channelId = "arthur_updates",
+                channelName = getString(R.string.update_available_title),
+                smallIcon = R.drawable.ic_sparkle,
+                title = getString(R.string.update_available_title),
+                message = getString(R.string.update_available_message),
+                launchActivityClass = MainActivity::class.java,
+            ),
+        )
+    }
 
     private val updateResultLauncher = registerForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult(),
@@ -85,6 +101,7 @@ class MainActivity : ComponentActivity() {
         val isTelevision = resources.configuration.uiMode and Configuration.UI_MODE_TYPE_MASK ==
             Configuration.UI_MODE_TYPE_TELEVISION
 
+        inAppUpdateHelper.consumeLaunchIntent(intent)
         inAppUpdateHelper.checkForUpdate()
         handleDeepLinkIntent(intent)
 
@@ -92,11 +109,18 @@ class MainActivity : ComponentActivity() {
             ArthurTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val updateAvailable by inAppUpdateHelper.updateAvailable.collectAsState()
+                    val autoStartUpdate by inAppUpdateHelper.autoStartUpdate.collectAsState()
                     val installStatus by inAppUpdateHelper.installStatus.collectAsState()
                     val checkFeedback by inAppUpdateHelper.checkFeedback.collectAsState()
                     val isUpdateInProgress = installStatus == InstallStatus.PENDING ||
                         installStatus == InstallStatus.DOWNLOADING ||
                         installStatus == InstallStatus.INSTALLING
+
+                    LaunchedEffect(updateAvailable, autoStartUpdate) {
+                        if (autoStartUpdate && updateAvailable != null) {
+                            inAppUpdateHelper.maybeAutoStartUpdate(updateResultLauncher)
+                        }
+                    }
 
                     Box(modifier = Modifier.fillMaxSize()) {
                         var showEditor by remember { mutableStateOf(false) }
@@ -251,7 +275,9 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    updateAvailable?.let { info ->
+                    // Notification tap auto-starts; skip the confirm dialog in that path.
+                    val dialogUpdate = updateAvailable?.takeUnless { autoStartUpdate }
+                    dialogUpdate?.let { info ->
                         UpdateAvailableDialog(
                             onCancel = { inAppUpdateHelper.dismissUpdate() },
                             onUpdate = {
@@ -283,6 +309,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
+        setIntent(intent)
+        inAppUpdateHelper.consumeLaunchIntent(intent)
         handleDeepLinkIntent(intent)
     }
 

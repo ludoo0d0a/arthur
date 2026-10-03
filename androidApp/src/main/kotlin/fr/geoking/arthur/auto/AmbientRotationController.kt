@@ -102,6 +102,8 @@ internal class AmbientRotationController(
 
     private var rotationJob: Job? = null
     private var renderJob: Job? = null
+    private var renewJob: Job? = null
+    private var renewIssuedAtPoolSize: Int = -1
     private var advanceJob: Job? = null
 
     init {
@@ -227,18 +229,20 @@ internal class AmbientRotationController(
                 )
             }.getOrDefault(emptyList())
         }
-        val currentPoolIds = catalog.map { it.id }.toSet()
         val rawResolved = resolvePackPool(liveRaw, packSelection).distinctBy { it.id }
-        val distinctLive = rawResolved.filter { it.id !in currentPoolIds }
-        val candidatePool = if (distinctLive.isNotEmpty()) {
-            (catalog + distinctLive).distinctBy { it.id }
+        val keepId = current?.id
+        val appended = AmbientAlbumArt.appendToRotationPool(
+            current = catalog,
+            incoming = rawResolved,
+            keepId = keepId,
+        )
+        val livePool = if (appended.size > catalog.size) {
+            appended
         } else {
-            rawResolved.ifEmpty { catalog }
+            samplePool(rawResolved.ifEmpty { catalog })
         }
-        val livePool = samplePool(candidatePool)
         liveCount = livePool.size
         if (livePool.isNotEmpty()) {
-            val keepId = current?.id
             catalog = livePool
             bindQuotes(livePool, replaceAll = false)
             if (keepId == null || livePool.none { it.id == keepId }) {
@@ -406,9 +410,14 @@ internal class AmbientRotationController(
         notifyArtworkChanged()
         onInvalidate()
 
-        val unseenCount = catalog.count { !invalidStore.isInvalid(it.id) && it.id !in seenIds }
-        if (unseenCount <= 1) {
-            scope.launch { runCatching { renewCatalog() } }
+        val validCount = catalog.count { !invalidStore.isInvalid(it.id) }
+        val seenValid = catalog.count { !invalidStore.isInvalid(it.id) && it.id in seenIds }
+        if (AmbientAlbumArt.shouldPrefetchNextPool(seenValid, validCount) &&
+            renewIssuedAtPoolSize != validCount &&
+            renewJob?.isActive != true
+        ) {
+            renewIssuedAtPoolSize = validCount
+            renewJob = scope.launch { runCatching { renewCatalog() } }
         }
     }
 

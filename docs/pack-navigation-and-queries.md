@@ -119,8 +119,10 @@ File: [AmbientActivity.kt](../androidApp/src/main/kotlin/fr/geoking/arthur/tv/Am
   `artwork_unavailable` messages. Technical `errorDetail` only when Developer → Verbose.
 - **Dream**: `loadDreamAmbient` loads `sourceIdsForAmbientLoad()` for the screensaver
   pack; empty selection pool → placeholder (Genart may still resolve from catalog).
-- **On pool renew**: `ContentEngine.catalog(sourceIds = renewSourceIds)` for the
-  original Control Plane sources only.
+- **On pool renew**: when within `POOL_RENEW_LEAD` (2) of the playlist end
+  (~19th/20th of a `DEFAULT_LIMIT` page), `ContentEngine.catalog(sourceIds =
+  renewSourceIds)` fetches the next sample and **appends** distinct ids to the
+  current playlist (capped at `MAX_PLAYLIST_SIZE` = 60).
 - **Per still**: `StillImagePrefetcher.ensureCached()` → disk image cache. Videos stream via ExoPlayer.
 
 ### 3.3 ArtworkDetailScreen / Custom fractal editor

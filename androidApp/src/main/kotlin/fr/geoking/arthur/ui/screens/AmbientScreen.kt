@@ -100,8 +100,9 @@ import kotlin.math.abs
  *   for random rotation every [intervalMs].
  * - Pin only: empty [rotationPool].
  * - Dream / screensaver: pass a multi-item [rotationPool] to rotate the same way.
- * - [onNeedRenewPool]: after every pool id has been shown once, request a fresh
- *   API sample (museums / stock). Parent replaces [rotationPool].
+ * - [onNeedRenewPool]: when within [AmbientAlbumArt.POOL_RENEW_LEAD] of the playlist
+ *   end (around the 19th/20th of a source page), request the next API sample.
+ *   Parent should append new ids to [rotationPool].
  *
  * Navigation while rotating:
  * - Sound on (phone & TV): bottom icons only — mute + info (no media transport bar).
@@ -132,7 +133,7 @@ fun AmbientScreenContent(
         if (displayable.isNotEmpty() && displayable.all { it.isGenerative }) {
             displayable
         } else {
-            displayable.take(AmbientAlbumArt.MAX_AUTO_ROTATION_POOL)
+            displayable.take(AmbientAlbumArt.MAX_PLAYLIST_SIZE)
         }
     }
     val shouldRotate = rotatePool.size >= 2
@@ -169,7 +170,19 @@ fun AmbientScreenContent(
         }
     }
     var rotationEpoch by remember { mutableIntStateOf(0) }
-    var seenIds by remember(rotatePool.map { it.id }) { mutableStateOf(emptySet<String>()) }
+    // Preserve seen ids across playlist appends; only reset on a full pool replace.
+    var seenIds by remember { mutableStateOf(emptySet<String>()) }
+    var previousPoolIds by remember { mutableStateOf(emptyList<String>()) }
+    var renewIssuedAtPoolSize by remember { mutableIntStateOf(-1) }
+    LaunchedEffect(poolIds) {
+        val prev = previousPoolIds.toSet()
+        val next = poolIds.toSet()
+        previousPoolIds = poolIds
+        if (prev.isEmpty()) return@LaunchedEffect
+        val isAppend = next.containsAll(prev) && next.size >= prev.size
+        seenIds = if (isAppend) seenIds.intersect(next) else emptySet()
+        if (!isAppend) renewIssuedAtPoolSize = -1
+    }
     var isPlaying by remember { mutableStateOf(true) }
     var displayReady by remember { mutableStateOf(false) }
     val progress = remember { Animatable(0f) }
@@ -258,11 +271,11 @@ fun AmbientScreenContent(
         }
         val nextSeen = seenIds + nextId
         seenIds = nextSeen
-        val unseenCount = poolIds.count { it !in nextSeen }
-        if (unseenCount <= 1 || poolIds.all { it in nextSeen }) {
-            if (poolIds.all { it in nextSeen }) {
-                seenIds = emptySet()
-            }
+        val poolSize = poolIds.size
+        if (AmbientAlbumArt.shouldPrefetchNextPool(nextSeen.size, poolSize) &&
+            renewIssuedAtPoolSize != poolSize
+        ) {
+            renewIssuedAtPoolSize = poolSize
             renewLatest?.invoke()
         }
         rotationEpoch++

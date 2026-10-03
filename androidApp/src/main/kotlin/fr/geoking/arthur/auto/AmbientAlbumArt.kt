@@ -20,6 +20,16 @@ object AmbientAlbumArt {
      * can walk the full list (e.g. debug counter 1/30) before renewing from APIs.
      */
     const val MAX_AUTO_ROTATION_POOL = 30
+    /**
+     * Hard cap after mid-session catalog appends (~3 museum pages of [SOURCE_CATALOG_PAGE]).
+     */
+    const val MAX_PLAYLIST_SIZE = 60
+    /**
+     * Typical museum/stock Source [load] page (`DEFAULT_LIMIT`). Prefetch the next page
+     * when fewer than [POOL_RENEW_LEAD] items remain — around the 19th/20th of a full page.
+     */
+    const val SOURCE_CATALOG_PAGE = 20
+    const val POOL_RENEW_LEAD = 2
     const val PATH_ART = "art"
     const val AUTHORITY_SUFFIX = ".albumart"
 
@@ -50,6 +60,41 @@ object AmbientAlbumArt {
             if (ordered.none { it.id == art.id }) ordered.add(art)
         }
         return ordered
+    }
+
+    /**
+     * True when the viewer is within [POOL_RENEW_LEAD] of the playlist end
+     * (e.g. 19th/20th of a [SOURCE_CATALOG_PAGE]-sized pool — `DEFAULT_LIMIT - 2`).
+     */
+    fun shouldPrefetchNextPool(seenCount: Int, poolSize: Int): Boolean {
+        if (poolSize < 2 || seenCount <= 0) return false
+        val remaining = poolSize - seenCount
+        return remaining <= POOL_RENEW_LEAD
+    }
+
+    /**
+     * Appends distinct [incoming] artworks after [current], dropping oldest entries
+     * (never [keepId]) if the playlist would exceed [maxSize].
+     */
+    fun appendToRotationPool(
+        current: List<Artwork>,
+        incoming: List<Artwork>,
+        maxSize: Int = MAX_PLAYLIST_SIZE,
+        keepId: String? = null,
+    ): List<Artwork> {
+        if (incoming.isEmpty()) return current
+        val existingIds = current.mapTo(HashSet(current.size)) { it.id }
+        val additions = incoming.filter { it.id !in existingIds }.distinctBy { it.id }
+        if (additions.isEmpty()) return current
+        val combined = current + additions
+        if (combined.size <= maxSize) return combined
+        val overflow = combined.size - maxSize
+        val dropIds = LinkedHashSet<String>(overflow)
+        for (art in combined) {
+            if (dropIds.size >= overflow) break
+            if (art.id != keepId) dropIds.add(art.id)
+        }
+        return combined.filterNot { it.id in dropIds }
     }
 
     fun authority(packageName: String): String = packageName + AUTHORITY_SUFFIX

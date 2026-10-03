@@ -78,6 +78,7 @@ class ArthurMediaService : MediaLibraryService() {
     private var liveCount: Int = 0
     private var queryLaunched: Boolean = false
     private var rotationJob: Job? = null
+    private var renewJob: Job? = null
     private var quotesById: Map<String, Quote> = emptyMap()
     private lateinit var audioFocusHandler: AmbientAudioFocusHandler
 
@@ -281,9 +282,12 @@ class ArthurMediaService : MediaLibraryService() {
             if (playing) startRotation() else setPlaying(true)
         }
 
-        val unseenCount = pool.count { !invalidStore.isInvalid(it.id) && it.id !in seenIds }
-        if (unseenCount <= 1) {
-            scope.launch { runCatching { renewCatalog() } }
+        val validCount = pool.count { !invalidStore.isInvalid(it.id) }
+        val seenValid = pool.count { !invalidStore.isInvalid(it.id) && it.id in seenIds }
+        if (AmbientAlbumArt.shouldPrefetchNextPool(seenValid, validCount) &&
+            renewJob?.isActive != true
+        ) {
+            renewJob = scope.launch { runCatching { renewCatalog() } }
         }
     }
 

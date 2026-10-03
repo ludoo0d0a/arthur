@@ -68,6 +68,26 @@ class ArrangementForm(
         scheduleCurrent(sampleRate)
     }
 
+    /** Samples remaining in the current section (0 if not yet scheduled). */
+    fun samplesUntilSectionChange(): Int = samplesRemaining
+
+    /** Fast-forward arrangement clock by [frames] samples. */
+    fun skipSamples(frames: Int, sampleRate: Int) {
+        if (frames <= 0) return
+        lastSampleRate = sampleRate
+        var left = frames
+        while (left > 0) {
+            if (samplesRemaining <= 0) {
+                scheduleCurrent(sampleRate)
+            }
+            if (samplesRemaining <= 0) break
+            val step = minOf(left, samplesRemaining)
+            samplesRemaining -= step
+            left -= step
+            if (samplesRemaining == 0) advance(sampleRate)
+        }
+    }
+
     private fun advance(sampleRate: Int) {
         index = (index + 1) % cycle.size
         section = cycle[index]

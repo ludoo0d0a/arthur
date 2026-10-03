@@ -98,6 +98,33 @@ class MarkovSequencer(
     var harmonyChanged: Boolean = true
         private set
 
+    /** Samples remaining before next melody decision (0 = due now). */
+    fun samplesUntilMelody(): Int = samplesUntilNextNote
+
+    /** Samples remaining before next bass onset (0 = due now). */
+    fun samplesUntilBass(): Int = samplesUntilBass
+
+    /** Samples remaining before next harmony change (0 = due now). */
+    fun samplesUntilHarmony(): Int = samplesUntilHarmony
+
+    /**
+     * Fast-forward idle countdowns by [frames] when no onset is due.
+     * Caller must ensure [frames] ≤ all positive countdowns.
+     */
+    fun skipSamples(frames: Int) {
+        if (frames <= 0) return
+        if (samplesUntilNextNote > 0) {
+            samplesUntilNextNote = (samplesUntilNextNote - frames).coerceAtLeast(0)
+        }
+        if (samplesUntilBass > 0) {
+            samplesUntilBass = (samplesUntilBass - frames).coerceAtLeast(0)
+        }
+        if (samplesUntilHarmony > 0) {
+            samplesUntilHarmony = (samplesUntilHarmony - frames).coerceAtLeast(0)
+        }
+        harmonyChanged = false
+    }
+
     fun resetPhrase() {
         pitchChain.reset()
         rhythmChain.reset()

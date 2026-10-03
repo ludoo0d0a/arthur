@@ -118,6 +118,45 @@ class MarkovSequencerTest {
         seq.resetPhrase()
         seq.tickMelody(44_100)
     }
+
+    @Test
+    fun skipSamplesPreservesOnsetTiming() {
+        val preset = MusicPresetResolver.resolve(
+            Artwork("test.skip", "Skip", sourceId = "test", kind = ArtworkKind.Photo),
+            MusicUserPrefs(
+                character = AmbientAudioCharacter.Melody,
+                stylePreference = MusicStyle.JazzPiano,
+            ),
+        )
+        val a = MarkovSequencer(preset, 42L, AmbientAudioCharacter.Melody)
+        val b = MarkovSequencer(preset, 42L, AmbientAudioCharacter.Melody)
+        // Advance both until a countdown is active.
+        repeat(100) {
+            a.advanceHarmonyClock(48_000)
+            a.tickMelody(48_000)
+            a.tickBass(48_000)
+            b.advanceHarmonyClock(48_000)
+            b.tickMelody(48_000)
+            b.tickBass(48_000)
+        }
+        val idle = minOf(
+            a.samplesUntilMelody().coerceAtLeast(1),
+            a.samplesUntilBass().coerceAtLeast(1),
+            a.samplesUntilHarmony().coerceAtLeast(1),
+        )
+        if (idle > 1) {
+            val jump = idle / 2
+            a.skipSamples(jump)
+            repeat(jump) {
+                b.advanceHarmonyClock(48_000)
+                b.tickMelody(48_000)
+                b.tickBass(48_000)
+            }
+            assertEquals(a.samplesUntilMelody(), b.samplesUntilMelody())
+            assertEquals(a.samplesUntilBass(), b.samplesUntilBass())
+            assertEquals(a.samplesUntilHarmony(), b.samplesUntilHarmony())
+        }
+    }
 }
 
 class ArrangementFormTest {

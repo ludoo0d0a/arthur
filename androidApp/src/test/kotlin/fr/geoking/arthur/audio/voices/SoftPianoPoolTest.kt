@@ -23,7 +23,10 @@ class SoftPianoPoolTest {
     @Test
     fun softLimitTamesPeaks() {
         assertTrue(abs(softLimit(2f)) <= 1f)
+        assertTrue(abs(softLimit(-3f)) <= 1f)
         assertEquals(0f, softLimit(0f), 0.0001f)
+        // Near-linear for quiet signals.
+        assertEquals(0.1f * 1.15f / (1f + abs(0.1f * 1.15f) * 0.35f), softLimit(0.1f), 1e-5f)
     }
 
     @Test

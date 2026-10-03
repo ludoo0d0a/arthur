@@ -1,9 +1,9 @@
 package fr.geoking.arthur.audio.voices
 
 import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.math.pow
-import kotlin.math.tanh
 import kotlin.random.Random
 
 /** Minimal voice interface — renders one mono sample; optional block fill. */
@@ -11,7 +11,7 @@ interface SynthVoice {
     fun render(sampleIndex: Long, sampleRate: Int): Float
     /** Add [frames] samples into [out] starting at [offset], scaled by [gain]. */
     fun renderInto(out: FloatArray, offset: Int, frames: Int, sampleRate: Int, gain: Float = 1f) {
-        if (gain == 0f || frames <= 0) return
+        if (gain == 0f || frames <= 0 || !isAudible()) return
         var idx = 0L
         val end = offset + frames
         for (i in offset until end) {
@@ -24,6 +24,12 @@ interface SynthVoice {
     fun reset() {}
     /** True when the voice may produce non-zero output. */
     fun isAudible(): Boolean = true
+}
+
+/** Per-sample multiply factors derived once at note-on / SR change. */
+private object EnvMath {
+    fun decayMul(ratePerSec: Double, sampleRate: Int): Double =
+        exp(-ratePerSec / sampleRate.coerceAtLeast(1))
 }
 
 /**
@@ -64,7 +70,7 @@ class SinePadVoice(
 
     fun setGlideSeconds(seconds: Float) {
         glideSecondsOverride = seconds.coerceIn(0.02f, 0.5f)
-        cachedSr = 0 // force coeff refresh
+        cachedSr = 0
     }
 
     private fun ensureCoeffs(sampleRate: Int) {
@@ -90,7 +96,7 @@ class SinePadVoice(
     }
 
     override fun renderInto(out: FloatArray, offset: Int, frames: Int, sampleRate: Int, gain: Float) {
-        if (frames <= 0 || (currentGain < 1e-5 && targetGain < 1e-5 && gain == 0f)) return
+        if (frames <= 0 || (!isAudible() && gain == 0f)) return
         ensureCoeffs(sampleRate)
         val end = offset + frames
         var i = offset
@@ -120,20 +126,24 @@ class SinePadVoice(
     override fun isAudible(): Boolean = currentGain > 1e-5 || targetGain > 1e-5
 }
 
-/** Soft sine bass with slow attack; phase-accumulated oscillator. */
+/** Soft sine bass with multiplicative envelopes. */
 class SoftBassVoice : SynthVoice {
     private var phase = 0.0
     private var phase2 = 0.0
     private var freq = 55.0
     private var targetFreq = 55.0
     private var age = 0L
-    private var vel = 0f
+    private var env = 0.0
+    private var peak = 0.0
     private var active = false
     private var releasing = false
-    private var releaseAge = 0L
     private var cachedSr = 0
     private var gCoeff = 0.0
     private var invSr = 0.0
+    private var attackSamples = 1
+    private var decayMul = 0.999
+    private var releaseMul = 0.99
+    private var maxAge = 0L
 
     val isActive: Boolean get() = active
 
@@ -146,18 +156,16 @@ class SoftBassVoice : SynthVoice {
             phase = 0.0
             phase2 = 0.0
         }
-        vel = velocity.coerceIn(0.1f, 1f)
+        peak = velocity.coerceIn(0.1f, 1f) * 0.55
         age = 0L
+        env = 0.0
         active = true
         releasing = false
-        releaseAge = 0L
+        cachedSr = 0 // refresh attack/decay for current SR on next render
     }
 
     override fun noteOff() {
-        if (active) {
-            releasing = true
-            releaseAge = 0L
-        }
+        if (active) releasing = true
     }
 
     private fun ensureCoeffs(sampleRate: Int) {
@@ -165,27 +173,28 @@ class SoftBassVoice : SynthVoice {
         cachedSr = sampleRate
         invSr = 1.0 / sampleRate
         gCoeff = 1.0 - exp(-1.0 / (sampleRate * 0.08))
+        attackSamples = (0.015 * sampleRate).toInt().coerceAtLeast(1)
+        decayMul = EnvMath.decayMul(1.2, sampleRate)
+        releaseMul = EnvMath.decayMul(8.0, sampleRate)
+        maxAge = (6.0 * sampleRate).toLong()
     }
 
     override fun render(sampleIndex: Long, sampleRate: Int): Float {
         if (!active) return 0f
         ensureCoeffs(sampleRate)
         freq += (targetFreq - freq) * gCoeff
-        val t = age.toDouble() * invSr
         age++
-        val attack = (t / 0.015).coerceAtMost(1.0)
-        var env = attack * vel * 0.55
         if (releasing) {
-            val rt = releaseAge.toDouble() * invSr
-            releaseAge++
-            env *= exp(-8.0 * rt)
-            if (rt > 0.35) {
+            env *= releaseMul
+            if (env < 1e-4) {
                 active = false
                 return 0f
             }
-        } else if (t > 4.5) {
-            env *= exp(-1.2 * (t - 4.0))
-            if (t > 6.0) {
+        } else if (age <= attackSamples) {
+            env = peak * age.toDouble() / attackSamples
+        } else {
+            env *= decayMul
+            if (age > maxAge || env < 1e-4) {
                 active = false
                 return 0f
             }
@@ -199,10 +208,11 @@ class SoftBassVoice : SynthVoice {
     override fun reset() {
         active = false
         releasing = false
+        env = 0.0
     }
 }
 
-/** Single piano voice with phase-accumulated harmonic series and release. */
+/** Single piano voice — multiplicative decay/release, no per-sample exp(). */
 class SoftPianoVoice : SynthVoice {
     private var phase1 = 0.0
     private var phase2 = 0.0
@@ -210,12 +220,20 @@ class SoftPianoVoice : SynthVoice {
     private var phase4 = 0.0
     private var freq = 0.0
     private var age = 0L
-    private var vel = 0f
+    private var env = 0.0
+    private var peak = 0.0
     private var active = false
     private var releasing = false
-    private var releaseAge = 0L
     private var invSr = 1.0 / 44_100
     private var cachedSr = 0
+    private var attackSamples = 1
+    private var decayMul = 0.999
+    private var releaseMul = 0.99
+    private var maxAge = 0L
+    private var phaseInc1 = 0.0
+    private var phaseInc2 = 0.0
+    private var phaseInc3 = 0.0
+    private var phaseInc4 = 0.0
 
     val isActive: Boolean get() = active
     val ageSamples: Long get() = age
@@ -224,54 +242,59 @@ class SoftPianoVoice : SynthVoice {
 
     override fun noteOn(freqHz: Float, velocity: Float) {
         freq = freqHz.toDouble()
-        vel = velocity.coerceIn(0.1f, 1f)
+        peak = velocity.coerceIn(0.1f, 1f).toDouble()
         age = 0L
+        env = 0.0
         active = true
         releasing = false
-        releaseAge = 0L
         phase1 = 0.0
         phase2 = 0.0
         phase3 = 0.0
         phase4 = 0.0
+        cachedSr = 0
     }
 
     override fun noteOff() {
-        if (active && !releasing) {
-            releasing = true
-            releaseAge = 0L
-        }
+        if (active && !releasing) releasing = true
     }
 
     private fun ensureSr(sampleRate: Int) {
-        if (sampleRate != cachedSr) {
-            cachedSr = sampleRate
-            invSr = 1.0 / sampleRate
-        }
+        if (sampleRate == cachedSr) return
+        cachedSr = sampleRate
+        invSr = 1.0 / sampleRate
+        attackSamples = (0.006 * sampleRate).toInt().coerceAtLeast(1)
+        decayMul = EnvMath.decayMul(3.2, sampleRate)
+        releaseMul = EnvMath.decayMul(12.0, sampleRate)
+        maxAge = (2.8 * sampleRate).toLong()
+        phaseInc1 = 2.0 * PI * freq * invSr
+        phaseInc2 = 2.0 * PI * freq * 2.002 * invSr
+        phaseInc3 = 2.0 * PI * freq * 3.004 * invSr
+        phaseInc4 = 2.0 * PI * freq * 4.006 * invSr
     }
 
     override fun render(sampleIndex: Long, sampleRate: Int): Float {
         if (!active) return 0f
         ensureSr(sampleRate)
-        val t = age.toDouble() * invSr
         age++
-        val attack = (t / 0.006).coerceAtMost(1.0)
-        var env = attack * exp(-3.2 * t) * vel
         if (releasing) {
-            val rt = releaseAge.toDouble() * invSr
-            releaseAge++
-            env *= exp(-12.0 * rt)
-            if (rt > 0.08) {
+            env *= releaseMul
+            if (env < 1e-4) {
                 active = false
                 return 0f
             }
-        } else if (t > 2.8) {
-            active = false
-            return 0f
+        } else if (age <= attackSamples) {
+            env = peak * age.toDouble() / attackSamples
+        } else {
+            env *= decayMul
+            if (age > maxAge || env < 1e-4) {
+                active = false
+                return 0f
+            }
         }
-        phase1 = SinLut.wrapPhase(phase1 + 2.0 * PI * freq * invSr)
-        phase2 = SinLut.wrapPhase(phase2 + 2.0 * PI * freq * 2.002 * invSr)
-        phase3 = SinLut.wrapPhase(phase3 + 2.0 * PI * freq * 3.004 * invSr)
-        phase4 = SinLut.wrapPhase(phase4 + 2.0 * PI * freq * 4.006 * invSr)
+        phase1 = SinLut.wrapPhase(phase1 + phaseInc1)
+        phase2 = SinLut.wrapPhase(phase2 + phaseInc2)
+        phase3 = SinLut.wrapPhase(phase3 + phaseInc3)
+        phase4 = SinLut.wrapPhase(phase4 + phaseInc4)
         val h1 = SinLut.sin(phase1)
         val h2 = SinLut.sin(phase2) * 0.32f
         val h3 = SinLut.sin(phase3) * 0.14f
@@ -282,6 +305,7 @@ class SoftPianoVoice : SynthVoice {
     override fun reset() {
         active = false
         releasing = false
+        env = 0.0
     }
 }
 
@@ -305,6 +329,7 @@ class SoftPianoPool(
     }
 
     override fun render(sampleIndex: Long, sampleRate: Int): Float {
+        if (!isAudible()) return 0f
         var sum = 0f
         for (v in voices) {
             if (v.isActive) sum += v.render(sampleIndex, sampleRate)
@@ -330,68 +355,84 @@ class PluckGuitarVoice : SynthVoice {
     private var phase3 = 0.0
     private var freq = 0.0
     private var age = 0L
-    private var vel = 0f
+    private var env = 0.0
+    private var peak = 0.0
     private var active = false
     private var releasing = false
-    private var releaseAge = 0L
     private var noise = Random(1)
     private var invSr = 1.0 / 44_100
     private var cachedSr = 0
+    private var attackSamples = 1
+    private var burstSamples = 1
+    private var decayMul = 0.999
+    private var releaseMul = 0.99
+    private var maxAge = 0L
+    private var phaseInc1 = 0.0
+    private var phaseInc2 = 0.0
+    private var phaseInc3 = 0.0
 
     override fun isAudible(): Boolean = active
 
     override fun noteOn(freqHz: Float, velocity: Float) {
         freq = freqHz.toDouble()
-        vel = velocity.coerceIn(0.1f, 1f)
+        peak = velocity.coerceIn(0.1f, 1f).toDouble()
         age = 0L
+        env = 0.0
         active = true
         releasing = false
-        releaseAge = 0L
         noise = Random((freqHz * 100).toInt())
         phase1 = 0.0
         phase2 = 0.0
         phase3 = 0.0
+        cachedSr = 0
     }
 
     override fun noteOff() {
-        if (active && !releasing) {
-            releasing = true
-            releaseAge = 0L
-        }
+        if (active && !releasing) releasing = true
+    }
+
+    private fun ensureSr(sampleRate: Int) {
+        if (sampleRate == cachedSr) return
+        cachedSr = sampleRate
+        invSr = 1.0 / sampleRate
+        attackSamples = (0.004 * sampleRate).toInt().coerceAtLeast(1)
+        burstSamples = (0.008 * sampleRate).toInt().coerceAtLeast(1)
+        decayMul = EnvMath.decayMul(3.0, sampleRate)
+        releaseMul = EnvMath.decayMul(14.0, sampleRate)
+        maxAge = (2.8 * sampleRate).toLong()
+        phaseInc1 = 2.0 * PI * freq * invSr
+        phaseInc2 = 2.0 * PI * freq * 2.0 * invSr
+        phaseInc3 = 2.0 * PI * freq * 3.0 * invSr
     }
 
     override fun render(sampleIndex: Long, sampleRate: Int): Float {
         if (!active) return 0f
-        if (sampleRate != cachedSr) {
-            cachedSr = sampleRate
-            invSr = 1.0 / sampleRate
-        }
-        val t = age.toDouble() * invSr
+        ensureSr(sampleRate)
         age++
-        if (!releasing && t > 2.8) {
-            active = false
-            return 0f
-        }
-        val attack = (t / 0.004).coerceAtMost(1.0)
-        var env = attack * exp(-3.0 * t) * vel
         if (releasing) {
-            val rt = releaseAge.toDouble() * invSr
-            releaseAge++
-            env *= exp(-14.0 * rt)
-            if (rt > 0.06) {
+            env *= releaseMul
+            if (env < 1e-4) {
+                active = false
+                return 0f
+            }
+        } else if (age <= attackSamples) {
+            env = peak * age.toDouble() / attackSamples
+        } else {
+            env *= decayMul
+            if (age > maxAge || env < 1e-4) {
                 active = false
                 return 0f
             }
         }
-        val burst = if (t < 0.008) {
-            val w = (1.0 - t / 0.008)
+        val burst = if (age <= burstSamples) {
+            val w = 1.0 - age.toDouble() / burstSamples
             (noise.nextFloat() * 2f - 1f) * 0.18f * w.toFloat()
         } else {
             0f
         }
-        phase1 = SinLut.wrapPhase(phase1 + 2.0 * PI * freq * invSr)
-        phase2 = SinLut.wrapPhase(phase2 + 2.0 * PI * freq * 2.0 * invSr)
-        phase3 = SinLut.wrapPhase(phase3 + 2.0 * PI * freq * 3.0 * invSr)
+        phase1 = SinLut.wrapPhase(phase1 + phaseInc1)
+        phase2 = SinLut.wrapPhase(phase2 + phaseInc2)
+        phase3 = SinLut.wrapPhase(phase3 + phaseInc3)
         val h1 = SinLut.sin(phase1)
         val h2 = SinLut.sin(phase2) * 0.3f
         val h3 = SinLut.sin(phase3) * 0.12f
@@ -401,6 +442,7 @@ class PluckGuitarVoice : SynthVoice {
     override fun reset() {
         active = false
         releasing = false
+        env = 0.0
     }
 }
 
@@ -410,12 +452,16 @@ class BowlVoice : SynthVoice {
     private var phase3 = 0.0
     private var freq = 0.0
     private var age = 0L
-    private var vel = 0f
+    private var env = 0.0
+    private var peak = 0.0
     private var active = false
     private var sustain = false
     private var sustainPartials: List<Double> = emptyList()
     private var invSr = 1.0 / 44_100
     private var cachedSr = 0
+    private var attackSamples = 1
+    private var decayMul = 0.999
+    private var maxAge = 0L
 
     override fun isAudible(): Boolean = active
 
@@ -430,10 +476,12 @@ class BowlVoice : SynthVoice {
             freq = sustainPartials[0]
             active = true
             age = 0L
-            vel = 0.32f
+            peak = 0.32
+            env = 0.0
             phase1 = 0.0
             phase2 = 0.0
             phase3 = 0.0
+            cachedSr = 0
         } else if (!on) {
             sustain = false
         }
@@ -441,31 +489,43 @@ class BowlVoice : SynthVoice {
 
     override fun noteOn(freqHz: Float, velocity: Float) {
         freq = freqHz.toDouble()
-        vel = velocity.coerceIn(0.08f, 0.85f)
+        peak = velocity.coerceIn(0.08f, 0.85f).toDouble()
         age = 0L
+        env = 0.0
         active = true
         sustain = false
         sustainPartials = emptyList()
         phase1 = 0.0
         phase2 = 0.0
         phase3 = 0.0
+        cachedSr = 0
+    }
+
+    private fun ensureSr(sampleRate: Int) {
+        if (sampleRate == cachedSr) return
+        cachedSr = sampleRate
+        invSr = 1.0 / sampleRate
+        attackSamples = (0.03 * sampleRate).toInt().coerceAtLeast(1)
+        decayMul = if (sustain) 1.0 else EnvMath.decayMul(0.7, sampleRate)
+        maxAge = (6.0 * sampleRate).toLong()
     }
 
     override fun render(sampleIndex: Long, sampleRate: Int): Float {
         if (!active) return 0f
-        if (sampleRate != cachedSr) {
-            cachedSr = sampleRate
-            invSr = 1.0 / sampleRate
-        }
-        val t = age.toDouble() * invSr
+        ensureSr(sampleRate)
         age++
-        if (!sustain && t > 6.0) {
-            active = false
-            return 0f
+        if (age <= attackSamples) {
+            env = peak * age.toDouble() / attackSamples
+            if (sustain) env *= 0.42 / 0.32 // settle toward sustain level after attack
+        } else if (sustain) {
+            env += (peak * 0.42 - env) * 0.002
+        } else {
+            env *= decayMul
+            if (age > maxAge || env < 1e-4) {
+                active = false
+                return 0f
+            }
         }
-        val attack = (t / 0.03).coerceAtMost(1.0)
-        val decay = if (sustain) 0.42 else exp(-0.7 * t)
-        val env = attack * decay * vel
         return if (sustain && sustainPartials.size >= 2) {
             val fA = sustainPartials[0]
             val fB = sustainPartials.getOrElse(1) { fA * 1.5 }
@@ -490,6 +550,7 @@ class BowlVoice : SynthVoice {
         active = false
         sustain = false
         sustainPartials = emptyList()
+        env = 0.0
     }
 }
 
@@ -502,17 +563,22 @@ class WaveNoiseVoice(
     private var phase = 0.0
     private var invSr = 1.0 / 44_100
     private var cachedSr = 0
+    private var phaseInc = 0.0
 
     fun setRootHz(hz: Float) {
         rootHz = hz.coerceIn(40f, 400f)
     }
 
+    private fun ensureSr(sampleRate: Int) {
+        if (sampleRate == cachedSr) return
+        cachedSr = sampleRate
+        invSr = 1.0 / sampleRate
+        phaseInc = 2.0 * PI * 0.05 * invSr
+    }
+
     override fun render(sampleIndex: Long, sampleRate: Int): Float {
-        if (sampleRate != cachedSr) {
-            cachedSr = sampleRate
-            invSr = 1.0 / sampleRate
-        }
-        phase = SinLut.wrapPhase(phase + 2.0 * PI * (0.05) * invSr)
+        ensureSr(sampleRate)
+        phase = SinLut.wrapPhase(phase + phaseInc)
         val swell = 0.5 + 0.5 * SinLut.sin(phase + 0.3 * SinLut.sin(phase * 0.4))
         val n = rng.nextFloat() * 2.0 - 1.0
         val cutoff = (0.04 + (rootHz / 400.0) * 0.08).coerceIn(0.03, 0.14)
@@ -523,14 +589,11 @@ class WaveNoiseVoice(
 
     override fun renderInto(out: FloatArray, offset: Int, frames: Int, sampleRate: Int, gain: Float) {
         if (frames <= 0 || gain == 0f) return
-        if (sampleRate != cachedSr) {
-            cachedSr = sampleRate
-            invSr = 1.0 / sampleRate
-        }
+        ensureSr(sampleRate)
         val end = offset + frames
         var i = offset
         while (i < end) {
-            phase = SinLut.wrapPhase(phase + 2.0 * PI * 0.05 * invSr)
+            phase = SinLut.wrapPhase(phase + phaseInc)
             val swell = 0.5 + 0.5 * SinLut.sin(phase + 0.3 * SinLut.sin(phase * 0.4))
             val n = rng.nextFloat() * 2.0 - 1.0
             val cutoff = (0.04 + (rootHz / 400.0) * 0.08).coerceIn(0.03, 0.14)
@@ -552,37 +615,39 @@ class WindTextureVoice(
     private var phase = 0.0
     private var invSr = 1.0 / 44_100
     private var cachedSr = 0
+    private var phaseInc = 0.0
 
     fun setRootHz(hz: Float) {
         rootHz = hz.coerceIn(40f, 500f)
     }
 
+    private fun ensureSr(sampleRate: Int) {
+        if (sampleRate == cachedSr) return
+        cachedSr = sampleRate
+        invSr = 1.0 / sampleRate
+        phaseInc = 2.0 * PI * 0.07 * invSr
+    }
+
     override fun render(sampleIndex: Long, sampleRate: Int): Float {
-        if (sampleRate != cachedSr) {
-            cachedSr = sampleRate
-            invSr = 1.0 / sampleRate
-        }
-        phase = SinLut.wrapPhase(phase + 2.0 * PI * 0.07 * invSr)
+        ensureSr(sampleRate)
+        phase = SinLut.wrapPhase(phase + phaseInc)
         val gust = (0.3 + 0.7 * ((SinLut.sin(phase) + 1.0) * 0.5)).coerceIn(0.0, 1.0)
         val n = rng.nextFloat() * 2.0 - 1.0
         val high = n - prev
         prev = n
         val bright = (0.08 + (rootHz / 500.0) * 0.12).coerceIn(0.06, 0.22)
         hp = (1.0 - bright) * hp + bright * high
-        val tone = 0.9 + 0.1 * SinLut.sin(phase * rootHz * 0.002 * invSr * sampleRate)
+        val tone = 0.9 + 0.1 * SinLut.sin(phase * 0.3)
         return (hp * 0.18 * gust * tone).toFloat()
     }
 
     override fun renderInto(out: FloatArray, offset: Int, frames: Int, sampleRate: Int, gain: Float) {
         if (frames <= 0 || gain == 0f) return
-        if (sampleRate != cachedSr) {
-            cachedSr = sampleRate
-            invSr = 1.0 / sampleRate
-        }
+        ensureSr(sampleRate)
         val end = offset + frames
         var i = offset
         while (i < end) {
-            phase = SinLut.wrapPhase(phase + 2.0 * PI * 0.07 * invSr)
+            phase = SinLut.wrapPhase(phase + phaseInc)
             val gust = (0.3 + 0.7 * ((SinLut.sin(phase) + 1.0) * 0.5)).coerceIn(0.0, 1.0)
             val n = rng.nextFloat() * 2.0 - 1.0
             val high = n - prev
@@ -599,18 +664,22 @@ class WindTextureVoice(
 class SoftPulseVoice : SynthVoice {
     private var age = 0L
     private var active = false
-    private var vel = 0f
+    private var env = 0.0
     private var phase = 0.0
     private var invSr = 1.0 / 44_100
     private var cachedSr = 0
+    private var decayMul = 0.99
+    private var maxAge = 0L
+    private var phaseInc = 0.0
 
     override fun isAudible(): Boolean = active
 
     override fun noteOn(freqHz: Float, velocity: Float) {
-        vel = velocity.coerceIn(0.05f, 1f)
+        env = velocity.coerceIn(0.05f, 1f).toDouble()
         age = 0L
         active = true
         phase = 0.0
+        cachedSr = 0
     }
 
     override fun render(sampleIndex: Long, sampleRate: Int): Float {
@@ -618,20 +687,23 @@ class SoftPulseVoice : SynthVoice {
         if (sampleRate != cachedSr) {
             cachedSr = sampleRate
             invSr = 1.0 / sampleRate
+            decayMul = EnvMath.decayMul(40.0, sampleRate)
+            maxAge = (0.12 * sampleRate).toLong()
+            phaseInc = 2.0 * PI * 90.0 * invSr
         }
-        val t = age.toDouble() * invSr
         age++
-        if (t > 0.12) {
+        env *= decayMul
+        if (age > maxAge || env < 1e-4) {
             active = false
             return 0f
         }
-        val env = exp(-40.0 * t) * vel
-        phase = SinLut.wrapPhase(phase + 2.0 * PI * 90.0 * invSr)
+        phase = SinLut.wrapPhase(phase + phaseInc)
         return (SinLut.sin(phase) * 0.35f * env).toFloat()
     }
 
     override fun reset() {
         active = false
+        env = 0.0
     }
 }
 
@@ -639,86 +711,100 @@ class ChimeClusterVoice : SynthVoice {
     private data class Partial(
         var freq: Double,
         var age: Long,
-        var vel: Float,
+        var env: Double,
+        var peak: Float,
         var releasing: Boolean = false,
-        var releaseAge: Long = 0L,
         var phase: Double = 0.0,
+        var phaseInc: Double = 0.0,
+        var decayMul: Double = 0.999,
+        var releaseMul: Double = 0.99,
+        var attackSamples: Int = 1,
+        var maxAge: Long = 0L,
     )
 
     private val partials = ArrayList<Partial>(8)
-    private var invSr = 1.0 / 44_100
     private var cachedSr = 0
+    private var sampleRateCached = 44_100
 
     override fun isAudible(): Boolean = partials.isNotEmpty()
 
+    private fun ensureSr(sampleRate: Int) {
+        if (sampleRate != cachedSr) {
+            cachedSr = sampleRate
+            sampleRateCached = sampleRate
+        }
+    }
+
+    private fun newPartial(freq: Double, velocity: Float): Partial =
+        Partial(
+            freq = freq,
+            age = 0L,
+            env = 0.0,
+            peak = velocity,
+            // phaseInc/decay left 0 → bound on first render at the active sample rate
+        )
+
     override fun noteOn(freqHz: Float, velocity: Float) {
         for (p in partials) {
-            if (!p.releasing) {
-                p.releasing = true
-                p.releaseAge = 0L
-            }
+            if (!p.releasing) p.releasing = true
         }
         val base = freqHz.toDouble()
         val ratios = doubleArrayOf(1.0, 1.498, 2.0, 2.757, 3.0)
         for (r in ratios) {
-            partials += Partial(base * r, 0L, velocity * (0.6f + 0.4f * (1f / r.toFloat())))
+            partials += newPartial(base * r, velocity * (0.6f + 0.4f * (1f / r.toFloat())))
         }
-        while (partials.size > 10) {
-            partials.removeAt(0)
-        }
+        while (partials.size > 10) partials.removeAt(0)
     }
 
     fun noteCluster(freqs: List<Float>, velocity: Float = 0.7f) {
         for (p in partials) {
-            if (!p.releasing) {
-                p.releasing = true
-                p.releaseAge = 0L
-            }
+            if (!p.releasing) p.releasing = true
         }
         for (f in freqs.take(5)) {
-            partials += Partial(f.toDouble(), 0L, velocity * 0.7f)
+            partials += newPartial(f.toDouble(), velocity * 0.7f)
         }
-        while (partials.size > 10) {
-            partials.removeAt(0)
-        }
+        while (partials.size > 10) partials.removeAt(0)
     }
 
     override fun render(sampleIndex: Long, sampleRate: Int): Float {
         if (partials.isEmpty()) return 0f
-        if (sampleRate != cachedSr) {
-            cachedSr = sampleRate
-            invSr = 1.0 / sampleRate
-        }
+        ensureSr(sampleRate)
         var sum = 0.0
         val iter = partials.iterator()
         while (iter.hasNext()) {
             val p = iter.next()
-            val t = p.age.toDouble() * invSr
+            // Lazily bind SR-dependent coeffs (noteOn may precede first render).
+            if (p.phaseInc == 0.0) {
+                p.phaseInc = 2.0 * PI * p.freq / sampleRate
+                p.decayMul = EnvMath.decayMul(1.6, sampleRate)
+                p.releaseMul = EnvMath.decayMul(10.0, sampleRate)
+                p.attackSamples = (0.012 * sampleRate).toInt().coerceAtLeast(1)
+                p.maxAge = (4.0 * sampleRate).toLong()
+            }
             p.age++
-            var env = (t / 0.012).coerceAtMost(1.0) * exp(-1.6 * t) * p.vel
             if (p.releasing) {
-                val rt = p.releaseAge.toDouble() * invSr
-                p.releaseAge++
-                env *= exp(-10.0 * rt)
-                if (rt > 0.12) {
+                p.env *= p.releaseMul
+                if (p.env < 1e-4) {
                     iter.remove()
                     continue
                 }
-            } else if (t > 4.0) {
-                iter.remove()
-                continue
+            } else if (p.age <= p.attackSamples) {
+                p.env = p.peak * p.age.toDouble() / p.attackSamples
+            } else {
+                p.env *= p.decayMul
+                if (p.age > p.maxAge || p.env < 1e-4) {
+                    iter.remove()
+                    continue
+                }
             }
-            p.phase = SinLut.wrapPhase(p.phase + 2.0 * PI * p.freq * invSr)
-            sum += SinLut.sin(p.phase) * env * 0.22
+            p.phase = SinLut.wrapPhase(p.phase + p.phaseInc)
+            sum += SinLut.sin(p.phase) * p.env * 0.22
         }
         return sum.toFloat()
     }
 
     override fun noteOff() {
-        for (p in partials) {
-            p.releasing = true
-            p.releaseAge = 0L
-        }
+        for (p in partials) p.releasing = true
     }
 
     override fun reset() {
@@ -732,60 +818,74 @@ class KalimbaPluckVoice : SynthVoice {
     private var phase3 = 0.0
     private var freq = 0.0
     private var age = 0L
-    private var vel = 0f
+    private var env = 0.0
+    private var peak = 0.0
     private var active = false
     private var releasing = false
-    private var releaseAge = 0L
     private var invSr = 1.0 / 44_100
     private var cachedSr = 0
+    private var attackSamples = 1
+    private var decayMul = 0.999
+    private var releaseMul = 0.99
+    private var maxAge = 0L
+    private var phaseInc1 = 0.0
+    private var phaseInc2 = 0.0
+    private var phaseInc3 = 0.0
 
     override fun isAudible(): Boolean = active
 
     override fun noteOn(freqHz: Float, velocity: Float) {
         freq = freqHz.toDouble()
-        vel = velocity.coerceIn(0.1f, 1f)
+        peak = velocity.coerceIn(0.1f, 1f).toDouble()
         age = 0L
+        env = 0.0
         active = true
         releasing = false
-        releaseAge = 0L
         phase1 = 0.0
         phase2 = 0.0
         phase3 = 0.0
+        cachedSr = 0
     }
 
     override fun noteOff() {
-        if (active && !releasing) {
-            releasing = true
-            releaseAge = 0L
-        }
+        if (active && !releasing) releasing = true
+    }
+
+    private fun ensureSr(sampleRate: Int) {
+        if (sampleRate == cachedSr) return
+        cachedSr = sampleRate
+        invSr = 1.0 / sampleRate
+        attackSamples = (0.003 * sampleRate).toInt().coerceAtLeast(1)
+        decayMul = EnvMath.decayMul(4.5, sampleRate)
+        releaseMul = EnvMath.decayMul(16.0, sampleRate)
+        maxAge = (1.8 * sampleRate).toLong()
+        phaseInc1 = 2.0 * PI * freq * invSr
+        phaseInc2 = 2.0 * PI * freq * 2.01 * invSr
+        phaseInc3 = 2.0 * PI * freq * 4.2 * invSr
     }
 
     override fun render(sampleIndex: Long, sampleRate: Int): Float {
         if (!active) return 0f
-        if (sampleRate != cachedSr) {
-            cachedSr = sampleRate
-            invSr = 1.0 / sampleRate
-        }
-        val t = age.toDouble() * invSr
+        ensureSr(sampleRate)
         age++
-        if (!releasing && t > 1.8) {
-            active = false
-            return 0f
-        }
-        val attack = (t / 0.003).coerceAtMost(1.0)
-        var env = attack * exp(-4.5 * t) * vel
         if (releasing) {
-            val rt = releaseAge.toDouble() * invSr
-            releaseAge++
-            env *= exp(-16.0 * rt)
-            if (rt > 0.05) {
+            env *= releaseMul
+            if (env < 1e-4) {
+                active = false
+                return 0f
+            }
+        } else if (age <= attackSamples) {
+            env = peak * age.toDouble() / attackSamples
+        } else {
+            env *= decayMul
+            if (age > maxAge || env < 1e-4) {
                 active = false
                 return 0f
             }
         }
-        phase1 = SinLut.wrapPhase(phase1 + 2.0 * PI * freq * invSr)
-        phase2 = SinLut.wrapPhase(phase2 + 2.0 * PI * freq * 2.01 * invSr)
-        phase3 = SinLut.wrapPhase(phase3 + 2.0 * PI * freq * 4.2 * invSr)
+        phase1 = SinLut.wrapPhase(phase1 + phaseInc1)
+        phase2 = SinLut.wrapPhase(phase2 + phaseInc2)
+        phase3 = SinLut.wrapPhase(phase3 + phaseInc3)
         val h1 = SinLut.sin(phase1)
         val h2 = SinLut.sin(phase2) * 0.25f
         val h3 = SinLut.sin(phase3) * 0.08f
@@ -795,8 +895,15 @@ class KalimbaPluckVoice : SynthVoice {
     override fun reset() {
         active = false
         releasing = false
+        env = 0.0
     }
 }
 
-/** Soft limiter for summed stems. */
-fun softLimit(sample: Float): Float = tanh(sample * 1.15).toFloat()
+/**
+ * Fast rational soft clip (replaces tanh in the hot path).
+ * Smooth knee, hard-bounded to [-1, 1].
+ */
+fun softLimit(sample: Float): Float {
+    val s = sample * 1.15f
+    return (s / (1f + abs(s) * 0.35f)).coerceIn(-1f, 1f)
+}

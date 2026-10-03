@@ -59,4 +59,21 @@ class AmbientMediaPlayerTest {
 
         assertEquals(20_000L, player.duration)
     }
+
+    @Test
+    fun publish_withTitleOverride_exposesQuoteAsTitle() {
+        val player = AmbientMediaPlayer(Looper.getMainLooper(), noopCallbacks)
+        player.publish(
+            art = art,
+            artworkUri = Uri.parse("content://test/art"),
+            title = "“Be yourself”",
+            subtitle = "— Oscar Wilde",
+            playing = true,
+        )
+        Shadows.shadowOf(Looper.getMainLooper()).idle()
+
+        val meta = player.mediaMetadata
+        assertEquals("“Be yourself”", meta.title?.toString())
+        assertEquals("— Oscar Wilde", meta.artist?.toString())
+    }
 }

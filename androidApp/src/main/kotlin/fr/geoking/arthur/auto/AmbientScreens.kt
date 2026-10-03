@@ -406,10 +406,13 @@ class MediaAmbientPlaybackScreen(
                 }
             }
             val uri = AmbientAlbumArt.contentUri(carContext.packageName, art.id, gen)
+            val quote = if (rotation.showQuotes()) rotation.currentQuote else null
+            val lines = ambientMediaDisplayLines(art, quote)
             player.publish(
                 art = art,
                 artworkUri = uri,
-                subtitle = art.attribution,
+                title = lines.title,
+                subtitle = lines.artist,
                 genre = if (art.isGenerative) "generative" else art.kind.name,
                 playing = playing,
             )

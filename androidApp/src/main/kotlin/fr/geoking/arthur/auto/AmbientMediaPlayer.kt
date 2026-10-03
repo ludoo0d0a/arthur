@@ -38,6 +38,7 @@ internal class AmbientMediaPlayer(
         art: Artwork,
         artworkUri: Uri,
         subtitle: String,
+        title: String? = null,
         description: String? = null,
         genre: String? = null,
         queue: List<Artwork> = listOf(art),
@@ -48,6 +49,7 @@ internal class AmbientMediaPlayer(
     ) {
         this.playWhenReady = playing
         this.playlistTitle = playlistTitle
+        val displayTitle = title?.takeIf { it.isNotBlank() } ?: art.title
         val items = queue.ifEmpty { listOf(art) }
         currentIndex = items.indexOfFirst { it.id == art.id }.let { if (it < 0) 0 else it }
         playlist = items.map { item ->
@@ -57,7 +59,7 @@ internal class AmbientMediaPlayer(
                 queueUris[item.id] ?: artworkUri
             }
             val metaBuilder = MediaMetadata.Builder()
-                .setTitle(if (item.id == art.id) art.title else item.title)
+                .setTitle(if (item.id == art.id) displayTitle else item.title)
                 .setArtist(if (item.id == art.id) subtitle else item.attribution)
                 .setSubtitle(if (item.id == art.id) subtitle else item.attribution)
                 .setArtworkUri(uri)

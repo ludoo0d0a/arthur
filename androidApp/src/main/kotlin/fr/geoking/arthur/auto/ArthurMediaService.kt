@@ -362,11 +362,6 @@ class ArthurMediaService : MediaLibraryService() {
         val uri = AmbientAlbumArt.contentUri(packageName, art.id, gen)
 
         val quote = quoteFor(art)
-        val quoteText = if (quote != null) {
-            "\u201C${quote.text}\u201D" + if (quote.author.isNotBlank()) " \u2014 ${quote.author}" else ""
-        } else {
-            null
-        }
 
         val pool = rotationPool()
         val isDevMode = developerSettings.verbose.value
@@ -377,19 +372,7 @@ class ArthurMediaService : MediaLibraryService() {
             null
         }
 
-        val subtitle = buildString {
-            if (art.attribution.isNotBlank()) {
-                append(art.attribution)
-            }
-            if (quoteText != null) {
-                if (isNotEmpty()) append(" • ")
-                append(quoteText)
-            }
-            if (slidePos != null) {
-                if (isNotEmpty()) append(" ")
-                append(slidePos)
-            }
-        }
+        val lines = ambientMediaDisplayLines(art, quote, extraArtistSuffix = slidePos)
 
         val description = if (isDevMode) {
             buildString {
@@ -418,7 +401,8 @@ class ArthurMediaService : MediaLibraryService() {
         player.publish(
             art = art,
             artworkUri = uri,
-            subtitle = subtitle,
+            title = lines.title,
+            subtitle = lines.artist,
             description = description,
             genre = if (art.isGenerative) "generative" else art.kind.name,
             queue = pool,

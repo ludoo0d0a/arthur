@@ -5,6 +5,7 @@ import androidx.media3.session.MediaConstants
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.source.GenartSource
+import fr.geoking.arthur.source.Quote
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -260,20 +261,52 @@ class ArthurMediaMappingTest {
     }
 
     @Test
-    fun mediaSubtitleFormat_includesQuotesAndSlidePositionWhenEnabled() {
-        val art = Artwork("genart.particles", "Particles", attribution = "GeoKing", sourceId = "genart", kind = ArtworkKind.Genart)
-        val quoteText = "“Simple is best” — Author"
-        val slidePos = "[1/5]"
+    fun mediaDisplayLines_putsQuoteOnTitleAndAuthorOnArtist() {
+        val art = Artwork(
+            "genart.particles",
+            "Particles",
+            attribution = "GeoKing",
+            sourceId = "genart",
+            kind = ArtworkKind.Genart,
+        )
+        val lines = ambientMediaDisplayLines(
+            art,
+            Quote("Simple is best", "Author"),
+            extraArtistSuffix = "[1/5]",
+        )
+        assertEquals("“Simple is best”", lines.title)
+        assertEquals("— Author [1/5]", lines.artist)
+    }
 
-        val subtitleWithQuote = buildString {
-            if (art.attribution.isNotBlank()) append(art.attribution)
-            if (isNotEmpty()) append(" • ")
-            append(quoteText)
-            if (isNotEmpty()) append(" ")
-            append(slidePos)
-        }
+    @Test
+    fun mediaDisplayLines_withoutQuote_keepsArtworkTitle() {
+        val art = Artwork(
+            "genart.particles",
+            "Particles",
+            attribution = "GeoKing",
+            sourceId = "genart",
+            kind = ArtworkKind.Genart,
+        )
+        val lines = ambientMediaDisplayLines(art, quote = null)
+        assertEquals("Particles", lines.title)
+        assertEquals("GeoKing", lines.artist)
+    }
 
-        assertEquals("GeoKing • “Simple is best” — Author [1/5]", subtitleWithQuote)
+    @Test
+    fun mediaDisplayLines_longAuthorlessQuote_splitsAcrossLines() {
+        val art = Artwork(
+            "genart.particles",
+            "Particles",
+            attribution = "GeoKing",
+            sourceId = "genart",
+            kind = ArtworkKind.Genart,
+        )
+        val long = "The only way to do great work is to love what you do every single day"
+        val lines = ambientMediaDisplayLines(art, Quote(long))
+        assertTrue(lines.title.startsWith("“"))
+        assertTrue(lines.artist.endsWith("”"))
+        assertTrue(lines.title.length < long.length + 2)
+        assertTrue(!lines.artist.contains("GeoKing"))
     }
 
     @Test

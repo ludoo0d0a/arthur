@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -54,7 +54,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -459,16 +458,17 @@ private fun PhoneControlPlaneContent(
     }
     val audioEnabled = ambientAudioSettings?.enabled?.collectAsState()?.value == true
 
+    val mediaPlayerAction = onStartMediaPlayer ?: onOpenMediaPlayer
     Scaffold(
         modifier = modifier
             .fillMaxSize()
             .testTag("control_plane"),
         containerColor = scheme.background,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        contentWindowInsets = WindowInsets.safeDrawing,
         floatingActionButton = {
-            if (onOpenMediaPlayer != null) {
+            if (mediaPlayerAction != null) {
                 FloatingActionButton(
-                    onClick = onOpenMediaPlayer,
+                    onClick = mediaPlayerAction,
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                     modifier = Modifier.testTag("media_player_fab"),
@@ -494,20 +494,6 @@ private fun PhoneControlPlaneContent(
                             )
                         }
                     },
-                    actions = {
-                        if (onStartMediaPlayer != null) {
-                            IconButton(
-                                onClick = onStartMediaPlayer,
-                                modifier = Modifier.testTag("media_player_button"),
-                            ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_play_circle),
-                                    contentDescription = stringResource(R.string.cd_media_player),
-                                    tint = scheme.onSurface.copy(alpha = 0.7f),
-                                )
-                            }
-                        }
-                    },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = scheme.surface,
                         titleContentColor = scheme.onSurface,
@@ -521,8 +507,7 @@ private fun PhoneControlPlaneContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .then(if (openedFamily == null) Modifier.statusBarsPadding() else Modifier),
+                .padding(padding),
         ) {
             if (openedFamily == null) {
                 ControlPlaneHeader(
@@ -530,7 +515,6 @@ private fun PhoneControlPlaneContent(
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp, vertical = 8.dp),
                     onOpenSettings = onOpenSettings,
-                    onOpenMediaPlayer = onOpenMediaPlayer,
                 )
                 Text(
                     text = stringResource(R.string.packs_section),

@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -105,11 +106,12 @@ import kotlin.math.abs
  *   Parent should append new ids to [rotationPool].
  *
  * Navigation while rotating:
- * - Sound on (phone & TV): bottom icons only — mute + info (no media transport bar).
+ * - Sound on (phone & TV): bottom icons — phone: play/pause + mute + info; TV: mute + info.
  *   Phone keeps swipe; TV focuses mute (OK toggles sound). D-pad left/right skips,
  *   up opens info. Media keys still work as shortcuts.
  * - Sound off on TV: D-pad left/right skips; MediaPlayPause toggles rotation; up = info
- * - Sound off on phone: swipe left = next, swipe right = previous
+ * - Sound off on phone: bottom play/pause + mute (+ info); swipe left/right skips
+ * - Phone chrome stays above the nav bar; quotes respect the status bar.
  *
  * Display interval starts only after the still is ready (loader time excluded).
  * The next still is warmed into disk cache before it becomes current.
@@ -463,6 +465,7 @@ fun AmbientScreenContent(
             Column(
                 modifier = Modifier
                     .align(Alignment.TopStart)
+                    .statusBarsPadding()
                     .padding(28.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
@@ -486,11 +489,15 @@ fun AmbientScreenContent(
                 }
             }
         }
+        val phoneBottomControls = !isTelevision && ambientAudioSettings != null
+        val reserveBottomControls =
+            showBottomChrome || phoneBottomControls || (shouldRotate && !isTelevision)
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
+                .navigationBarsPadding()
                 .padding(28.dp)
-                .padding(bottom = if (showBottomChrome) 56.dp else 0.dp),
+                .padding(bottom = if (reserveBottomControls) 56.dp else 0.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             if (sourceLabel.isNotEmpty()) {
@@ -557,7 +564,7 @@ fun AmbientScreenContent(
                     },
             )
         }
-        val showTransportChrome = shouldRotate || showBottomChrome
+        val showTransportChrome = shouldRotate || showBottomChrome || phoneBottomControls
         if (showTransportChrome) {
             val currentIndex = remember(shown?.id, rotatePool) {
                 val idx = rotatePool.indexOfFirst { it.id == shown?.id }
@@ -567,6 +574,7 @@ fun AmbientScreenContent(
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
                     .padding(28.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -584,6 +592,12 @@ fun AmbientScreenContent(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
+                        if (shouldRotate && !isTelevision) {
+                            AmbientPlayPauseButton(
+                                isPlaying = isPlaying,
+                                onToggle = { isPlaying = !isPlaying },
+                            )
+                        }
                         AmbientSoundToggleButton(
                             enabled = true,
                             onToggle = { bottomAudioSettings.setEnabled(false) },
@@ -629,10 +643,37 @@ fun AmbientScreenContent(
                             )
                         }
                     }
+                } else if (phoneBottomControls && ambientAudioSettings != null) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        if (shouldRotate) {
+                            AmbientPlayPauseButton(
+                                isPlaying = isPlaying,
+                                onToggle = { isPlaying = !isPlaying },
+                            )
+                        }
+                        AmbientSoundToggleButton(
+                            enabled = false,
+                            onToggle = { ambientAudioSettings.setEnabled(true) },
+                        )
+                        if (canOpenDetails) {
+                            AmbientDetailsButton(
+                                onClick = { showDetails = true },
+                                focusable = true,
+                            )
+                        }
+                    }
+                } else if (!isTelevision && shouldRotate) {
+                    AmbientPlayPauseButton(
+                        isPlaying = isPlaying,
+                        onToggle = { isPlaying = !isPlaying },
+                    )
                 }
             }
         }
-        if (canOpenDetails && !showBottomChrome) {
+        if (canOpenDetails && !showBottomChrome && !phoneBottomControls) {
             AmbientDetailsButton(
                 onClick = { showDetails = true },
                 focusable = !isTelevision,
@@ -642,19 +683,48 @@ fun AmbientScreenContent(
                     .padding(12.dp),
             )
         }
-        if (!isTelevision && !showBottomChrome && ambientAudioSettings != null) {
-            AmbientSoundToggleButton(
-                enabled = audioEnabled,
-                onToggle = { ambientAudioSettings.setEnabled(!audioEnabled) },
-                modifier = Modifier
-                    .align(if (canOpenDetails) Alignment.TopStart else Alignment.TopEnd)
-                    .statusBarsPadding()
-                    .padding(12.dp),
+    }
+}
+
+
+@Composable
+private fun AmbientPlayPauseButton(
+    isPlaying: Boolean,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val description = stringResource(
+        if (isPlaying) R.string.ambient_pause else R.string.ambient_play,
+    )
+    val interactionSource = remember { MutableInteractionSource() }
+    val focused by interactionSource.collectIsFocusedAsState()
+    Box(
+        modifier = modifier
+            .size(44.dp)
+            .semantics { contentDescription = description }
+            .testTag("ambient_media_play_pause"),
+        contentAlignment = Alignment.Center,
+    ) {
+        AmbientFrostedCircle()
+        IconButton(
+            onClick = onToggle,
+            interactionSource = interactionSource,
+            modifier = Modifier.border(
+                width = if (focused) 3.dp else 0.dp,
+                color = if (focused) Color.White else Color.Transparent,
+                shape = CircleShape,
+            ),
+        ) {
+            Icon(
+                painter = painterResource(
+                    if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play_circle,
+                ),
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.9f),
             )
         }
     }
 }
-
 
 @Composable
 private fun AmbientDetailsButton(

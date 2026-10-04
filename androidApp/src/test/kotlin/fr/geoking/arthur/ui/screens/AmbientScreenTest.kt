@@ -61,6 +61,7 @@ class AmbientScreenTest {
                 }
             }
 
+            composeTestRule.onNodeWithTag("ambient_media_play_pause").assertExists()
             composeTestRule.onNodeWithTag("ambient_sound_toggle").assertExists()
             composeTestRule.onNodeWithTag("ambient_details").assertExists()
             composeTestRule.onNodeWithTag("ambient_media_player").assertDoesNotExist()

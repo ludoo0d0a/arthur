@@ -11,10 +11,14 @@ import fr.geoking.arthur.audio.banks.TextureCueKind
 import fr.geoking.arthur.audio.markov.ArrangementForm
 import fr.geoking.arthur.audio.markov.MarkovSequencer
 import fr.geoking.arthur.audio.markov.OrnamentKind
+import fr.geoking.arthur.audio.voices.BirdChirpVoice
 import fr.geoking.arthur.audio.voices.BowlVoice
+import fr.geoking.arthur.audio.voices.BowedVoice
 import fr.geoking.arthur.audio.voices.ChimeClusterVoice
+import fr.geoking.arthur.audio.voices.FireplaceVoice
 import fr.geoking.arthur.audio.voices.KalimbaPluckVoice
 import fr.geoking.arthur.audio.voices.PluckGuitarVoice
+import fr.geoking.arthur.audio.voices.RainNoiseVoice
 import fr.geoking.arthur.audio.voices.SinePadVoice
 import fr.geoking.arthur.audio.voices.SoftBassVoice
 import fr.geoking.arthur.audio.voices.SoftPianoPool
@@ -26,6 +30,7 @@ import fr.geoking.arthur.error.ErrorTrap
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.error.ErrorCategory
 import fr.geoking.arthur.shared.error.ErrorLogger
+import fr.geoking.arthur.shared.marketplace.PackOwnership
 import fr.geoking.arthur.source.AmbientAudioCharacter
 import fr.geoking.arthur.source.AmbientAudioSettings
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -39,6 +44,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import org.koin.core.context.GlobalContext
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.pow
 import kotlin.random.Random
@@ -109,6 +115,10 @@ class ProceduralMusicEngine(
     private val bowl = BowlVoice()
     private val waves = WaveNoiseVoice(11L)
     private val wind = WindTextureVoice(22L)
+    private val rain = RainNoiseVoice(91L)
+    private val fireplace = FireplaceVoice(55L)
+    private val birds = BirdChirpVoice(77L)
+    private val bowed = BowedVoice()
     private val pulse = SoftPulseVoice()
     private val chimes = ChimeClusterVoice()
     private val kalimba = KalimbaPluckVoice()
@@ -177,10 +187,13 @@ class ProceduralMusicEngine(
         complexity = complexity,
     )
 
+    private fun packOwnership(): PackOwnership =
+        runCatching { GlobalContext.get().get<PackOwnership>() }.getOrDefault(PackOwnership.NONE)
+
     /** Apply artwork-derived preset with crossfade; safe when stopped. */
     fun setArtwork(artwork: Artwork) {
         currentArtwork = artwork
-        val next = MusicPresetResolver.resolve(artwork, userPrefs())
+        val next = MusicPresetResolver.resolve(artwork, userPrefs(), packOwnership())
         if (!isRunning.get()) {
             preset = next
             sequencer = MarkovSequencer(next, sessionSalt, character)
@@ -219,7 +232,7 @@ class ProceduralMusicEngine(
                 kind = fr.geoking.arthur.shared.domain.ArtworkKind.Genart,
             )
             currentArtwork = fallbackArt
-            val fallback = MusicPresetResolver.resolve(fallbackArt, userPrefs())
+            val fallback = MusicPresetResolver.resolve(fallbackArt, userPrefs(), packOwnership())
             preset = fallback
             sequencer = MarkovSequencer(fallback, sessionSalt, character)
             form = ArrangementForm(fallback.formSeed)
@@ -418,7 +431,12 @@ class ProceduralMusicEngine(
             val pulseAudibleStem = pulseGain > 0.05f
             val transAudibleStem = transitionGain > 0.02f
             val bowlBed = atmosphere &&
-                activePreset.style in setOf(MusicStyle.TibetanBowl, MusicStyle.CosmicDrone) &&
+                activePreset.style in setOf(
+                    MusicStyle.TibetanBowl,
+                    MusicStyle.CosmicDrone,
+                    MusicStyle.OrchestraPads,
+                    MusicStyle.OrchestraSwell,
+                ) &&
                 bedGain > 0.02f &&
                 quality != SynthQuality.Minimal
             // Exactly one texture voice for Atmosphere (never wind+waves together).
@@ -543,20 +561,30 @@ class ProceduralMusicEngine(
                     }
 
                     if (pianoAudible &&
-                        (piano.isAudible() || guitar.isAudible() || kalimba.isAudible())
+                        (
+                            piano.isAudible() || guitar.isAudible() || kalimba.isAudible() ||
+                                bowed.isAudible()
+                            )
                     ) {
                         mixed += (
                             piano.render(sampleIndex, sr) +
                                 guitar.render(sampleIndex, sr) +
-                                kalimba.render(sampleIndex, sr)
+                                kalimba.render(sampleIndex, sr) +
+                                bowed.render(sampleIndex, sr)
                             ) * melodyGain * arrangement.melodyMul
+                    } else if (bowed.isAudible()) {
+                        bowed.render(sampleIndex, sr)
                     }
 
                     if (textureKind != TextureKind.None) {
                         val texMul = textureGain * arrangement.textureMul
+                        if (textureKind == TextureKind.Birds) birds.tickTexture(sr)
                         mixed += when (textureKind) {
                             TextureKind.Waves -> waves.render(sampleIndex, sr) * texMul
                             TextureKind.Wind -> wind.render(sampleIndex, sr) * texMul
+                            TextureKind.Rain -> rain.render(sampleIndex, sr) * texMul
+                            TextureKind.Fire -> fireplace.render(sampleIndex, sr) * texMul
+                            TextureKind.Birds -> birds.render(sampleIndex, sr) * texMul
                             TextureKind.None -> 0f
                         }
                     }
@@ -662,7 +690,12 @@ class ProceduralMusicEngine(
         }
         val sustainBowl = atmosphere &&
             quality != SynthQuality.Minimal &&
-            p.style in setOf(MusicStyle.TibetanBowl, MusicStyle.CosmicDrone)
+            p.style in setOf(
+                MusicStyle.TibetanBowl,
+                MusicStyle.CosmicDrone,
+                MusicStyle.OrchestraPads,
+                MusicStyle.OrchestraSwell,
+            )
         if (sustainBowl) {
             bowl.setSustainPartials(partials.ifEmpty { listOf(p.rootHz) }, true)
         } else {
@@ -679,14 +712,19 @@ class ProceduralMusicEngine(
         val hz = seq.currentMelodyHz ?: return
         val vel = if (atmosphere) 0.32f else 0.55f
         when (p.style) {
-            MusicStyle.JazzPiano, MusicStyle.BarAmbience, MusicStyle.NightLounge ->
-                piano.noteOn(hz, vel)
-            MusicStyle.SoftGuitar -> guitar.noteOn(hz, vel)
+            MusicStyle.JazzPiano, MusicStyle.BarAmbience, MusicStyle.NightLounge,
+            MusicStyle.ClassicalPiano, MusicStyle.PianoBallad,
+            -> piano.noteOn(hz, vel)
+            MusicStyle.SoftGuitar, MusicStyle.RockBallad -> guitar.noteOn(hz, vel)
             MusicStyle.AfricanPulse -> kalimba.noteOn(hz, vel + 0.05f)
-            MusicStyle.WindChimes -> chimes.noteOn(hz, vel)
+            MusicStyle.WindChimes, MusicStyle.Songbirds -> chimes.noteOn(hz, vel)
             MusicStyle.TibetanBowl -> bowl.noteOn(hz, vel * 0.85f)
-            MusicStyle.OceanWaves -> piano.noteOn(hz, vel * 0.75f)
-            MusicStyle.CosmicDrone -> {
+            MusicStyle.OceanWaves, MusicStyle.SoftRain, MusicStyle.WindAmbience,
+            MusicStyle.Fireplace,
+            -> piano.noteOn(hz, vel * 0.75f)
+            MusicStyle.ViolinLead -> bowed.noteOn(hz, vel)
+            MusicStyle.BassOnly -> Unit // bass stem carries the lead
+            MusicStyle.CosmicDrone, MusicStyle.OrchestraPads, MusicStyle.OrchestraSwell -> {
                 piano.noteOn(hz, vel * 0.7f)
                 if (!atmosphere && quality == SynthQuality.Full) {
                     chimes.noteOn(hz, vel * 0.5f)
@@ -704,7 +742,7 @@ class ProceduralMusicEngine(
         }
     }
 
-    internal enum class TextureKind { None, Waves, Wind }
+    internal enum class TextureKind { None, Waves, Wind, Rain, Fire, Birds }
 
     companion object {
         /** Merge bed+harmony into one pad gain for Melody/Balanced (or Reduced Atmosphere). */
@@ -723,8 +761,12 @@ class ProceduralMusicEngine(
             if (!atmosphere || textureGain <= 0.02f) return TextureKind.None
             return when (style) {
                 MusicStyle.OceanWaves -> TextureKind.Waves
-                MusicStyle.WindChimes, MusicStyle.TibetanBowl, MusicStyle.CosmicDrone ->
-                    TextureKind.Wind
+                MusicStyle.SoftRain -> TextureKind.Rain
+                MusicStyle.Fireplace -> TextureKind.Fire
+                MusicStyle.Songbirds -> TextureKind.Birds
+                MusicStyle.WindAmbience, MusicStyle.WindChimes,
+                MusicStyle.TibetanBowl, MusicStyle.CosmicDrone,
+                -> TextureKind.Wind
                 else -> TextureKind.Wind // single texture, never both
             }
         }
@@ -744,7 +786,7 @@ class ProceduralMusicEngine(
                 }
                 chimes.noteCluster(freqs, 0.40f)
             }
-            TextureCueKind.ArpeggioCascade -> {
+            TextureCueKind.ArpeggioCascade, TextureCueKind.StringSwell -> {
                 val a = (root * 2f).coerceAtMost(MarkovSequencer.MELODY_MAX_HZ)
                 val b = (root * 2.5f).coerceAtMost(MarkovSequencer.MELODY_MAX_HZ)
                 piano.noteOn(a, 0.35f)
@@ -762,6 +804,12 @@ class ProceduralMusicEngine(
                     0.22f,
                 )
             }
+            TextureCueKind.FireCrackle -> {
+                // Texture bed handles crackle; light chime accent on transition.
+                chimes.noteOn((root * 1.5f).coerceAtMost(MarkovSequencer.MELODY_MAX_HZ), 0.14f)
+            }
+            TextureCueKind.BirdChirp ->
+                birds.noteOn((root * 8f).coerceIn(1200f, 2800f), 0.4f)
             TextureCueKind.SilenceBreath -> Unit
         }
     }

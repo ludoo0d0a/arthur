@@ -71,4 +71,22 @@ object PackCovers {
         VideoTopic.Pixabay -> R.drawable.pack_pixabay
         VideoTopic.Coverr -> R.drawable.pack_coverr
     }
+
+    @DrawableRes
+    fun audio(topic: AudioPackTopic): Int = when (topic) {
+        AudioPackTopic.Essentials -> R.drawable.pack_audio_essentials
+        AudioPackTopic.HearthWeather -> R.drawable.pack_audio_hearth_weather
+        AudioPackTopic.DawnChorus -> R.drawable.pack_audio_dawn_chorus
+        AudioPackTopic.TempleResonance -> R.drawable.pack_audio_temple_resonance
+        AudioPackTopic.WindGarden -> R.drawable.pack_audio_wind_garden
+        AudioPackTopic.CosmicDrift -> R.drawable.pack_audio_cosmic_drift
+        AudioPackTopic.JazzAfterDark -> R.drawable.pack_audio_jazz_after_dark
+        AudioPackTopic.WorldPulse -> R.drawable.pack_audio_world_pulse
+        AudioPackTopic.SalonClassique -> R.drawable.pack_audio_salon_classique
+        AudioPackTopic.GrandOrchestra -> R.drawable.pack_audio_grand_orchestra
+        AudioPackTopic.SoloViolin -> R.drawable.pack_audio_solo_violin
+        AudioPackTopic.RockBallad -> R.drawable.pack_audio_rock_ballad
+        AudioPackTopic.BassOnly -> R.drawable.pack_audio_bass_only
+        AudioPackTopic.MidnightBallad -> R.drawable.pack_audio_midnight_ballad
+    }
 }

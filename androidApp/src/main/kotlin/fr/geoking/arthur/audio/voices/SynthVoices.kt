@@ -899,6 +899,236 @@ class KalimbaPluckVoice : SynthVoice {
     }
 }
 
+/** Dense high-filtered noise rain bed (brighter / denser than wave swell). */
+class RainNoiseVoice(
+    private val seed: Long = 91L,
+) : SynthVoice {
+    private val rng = Random(seed)
+    private var bp = 0.0
+    private var hp = 0.0
+    private var prev = 0.0
+    private var phase = 0.0
+    private var invSr = 1.0 / 44_100
+    private var cachedSr = 0
+    private var phaseInc = 0.0
+
+    private fun ensureSr(sampleRate: Int) {
+        if (sampleRate == cachedSr) return
+        cachedSr = sampleRate
+        invSr = 1.0 / sampleRate
+        phaseInc = 2.0 * PI * 0.11 * invSr
+    }
+
+    override fun render(sampleIndex: Long, sampleRate: Int): Float {
+        ensureSr(sampleRate)
+        phase = SinLut.wrapPhase(phase + phaseInc)
+        val dens = 0.55 + 0.45 * ((SinLut.sin(phase) + 1.0) * 0.5)
+        val n = rng.nextFloat() * 2.0 - 1.0
+        val high = n - prev
+        prev = n
+        hp = 0.82 * hp + 0.18 * high
+        bp += 0.12 * (hp - bp)
+        return (bp * 0.22 * dens).toFloat()
+    }
+
+    override fun renderInto(out: FloatArray, offset: Int, frames: Int, sampleRate: Int, gain: Float) {
+        if (frames <= 0 || gain == 0f) return
+        ensureSr(sampleRate)
+        val end = offset + frames
+        var i = offset
+        while (i < end) {
+            out[i] += render(0L, sampleRate) * gain
+            i++
+        }
+    }
+}
+
+/** Sparse crackle impulses + low rumble for fireplace ambience. */
+class FireplaceVoice(
+    private val seed: Long = 55L,
+) : SynthVoice {
+    private val rng = Random(seed)
+    private var rumbleLp = 0.0
+    private var crackEnv = 0.0
+    private var crackPhase = 0.0
+    private var samplesToNext = 0
+    private var invSr = 1.0 / 44_100
+    private var cachedSr = 0
+
+    private fun ensureSr(sampleRate: Int) {
+        if (sampleRate == cachedSr) return
+        cachedSr = sampleRate
+        invSr = 1.0 / sampleRate
+        if (samplesToNext <= 0) samplesToNext = (sampleRate * 0.08).toInt()
+    }
+
+    override fun render(sampleIndex: Long, sampleRate: Int): Float {
+        ensureSr(sampleRate)
+        samplesToNext--
+        if (samplesToNext <= 0) {
+            crackEnv = 0.35 + rng.nextDouble() * 0.45
+            crackPhase = 0.0
+            samplesToNext = (sampleRate * (0.04 + rng.nextDouble() * 0.22)).toInt()
+        }
+        val n = rng.nextFloat() * 2.0 - 1.0
+        rumbleLp += 0.02 * (n - rumbleLp)
+        crackEnv *= 0.992
+        crackPhase = SinLut.wrapPhase(crackPhase + 2.0 * PI * (900.0 + rng.nextDouble() * 600.0) * invSr)
+        val crack = SinLut.sin(crackPhase) * crackEnv * 0.18 * (0.5 + rng.nextDouble() * 0.5)
+        return (rumbleLp * 0.20 + crack).toFloat()
+    }
+}
+
+/** Sparse chirp bursts (short FM-ish sine envelopes). */
+class BirdChirpVoice(
+    private val seed: Long = 77L,
+) : SynthVoice {
+    private val rng = Random(seed)
+    private var active = false
+    private var age = 0L
+    private var maxAge = 0L
+    private var env = 0.0
+    private var phase = 0.0
+    private var freq = 1800.0
+    private var freqSlide = 0.0
+    private var invSr = 1.0 / 44_100
+    private var cachedSr = 0
+    private var samplesToNext = 0
+
+    override fun isAudible(): Boolean = active
+
+    override fun noteOn(freqHz: Float, velocity: Float) {
+        freq = freqHz.toDouble().coerceIn(900.0, 3200.0)
+        freqSlide = (rng.nextDouble() - 0.35) * 900.0
+        env = velocity.coerceIn(0.1f, 0.8f).toDouble()
+        age = 0L
+        active = true
+        phase = 0.0
+        cachedSr = 0
+    }
+
+    private fun ensureSr(sampleRate: Int) {
+        if (sampleRate == cachedSr) return
+        cachedSr = sampleRate
+        invSr = 1.0 / sampleRate
+        maxAge = (0.12 * sampleRate).toLong()
+        if (samplesToNext <= 0) {
+            samplesToNext = (sampleRate * (1.2 + rng.nextDouble() * 3.5)).toInt()
+        }
+    }
+
+    /** Auto-fires sparse chirps when used as a continuous texture. */
+    fun tickTexture(sampleRate: Int) {
+        ensureSr(sampleRate)
+        samplesToNext--
+        if (!active && samplesToNext <= 0) {
+            noteOn((1400 + rng.nextInt(1200)).toFloat(), 0.35f + rng.nextFloat() * 0.3f)
+            samplesToNext = (sampleRate * (1.5 + rng.nextDouble() * 4.0)).toInt()
+        }
+    }
+
+    override fun render(sampleIndex: Long, sampleRate: Int): Float {
+        ensureSr(sampleRate)
+        if (!active) return 0f
+        age++
+        val t = age.toDouble() / maxAge.coerceAtLeast(1)
+        env *= 0.995
+        freq += freqSlide * invSr
+        phase = SinLut.wrapPhase(phase + 2.0 * PI * freq * invSr)
+        val trem = 0.7 + 0.3 * SinLut.sin(phase * 0.15)
+        if (age > maxAge || env < 1e-4 || t > 1.0) {
+            active = false
+            return 0f
+        }
+        return (SinLut.sin(phase) * env * 0.22 * trem).toFloat()
+    }
+
+    override fun reset() {
+        active = false
+        env = 0.0
+    }
+}
+
+/** Soft bowed lead: filtered saw + vibrato + slow attack. */
+class BowedVoice : SynthVoice {
+    private var phase = 0.0
+    private var freq = 0.0
+    private var age = 0L
+    private var env = 0.0
+    private var peak = 0.0
+    private var active = false
+    private var releasing = false
+    private var invSr = 1.0 / 44_100
+    private var cachedSr = 0
+    private var attackSamples = 1
+    private var decayMul = 0.999
+    private var releaseMul = 0.99
+    private var vibPhase = 0.0
+    private var lp = 0.0
+
+    override fun isAudible(): Boolean = active
+
+    override fun noteOn(freqHz: Float, velocity: Float) {
+        freq = freqHz.toDouble()
+        peak = velocity.coerceIn(0.08f, 0.85f).toDouble()
+        age = 0L
+        env = 0.0
+        active = true
+        releasing = false
+        phase = 0.0
+        vibPhase = 0.0
+        lp = 0.0
+        cachedSr = 0
+    }
+
+    override fun noteOff() {
+        releasing = true
+    }
+
+    private fun ensureSr(sampleRate: Int) {
+        if (sampleRate == cachedSr) return
+        cachedSr = sampleRate
+        invSr = 1.0 / sampleRate
+        attackSamples = (0.12 * sampleRate).toInt().coerceAtLeast(1)
+        decayMul = EnvMath.decayMul(1.8, sampleRate)
+        releaseMul = EnvMath.decayMul(8.0, sampleRate)
+    }
+
+    override fun render(sampleIndex: Long, sampleRate: Int): Float {
+        if (!active) return 0f
+        ensureSr(sampleRate)
+        age++
+        if (releasing) {
+            env *= releaseMul
+            if (env < 1e-4) {
+                active = false
+                return 0f
+            }
+        } else if (age <= attackSamples) {
+            env = peak * age.toDouble() / attackSamples
+        } else {
+            env *= decayMul
+            if (env < 1e-4) {
+                active = false
+                return 0f
+            }
+        }
+        vibPhase = SinLut.wrapPhase(vibPhase + 2.0 * PI * 5.2 * invSr)
+        val vib = 1.0 + 0.008 * SinLut.sin(vibPhase)
+        phase = SinLut.wrapPhase(phase + 2.0 * PI * freq * vib * invSr)
+        // Cheap soft saw via phase
+        val saw = (2.0 * (phase / (2.0 * PI)) - 1.0).toFloat()
+        lp += 0.18 * (saw - lp)
+        return (lp * 0.28f * env).toFloat()
+    }
+
+    override fun reset() {
+        active = false
+        env = 0.0
+        releasing = false
+    }
+}
+
 /**
  * Fast rational soft clip (replaces tanh in the hot path).
  * Smooth knee, hard-bounded to [-1, 1].

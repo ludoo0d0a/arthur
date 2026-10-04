@@ -119,6 +119,8 @@ fun TvControlPlaneContent(
                     onTileClick = { tile ->
                         if (tile.isLocked(packOwnership)) {
                             onOpenMarketplace?.invoke(tile.sellablePackId)
+                        } else if (tile.selection.family == PackFamily.Sound) {
+                            onSelectSubPack(tile.selection)
                         } else {
                             onStartAmbient()
                         }
@@ -126,6 +128,8 @@ fun TvControlPlaneContent(
                     onTileLongClick = { tile ->
                         if (tile.isLocked(packOwnership)) {
                             onOpenMarketplace?.invoke(tile.sellablePackId)
+                        } else if (tile.selection.family == PackFamily.Sound) {
+                            onSelectSubPack(tile.selection)
                         } else {
                             onSetDefaultScreensaver?.invoke(tile.selection)
                             onStartAmbient()

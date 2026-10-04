@@ -189,6 +189,7 @@ class PackSelectionScreen(carContext: CarContext) : Screen(carContext) {
         val families = PackFamily.entries
             .filter { it != PackFamily.Video }
             .filter { it != PackFamily.Personal } // Marketplace packs: no Auto commerce / Personal browse
+            .filter { it != PackFamily.Sound } // Sound packs: phone/TV Marketplace only
             .take(gridLimit)
 
         val sectionBuilder = GridSection.Builder()

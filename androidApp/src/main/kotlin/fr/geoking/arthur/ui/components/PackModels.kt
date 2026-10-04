@@ -3,12 +3,16 @@ package fr.geoking.arthur.ui.components
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import fr.geoking.arthur.R
+import fr.geoking.arthur.audio.MusicStyle
+import fr.geoking.arthur.audio.MusicStyleIds
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
+import fr.geoking.arthur.shared.marketplace.AudioPackCatalog
 import fr.geoking.arthur.shared.marketplace.MarketplaceCatalog
 import fr.geoking.arthur.shared.marketplace.PackOwnership
 import fr.geoking.arthur.shared.source.SourceCapabilities
 import fr.geoking.arthur.shared.source.StockPhotoCategory
+import fr.geoking.arthur.source.AmbientAudioSettings
 
 /** Top-level Spotify-style packs on the Control Plane home grid. */
 enum class PackFamily(
@@ -20,6 +24,7 @@ enum class PackFamily(
     Genart(R.string.kind_genart, R.drawable.pack_genart, "genart"),
     Photo(R.string.kind_photo, R.drawable.pack_photo, "photo"),
     Personal(R.string.pack_personal, R.drawable.pack_photo, "personal"),
+    Sound(R.string.pack_sound, R.drawable.pack_sound, "sound"),
     Video(R.string.kind_video, R.drawable.pack_video, "video"),
     Sculpture(R.string.kind_sculpture, R.drawable.pack_sculpture, "sculpture"),
     Painting(R.string.kind_painting, R.drawable.pack_painting, "painting"),
@@ -74,6 +79,7 @@ fun PackFamily.defaultSubId(): String = when (this) {
     PackFamily.Genart -> GenartTopic.All.testTagSuffix
     PackFamily.Museum -> MuseumTopic.Random.testTagSuffix
     PackFamily.Personal -> "all"
+    PackFamily.Sound -> AudioPackTopic.Essentials.testTagSuffix
     PackFamily.Photo,
     PackFamily.Video,
     PackFamily.Sculpture,
@@ -210,6 +216,16 @@ fun PackFamily.subPackTiles(catalog: List<Artwork> = emptyList()): List<PackTile
         }
         listOf(random) + institutions
     }
+    PackFamily.Sound -> AudioPackTopic.entries.map { topic ->
+        PackTile(
+            id = "sub_sound_${topic.testTagSuffix}",
+            titleRes = topic.labelRes,
+            coverRes = PackCovers.audio(topic),
+            selection = PackSelection(PackFamily.Sound, topic.testTagSuffix),
+            testTagSuffix = "sound_${topic.testTagSuffix}",
+            sellablePackId = topic.sellablePackId,
+        )
+    }
 }
 
 fun resolvePackPool(catalog: List<Artwork>, selection: PackSelection): List<Artwork> {
@@ -276,11 +292,13 @@ fun resolvePackPool(catalog: List<Artwork>, selection: PackSelection): List<Artw
                 museumTopic = topic,
             )
         }
+        PackFamily.Sound -> emptyList()
     }
 
     val isRandom = when (selection.family) {
         PackFamily.Museum -> (selection.museumTopicOrNull() ?: MuseumTopic.Random) == MuseumTopic.Random
         PackFamily.Personal -> true
+        PackFamily.Sound -> true
         PackFamily.Genart -> (selection.genartTopicOrNull() ?: GenartTopic.Random) == GenartTopic.Random
         PackFamily.Photo ->
             selection.photoSourceOrNull() != null ||
@@ -333,6 +351,38 @@ fun PackSelection.genartTopicOrNull(): GenartTopic? =
         GenartTopic.entries.firstOrNull { it.testTagSuffix == subId }
     }
 
+fun PackSelection.audioPackTopicOrNull(): AudioPackTopic? =
+    if (family != PackFamily.Sound || subId == null) {
+        null
+    } else {
+        AudioPackTopic.entries.firstOrNull { it.testTagSuffix == subId }
+    }
+
+/**
+ * Enables ambient sound and sets style preference for a Sound pack tile.
+ * Does not change the artwork rotation pool.
+ */
+fun PackSelection.applySoundPack(settings: AmbientAudioSettings) {
+    if (family != PackFamily.Sound) return
+    settings.setEnabled(true)
+    val topic = audioPackTopicOrNull()
+    val style: MusicStyle? = when {
+        topic == null || topic == AudioPackTopic.Essentials -> MusicStyle.JazzPiano
+        else -> {
+            val primary = topic.packSuffix?.let { AudioPackCatalog.primaryStyleForPack(it) }
+            primary?.let { MusicStyleIds.fromSuffix(it) }
+        }
+    }
+    settings.setStylePreference(style)
+    // Atmosphere packs benefit from Atmosphere character; music packs stay Melody-friendly.
+    when (topic) {
+        AudioPackTopic.HearthWeather, AudioPackTopic.DawnChorus, AudioPackTopic.TempleResonance,
+        AudioPackTopic.WindGarden, AudioPackTopic.CosmicDrift,
+        -> settings.setCharacter(fr.geoking.arthur.source.AmbientAudioCharacter.Atmosphere)
+        else -> Unit
+    }
+}
+
 fun PackSelection.museumTopicOrNull(): MuseumTopic? =
     if (subId == null) {
         null
@@ -381,6 +431,7 @@ fun PackSelection.sourceIdsForAmbientLoad(): List<String>? = when (family) {
     }
     PackFamily.Genart -> null
     PackFamily.Personal -> null
+    PackFamily.Sound -> null
 }
 
 /** Painting / Sculpture pack: Random → museums without Louvre. */

@@ -76,6 +76,7 @@ stock keyword topics use a **topic** hue so tiles are easy to tell apart.
 | **Photo** | `#0D2137` | `#2E86AB` | `#A8DADC` | Camera (Random / root only) |
 | **Video** | `#042A2E` | `#1A7A78` | `#A8E6E0` | Clapperboard / play slate |
 | **Genart** | `#1A0A2E` | `#6B3FA0` | `#E8B4F8` | Generative curves / fractal-like shapes |
+| **Sound** | `#1A1208` | `#A67C3D` | `#F0D9A0` | Note / diapason (root); topic hues for sub-packs |
 
 ### Stock keyword topics (`StockPhotoCategory`)
 
@@ -129,6 +130,7 @@ Optional fourth stop for recessed voids: near-black of the **same** hue.
 | Photo | `pack_photo.webp` | Photo blues |
 | Video | `pack_video.webp` | Video teal |
 | Genart | `pack_genart.webp` | Genart purples |
+| Sound | `pack_sound.webp` | Sound amber |
 
 ### Photo / Video keyword topics (`StockPhotoCategory`)
 
@@ -168,6 +170,27 @@ Wired via `PackCovers.genart()`. Each topic has its **own primary hue** (see tab
 | Geometry | `pack_genart_geometry.webp` | Platonic solid / crystal | Cool steel |
 | Fractal | `pack_genart_fractal.webp` | Recursive spiral | Genart purple |
 | Custom | `pack_genart_custom.webp` | Faceted gem + dial ring | Warm violet |
+
+### Sound topics (`AudioPackTopic`)
+
+Wired via `PackCovers.audio()`. Each topic has its **own primary hue** (semantic to the pack).
+
+| Topic | Drawable | Motif | Primary hue |
+|-------|----------|--------|-------------|
+| Essentials | `pack_audio_essentials.webp` | Piano silhouette | Warm amber |
+| Hearth & Weather | `pack_audio_hearth_weather.webp` | Flame + wave | Ember orange |
+| Dawn Chorus | `pack_audio_dawn_chorus.webp` | Bird / branch | Soft dawn green |
+| Temple Resonance | `pack_audio_temple_resonance.webp` | Tibetan bowl | Deep bronze |
+| Wind Garden | `pack_audio_wind_garden.webp` | Chimes | Soft teal |
+| Cosmic Drift | `pack_audio_cosmic_drift.webp` | Rings / nebula | Cosmic indigo |
+| Jazz After Dark | `pack_audio_jazz_after_dark.webp` | Sax / lounge | Night indigo |
+| World Pulse | `pack_audio_world_pulse.webp` | Pulse disc | Warm terracotta |
+| Salon Classique | `pack_audio_salon_classique.webp` | Score / piano | Museum brown |
+| Grand Orchestra | `pack_audio_grand_orchestra.webp` | String waves | Burgundy |
+| Solo Violin | `pack_audio_solo_violin.webp` | Violin | Wine rose |
+| Rock Ballad | `pack_audio_rock_ballad.webp` | Soft electric guitar | Slate blue |
+| Bass Only | `pack_audio_bass_only.webp` | Double bass / low wave | Deep navy |
+| Midnight Ballad | `pack_audio_midnight_ballad.webp` | Piano + moon | Midnight blue |
 
 ### Other covers
 

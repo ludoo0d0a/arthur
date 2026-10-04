@@ -9,8 +9,10 @@ data class SellablePack(
     val id: String,
     val entitlementId: String,
     val productId: String,
-    /** Genart topic suffix when this pack unlocks a Genart sub-pack; null for Personal Photos. */
+    /** Genart topic suffix when this pack unlocks a Genart sub-pack; null otherwise. */
     val genartTopicSuffix: String? = null,
+    /** Audio pack suffix when this pack unlocks music styles; null otherwise. */
+    val audioPackSuffix: String? = null,
 )
 
 /**
@@ -53,11 +55,26 @@ object MarketplaceCatalog {
         genartTopicSuffix = topicSuffix,
     )
 
+    fun audioPackId(packSuffix: String): String = "audio_$packSuffix"
+    fun audioEntitlementId(packSuffix: String): String = "pack_audio_$packSuffix"
+    fun audioProductId(packSuffix: String): String = "arthur_pack_audio_$packSuffix"
+
+    fun audioPack(packSuffix: String): SellablePack = SellablePack(
+        id = audioPackId(packSuffix),
+        entitlementId = audioEntitlementId(packSuffix),
+        productId = audioProductId(packSuffix),
+        audioPackSuffix = packSuffix,
+    )
+
     fun all(): List<SellablePack> = listOf(personalPhotos) +
-        GenartPackTopics.monetizedTopicSuffixes.map { genartPack(it) }
+        GenartPackTopics.monetizedTopicSuffixes.map { genartPack(it) } +
+        AudioPackCatalog.monetizedPackSuffixes.map { audioPack(it) }
 
     fun byId(id: String): SellablePack? = all().firstOrNull { it.id == id }
 
     fun sellablePackIdForGenartTopic(topicSuffix: String): String? =
         if (topicSuffix in GenartPackTopics.monetizedTopicSuffixes) genartPackId(topicSuffix) else null
+
+    fun sellablePackIdForAudioPack(packSuffix: String): String? =
+        if (packSuffix in AudioPackCatalog.monetizedPackSuffixes) audioPackId(packSuffix) else null
 }

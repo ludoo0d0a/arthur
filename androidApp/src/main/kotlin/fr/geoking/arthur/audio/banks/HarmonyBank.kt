@@ -98,12 +98,27 @@ object HarmonyBank {
             fr.geoking.arthur.audio.MusicStyle.JazzPiano -> listOf(jazzProg, jazzTurnaround, blues12)
             fr.geoking.arthur.audio.MusicStyle.BarAmbience, fr.geoking.arthur.audio.MusicStyle.NightLounge ->
                 listOf(barWarm, jazzProg, blues12, balladPop)
-            fr.geoking.arthur.audio.MusicStyle.SoftGuitar -> listOf(guitarOpen, balladPop, classicalCadence, zenPads)
+            fr.geoking.arthur.audio.MusicStyle.SoftGuitar,
+            fr.geoking.arthur.audio.MusicStyle.RockBallad,
+            -> listOf(guitarOpen, balladPop, classicalCadence, zenPads)
             fr.geoking.arthur.audio.MusicStyle.AfricanPulse -> listOf(africanPar, guitarOpen)
-            fr.geoking.arthur.audio.MusicStyle.CosmicDrone -> listOf(cosmic, bowl, zenPads)
+            fr.geoking.arthur.audio.MusicStyle.CosmicDrone,
+            fr.geoking.arthur.audio.MusicStyle.OrchestraPads,
+            fr.geoking.arthur.audio.MusicStyle.OrchestraSwell,
+            -> listOf(cosmic, bowl, zenPads)
             fr.geoking.arthur.audio.MusicStyle.TibetanBowl -> listOf(bowl, zenPads, cosmic)
-            fr.geoking.arthur.audio.MusicStyle.OceanWaves -> listOf(ocean, zenPads, balladPop)
+            fr.geoking.arthur.audio.MusicStyle.OceanWaves,
+            fr.geoking.arthur.audio.MusicStyle.SoftRain,
+            fr.geoking.arthur.audio.MusicStyle.WindAmbience,
+            fr.geoking.arthur.audio.MusicStyle.Fireplace,
+            fr.geoking.arthur.audio.MusicStyle.Songbirds,
+            -> listOf(ocean, zenPads, balladPop)
             fr.geoking.arthur.audio.MusicStyle.WindChimes -> listOf(zenPads, cosmic, ocean)
+            fr.geoking.arthur.audio.MusicStyle.ClassicalPiano,
+            fr.geoking.arthur.audio.MusicStyle.PianoBallad,
+            fr.geoking.arthur.audio.MusicStyle.ViolinLead,
+            -> listOf(classicalCadence, balladPop, zenPads)
+            fr.geoking.arthur.audio.MusicStyle.BassOnly -> listOf(blues12, barWarm, jazzProg)
         }
 
     fun pick(style: fr.geoking.arthur.audio.MusicStyle, index: Int): HarmonyPattern {

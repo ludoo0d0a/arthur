@@ -76,6 +76,7 @@ class MarkovSequencerTest {
             MusicStyle.WindChimes,
             MusicStyle.AfricanPulse,
         )
+        val ownership = fr.geoking.arthur.shared.marketplace.FakePackOwnership().also { it.unlockAll() }
         for (style in styles) {
             val preset = MusicPresetResolver.resolve(
                 Artwork("test.warm.$style", "Warm", sourceId = "test", kind = ArtworkKind.Photo),
@@ -84,6 +85,7 @@ class MarkovSequencerTest {
                     stylePreference = style,
                     complexity = 0.9f,
                 ),
+                ownership,
             )
             val seq = MarkovSequencer(preset, sessionSalt = 123L, character = AmbientAudioCharacter.Melody)
             repeat(44_100 * 10) {

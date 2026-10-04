@@ -26,6 +26,7 @@ import fr.geoking.arthur.R
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.marketplace.GenartPackTopics
+import fr.geoking.arthur.shared.marketplace.MarketplaceCatalog
 import fr.geoking.arthur.shared.source.ArticSource
 import fr.geoking.arthur.shared.source.ClevelandSource
 import fr.geoking.arthur.shared.source.CoverrSource
@@ -98,6 +99,35 @@ enum class GenartTopic(
     Geometry(R.string.genart_topic_geometry, "geometry"),
     Fractal(R.string.genart_topic_fractal, "fractal"),
     Custom(R.string.genart_topic_custom, "custom"),
+}
+
+/**
+ * Sound sub-packs on the Control Plane. Free [Essentials] has no SKU;
+ * others map to [MarketplaceCatalog] audio pack ids.
+ */
+enum class AudioPackTopic(
+    @get:StringRes val labelRes: Int,
+    val testTagSuffix: String,
+    val packSuffix: String?,
+) {
+    Essentials(R.string.audio_pack_essentials, "essentials", null),
+    HearthWeather(R.string.audio_pack_hearth_weather, "hearth_weather", "hearth_weather"),
+    DawnChorus(R.string.audio_pack_dawn_chorus, "dawn_chorus", "dawn_chorus"),
+    TempleResonance(R.string.audio_pack_temple_resonance, "temple_resonance", "temple_resonance"),
+    WindGarden(R.string.audio_pack_wind_garden, "wind_garden", "wind_garden"),
+    CosmicDrift(R.string.audio_pack_cosmic_drift, "cosmic_drift", "cosmic_drift"),
+    JazzAfterDark(R.string.audio_pack_jazz_after_dark, "jazz_after_dark", "jazz_after_dark"),
+    WorldPulse(R.string.audio_pack_world_pulse, "world_pulse", "world_pulse"),
+    SalonClassique(R.string.audio_pack_salon_classique, "salon_classique", "salon_classique"),
+    GrandOrchestra(R.string.audio_pack_grand_orchestra, "grand_orchestra", "grand_orchestra"),
+    SoloViolin(R.string.audio_pack_solo_violin, "solo_violin", "solo_violin"),
+    RockBallad(R.string.audio_pack_rock_ballad, "rock_ballad", "rock_ballad"),
+    BassOnly(R.string.audio_pack_bass_only, "bass_only", "bass_only"),
+    MidnightBallad(R.string.audio_pack_midnight_ballad, "midnight_ballad", "midnight_ballad"),
+    ;
+
+    val sellablePackId: String?
+        get() = packSuffix?.let { MarketplaceCatalog.sellablePackIdForAudioPack(it) }
 }
 
 /**

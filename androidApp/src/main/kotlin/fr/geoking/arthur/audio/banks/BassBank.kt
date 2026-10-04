@@ -40,14 +40,19 @@ object BassBank {
 
     fun patternFor(style: MusicStyle, index: Int): BassPattern {
         val list = when (style) {
-            MusicStyle.JazzPiano, MusicStyle.BarAmbience, MusicStyle.NightLounge ->
-                listOf(jazzWalk, bluesRoot5, balladPedal)
-            MusicStyle.SoftGuitar, MusicStyle.Zen ->
-                listOf(balladPedal, classical, jazzWalk)
+            MusicStyle.JazzPiano, MusicStyle.BarAmbience, MusicStyle.NightLounge,
+            MusicStyle.BassOnly,
+            -> listOf(jazzWalk, bluesRoot5, balladPedal)
+            MusicStyle.SoftGuitar, MusicStyle.Zen, MusicStyle.RockBallad,
+            MusicStyle.ClassicalPiano, MusicStyle.PianoBallad, MusicStyle.ViolinLead,
+            -> listOf(balladPedal, classical, jazzWalk)
             MusicStyle.AfricanPulse ->
                 listOf(bluesRoot5, jazzWalk)
-            MusicStyle.OceanWaves, MusicStyle.TibetanBowl, MusicStyle.CosmicDrone, MusicStyle.WindChimes ->
-                listOf(drone, balladPedal)
+            MusicStyle.OceanWaves, MusicStyle.TibetanBowl, MusicStyle.CosmicDrone,
+            MusicStyle.WindChimes, MusicStyle.SoftRain, MusicStyle.WindAmbience,
+            MusicStyle.Fireplace, MusicStyle.Songbirds, MusicStyle.OrchestraPads,
+            MusicStyle.OrchestraSwell,
+            -> listOf(drone, balladPedal)
         }
         return list[Math.floorMod(index, list.size)]
     }

@@ -1,14 +1,10 @@
 package fr.geoking.arthur.ui.screens
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -22,9 +18,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -34,6 +30,13 @@ import fr.geoking.arthur.billing.PurchasesGateway
 import fr.geoking.arthur.shared.marketplace.MarketplaceCatalog
 import fr.geoking.arthur.shared.marketplace.PackOwnership
 import fr.geoking.arthur.shared.marketplace.SellablePack
+import fr.geoking.arthur.ui.components.AudioPackTopic
+import fr.geoking.arthur.ui.components.GenartTopic
+import fr.geoking.arthur.ui.components.PackCovers
+import fr.geoking.arthur.ui.components.PackFamily
+import fr.geoking.arthur.ui.components.PackGrid
+import fr.geoking.arthur.ui.components.PackSelection
+import fr.geoking.arthur.ui.components.PackTile
 
 /**
  * Marketplace browse / fake unlock. Phone + TV only — never Android Auto.
@@ -49,6 +52,14 @@ fun MarketplaceScreen(
     canPurchaseOnDevice: Boolean = true,
 ) {
     var refreshEpoch by remember { mutableIntStateOf(0) }
+    var selectedPackId by remember(highlightPackId) {
+        mutableStateOf(highlightPackId)
+    }
+    val tiles = remember { marketplacePackTiles() }
+    val selectedTile = tiles.firstOrNull { it.sellablePackId == selectedPackId }
+    val selectedPack = selectedPackId?.let { MarketplaceCatalog.byId(it) }
+    @Suppress("UNUSED_EXPRESSION")
+    refreshEpoch
 
     Scaffold(
         modifier = modifier
@@ -81,82 +92,117 @@ fun MarketplaceScreen(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 )
             }
-            LazyColumn(
+            PackGrid(
+                tiles = tiles,
+                selected = selectedTile?.selection,
+                onTileClick = { tile ->
+                    selectedPackId = tile.sellablePackId
+                },
+                isLocked = { it.isLocked(ownership) },
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag("marketplace_pack_grid"),
                 contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                items(MarketplaceCatalog.all(), key = { it.id }) { pack ->
-                    val owned = ownership.owns(pack.id).also { /* refreshEpoch gates recomposition */ }
-                    @Suppress("UNUSED_EXPRESSION")
-                    refreshEpoch
-                    MarketplacePackRow(
-                        pack = pack,
-                        owned = owned,
-                        highlighted = pack.id == highlightPackId,
-                        canPurchase = canPurchaseOnDevice,
-                        onUnlock = {
-                            purchases.unlockEntitlement(pack.entitlementId)
+            )
+            if (selectedPack != null) {
+                val owned = ownership.owns(selectedPack.id)
+                Text(
+                    text = marketplacePackTitle(selectedPack),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .testTag("marketplace_pack_${selectedPack.id}"),
+                )
+                Text(
+                    text = if (owned) {
+                        stringResource(R.string.marketplace_owned)
+                    } else {
+                        stringResource(R.string.marketplace_locked)
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+                if (!owned && canPurchaseOnDevice) {
+                    Button(
+                        onClick = {
+                            purchases.unlockEntitlement(selectedPack.entitlementId)
                             refreshEpoch++
                         },
-                    )
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                            .testTag("marketplace_unlock_${selectedPack.id}"),
+                    ) {
+                        Text(stringResource(R.string.marketplace_unlock))
+                    }
                 }
             }
         }
     }
 }
 
-@Composable
-private fun MarketplacePackRow(
-    pack: SellablePack,
-    owned: Boolean,
-    highlighted: Boolean,
-    canPurchase: Boolean,
-    onUnlock: () -> Unit,
-) {
-    val title = marketplacePackTitle(pack)
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag("marketplace_pack_${pack.id}"),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = if (highlighted) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                },
+internal fun marketplacePackTiles(): List<PackTile> =
+    MarketplaceCatalog.all().map { pack ->
+        when {
+            pack.id == MarketplaceCatalog.PERSONAL_PHOTOS_ID -> PackTile(
+                id = "market_${pack.id}",
+                titleRes = R.string.pack_personal,
+                coverRes = R.drawable.pack_photo,
+                selection = PackSelection(PackFamily.Personal),
+                testTagSuffix = "market_${pack.id}",
+                sellablePackId = pack.id,
             )
-            Text(
-                text = if (owned) {
-                    stringResource(R.string.marketplace_owned)
-                } else {
-                    stringResource(R.string.marketplace_locked)
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        if (!owned && canPurchase) {
-            Button(
-                onClick = onUnlock,
-                modifier = Modifier.testTag("marketplace_unlock_${pack.id}"),
-            ) {
-                Text(stringResource(R.string.marketplace_unlock))
+            pack.genartTopicSuffix != null -> {
+                val topic = GenartTopic.entries.firstOrNull {
+                    it.testTagSuffix == pack.genartTopicSuffix
+                } ?: GenartTopic.Nature
+                PackTile(
+                    id = "market_${pack.id}",
+                    titleRes = topic.labelRes,
+                    coverRes = PackCovers.genart(topic),
+                    selection = PackSelection(PackFamily.Genart, topic.testTagSuffix),
+                    testTagSuffix = "market_${pack.id}",
+                    sellablePackId = pack.id,
+                )
             }
+            pack.audioPackSuffix != null -> {
+                val topic = AudioPackTopic.entries.firstOrNull {
+                    it.packSuffix == pack.audioPackSuffix
+                } ?: AudioPackTopic.HearthWeather
+                PackTile(
+                    id = "market_${pack.id}",
+                    titleRes = topic.labelRes,
+                    coverRes = PackCovers.audio(topic),
+                    selection = PackSelection(PackFamily.Sound, topic.testTagSuffix),
+                    testTagSuffix = "market_${pack.id}",
+                    sellablePackId = pack.id,
+                )
+            }
+            else -> PackTile(
+                id = "market_${pack.id}",
+                titleRes = R.string.marketplace_title,
+                coverRes = R.drawable.pack_random,
+                selection = PackSelection(PackFamily.Museum),
+                testTagSuffix = "market_${pack.id}",
+                sellablePackId = pack.id,
+            )
         }
     }
-}
 
 @Composable
-private fun marketplacePackTitle(pack: SellablePack): String = when {
+internal fun marketplacePackTitle(pack: SellablePack): String = when {
     pack.id == MarketplaceCatalog.PERSONAL_PHOTOS_ID ->
         stringResource(R.string.pack_personal)
     pack.genartTopicSuffix != null ->
         stringResource(R.string.marketplace_genart_pack, pack.genartTopicSuffix!!)
+    pack.audioPackSuffix != null -> {
+        val topic = AudioPackTopic.entries.firstOrNull { it.packSuffix == pack.audioPackSuffix }
+        if (topic != null) {
+            stringResource(R.string.marketplace_audio_pack, stringResource(topic.labelRes))
+        } else {
+            stringResource(R.string.marketplace_audio_pack, pack.audioPackSuffix!!)
+        }
+    }
     else -> pack.id
 }

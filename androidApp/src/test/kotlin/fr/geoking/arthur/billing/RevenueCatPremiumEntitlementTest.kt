@@ -27,6 +27,20 @@ class RevenueCatPremiumEntitlementTest {
     }
 
     @Test
+    fun fakeGateway_unlocksAudioPackIndependentlyOfPremium() {
+        val gateway = FakePurchasesGateway(premium = false)
+        val ownership = RevenueCatPackOwnership(gateway)
+        val hearth = MarketplaceCatalog.audioPack("hearth_weather")
+        val violin = MarketplaceCatalog.audioPack("solo_violin")
+        assertFalse(ownership.owns(hearth.id))
+        gateway.unlockEntitlement(hearth.entitlementId)
+        assertTrue(ownership.owns(hearth.id))
+        assertTrue(ownership.allowsMusicStyle("ocean_waves"))
+        assertFalse(ownership.owns(violin.id))
+        assertFalse(RevenueCatPremiumEntitlement(gateway).isPremium)
+    }
+
+    @Test
     fun devAware_orsSimulateOverride() {
         var simulate = false
         val entitlement = DevAwarePremiumEntitlement(

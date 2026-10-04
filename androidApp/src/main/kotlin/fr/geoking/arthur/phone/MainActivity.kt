@@ -198,9 +198,9 @@ class MainActivity : ComponentActivity() {
                                     onCheckForUpdate = {
                                         inAppUpdateHelper.checkForUpdate(manual = true)
                                     },
-                                    onOpenMarketplace = {
+                                    onOpenMarketplace = { highlight ->
                                         showSettings = false
-                                        marketplaceHighlight = null
+                                        marketplaceHighlight = highlight
                                         showMarketplace = true
                                     },
                                 )

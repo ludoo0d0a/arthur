@@ -185,7 +185,7 @@ fun SettingsScreen(
     deviantArtPassword: String = "",
     onDeviantArtPasswordChange: (String) -> Unit = {},
     onCheckForUpdate: (() -> Unit)? = null,
-    onOpenMarketplace: (() -> Unit)? = null,
+    onOpenMarketplace: ((highlightPackId: String?) -> Unit)? = null,
     initialScreenStack: List<SettingsScreenPage>? = null,
     onInitialRouteConsumed: () -> Unit = {},
     errorLogger: ErrorLogger? = null,
@@ -318,6 +318,7 @@ fun SettingsScreen(
                     onStylePreferenceChange = onAmbientSoundStylePreferenceChange,
                     complexity = ambientSoundComplexity,
                     onComplexityChange = onAmbientSoundComplexityChange,
+                    onOpenMarketplace = onOpenMarketplace,
                 )
                 SettingsScreenPage.DeviantArtCredentials -> DeviantArtCredentialsContent(
                     username = deviantArtUsername,
@@ -360,7 +361,7 @@ private fun MainMenu(
     quoteProvider: QuoteProvider,
     ambientSoundEnabled: Boolean,
     onCheckForUpdate: (() -> Unit)?,
-    onOpenMarketplace: (() -> Unit)?,
+    onOpenMarketplace: ((highlightPackId: String?) -> Unit)?,
     onNavigate: (SettingsScreenPage) -> Unit,
 ) {
     Column(
@@ -417,7 +418,7 @@ private fun MainMenu(
                 SettingsItem(
                     label = stringResource(R.string.marketplace_open),
                     value = stringResource(R.string.marketplace_subtitle),
-                    onClick = onOpenMarketplace,
+                    onClick = { onOpenMarketplace(null) },
                 )
             }
         }
@@ -1336,7 +1337,12 @@ private fun AmbientSoundContent(
     onStylePreferenceChange: (MusicStyle?) -> Unit,
     complexity: Float,
     onComplexityChange: (Float) -> Unit,
+    onOpenMarketplace: ((highlightPackId: String?) -> Unit)? = null,
 ) {
+    val packOwnership = remember {
+        runCatching { GlobalContext.get().get<fr.geoking.arthur.shared.marketplace.PackOwnership>() }
+            .getOrDefault(fr.geoking.arthur.shared.marketplace.PackOwnership.NONE)
+    }
     val styleOptions = listOf(
         null to R.string.settings_ambient_sound_style_auto,
         MusicStyle.JazzPiano to R.string.settings_ambient_sound_style_jazz,
@@ -1346,6 +1352,20 @@ private fun AmbientSoundContent(
         MusicStyle.NightLounge to R.string.settings_ambient_sound_style_lounge,
         MusicStyle.AfricanPulse to R.string.settings_ambient_sound_style_african,
         MusicStyle.WindChimes to R.string.settings_ambient_sound_style_chimes,
+        MusicStyle.TibetanBowl to R.string.settings_ambient_sound_style_tibetan,
+        MusicStyle.OceanWaves to R.string.settings_ambient_sound_style_ocean,
+        MusicStyle.SoftRain to R.string.settings_ambient_sound_style_rain,
+        MusicStyle.WindAmbience to R.string.settings_ambient_sound_style_wind,
+        MusicStyle.Fireplace to R.string.settings_ambient_sound_style_fireplace,
+        MusicStyle.Songbirds to R.string.settings_ambient_sound_style_songbirds,
+        MusicStyle.CosmicDrone to R.string.settings_ambient_sound_style_cosmic,
+        MusicStyle.ClassicalPiano to R.string.settings_ambient_sound_style_classical,
+        MusicStyle.OrchestraPads to R.string.settings_ambient_sound_style_orchestra,
+        MusicStyle.OrchestraSwell to R.string.settings_ambient_sound_style_orchestra_swell,
+        MusicStyle.ViolinLead to R.string.settings_ambient_sound_style_violin,
+        MusicStyle.RockBallad to R.string.settings_ambient_sound_style_rock_ballad,
+        MusicStyle.BassOnly to R.string.settings_ambient_sound_style_bass_only,
+        MusicStyle.PianoBallad to R.string.settings_ambient_sound_style_piano_ballad,
     )
     Column(
         modifier = Modifier
@@ -1437,11 +1457,37 @@ private fun AmbientSoundContent(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             styleOptions.forEach { (style, labelRes) ->
+                val locked = style != null &&
+                    !packOwnership.allowsMusicStyle(
+                        fr.geoking.arthur.audio.MusicStyleIds.toSuffix(style),
+                    )
                 FilterChip(
                     selected = stylePreference == style,
-                    onClick = { onStylePreferenceChange(style) },
+                    onClick = {
+                        if (locked && style != null) {
+                            val suffix = fr.geoking.arthur.audio.MusicStyleIds.toSuffix(style)
+                            val packId = fr.geoking.arthur.shared.marketplace.AudioPackCatalog
+                                .packsCoveringStyle(suffix)
+                                .firstOrNull()
+                                ?.let { packSuffix ->
+                                    fr.geoking.arthur.shared.marketplace.MarketplaceCatalog
+                                        .audioPackId(packSuffix)
+                                }
+                            onOpenMarketplace?.invoke(packId)
+                        } else {
+                            onStylePreferenceChange(style)
+                        }
+                    },
                     enabled = enabled,
-                    label = { Text(stringResource(labelRes)) },
+                    label = {
+                        Text(
+                            if (locked) {
+                                "${stringResource(labelRes)} · ${stringResource(R.string.pack_locked)}"
+                            } else {
+                                stringResource(labelRes)
+                            },
+                        )
+                    },
                     modifier = Modifier.testTag(
                         "settings_ambient_style_${style?.name ?: "auto"}",
                     ),

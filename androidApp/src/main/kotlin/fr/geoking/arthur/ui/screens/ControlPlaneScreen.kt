@@ -88,6 +88,7 @@ import fr.geoking.arthur.ui.components.PackGrid
 import fr.geoking.arthur.ui.components.PackSelection
 import fr.geoking.arthur.ui.components.PackTile
 import fr.geoking.arthur.ui.components.allowsGenerativeAmbientFallback
+import fr.geoking.arthur.ui.components.applySoundPack
 import fr.geoking.arthur.ui.components.defaultSubId
 import fr.geoking.arthur.ui.components.genartTopicOrNull
 import fr.geoking.arthur.ui.components.homeTile
@@ -310,9 +311,20 @@ fun ControlPlaneScreen(
                 selection = PackSelection(family, family.defaultSubId())
             }
         },
-        onSelectSubPack = { selection = it },
+        onSelectSubPack = { sel ->
+            selection = sel
+            if (sel.family == PackFamily.Sound) {
+                ambientAudioSettings?.let { sel.applySoundPack(it) }
+            }
+        },
         onBackToHome = { openedFamily = null },
-        onStartAmbient = { launchAmbient(selection) },
+        onStartAmbient = {
+            if (selection.family == PackFamily.Sound) {
+                ambientAudioSettings?.let { selection.applySoundPack(it) }
+            } else {
+                launchAmbient(selection)
+            }
+        },
         onStartAmbientArtwork = { artwork ->
             syncSourceSettings()
             val renewIds = selection.sourceIdsForAmbientLoad()
@@ -554,6 +566,8 @@ private fun PhoneControlPlaneContent(
                     onTileClick = { tile: PackTile ->
                         if (tile.isLocked(packOwnership)) {
                             onOpenMarketplace?.invoke(tile.sellablePackId)
+                        } else if (tile.selection.family == PackFamily.Sound) {
+                            onSelectSubPack(tile.selection)
                         } else if (tile.selection == selection) {
                             onStartAmbient()
                         } else {

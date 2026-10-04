@@ -1,5 +1,6 @@
 package fr.geoking.arthur.ui.components
 
+import fr.geoking.arthur.R
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.source.BundledPackSource
@@ -182,6 +183,24 @@ class PackModelsTest {
         assertEquals("genart_all", suffixes.first())
         assertTrue(suffixes.contains("genart_abstract"))
         assertTrue(suffixes.contains("genart_tapet"))
+    }
+
+    @Test
+    fun soundSubPacks_includeEssentialsAndMonetizedSkus() {
+        val tiles = PackFamily.Sound.subPackTiles()
+        assertEquals("sound_essentials", tiles.first().testTagSuffix)
+        assertEquals(null, tiles.first().sellablePackId)
+        assertTrue(tiles.any { it.testTagSuffix == "sound_hearth_weather" })
+        assertTrue(tiles.any { it.testTagSuffix == "sound_solo_violin" })
+        val hearth = tiles.first { it.testTagSuffix == "sound_hearth_weather" }
+        assertEquals("audio_hearth_weather", hearth.sellablePackId)
+        assertEquals(R.drawable.pack_audio_hearth_weather, hearth.coverRes)
+    }
+
+    @Test
+    fun soundPool_isEmpty() {
+        val pool = resolvePackPool(catalog, PackSelection(PackFamily.Sound, "essentials"))
+        assertTrue(pool.isEmpty())
     }
 
     @Test

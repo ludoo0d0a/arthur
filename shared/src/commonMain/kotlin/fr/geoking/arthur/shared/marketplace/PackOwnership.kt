@@ -24,6 +24,20 @@ interface PackOwnership {
 
     fun ownsCustomFractal(): Boolean = ownsGenartTopic(GenartPackTopics.CUSTOM)
 
+    fun ownsAudioPack(packSuffix: String): Boolean =
+        MarketplaceCatalog.sellablePackIdForAudioPack(packSuffix)?.let { owns(it) } == true
+
+    /**
+     * Music style unlocked by free allowlist or any covering owned audio pack.
+     * [styleSuffix] is snake_case (e.g. `jazz_piano`, `ocean_waves`).
+     */
+    fun allowsMusicStyle(styleSuffix: String): Boolean {
+        if (styleSuffix in AudioPackCatalog.freeStyleSuffixes) return true
+        val covering = AudioPackCatalog.packsCoveringStyle(styleSuffix)
+        if (covering.isEmpty()) return false
+        return covering.any { ownsAudioPack(it) }
+    }
+
     companion object {
         val NONE: PackOwnership = object : PackOwnership {
             override fun owns(packId: String): Boolean = false

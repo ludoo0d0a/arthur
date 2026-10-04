@@ -82,12 +82,28 @@ object MelodyBank {
             fr.geoking.arthur.audio.MusicStyle.JazzPiano, fr.geoking.arthur.audio.MusicStyle.BarAmbience,
             fr.geoking.arthur.audio.MusicStyle.NightLounge,
             -> jazz
-            fr.geoking.arthur.audio.MusicStyle.SoftGuitar -> guitar
+            fr.geoking.arthur.audio.MusicStyle.SoftGuitar, fr.geoking.arthur.audio.MusicStyle.RockBallad ->
+                guitar
             fr.geoking.arthur.audio.MusicStyle.AfricanPulse -> african
-            fr.geoking.arthur.audio.MusicStyle.CosmicDrone, fr.geoking.arthur.audio.MusicStyle.TibetanBowl ->
-                if (style == fr.geoking.arthur.audio.MusicStyle.TibetanBowl) bowl else cosmic
-            fr.geoking.arthur.audio.MusicStyle.OceanWaves -> ocean
-            fr.geoking.arthur.audio.MusicStyle.WindChimes -> chimes
+            fr.geoking.arthur.audio.MusicStyle.TibetanBowl -> bowl
+            fr.geoking.arthur.audio.MusicStyle.CosmicDrone,
+            fr.geoking.arthur.audio.MusicStyle.OrchestraPads,
+            fr.geoking.arthur.audio.MusicStyle.OrchestraSwell,
+            -> cosmic
+            fr.geoking.arthur.audio.MusicStyle.OceanWaves,
+            fr.geoking.arthur.audio.MusicStyle.SoftRain,
+            fr.geoking.arthur.audio.MusicStyle.WindAmbience,
+            fr.geoking.arthur.audio.MusicStyle.Fireplace,
+            -> ocean
+            fr.geoking.arthur.audio.MusicStyle.WindChimes,
+            fr.geoking.arthur.audio.MusicStyle.Songbirds,
+            -> chimes
+            fr.geoking.arthur.audio.MusicStyle.ClassicalPiano,
+            fr.geoking.arthur.audio.MusicStyle.PianoBallad,
+            fr.geoking.arthur.audio.MusicStyle.ViolinLead,
+            -> listOf(classicalTheme, balladArc, waltz, ascendingPhrase, descendingSigh, lullaby)
+            fr.geoking.arthur.audio.MusicStyle.BassOnly ->
+                listOf(pedalReturn, longTone, sparseBreath, bluesLick)
         }
 
     fun pick(style: fr.geoking.arthur.audio.MusicStyle, index: Int): MelodyMotif {

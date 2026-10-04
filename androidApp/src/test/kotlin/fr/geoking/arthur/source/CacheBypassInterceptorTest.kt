@@ -7,9 +7,25 @@ import okhttp3.Cache
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CacheBypassInterceptorTest {
+
+    @Test
+    fun forceCache_skipsRandomQuoteEndpoints() {
+        assertTrue(
+            ForceCacheNetworkInterceptor.isNonCacheableGet(
+                "https://citation.lecog.fr/public/api/random-quote.php?n=0&t=1",
+            ),
+        )
+        assertFalse(
+            ForceCacheNetworkInterceptor.isNonCacheableGet(
+                "https://zenquotes.io/api/quotes",
+            ),
+        )
+    }
 
     @Test
     fun forcesNetworkFetchWhenCacheDisabled() {

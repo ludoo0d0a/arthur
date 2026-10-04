@@ -40,7 +40,10 @@ class QuoteRepository(
      */
     suspend fun quotesForArtworks(artworkIds: List<String>): Map<String, Quote> = mutex.withLock {
         if (artworkIds.isEmpty()) return emptyMap()
-        ensureLoadedLocked()
+        // Need at least 2 distinct quotes when binding a multi-image pool, otherwise every
+        // slide shows the same line (e.g. HTTP cache collapsed lecog random into one entry).
+        val minSize = if (artworkIds.distinct().size > 1) 2 else 1
+        ensureLoadedLocked(minSize = minSize)
         if (quotes.isEmpty()) return emptyMap()
         val result = LinkedHashMap<String, Quote>(artworkIds.size)
         for (id in artworkIds) {
@@ -52,7 +55,7 @@ class QuoteRepository(
 
     /** Next quote from the cache, refreshing the batch when expired, empty, or provider changed. */
     suspend fun nextQuote(): Quote? = mutex.withLock {
-        ensureLoadedLocked()
+        ensureLoadedLocked(minSize = 1)
         if (quotes.isEmpty()) return null
         val quote = takeNextLocked()
         prefs.edit().putInt(KEY_INDEX, nextIndex).apply()
@@ -65,11 +68,11 @@ class QuoteRepository(
         return quote
     }
 
-    private suspend fun ensureLoadedLocked() {
+    private suspend fun ensureLoadedLocked(minSize: Int) {
         val wanted = provider()
         val now = clock()
         if (
-            quotes.isNotEmpty() &&
+            quotes.size >= minSize &&
             cachedProviderId == wanted.id &&
             now - loadedAtMs < TTL_MS
         ) {
@@ -104,8 +107,11 @@ class QuoteRepository(
     private suspend fun fetchCitationLecogBatch(): List<Quote> {
         val out = ArrayList<Quote>(LECOG_BATCH_SIZE)
         val seen = HashSet<String>()
-        repeat(LECOG_BATCH_SIZE) {
-            val body = runCatching { httpGet(LECOG_API_URL) }.getOrNull() ?: return@repeat
+        repeat(LECOG_BATCH_SIZE) { index ->
+            // Unique URL per attempt so OkHttp disk cache (same path, max-age forced)
+            // cannot collapse every "random" fetch into a single cached body.
+            val url = lecogRandomQuoteUrl(index, clock())
+            val body = runCatching { httpGet(url) }.getOrNull() ?: return@repeat
             val quote = parseCitationLecog(body) ?: return@repeat
             if (seen.add(quote.text)) out.add(quote)
         }
@@ -130,6 +136,10 @@ class QuoteRepository(
         const val LECOG_BATCH_SIZE = 15
         /** Refresh the batch every 4 hours. */
         const val TTL_MS = 4L * 60L * 60L * 1000L
+
+        /** Cache-busted random endpoint (OkHttp keys the disk cache by full URL). */
+        internal fun lecogRandomQuoteUrl(index: Int, timestampMs: Long): String =
+            "$LECOG_API_URL?n=$index&t=$timestampMs"
 
         private const val PREFS = "arthur_quotes_cache"
         private const val KEY_CACHE_JSON = "cache_json"

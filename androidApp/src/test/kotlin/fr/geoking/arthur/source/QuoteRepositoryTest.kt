@@ -155,6 +155,62 @@ class QuoteRepositoryTest {
     }
 
     @Test
+    fun citationLecog_usesCacheBustedUrlsPerAttempt() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        context.getSharedPreferences("arthur_quotes_cache", Context.MODE_PRIVATE).edit().clear().commit()
+        val urls = mutableListOf<String>()
+        val repo = QuoteRepository(
+            context = context,
+            httpGet = { url ->
+                urls += url
+                val n = url.substringAfter("n=").substringBefore("&").toInt()
+                """{"success":true,"data":{"text":"Quote $n","author":{"forename":"","name":"A$n"}}}"""
+            },
+            provider = { QuoteProvider.CitationLecog },
+            clock = { 42_000L },
+        )
+        val assigned = repo.quotesForArtworks(listOf("a", "b", "c"))
+        assertEquals(QuoteRepository.LECOG_BATCH_SIZE, urls.size)
+        assertEquals(urls.toSet().size, urls.size)
+        assertTrue(urls.all { it.startsWith(QuoteRepository.LECOG_API_URL) && "t=42000" in it })
+        assertEquals(Quote("Quote 0", "A0"), assigned["a"])
+        assertEquals(Quote("Quote 1", "A1"), assigned["b"])
+        assertEquals(Quote("Quote 2", "A2"), assigned["c"])
+    }
+
+    @Test
+    fun quotesForArtworks_refetchesWhenCachedBatchTooSmall() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        context.getSharedPreferences("arthur_quotes_cache", Context.MODE_PRIVATE).edit().clear().commit()
+        var now = 1_000L
+        var fetches = 0
+        var diverse = false
+        val repo = QuoteRepository(
+            context = context,
+            httpGet = { url ->
+                fetches++
+                if (!diverse) {
+                    """{"success":true,"data":{"text":"Same","author":{"forename":"","name":"A"}}}"""
+                } else {
+                    val n = url.substringAfter("n=").substringBefore("&").toInt()
+                    """{"success":true,"data":{"text":"Lecog $n","author":{"forename":"","name":"L$n"}}}"""
+                }
+            },
+            provider = { QuoteProvider.CitationLecog },
+            clock = { now },
+        )
+        // Poison cache with a single-quote batch (HTTP cache collapse scenario).
+        assertEquals(Quote("Same", "A"), repo.nextQuote())
+        val afterPoison = fetches
+        diverse = true
+        now += 1
+        val assigned = repo.quotesForArtworks(listOf("img-1", "img-2"))
+        assertTrue(fetches > afterPoison)
+        assertEquals(Quote("Lecog 0", "L0"), assigned["img-1"])
+        assertEquals(Quote("Lecog 1", "L1"), assigned["img-2"])
+    }
+
+    @Test
     fun nextQuote_refetchesWhenProviderChanges() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<Context>()
         context.getSharedPreferences("arthur_quotes_cache", Context.MODE_PRIVATE).edit().clear().commit()

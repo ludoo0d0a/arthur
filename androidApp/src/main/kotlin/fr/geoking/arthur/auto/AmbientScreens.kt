@@ -390,6 +390,8 @@ class MediaAmbientPlaybackScreen(
     }
 
     private fun publishSession(art: fr.geoking.arthur.shared.domain.Artwork, gen: Long, playing: Boolean) {
+        // Capture by artwork id before IO so overlapping publishes keep the matching quote.
+        val quote = rotation.quoteFor(art.id)
         scope.launch {
             withContext(Dispatchers.IO) {
                 val file = AmbientAlbumArt.cacheFile(carContext, art.id, gen)
@@ -406,7 +408,6 @@ class MediaAmbientPlaybackScreen(
                 }
             }
             val uri = AmbientAlbumArt.contentUri(carContext.packageName, art.id, gen)
-            val quote = if (rotation.showQuotes()) rotation.currentQuote else null
             val lines = ambientMediaDisplayLines(art, quote)
             player.publish(
                 art = art,

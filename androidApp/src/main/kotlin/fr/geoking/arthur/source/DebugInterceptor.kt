@@ -118,14 +118,24 @@ class CacheBypassInterceptor(
 
 class ForceCacheNetworkInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
-        val response = chain.proceed(chain.request())
+        val request = chain.request()
+        val response = chain.proceed(request)
         val cacheControl = response.header("Cache-Control").orEmpty()
-        if (response.isSuccessful && chain.request().method == "GET" && "no-store" !in cacheControl) {
+        // Random quote endpoints must not be force-cached: same path returns different bodies.
+        if (isNonCacheableGet(request.url.toString())) {
+            return response
+        }
+        if (response.isSuccessful && request.method == "GET" && "no-store" !in cacheControl) {
             return response.newBuilder()
                 .header("Cache-Control", "public, max-age=3600")
                 .build()
         }
         return response
+    }
+
+    companion object {
+        internal fun isNonCacheableGet(url: String): Boolean =
+            "random-quote" in url || "zenquotes.io/api/random" in url
     }
 }
 

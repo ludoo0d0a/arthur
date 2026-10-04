@@ -214,6 +214,8 @@ internal class AmbientRotationController(
         seenIds = current?.id?.let { setOf(it) }.orEmpty()
         scope.launch {
             bindQuotes(pool, replaceAll = true)
+            // Republish media metadata after quotes bind (invalidate alone skips session title).
+            notifyArtworkChanged()
             onInvalidate()
         }
         scheduleAsyncRender()
@@ -462,6 +464,9 @@ internal class AmbientRotationController(
     fun isDevMode(): Boolean = developerSettings.verbose.value
 
     fun showQuotes(): Boolean = quoteSettings.showQuotes.value
+
+    fun quoteFor(artId: String): Quote? =
+        if (quoteSettings.showQuotes.value) quotesById[artId] else null
 
     /** Slide length for AA media progress (matches auto-rotation interval). */
     fun slideDurationMs(): Long = rotationSettings.autoIntervalMs.value

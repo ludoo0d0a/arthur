@@ -362,16 +362,16 @@ fun PackSelection.audioPackTopicOrNull(): AudioPackTopic? =
  * Enables ambient sound and sets style preference for a Sound pack tile.
  * Does not change the artwork rotation pool.
  */
-fun PackSelection.applySoundPack(settings: AmbientAudioSettings) {
+fun PackSelection.applySoundPack(
+    settings: AmbientAudioSettings,
+    styleOverride: MusicStyle? = null,
+) {
     if (family != PackFamily.Sound) return
     settings.setEnabled(true)
     val topic = audioPackTopicOrNull()
-    val style: MusicStyle? = when {
-        topic == null || topic == AudioPackTopic.Essentials -> MusicStyle.JazzPiano
-        else -> {
-            val primary = topic.packSuffix?.let { AudioPackCatalog.primaryStyleForPack(it) }
-            primary?.let { MusicStyleIds.fromSuffix(it) }
-        }
+    val style: MusicStyle? = styleOverride ?: when {
+        topic == null -> MusicStyle.JazzPiano
+        else -> MusicStyleIds.fromSuffix(topic.primaryStyleSuffix())
     }
     settings.setStylePreference(style)
     // Atmosphere packs benefit from Atmosphere character; music packs stay Melody-friendly.
@@ -382,6 +382,12 @@ fun PackSelection.applySoundPack(settings: AmbientAudioSettings) {
         else -> Unit
     }
 }
+
+fun AudioPackTopic.stylesInPack(): List<MusicStyle> =
+    styleSuffixes().mapNotNull { MusicStyleIds.fromSuffix(it) }
+
+fun AudioPackTopic.primaryStyle(): MusicStyle =
+    MusicStyleIds.fromSuffix(primaryStyleSuffix()) ?: MusicStyle.JazzPiano
 
 fun PackSelection.museumTopicOrNull(): MuseumTopic? =
     if (subId == null) {

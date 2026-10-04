@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.R
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
+import fr.geoking.arthur.shared.marketplace.AudioPackCatalog
 import fr.geoking.arthur.shared.marketplace.GenartPackTopics
 import fr.geoking.arthur.shared.marketplace.MarketplaceCatalog
 import fr.geoking.arthur.shared.source.ArticSource
@@ -129,6 +130,21 @@ enum class AudioPackTopic(
     val sellablePackId: String?
         get() = packSuffix?.let { MarketplaceCatalog.sellablePackIdForAudioPack(it) }
 }
+
+/** Style suffixes included in this Sound pack (Essentials = free allowlist). */
+fun AudioPackTopic.styleSuffixes(): List<String> =
+    if (packSuffix == null) {
+        AudioPackCatalog.freeStyleSuffixes.toList()
+    } else {
+        AudioPackCatalog.packDef(packSuffix)?.styleSuffixes.orEmpty()
+    }
+
+fun AudioPackTopic.primaryStyleSuffix(): String =
+    if (packSuffix == null) {
+        "jazz_piano"
+    } else {
+        AudioPackCatalog.primaryStyleForPack(packSuffix) ?: styleSuffixes().first()
+    }
 
 /**
  * Museum / Painting / Sculpture subcategory: Random mix across museum Sources, or one

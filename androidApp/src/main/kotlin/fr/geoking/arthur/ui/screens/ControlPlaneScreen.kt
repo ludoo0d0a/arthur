@@ -88,7 +88,6 @@ import fr.geoking.arthur.ui.components.PackGrid
 import fr.geoking.arthur.ui.components.PackSelection
 import fr.geoking.arthur.ui.components.PackTile
 import fr.geoking.arthur.ui.components.allowsGenerativeAmbientFallback
-import fr.geoking.arthur.ui.components.applySoundPack
 import fr.geoking.arthur.ui.components.defaultSubId
 import fr.geoking.arthur.ui.components.genartTopicOrNull
 import fr.geoking.arthur.ui.components.homeTile
@@ -116,6 +115,7 @@ fun ControlPlaneScreen(
     onOpenSettings: (() -> Unit)? = null,
     packOwnership: PackOwnership = PackOwnership.NONE,
     onOpenMarketplace: ((highlightPackId: String?) -> Unit)? = null,
+    onOpenSoundPlayer: ((PackSelection) -> Unit)? = null,
 ) {
     var catalog by remember { mutableStateOf(initialCatalog.orEmpty()) }
     var openedFamily by remember { mutableStateOf<PackFamily?>(null) }
@@ -314,13 +314,13 @@ fun ControlPlaneScreen(
         onSelectSubPack = { sel ->
             selection = sel
             if (sel.family == PackFamily.Sound) {
-                ambientAudioSettings?.let { sel.applySoundPack(it) }
+                onOpenSoundPlayer?.invoke(sel)
             }
         },
         onBackToHome = { openedFamily = null },
         onStartAmbient = {
             if (selection.family == PackFamily.Sound) {
-                ambientAudioSettings?.let { selection.applySoundPack(it) }
+                onOpenSoundPlayer?.invoke(selection)
             } else {
                 launchAmbient(selection)
             }

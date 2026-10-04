@@ -49,10 +49,12 @@ import fr.geoking.arthur.ui.UpdateAvailableDialog
 import fr.geoking.arthur.ui.UpdateCheckFeedbackDialog
 import fr.geoking.arthur.ui.UpdateInProgressBanner
 import fr.geoking.arthur.ui.components.debug.ArthurDebugLogOverlay
+import fr.geoking.arthur.ui.components.PackSelection
 import fr.geoking.arthur.ui.screens.ControlPlaneScreen
 import fr.geoking.arthur.ui.screens.CustomFractalEditorScreen
 import fr.geoking.arthur.ui.screens.MarketplaceScreen
 import fr.geoking.arthur.ui.screens.SettingsScreen
+import fr.geoking.arthur.ui.screens.SoundPlayerScreen
 import fr.geoking.arthur.update.InAppUpdateHelper
 import fr.geoking.tools.inappupdate.CheckFeedback
 import fr.geoking.tools.inappupdate.UpdateNotificationSpec
@@ -127,6 +129,9 @@ class MainActivity : ComponentActivity() {
                         var showSettings by remember { mutableStateOf(false) }
                         var showMarketplace by remember { mutableStateOf(false) }
                         var marketplaceHighlight by remember { mutableStateOf<String?>(null) }
+                        var soundPlayerSelection by remember {
+                            mutableStateOf<PackSelection?>(null)
+                        }
                         var catalogEpoch by remember { mutableStateOf(0) }
                         val simulatePremium by developerSettings.simulatePremium.collectAsState()
                         val simulateAllPacks by developerSettings.simulateAllPacks.collectAsState()
@@ -145,6 +150,13 @@ class MainActivity : ComponentActivity() {
                         val isPremium = premium.isPremium
                         // Custom fractal authoring needs touch; TV uses remote only.
                         when {
+                            soundPlayerSelection != null -> {
+                                SoundPlayerScreen(
+                                    selection = soundPlayerSelection!!,
+                                    onDismiss = { soundPlayerSelection = null },
+                                    audioSettings = ambientAudioSettings,
+                                )
+                            }
                             showMarketplace -> {
                                 MarketplaceScreen(
                                     ownership = packOwnership,
@@ -234,6 +246,9 @@ class MainActivity : ComponentActivity() {
                                         onOpenMarketplace = { packId ->
                                             marketplaceHighlight = packId
                                             showMarketplace = true
+                                        },
+                                        onOpenSoundPlayer = { selection ->
+                                            soundPlayerSelection = selection
                                         },
                                         onStartAmbient = { artwork, pool, renewSourceIds ->
                                             AmbientRotationLaunch.prepare(pool, renewSourceIds)

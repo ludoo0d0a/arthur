@@ -120,6 +120,7 @@ fun TvControlPlaneContent(
                         if (tile.isLocked(packOwnership)) {
                             onOpenMarketplace?.invoke(tile.sellablePackId)
                         } else if (tile.selection.family == PackFamily.Sound) {
+                            // onSelectSubPack opens SoundPlayer via ControlPlaneScreen.
                             onSelectSubPack(tile.selection)
                         } else {
                             onStartAmbient()

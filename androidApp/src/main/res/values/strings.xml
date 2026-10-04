@@ -82,6 +82,8 @@
     <string name="marketplace_subtitle">Buy packs for Personal Photos, Genart, and Sound</string>
     <string name="marketplace_audio_pack">Sound · %1$s</string>
     <string name="pack_sound">Sound</string>
+    <string name="sound_player_use_in_ambient">Use in Ambient</string>
+    <string name="sound_player_done">Done</string>
     <string name="audio_pack_essentials">Acoustic Essentials</string>
     <string name="audio_pack_hearth_weather">Hearth &amp; Weather</string>
     <string name="audio_pack_dawn_chorus">Dawn Chorus</string>

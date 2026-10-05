@@ -52,6 +52,8 @@ class SoundPlayerCarScreen(
 
     private var styleIndex: Int = 0
     private var isPlaying: Boolean = true
+    /** Session mute: silence Zen without destroying the listen surface. */
+    private var muted: Boolean = false
 
     private val previousEnabled = ambientAudioSettings.enabled.value
     private val previousStyle = ambientAudioSettings.stylePreference.value
@@ -150,12 +152,18 @@ class SoundPlayerCarScreen(
         ambientAudioSettings.setStylePreference(style)
         applyAtmosphereIfNeeded()
         zenAudio.setArtwork(syntheticArtwork(style))
-        if (isPlaying) {
+        if (isPlaying && !muted) {
             zenAudio.start()
             zenAudio.triggerTransition()
         } else {
             zenAudio.stop(abandonFocus = false)
         }
+    }
+
+    private fun toggleMute() {
+        muted = !muted
+        syncEngine()
+        invalidate()
     }
 
     private fun publishSession() {
@@ -188,10 +196,13 @@ class SoundPlayerCarScreen(
     }
 
     private fun buildPlaybackTemplate(): Template {
-        // Header end action opens Sound sub-packs (playlist / pack switch).
+        // Header end actions ≤ 2: mute + change Sound pack (ActionStrip successor).
         val header = Header.Builder()
             .setTitle(carContext.getString(topic.labelRes))
             .setStartHeaderAction(Action.BACK)
+            .addEndHeaderAction(
+                ambientMuteAction(carContext, muted = muted) { toggleMute() },
+            )
             .addEndHeaderAction(
                 ambientChangePlaylistAction(carContext) {
                     screenManager.push(SubPackSelectionScreen(carContext, PackFamily.Sound))

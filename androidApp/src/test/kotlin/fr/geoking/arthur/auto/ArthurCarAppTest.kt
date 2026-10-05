@@ -268,11 +268,13 @@ class ArthurCarAppTest {
             val header = (template as androidx.car.app.media.model.MediaPlaybackTemplate).header
             assertNotNull("Sound player should have a header", header)
             assertEquals(
-                "Header end actions: change playlist / sound pack",
-                1,
+                "Header end actions: mute + change playlist / sound pack",
+                2,
                 header!!.endHeaderActions.size,
             )
-            assertNotNull("Change-playlist should be icon-only", header.endHeaderActions[0].icon)
+            header.endHeaderActions.forEach { action ->
+                assertNotNull("Mute/playlist should be icon-only", action.icon)
+            }
         } finally {
             org.koin.core.context.stopKoin()
         }
@@ -536,12 +538,12 @@ class ArthurCarAppTest {
             val header = template.header
             assertNotNull("MediaPlaybackTemplate should have a header", header)
             assertEquals(
-                "Header end actions: sound toggle + change playlist (≤2, ActionStrip successor)",
+                "Header end actions: mute + change playlist (≤2, ActionStrip successor)",
                 2,
                 header!!.endHeaderActions.size,
             )
             header.endHeaderActions.forEach { action ->
-                assertNotNull("Sound/playlist should be icon-only", action.icon)
+                assertNotNull("Mute/playlist should be icon-only", action.icon)
             }
 
             assertTrue("Initially should be playing", screen.isPlaying())

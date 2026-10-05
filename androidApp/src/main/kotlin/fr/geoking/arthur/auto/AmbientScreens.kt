@@ -84,6 +84,13 @@ internal fun ambientSoundToggleAction(
         .build()
 }
 
+/** Mute / unmute ambient sound in-place (same icons as [ambientSoundToggleAction]). */
+internal fun ambientMuteAction(
+    carContext: CarContext,
+    muted: Boolean,
+    onToggle: () -> Unit,
+): Action = ambientSoundToggleAction(carContext, soundOn = !muted, onToggle = onToggle)
+
 internal fun ambientNextAction(carContext: CarContext, onNext: () -> Unit): Action {
     return Action.Builder()
         .setIcon(
@@ -390,18 +397,13 @@ class MediaAmbientPlaybackScreen(
 
     private fun buildPlaybackTemplate(): Template {
         val title = carContext.getString(packSelection.family.titleRes)
-        val soundOn = ambientAudioSettings.enabled.value
-        // Header end actions ≤ 2: sound toggle + change playlist (ActionStrip successor).
+        // Header end actions ≤ 2: mute + change playlist (ActionStrip successor).
         val header = Header.Builder()
             .setTitle(title)
             .setStartHeaderAction(Action.BACK)
             .addEndHeaderAction(
-                ambientSoundToggleAction(carContext, soundOn) {
-                    switchAmbientSoundMode(
-                        enableSound = !soundOn,
-                        packSelection = packSelection,
-                        artworkId = rotation.current?.id,
-                    )
+                ambientMuteAction(carContext, muted = rotation.soundMuted) {
+                    rotation.toggleSoundMuted()
                 },
             )
             .addEndHeaderAction(

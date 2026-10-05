@@ -339,8 +339,23 @@ internal class AmbientRotationController(
         }
     }
 
+    /** Session mute: silence Zen without leaving MediaPlayback / flipping prefs. */
+    var soundMuted: Boolean = false
+        private set
+
+    fun setSoundMuted(muted: Boolean) {
+        if (soundMuted == muted) return
+        soundMuted = muted
+        syncAudio()
+        onInvalidate()
+    }
+
+    fun toggleSoundMuted() {
+        setSoundMuted(!soundMuted)
+    }
+
     fun syncAudio() {
-        if (isPlaying && ambientAudioSettings.enabled.value) {
+        if (isPlaying && ambientAudioSettings.enabled.value && !soundMuted) {
             val engine = audioEngine()
             current?.let { engine.setArtwork(it) }
             engine.start()

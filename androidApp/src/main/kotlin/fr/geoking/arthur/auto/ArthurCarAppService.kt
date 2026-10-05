@@ -105,7 +105,7 @@ internal fun carErrorTemplate(carContext: CarContext, e: Throwable): Template {
  *
  * Host constraints applied:
  * - Pane actions ≤ 2 (primary play/pause icon-only here)
- * - Header end actions ≤ 2, icon-only (sound toggle + next / change playlist)
+ * - Header end actions ≤ 2, icon-only (mute / sound toggle + next or change playlist)
  * - Pane rows capped via [ConstraintManager.CONTENT_LIMIT_TYPE_PANE]
  * - Pack grids use [SectionedItemTemplate] + [GridSection.ITEM_SIZE_EXTRA_LARGE], hard-capped
  * - Loading vs rows mutually exclusive

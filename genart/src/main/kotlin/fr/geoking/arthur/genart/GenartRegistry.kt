@@ -208,6 +208,7 @@ import fr.geoking.arthur.genart.stills.SoftWindStreaksStill
 import fr.geoking.arthur.genart.stills.SpiralGalaxyStill
 import fr.geoking.arthur.genart.stills.TerrariumDripStill
 import fr.geoking.arthur.genart.stills.TreeStill
+import fr.geoking.arthur.genart.stills.TunnelStill
 import fr.geoking.arthur.genart.stills.TumbleweedDriftStill
 import fr.geoking.arthur.genart.stills.VoronoiWashStill
 import fr.geoking.arthur.genart.stills.WarpStreakStill
@@ -296,8 +297,8 @@ object GenartRegistry {
             render = { isActive, palette, quality, brightness, speed, modifier ->
                 TunnelEngine(isActive, palette, quality, brightness, speed, modifier)
             },
-            renderStill = { canvas, size, generation, _, _, _, palette ->
-                GenartStillRenderer.drawFallback(canvas, size, generation, palette, GenartEngineId.Tunnel)
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                TunnelStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
             },
         ),
         GenartEngineDescriptor(

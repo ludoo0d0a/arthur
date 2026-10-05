@@ -79,7 +79,6 @@ object GenartStillRenderer {
         )
 
         val count = when (engineId) {
-            GenartEngineId.Tunnel -> 36
             GenartEngineId.SoftShadows -> 48
             else -> 56
         }

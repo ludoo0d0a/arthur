@@ -24,6 +24,10 @@ import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
 
+/**
+ * Vanishing tunnel: concentric rings + radial spokes rushing into a vanishing point.
+ * Perspective keeps far rings small/dim at the center and near rings large/bright.
+ */
 @Composable
 internal fun TunnelEngine(
     isActive: Boolean,
@@ -33,69 +37,85 @@ internal fun TunnelEngine(
     speed: Float,
     modifier: Modifier = Modifier,
 ) {
-    val rings = qualityCount(quality, low = 10, medium = 16, high = 24)
-    val segments = qualityCount(quality, low = 12, medium = 18, high = 28)
+    val rings = qualityCount(quality, low = 10, medium = 14, high = 20)
+    val spokes = qualityCount(quality, low = 8, medium = 12, high = 16)
     val transition = rememberInfiniteTransition(label = "tunnel")
     val t by transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((16000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween((12000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "tunnel_t",
     )
+    val dim = if (isActive) 1f else 0.55f
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
         val cx = w * 0.5f
         val cy = h * 0.5f
-        val maxR = min(w, h) * 0.72f
+        val maxR = min(w, h) * 0.78f
+        val bright = brightness.coerceIn(0.35f, 1.4f) * dim
+
         drawRect(color = Color(0xFF020617))
         drawCircle(
             brush = Brush.radialGradient(
-                colors = listOf(Color(0xFF1E1B4B), Color(0xFF020617)),
+                colors = listOf(Color(0xFF1E1B4B), Color(0xFF0B1026), Color(0xFF020617)),
                 center = Offset(cx, cy),
                 radius = maxR,
             ),
             radius = maxR,
             center = Offset(cx, cy),
         )
+
         val scroll = phase01(t)
-        for (i in 0 until rings) {
-            val depth = phase01((i.toFloat() / rings) + scroll)
-            val radius = 8f + depth * depth * depth
-            val alpha = (0.15f + 0.7f * (1f - depth)).coerceIn(0.08f, 0.85f) * brightness.coerceAtMost(1.2f)
-            val color = TonalPalette.brightness(
-                TonalPalette.pick(paletteColors, i),
-                brightness,
+        val spin = scroll * 0.35f * 2f * PI.toFloat()
+        val step = 1f / rings
+        // Same perspective constant as Roads — near walls fill the frame.
+        val k = 0.55f
+
+        val spokeInner = maxR * 0.04f
+        for (s in 0 until spokes) {
+            val angle = spin + s * (2f * PI.toFloat() / spokes)
+            val color = TonalPalette.brightness(TonalPalette.pick(paletteColors, s), bright)
+            drawLine(
+                color = TonalPalette.withAlpha(color, 0.28f * bright.coerceAtMost(1f)),
+                start = Offset(cx + cos(angle) * spokeInner, cy + sin(angle) * spokeInner),
+                end = Offset(cx + cos(angle) * maxR, cy + sin(angle) * maxR),
+                strokeWidth = if (isActive) 2.4f else 1.5f,
+                cap = StrokeCap.Round,
             )
+        }
+
+        // depth 0 = nearest (large); as scroll rises rings shrink into the void, then recycle.
+        for (i in 0 until rings) {
+            val depth = phase01(i * step + scroll)
+            val scale = 1f / (1f + depth * rings * k)
+            val radius = (maxR * scale).coerceAtLeast(2f)
+            val alpha = (0.22f + 0.68f * scale).coerceIn(0.15f, 0.92f) * bright.coerceAtMost(1.1f)
+            val stroke = (1.4f + 5f * scale).coerceIn(1.4f, 6.5f) * if (isActive) 1f else 0.7f
+            val color = TonalPalette.brightness(TonalPalette.pick(paletteColors, i), bright)
             drawCircle(
-                color = TonalPalette.withAlpha(color, alpha * 0.55f),
+                color = TonalPalette.withAlpha(color, alpha),
                 radius = radius,
                 center = Offset(cx, cy),
-                style = Stroke(width = if (isActive) 2.4f else 1.6f),
+                style = Stroke(width = stroke),
             )
-            val segCount = if (isActive) segments else segments / 2
-            val spin = scroll * 2f * PI.toFloat() + i * 0.2f
-            for (s in 0 until segCount) {
-                val a0 = spin + s * (2f * PI.toFloat() / segCount)
-                val a1 = a0 + (2f * PI.toFloat() / segCount) * 0.45f
-                val rInner = radius * 0.86f
-                val p0 = Offset(cx + cos(a0) * rInner, cy + sin(a0) * rInner)
-                val p1 = Offset(cx + cos(a1) * radius, cy + sin(a1) * radius)
-                drawLine(
-                    color = TonalPalette.withAlpha(color, alpha),
-                    start = p0,
-                    end = p1,
-                    strokeWidth = if (isActive) 2f else 1.4f,
-                    cap = StrokeCap.Round,
-                )
-            }
         }
+
+        val coreColor = TonalPalette.brightness(TonalPalette.pick(paletteColors, 0), bright)
         drawCircle(
-            color = TonalPalette.withAlpha(TonalPalette.pick(paletteColors, 0), 0.35f * brightness),
-            radius = 10f,
+            brush = Brush.radialGradient(
+                colors = listOf(
+                    TonalPalette.withAlpha(coreColor, 0.55f * bright.coerceAtMost(1f)),
+                    TonalPalette.withAlpha(coreColor, 0.12f * bright.coerceAtMost(1f)),
+                    Color.Transparent,
+                ),
+                center = Offset(cx, cy),
+                radius = maxR * 0.12f,
+            ),
+            radius = maxR * 0.12f,
             center = Offset(cx, cy),
         )
     }

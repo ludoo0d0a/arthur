@@ -125,6 +125,7 @@ enum class AudioPackTopic(
     RockBallad(R.string.audio_pack_rock_ballad, "rock_ballad", "rock_ballad"),
     BassOnly(R.string.audio_pack_bass_only, "bass_only", "bass_only"),
     MidnightBallad(R.string.audio_pack_midnight_ballad, "midnight_ballad", "midnight_ballad"),
+    HawaiianBreeze(R.string.audio_pack_hawaiian_breeze, "hawaiian_breeze", "hawaiian_breeze"),
     ;
 
     val sellablePackId: String?

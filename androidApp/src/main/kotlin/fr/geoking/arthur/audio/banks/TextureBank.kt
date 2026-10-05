@@ -86,6 +86,7 @@ object TextureBank {
             fr.geoking.arthur.audio.MusicStyle.AfricanPulse -> listOf(african, jazz, zen)
             fr.geoking.arthur.audio.MusicStyle.SoftGuitar,
             fr.geoking.arthur.audio.MusicStyle.RockBallad,
+            fr.geoking.arthur.audio.MusicStyle.HawaiianUkulele,
             -> listOf(jazz, zen, african)
             fr.geoking.arthur.audio.MusicStyle.CosmicDrone,
             fr.geoking.arthur.audio.MusicStyle.OrchestraPads,

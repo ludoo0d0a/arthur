@@ -23,6 +23,7 @@ enum class MusicStyle {
     RockBallad,
     BassOnly,
     PianoBallad,
+    HawaiianUkulele,
 }
 
 /** Snake_case ids shared with [fr.geoking.arthur.shared.marketplace.AudioPackCatalog]. */
@@ -49,6 +50,7 @@ object MusicStyleIds {
         MusicStyle.RockBallad -> "rock_ballad"
         MusicStyle.BassOnly -> "bass_only"
         MusicStyle.PianoBallad -> "piano_ballad"
+        MusicStyle.HawaiianUkulele -> "hawaiian_ukulele"
     }
 
     fun fromSuffix(suffix: String): MusicStyle? = MusicStyle.entries.firstOrNull {

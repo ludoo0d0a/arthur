@@ -88,5 +88,6 @@ object PackCovers {
         AudioPackTopic.RockBallad -> R.drawable.pack_audio_rock_ballad
         AudioPackTopic.BassOnly -> R.drawable.pack_audio_bass_only
         AudioPackTopic.MidnightBallad -> R.drawable.pack_audio_midnight_ballad
+        AudioPackTopic.HawaiianBreeze -> R.drawable.pack_audio_hawaiian_breeze
     }
 }

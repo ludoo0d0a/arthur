@@ -1366,6 +1366,7 @@ private fun AmbientSoundContent(
         MusicStyle.RockBallad to R.string.settings_ambient_sound_style_rock_ballad,
         MusicStyle.BassOnly to R.string.settings_ambient_sound_style_bass_only,
         MusicStyle.PianoBallad to R.string.settings_ambient_sound_style_piano_ballad,
+        MusicStyle.HawaiianUkulele to R.string.settings_ambient_sound_style_hawaiian_ukulele,
     )
     Column(
         modifier = Modifier

@@ -43,7 +43,7 @@ object BassBank {
             MusicStyle.JazzPiano, MusicStyle.BarAmbience, MusicStyle.NightLounge,
             MusicStyle.BassOnly,
             -> listOf(jazzWalk, bluesRoot5, balladPedal)
-            MusicStyle.SoftGuitar, MusicStyle.Zen, MusicStyle.RockBallad,
+            MusicStyle.SoftGuitar, MusicStyle.Zen, MusicStyle.RockBallad, MusicStyle.HawaiianUkulele,
             MusicStyle.ClassicalPiano, MusicStyle.PianoBallad, MusicStyle.ViolinLead,
             -> listOf(balladPedal, classical, jazzWalk)
             MusicStyle.AfricanPulse ->

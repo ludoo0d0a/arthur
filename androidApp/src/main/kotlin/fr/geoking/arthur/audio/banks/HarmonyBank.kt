@@ -100,6 +100,7 @@ object HarmonyBank {
                 listOf(barWarm, jazzProg, blues12, balladPop)
             fr.geoking.arthur.audio.MusicStyle.SoftGuitar,
             fr.geoking.arthur.audio.MusicStyle.RockBallad,
+            fr.geoking.arthur.audio.MusicStyle.HawaiianUkulele,
             -> listOf(guitarOpen, balladPop, classicalCadence, zenPads)
             fr.geoking.arthur.audio.MusicStyle.AfricanPulse -> listOf(africanPar, guitarOpen)
             fr.geoking.arthur.audio.MusicStyle.CosmicDrone,

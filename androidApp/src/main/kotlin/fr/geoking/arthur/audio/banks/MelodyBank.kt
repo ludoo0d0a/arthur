@@ -82,7 +82,7 @@ object MelodyBank {
             fr.geoking.arthur.audio.MusicStyle.JazzPiano, fr.geoking.arthur.audio.MusicStyle.BarAmbience,
             fr.geoking.arthur.audio.MusicStyle.NightLounge,
             -> jazz
-            fr.geoking.arthur.audio.MusicStyle.SoftGuitar, fr.geoking.arthur.audio.MusicStyle.RockBallad ->
+            fr.geoking.arthur.audio.MusicStyle.SoftGuitar, fr.geoking.arthur.audio.MusicStyle.RockBallad, fr.geoking.arthur.audio.MusicStyle.HawaiianUkulele ->
                 guitar
             fr.geoking.arthur.audio.MusicStyle.AfricanPulse -> african
             fr.geoking.arthur.audio.MusicStyle.TibetanBowl -> bowl

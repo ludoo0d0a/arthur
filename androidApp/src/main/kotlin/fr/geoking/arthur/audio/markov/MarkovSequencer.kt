@@ -89,6 +89,7 @@ class MarkovSequencer(
             MusicStyle.RockBallad,
             MusicStyle.PianoBallad,
             MusicStyle.BassOnly,
+            MusicStyle.HawaiianUkulele,
         )
 
     private val atmosphere: Boolean = character == AmbientAudioCharacter.Atmosphere

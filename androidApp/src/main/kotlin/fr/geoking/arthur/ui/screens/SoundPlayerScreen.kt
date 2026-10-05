@@ -60,6 +60,7 @@ import fr.geoking.arthur.ui.components.PackCovers
 import fr.geoking.arthur.ui.components.PackSelection
 import fr.geoking.arthur.ui.components.applySoundPack
 import fr.geoking.arthur.ui.components.audioPackTopicOrNull
+import fr.geoking.arthur.ui.components.labelRes
 import fr.geoking.arthur.ui.components.primaryStyle
 import fr.geoking.arthur.ui.components.stylesInPack
 import org.koin.core.context.GlobalContext
@@ -300,29 +301,4 @@ fun SoundPlayerScreen(
             }
         }
     }
-}
-
-internal fun MusicStyle.labelRes(): Int = when (this) {
-    MusicStyle.JazzPiano -> R.string.settings_ambient_sound_style_jazz
-    MusicStyle.Zen -> R.string.settings_ambient_sound_style_zen
-    MusicStyle.SoftGuitar -> R.string.settings_ambient_sound_style_guitar
-    MusicStyle.BarAmbience -> R.string.settings_ambient_sound_style_bar
-    MusicStyle.NightLounge -> R.string.settings_ambient_sound_style_lounge
-    MusicStyle.AfricanPulse -> R.string.settings_ambient_sound_style_african
-    MusicStyle.WindChimes -> R.string.settings_ambient_sound_style_chimes
-    MusicStyle.TibetanBowl -> R.string.settings_ambient_sound_style_tibetan
-    MusicStyle.OceanWaves -> R.string.settings_ambient_sound_style_ocean
-    MusicStyle.SoftRain -> R.string.settings_ambient_sound_style_rain
-    MusicStyle.WindAmbience -> R.string.settings_ambient_sound_style_wind
-    MusicStyle.Fireplace -> R.string.settings_ambient_sound_style_fireplace
-    MusicStyle.Songbirds -> R.string.settings_ambient_sound_style_songbirds
-    MusicStyle.CosmicDrone -> R.string.settings_ambient_sound_style_cosmic
-    MusicStyle.ClassicalPiano -> R.string.settings_ambient_sound_style_classical
-    MusicStyle.OrchestraPads -> R.string.settings_ambient_sound_style_orchestra
-    MusicStyle.OrchestraSwell -> R.string.settings_ambient_sound_style_orchestra_swell
-    MusicStyle.ViolinLead -> R.string.settings_ambient_sound_style_violin
-    MusicStyle.RockBallad -> R.string.settings_ambient_sound_style_rock_ballad
-    MusicStyle.BassOnly -> R.string.settings_ambient_sound_style_bass_only
-    MusicStyle.PianoBallad -> R.string.settings_ambient_sound_style_piano_ballad
-    MusicStyle.HawaiianUkulele -> R.string.settings_ambient_sound_style_hawaiian_ukulele
 }

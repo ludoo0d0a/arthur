@@ -36,11 +36,12 @@ import fr.geoking.arthur.source.RotationSettings
 import fr.geoking.arthur.ui.components.PackFamily
 import fr.geoking.arthur.ui.components.PackSelection
 import fr.geoking.arthur.ui.components.subPackTiles
+import fr.geoking.arthur.shared.marketplace.PackOwnership
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
 /** Hard caps so host content limits cannot densify the Spotify-style dashboard. */
-internal const val MAX_HOME_GRID_ITEMS = 5
+internal const val MAX_HOME_GRID_ITEMS = 6
 internal const val MAX_SUB_GRID_ITEMS = 30
 
 private const val COVER_ICON_SIZE_PX = 512
@@ -148,6 +149,7 @@ class ArthurCarSession : Session() {
         if (androidx.car.app.media.MediaConstants.ACTION_SHOW_MEDIA_PLAYBACK != intent.action) return
         val screenManager = carContext.getCarService(androidx.car.app.ScreenManager::class.java)
         if (screenManager.top is MediaAmbientPlaybackScreen) return
+        if (screenManager.top is SoundPlayerCarScreen) return
         runCatching {
             org.koin.core.context.GlobalContext.get()
                 .get<fr.geoking.arthur.source.AmbientAudioSettings>()
@@ -189,7 +191,6 @@ class PackSelectionScreen(carContext: CarContext) : Screen(carContext) {
         val families = PackFamily.entries
             .filter { it != PackFamily.Video }
             .filter { it != PackFamily.Personal } // Marketplace packs: no Auto commerce / Personal browse
-            .filter { it != PackFamily.Sound } // Sound packs: phone/TV Marketplace only
             .take(gridLimit)
 
         val sectionBuilder = GridSection.Builder()
@@ -346,27 +347,15 @@ class CarSettingsScreen(carContext: CarContext) : Screen(carContext), KoinCompon
         }
         listBuilder.addItem(soundRowBuilder.build())
 
-        RotationSettings.OPTIONS_MS.forEach { ms ->
-            val label = if (ms < 60_000L) {
-                carContext.getString(R.string.rotation_interval_seconds, (ms / 1_000L).toInt())
-            } else {
-                carContext.getString(R.string.rotation_interval_minutes, (ms / 60_000L).toInt())
+        val durationRow = Row.Builder()
+            .setTitle(carContext.getString(R.string.screen_rotation_interval))
+            .addText(rotationIntervalLabel(carContext, currentInterval))
+            .setBrowsable(true)
+            .setOnClickListener {
+                screenManager.push(CarRotationIntervalScreen(carContext))
             }
-
-            val rowBuilder = Row.Builder()
-                .setTitle(label)
-
-            if (ms == currentInterval) {
-                rowBuilder.addText("✓")
-            }
-
-            rowBuilder.setOnClickListener {
-                rotationSettings.setAutoIntervalMs(ms)
-                invalidate()
-            }
-
-            listBuilder.addItem(rowBuilder.build())
-        }
+            .build()
+        listBuilder.addItem(durationRow)
 
         val header = Header.Builder()
             .setTitle(carContext.getString(R.string.screen_settings))
@@ -380,12 +369,62 @@ class CarSettingsScreen(carContext: CarContext) : Screen(carContext), KoinCompon
     }
 }
 
+/** Choose Ambient rotation duration for Android Auto. */
+class CarRotationIntervalScreen(carContext: CarContext) : Screen(carContext), KoinComponent {
+    private val rotationSettings: RotationSettings by inject()
+
+    override fun onGetTemplate(): Template {
+        return try {
+            buildTemplate()
+        } catch (e: Throwable) {
+            carErrorTemplate(carContext, e)
+        }
+    }
+
+    private fun buildTemplate(): Template {
+        val currentInterval = rotationSettings.autoIntervalMs.value
+        val listBuilder = ItemList.Builder()
+        RotationSettings.OPTIONS_MS.forEach { ms ->
+            val rowBuilder = Row.Builder()
+                .setTitle(rotationIntervalLabel(carContext, ms))
+            if (ms == currentInterval) {
+                rowBuilder.addText("✓")
+            }
+            rowBuilder.setOnClickListener {
+                rotationSettings.setAutoIntervalMs(ms)
+                invalidate()
+            }
+            listBuilder.addItem(rowBuilder.build())
+        }
+
+        val header = Header.Builder()
+            .setTitle(carContext.getString(R.string.screen_rotation_interval))
+            .setStartHeaderAction(Action.BACK)
+            .build()
+
+        return ListTemplate.Builder()
+            .setHeader(header)
+            .setSingleList(listBuilder.build())
+            .build()
+    }
+}
+
+internal fun rotationIntervalLabel(carContext: CarContext, ms: Long): String =
+    if (ms < 60_000L) {
+        carContext.getString(R.string.rotation_interval_seconds, (ms / 1_000L).toInt())
+    } else {
+        carContext.getString(R.string.rotation_interval_minutes, (ms / 60_000L).toInt())
+    }
+
 /** Sub-packs / topics for a given [PackFamily]. */
 @OptIn(ExperimentalCarApi::class)
 class SubPackSelectionScreen(
     carContext: CarContext,
     val family: PackFamily,
-) : Screen(carContext) {
+) : Screen(carContext), KoinComponent {
+    private val packOwnership: PackOwnership
+        get() = runCatching { getKoin().get<PackOwnership>() }.getOrDefault(PackOwnership.NONE)
+
     override fun onGetTemplate(): Template {
         return try {
             buildTemplate()
@@ -397,7 +436,14 @@ class SubPackSelectionScreen(
     private fun buildTemplate(): Template {
         val gridLimit = gridContentLimit(carContext, MAX_SUB_GRID_ITEMS)
         val tiles = family.subPackTiles()
-            .filter { it.sellablePackId == null } // no Marketplace commerce on Auto
+            .filter { tile ->
+                when (family) {
+                    // Sound: free + owned only (no Marketplace unlock on Auto).
+                    PackFamily.Sound -> !tile.isLocked(packOwnership)
+                    // Other families: no sellable/commerce tiles on Auto.
+                    else -> tile.sellablePackId == null
+                }
+            }
             .take(gridLimit)
 
         val sectionBuilder = GridSection.Builder()
@@ -409,7 +455,11 @@ class SubPackSelectionScreen(
                 .setTitle(carContext.getString(tile.titleRes))
                 .setImage(coverCarIcon(carContext, tile.coverRes))
                 .setOnClickListener {
-                    screenManager.push(createAmbientScreen(carContext, tile.selection))
+                    if (tile.selection.family == PackFamily.Sound) {
+                        screenManager.push(SoundPlayerCarScreen(carContext, tile.selection))
+                    } else {
+                        screenManager.push(createAmbientScreen(carContext, tile.selection))
+                    }
                 }
                 .build()
             sectionBuilder.addItem(item)

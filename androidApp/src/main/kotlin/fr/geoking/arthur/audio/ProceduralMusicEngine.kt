@@ -89,8 +89,18 @@ class ProceduralMusicEngine(
     @Volatile private var pendingPreset: MusicPreset? = null
     @Volatile private var crossfadeSamples = 0
     @Volatile private var crossfadeTotal = 0
+    @Volatile private var crossfadePhase = CrossfadePhase.Idle
     @Volatile private var triggerTransitionFlag = false
     @Volatile private var currentArtwork: Artwork? = null
+
+    // Master start/stop envelope (cosine ease).
+    @Volatile private var envelopeFrom = 0f
+    @Volatile private var envelopeTo = 1f
+    @Volatile private var envelopePos = 0
+    @Volatile private var envelopeLen = 0
+    @Volatile private var stopAfterFade = false
+    @Volatile private var pendingAbandonFocus = true
+    @Volatile private var pendingDestroy = false
 
     // Master duck envelope for slide transitions (samples remaining in each phase).
     @Volatile private var duckSamples = 0
@@ -135,6 +145,8 @@ class ProceduralMusicEngine(
     internal val cpuLoadEma: Float get() = cpuLoad.loadEma
 
     private enum class DuckPhase { Idle, Down, Hold, Up }
+
+    private enum class CrossfadePhase { Idle, Out, In }
 
     private fun resolveSampleRate(): Int {
         val fromProp = audioManager
@@ -190,7 +202,7 @@ class ProceduralMusicEngine(
     private fun packOwnership(): PackOwnership =
         runCatching { GlobalContext.get().get<PackOwnership>() }.getOrDefault(PackOwnership.NONE)
 
-    /** Apply artwork-derived preset with crossfade; safe when stopped. */
+    /** Apply artwork-derived preset with out→in crossfade; safe when stopped. */
     fun setArtwork(artwork: Artwork) {
         currentArtwork = artwork
         val next = MusicPresetResolver.resolve(artwork, userPrefs(), packOwnership())
@@ -201,8 +213,11 @@ class ProceduralMusicEngine(
             return
         }
         pendingPreset = next
-        crossfadeTotal = (2.0f * sampleRate).toInt()
-        crossfadeSamples = crossfadeTotal
+        if (crossfadePhase == CrossfadePhase.Idle) {
+            crossfadeTotal = (TRACK_FADE_OUT_SEC * sampleRate).toInt().coerceAtLeast(1)
+            crossfadeSamples = crossfadeTotal
+            crossfadePhase = CrossfadePhase.Out
+        }
     }
 
     /** Fire a style-appropriate transition cue with master duck (slide advance). */
@@ -219,11 +234,20 @@ class ProceduralMusicEngine(
     @Synchronized
     fun start() {
         if (!isEnabled) return
-        if (isRunning.getAndSet(true)) return
-        if (!requestFocus()) {
-            isRunning.set(false)
+        if (isRunning.get()) {
+            // Resume a fade-out (e.g. quick pause/play) by fading back in.
+            if (stopAfterFade) {
+                stopAfterFade = false
+                pendingDestroy = false
+                pendingAbandonFocus = false
+                beginEnvelope(from = envelopeGain(), to = 1f, seconds = FADE_IN_SEC)
+            }
             return
         }
+        if (!requestFocus()) {
+            return
+        }
+        isRunning.set(true)
         if (preset == null) {
             val fallbackArt = Artwork(
                 id = "ambient.default",
@@ -238,30 +262,110 @@ class ProceduralMusicEngine(
             form = ArrangementForm(fallback.formSeed)
         }
         initAudioTrack()
+        beginEnvelope(from = 0f, to = 1f, seconds = FADE_IN_SEC)
+        stopAfterFade = false
+        pendingDestroy = false
         audioTrack?.play()
         synthesisJob = scope.launch(Dispatchers.Default) { renderAudioLoop() }
     }
 
+    /**
+     * Stops playback. By default fades out, then releases the track.
+     * Pass [fade] = false for immediate stop (audio focus loss).
+     */
     @Synchronized
-    fun stop(abandonFocus: Boolean = true) {
+    fun stop(abandonFocus: Boolean = true, fade: Boolean = true) {
+        if (!isRunning.get()) {
+            if (abandonFocus) abandonFocus()
+            return
+        }
+        if (fade && sampleRate > 0) {
+            pendingAbandonFocus = abandonFocus
+            if (!stopAfterFade) {
+                beginEnvelope(from = envelopeGain(), to = 0f, seconds = FADE_OUT_SEC)
+                stopAfterFade = true
+            }
+            return
+        }
+        forceStopLocked(abandonFocus)
+    }
+
+    fun destroy() {
+        settingsJob?.cancel()
+        settingsJob = null
+        synchronized(this) {
+            if (isRunning.get()) {
+                pendingDestroy = true
+                pendingAbandonFocus = true
+                if (!stopAfterFade) {
+                    beginEnvelope(from = envelopeGain(), to = 0f, seconds = FADE_OUT_SEC)
+                    stopAfterFade = true
+                }
+            } else {
+                scope.cancel()
+            }
+        }
+    }
+
+    @Synchronized
+    private fun forceStopLocked(abandonFocus: Boolean) {
+        stopAfterFade = false
+        pendingDestroy = false
+        envelopeLen = 0
+        envelopePos = 0
+        envelopeTo = 0f
         if (!isRunning.getAndSet(false)) {
             if (abandonFocus) abandonFocus()
             return
         }
         synthesisJob?.cancel()
         synthesisJob = null
+        releaseTrackLocked()
+        if (abandonFocus) abandonFocus()
+    }
+
+    private fun beginEnvelope(from: Float, to: Float, seconds: Float) {
+        envelopeFrom = from.coerceIn(0f, 1f)
+        envelopeTo = to.coerceIn(0f, 1f)
+        envelopePos = 0
+        envelopeLen = (seconds * sampleRate).toInt().coerceAtLeast(1)
+    }
+
+    private fun envelopeGain(): Float {
+        if (envelopeLen <= 0 || envelopePos >= envelopeLen) return envelopeTo
+        val t = envelopePos.toFloat() / envelopeLen.toFloat()
+        val shaped = 0.5f - 0.5f * kotlin.math.cos(Math.PI.toFloat() * t)
+        return envelopeFrom + (envelopeTo - envelopeFrom) * shaped
+    }
+
+    private fun advanceEnvelope() {
+        if (envelopeLen > 0 && envelopePos < envelopeLen) envelopePos++
+    }
+
+    private fun releaseTrackLocked() {
         runCatching {
             audioTrack?.stop()
             audioTrack?.release()
         }
         audioTrack = null
-        if (abandonFocus) abandonFocus()
     }
 
-    fun destroy() {
-        stop()
-        settingsJob?.cancel()
-        scope.cancel()
+    @Synchronized
+    private fun onPlaybackLoopEnded() {
+        synthesisJob = null
+        releaseTrackLocked()
+        stopAfterFade = false
+        crossfadePhase = CrossfadePhase.Idle
+        crossfadeSamples = 0
+        pendingPreset = null
+        if (pendingAbandonFocus) {
+            abandonFocus()
+        }
+        pendingAbandonFocus = true
+        if (pendingDestroy) {
+            pendingDestroy = false
+            scope.cancel()
+        }
     }
 
     private fun initAudioTrack() {
@@ -362,121 +466,139 @@ class ProceduralMusicEngine(
         val shortBufs = arrayOf(ShortArray(chunk), ShortArray(chunk))
         var sampleIndex = 0L
         var pulseClock = 0
-        var crossfading = false
         var bufIdx = 0
         var prefilled = false
         cpuLoad.reset()
 
-        while (scope.isActive && isRunning.get()) {
-            val track = audioTrack ?: break
-            val char = character
-            val atmosphere = char == AmbientAudioCharacter.Atmosphere
-            val sr = sampleRate
-            val quality = cpuLoad.quality
+        try {
+            while (scope.isActive && isRunning.get()) {
+                val track = audioTrack ?: break
+                val char = character
+                val atmosphere = char == AmbientAudioCharacter.Atmosphere
+                val sr = sampleRate
+                val quality = cpuLoad.quality
 
-            pendingPreset?.let { next ->
-                if (crossfadeSamples == crossfadeTotal) {
+                // After fade-out of previous track, swap preset and fade in.
+                if (crossfadePhase == CrossfadePhase.Out &&
+                    crossfadeSamples == 0 &&
+                    pendingPreset != null
+                ) {
+                    val next = pendingPreset!!
                     releaseLeadVoices()
-                    crossfading = true
                     preset = next
                     sequencer = MarkovSequencer(next, sessionSalt xor sampleIndex, char)
                     form = ArrangementForm(next.formSeed)
                     lastChordKey = Int.MIN_VALUE
                     applyBedVoices(next, sequencer!!, atmosphere, quality)
                     pendingPreset = null
+                    crossfadeTotal = (TRACK_FADE_IN_SEC * sr).toInt().coerceAtLeast(1)
+                    crossfadeSamples = crossfadeTotal
+                    crossfadePhase = CrossfadePhase.In
                 }
-            }
 
-            val activePreset = preset ?: continue
-            val seq = sequencer ?: continue
-            val arrangement = form ?: continue
+                val activePreset = preset ?: continue
+                val seq = sequencer ?: continue
+                val arrangement = form ?: continue
 
-            val glide = if (atmosphere) 0.22f else 0.06f
-            padA.setGlideSeconds(glide)
-            padB.setGlideSeconds(glide)
+                val glide = if (atmosphere) 0.22f else 0.06f
+                padA.setGlideSeconds(glide)
+                padB.setGlideSeconds(glide)
 
-            val trackMix = activePreset.trackMix
-            val melodyGain = trackMix.melody
-            val bassGain = trackMix.bass
-            val bedGain = trackMix.bed
-            val harmonyGain = trackMix.harmony
-            // Melody/Balanced: one pad stem (bed+harmony merged). Atmosphere Full may use padB.
-            val useDualPad = atmosphere && quality == SynthQuality.Full
-            val padGain = combinedPadGain(bedGain, harmonyGain, useDualPad)
-            val textureGain = when (quality) {
-                SynthQuality.Minimal -> 0f
-                else -> trackMix.texture
-            }
-            val pulseGain = when (quality) {
-                SynthQuality.Minimal -> 0f
-                SynthQuality.Reduced -> trackMix.pulse * 0.5f
-                SynthQuality.Full -> trackMix.pulse
-            }
-            val transitionGain = when (quality) {
-                SynthQuality.Minimal -> trackMix.transition * 0.35f
-                else -> trackMix.transition
-            }
-            val allowOrnaments = quality == SynthQuality.Full && !atmosphere
-            val root = activePreset.rootHz
-            waves.setRootHz(root)
-            wind.setRootHz(root)
-            val vol = masterVolume
-            val samplesPerPulse = if (pulseGain > 0.05f) {
-                (60.0 / activePreset.tempoBpm * sr).toInt().coerceAtLeast(1)
-            } else {
-                Int.MAX_VALUE
-            }
-            val pianoAudible = melodyGain > 0.02f
-            val bassAudibleStem = bassGain > 0.02f
-            val pulseAudibleStem = pulseGain > 0.05f
-            val transAudibleStem = transitionGain > 0.02f
-            val bowlBed = atmosphere &&
-                activePreset.style in setOf(
-                    MusicStyle.TibetanBowl,
-                    MusicStyle.CosmicDrone,
-                    MusicStyle.OrchestraPads,
-                    MusicStyle.OrchestraSwell,
-                ) &&
-                bedGain > 0.02f &&
-                quality != SynthQuality.Minimal
-            // Exactly one texture voice for Atmosphere (never wind+waves together).
-            val textureKind = atmosphereTextureKind(activePreset.style, atmosphere, textureGain)
-
-            // Prefill buf0 once, then ping-pong: write(bufIdx) || render(next).
-            val renderIdx = if (!prefilled) 0 else 1 - bufIdx
-            val writeJob = if (prefilled) {
-                async(Dispatchers.IO) {
-                    writePcm(track, floatBufs[bufIdx], shortBufs[bufIdx], chunk)
+                val trackMix = activePreset.trackMix
+                val melodyGain = trackMix.melody
+                val bassGain = trackMix.bass
+                val bedGain = trackMix.bed
+                val harmonyGain = trackMix.harmony
+                // Melody/Balanced: one pad stem (bed+harmony merged). Atmosphere Full may use padB.
+                val useDualPad = atmosphere && quality == SynthQuality.Full
+                val padGain = combinedPadGain(bedGain, harmonyGain, useDualPad)
+                val textureGain = when (quality) {
+                    SynthQuality.Minimal -> 0f
+                    else -> trackMix.texture
                 }
-            } else {
-                null
-            }
-            val t0 = System.nanoTime()
-
-            // Coarse clock: skip sequencer work in idle stretches (up to 64 samples).
-            var i = 0
-            while (i < chunk) {
-                val melWait = seq.samplesUntilMelody()
-                val bassWait = seq.samplesUntilBass()
-                val harmWait = seq.samplesUntilHarmony()
-                val eventDue = melWait == 0 || bassWait == 0 || harmWait == 0 ||
-                    triggerTransitionFlag ||
-                    (pulseAudibleStem && pulseClock + 1 >= samplesPerPulse)
-
-                val run = if (eventDue) {
-                    1
+                val pulseGain = when (quality) {
+                    SynthQuality.Minimal -> 0f
+                    SynthQuality.Reduced -> trackMix.pulse * 0.5f
+                    SynthQuality.Full -> trackMix.pulse
+                }
+                val transitionGain = when (quality) {
+                    SynthQuality.Minimal -> trackMix.transition * 0.35f
+                    else -> trackMix.transition
+                }
+                val allowOrnaments = quality == SynthQuality.Full && !atmosphere
+                val root = activePreset.rootHz
+                waves.setRootHz(root)
+                wind.setRootHz(root)
+                val vol = masterVolume
+                val samplesPerPulse = if (pulseGain > 0.05f) {
+                    (60.0 / activePreset.tempoBpm * sr).toInt().coerceAtLeast(1)
                 } else {
-                    minOf(
-                        64,
-                        chunk - i,
-                        melWait,
-                        bassWait,
-                        harmWait,
-                        samplesPerPulse - pulseClock,
-                        if (crossfading) crossfadeSamples.coerceAtLeast(1) else Int.MAX_VALUE,
-                        if (duckPhase != DuckPhase.Idle) duckSamples.coerceAtLeast(1) else Int.MAX_VALUE,
-                    ).coerceAtLeast(1)
+                    Int.MAX_VALUE
                 }
+                val pianoAudible = melodyGain > 0.02f
+                val bassAudibleStem = bassGain > 0.02f
+                val pulseAudibleStem = pulseGain > 0.05f
+                val transAudibleStem = transitionGain > 0.02f
+                val bowlBed = atmosphere &&
+                    activePreset.style in setOf(
+                        MusicStyle.TibetanBowl,
+                        MusicStyle.CosmicDrone,
+                        MusicStyle.OrchestraPads,
+                        MusicStyle.OrchestraSwell,
+                    ) &&
+                    bedGain > 0.02f &&
+                    quality != SynthQuality.Minimal
+                // Exactly one texture voice for Atmosphere (never wind+waves together).
+                val textureKind = atmosphereTextureKind(activePreset.style, atmosphere, textureGain)
+
+                // Prefill buf0 once, then ping-pong: write(bufIdx) || render(next).
+                val renderIdx = if (!prefilled) 0 else 1 - bufIdx
+                val writeJob = if (prefilled) {
+                    async(Dispatchers.IO) {
+                        writePcm(track, floatBufs[bufIdx], shortBufs[bufIdx], chunk)
+                    }
+                } else {
+                    null
+                }
+                val t0 = System.nanoTime()
+
+                // Coarse clock: skip sequencer work in idle stretches (up to 64 samples).
+                var i = 0
+                while (i < chunk) {
+                    val melWait = seq.samplesUntilMelody()
+                    val bassWait = seq.samplesUntilBass()
+                    val harmWait = seq.samplesUntilHarmony()
+                    val eventDue = melWait == 0 || bassWait == 0 || harmWait == 0 ||
+                        triggerTransitionFlag ||
+                        (pulseAudibleStem && pulseClock + 1 >= samplesPerPulse)
+
+                    val run = if (eventDue) {
+                        1
+                    } else {
+                        minOf(
+                            64,
+                            chunk - i,
+                            melWait,
+                            bassWait,
+                            harmWait,
+                            samplesPerPulse - pulseClock,
+                            if (crossfadePhase != CrossfadePhase.Idle) {
+                                crossfadeSamples.coerceAtLeast(1)
+                            } else {
+                                Int.MAX_VALUE
+                            },
+                            if (duckPhase != DuckPhase.Idle) {
+                                duckSamples.coerceAtLeast(1)
+                            } else {
+                                Int.MAX_VALUE
+                            },
+                            if (envelopeLen > 0 && envelopePos < envelopeLen) {
+                                (envelopeLen - envelopePos).coerceAtLeast(1)
+                            } else {
+                                Int.MAX_VALUE
+                            },
+                        ).coerceAtLeast(1)
+                    }
 
                 if (run > 1) {
                     seq.skipSamples(run)
@@ -608,17 +730,26 @@ class ProceduralMusicEngine(
                         chimes.render(sampleIndex, sr)
                     }
 
-                    if (crossfading && crossfadeSamples > 0) {
+                    if (crossfadePhase != CrossfadePhase.Idle && crossfadeSamples > 0) {
                         val t = 1f - crossfadeSamples.toFloat() / crossfadeTotal.toFloat()
-                        val fadeIn =
+                        val shaped =
                             (0.5f - 0.5f * kotlin.math.cos(Math.PI.toFloat() * t)).coerceIn(0f, 1f)
-                        mixed *= fadeIn
+                        mixed *= when (crossfadePhase) {
+                            CrossfadePhase.Out -> 1f - shaped
+                            CrossfadePhase.In -> shaped
+                            CrossfadePhase.Idle -> 1f
+                        }
                         crossfadeSamples--
-                        if (crossfadeSamples == 0) crossfading = false
+                        // Out→swap is handled at the top of the outer loop when samples hit 0.
+                        if (crossfadePhase == CrossfadePhase.In && crossfadeSamples == 0) {
+                            crossfadePhase = CrossfadePhase.Idle
+                        }
                     }
 
                     advanceDuck()
-                    mixed = softLimit(mixed * duckGain() * vol)
+                    val env = envelopeGain()
+                    mixed = softLimit(mixed * duckGain() * vol * env)
+                    advanceEnvelope()
 
                     if (useFloatPcm) {
                         floatBufs[renderIdx][i] = mixed
@@ -628,6 +759,11 @@ class ProceduralMusicEngine(
                     i++
                     k++
                 }
+            }
+
+            if (stopAfterFade && envelopePos >= envelopeLen) {
+                isRunning.set(false)
+                break
             }
 
             cpuLoad.observe(System.nanoTime() - t0, chunk, sr)
@@ -662,6 +798,9 @@ class ProceduralMusicEngine(
                 break
             }
             bufIdx = renderIdx
+        }
+        } finally {
+            onPlaybackLoopEnded()
         }
     }
 
@@ -745,6 +884,11 @@ class ProceduralMusicEngine(
     internal enum class TextureKind { None, Waves, Wind, Rain, Fire, Birds }
 
     companion object {
+        private const val FADE_IN_SEC = 1.4f
+        private const val FADE_OUT_SEC = 1.1f
+        private const val TRACK_FADE_OUT_SEC = 0.9f
+        private const val TRACK_FADE_IN_SEC = 1.1f
+
         /** Merge bed+harmony into one pad gain for Melody/Balanced (or Reduced Atmosphere). */
         internal fun combinedPadGain(bed: Float, harmony: Float, dualPad: Boolean): Float =
             if (dualPad) {
@@ -820,12 +964,12 @@ class ProceduralMusicEngine(
             when (focusChange) {
                 AudioManager.AUDIOFOCUS_LOSS -> {
                     hasAudioFocus = false
-                    stop(abandonFocus = false)
+                    stop(abandonFocus = false, fade = false)
                     onAudioFocusChanged?.invoke(AudioFocusEvent.Lost(transient = false))
                 }
                 AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
                     hasAudioFocus = false
-                    stop(abandonFocus = false)
+                    stop(abandonFocus = false, fade = false)
                     onAudioFocusChanged?.invoke(AudioFocusEvent.Lost(transient = true))
                 }
                 AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK ->

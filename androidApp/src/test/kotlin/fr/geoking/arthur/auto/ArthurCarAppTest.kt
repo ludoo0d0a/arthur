@@ -183,6 +183,94 @@ class ArthurCarAppTest {
     }
 
     @Test
+    fun packSelectionScreen_includesSoundFamily() {
+        val owner = object : androidx.lifecycle.LifecycleOwner {
+            override val lifecycle = androidx.lifecycle.LifecycleRegistry(this)
+        }
+        val carContext = androidx.car.app.CarContext.create(owner.lifecycle)
+        attachBaseContext(carContext, org.robolectric.RuntimeEnvironment.getApplication())
+        val screen = PackSelectionScreen(carContext)
+        val template = screen.onGetTemplate() as androidx.car.app.model.SectionedItemTemplate
+        val gridSection = template.sections[0] as androidx.car.app.model.GridSection
+        // Museum, Genart, Photo, Sound, Sculpture, Painting (Video/Personal filtered).
+        assertEquals(6, gridSection.itemsDelegate.size)
+        assertTrue(gridSection.itemsDelegate.size <= MAX_HOME_GRID_ITEMS)
+    }
+
+    @Test
+    fun soundSubPack_showsFreeEssentialsOnlyWithoutOwnership() {
+        val app = org.robolectric.RuntimeEnvironment.getApplication()
+        val owner = object : androidx.lifecycle.LifecycleOwner {
+            override val lifecycle = androidx.lifecycle.LifecycleRegistry(this)
+        }
+        val carContext = androidx.car.app.CarContext.create(owner.lifecycle)
+        attachBaseContext(carContext, app)
+        if (org.koin.core.context.GlobalContext.getOrNull() != null) {
+            org.koin.core.context.stopKoin()
+        }
+        org.koin.core.context.startKoin {
+            modules(
+                org.koin.dsl.module {
+                    single<fr.geoking.arthur.shared.marketplace.PackOwnership> {
+                        fr.geoking.arthur.shared.marketplace.PackOwnership.NONE
+                    }
+                },
+            )
+        }
+        try {
+            val screen = SubPackSelectionScreen(
+                carContext,
+                fr.geoking.arthur.ui.components.PackFamily.Sound,
+            )
+            val template = screen.onGetTemplate() as androidx.car.app.model.SectionedItemTemplate
+            val gridSection = template.sections[0] as androidx.car.app.model.GridSection
+            assertEquals(
+                "Without ownership only free Essentials is listed",
+                1,
+                gridSection.itemsDelegate.size,
+            )
+        } finally {
+            org.koin.core.context.stopKoin()
+        }
+    }
+
+    @Test
+    fun soundPlayerCarScreen_buildsMediaPlaybackTemplate() {
+        val app = org.robolectric.RuntimeEnvironment.getApplication()
+        val owner = object : androidx.lifecycle.LifecycleOwner {
+            override val lifecycle = androidx.lifecycle.LifecycleRegistry(this)
+        }
+        val carContext = androidx.car.app.CarContext.create(owner.lifecycle)
+        attachBaseContext(carContext, app)
+        if (org.koin.core.context.GlobalContext.getOrNull() != null) {
+            org.koin.core.context.stopKoin()
+        }
+        org.koin.core.context.startKoin {
+            modules(
+                org.koin.dsl.module {
+                    single { fr.geoking.arthur.source.AmbientAudioSettings(app) }
+                },
+            )
+        }
+        try {
+            val screen = SoundPlayerCarScreen(
+                carContext,
+                fr.geoking.arthur.ui.components.PackSelection(
+                    fr.geoking.arthur.ui.components.PackFamily.Sound,
+                    fr.geoking.arthur.ui.components.AudioPackTopic.Essentials.testTagSuffix,
+                ),
+            )
+            val template = screen.onGetTemplate()
+            assertTrue(
+                "Sound player should use MediaPlaybackTemplate",
+                template is androidx.car.app.media.model.MediaPlaybackTemplate,
+            )
+        } finally {
+            org.koin.core.context.stopKoin()
+        }
+    }
+
+    @Test
     fun carSettingsScreen_buildsListTemplateWithIntervalOptions() {
         val owner = object : androidx.lifecycle.LifecycleOwner {
             override val lifecycle = androidx.lifecycle.LifecycleRegistry(this)
@@ -212,7 +300,38 @@ class ArthurCarAppTest {
             val listTemplate = template as androidx.car.app.model.ListTemplate
             val list = listTemplate.singleList
             assertNotNull(list)
-            assertEquals(4 + fr.geoking.arthur.source.RotationSettings.OPTIONS_MS.size, list!!.items.size)
+            // Check update + quotes + provider + sound + duration entry (options live in sub-screen).
+            assertEquals(5, list!!.items.size)
+        } finally {
+            org.koin.core.context.stopKoin()
+        }
+    }
+
+    @Test
+    fun carRotationIntervalScreen_listsAllDurationOptions() {
+        val app = org.robolectric.RuntimeEnvironment.getApplication()
+        val owner = object : androidx.lifecycle.LifecycleOwner {
+            override val lifecycle = androidx.lifecycle.LifecycleRegistry(this)
+        }
+        val carContext = androidx.car.app.CarContext.create(owner.lifecycle)
+        attachBaseContext(carContext, app)
+        if (org.koin.core.context.GlobalContext.getOrNull() != null) {
+            org.koin.core.context.stopKoin()
+        }
+        org.koin.core.context.startKoin {
+            modules(
+                org.koin.dsl.module {
+                    single { fr.geoking.arthur.source.RotationSettings(app) }
+                },
+            )
+        }
+        try {
+            val screen = CarRotationIntervalScreen(carContext)
+            val template = screen.onGetTemplate() as androidx.car.app.model.ListTemplate
+            assertEquals(
+                fr.geoking.arthur.source.RotationSettings.OPTIONS_MS.size,
+                template.singleList!!.items.size,
+            )
         } finally {
             org.koin.core.context.stopKoin()
         }

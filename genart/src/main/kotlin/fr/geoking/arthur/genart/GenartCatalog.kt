@@ -108,6 +108,7 @@ enum class GenartEngineId {
     PlasmaNova,
     EnergyTendrils,
     InterferenceWash,
+    NestedPack,
 }
 
 enum class GenartQuality { Low, Medium, High }

@@ -37,6 +37,7 @@ object GenartPackTopics {
         GenartSource.TONAL_GEOMETRY,
         GenartSource.PAPER_CUT_PACK,
         GenartSource.DIAMOND_WEAVE,
+        GenartSource.NESTED_PACK,
         GenartSource.CHROMATIC_BLOBS,
     )
 
@@ -223,6 +224,7 @@ object GenartPackTopics {
         GenartSource.FLOW_RIBBONS,
         GenartSource.CLIFFORD_WASH,
         GenartSource.INTERFERENCE_WASH,
+        GenartSource.NESTED_PACK,
     )
 
     val GEOMETRY_IDS: Set<String> = setOf(
@@ -239,6 +241,7 @@ object GenartPackTopics {
         GenartSource.DATA_HORIZON,
         GenartSource.WARP_STREAK,
         GenartSource.DIAMOND_WEAVE,
+        GenartSource.NESTED_PACK,
         GenartSource.PRISMATIC_SHADOWS,
         GenartSource.DRIFTING_HALOS,
         GenartSource.SPIRAL_MANDALA,

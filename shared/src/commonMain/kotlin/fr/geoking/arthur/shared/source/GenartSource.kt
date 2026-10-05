@@ -126,6 +126,7 @@ class GenartSource(
         const val PLASMA_NOVA = "genart.plasmanova"
         const val ENERGY_TENDRILS = "genart.energytendrils"
         const val INTERFERENCE_WASH = "genart.interferencewash"
+        const val NESTED_PACK = "genart.nestedpack"
 
         fun defaultCatalog(): List<Artwork> = listOf(
             entry(PARTICLES, "#1 - Drifting Particles"),
@@ -235,6 +236,7 @@ class GenartSource(
             entry(PLASMA_NOVA, "#104 - Plasma Nova"),
             entry(ENERGY_TENDRILS, "#105 - Energy Tendrils"),
             entry(INTERFERENCE_WASH, "#106 - Interference Wash"),
+            entry(NESTED_PACK, "#107 - Nested Pack"),
         )
 
         private fun entry(id: String, title: String) = Artwork(

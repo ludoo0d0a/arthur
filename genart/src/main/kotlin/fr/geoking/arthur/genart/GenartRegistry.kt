@@ -16,6 +16,7 @@ import fr.geoking.arthur.genart.engines.CliffordWashEngine
 import fr.geoking.arthur.genart.engines.PlasmaNovaEngine
 import fr.geoking.arthur.genart.engines.EnergyTendrilsEngine
 import fr.geoking.arthur.genart.engines.InterferenceWashEngine
+import fr.geoking.arthur.genart.engines.NestedPackEngine
 import fr.geoking.arthur.genart.engines.DriftingHalosEngine
 import fr.geoking.arthur.genart.engines.AntTrailsEngine
 import fr.geoking.arthur.genart.engines.AuroraWashEngine
@@ -123,6 +124,7 @@ import fr.geoking.arthur.genart.stills.CliffordWashStill
 import fr.geoking.arthur.genart.stills.PlasmaNovaStill
 import fr.geoking.arthur.genart.stills.EnergyTendrilsStill
 import fr.geoking.arthur.genart.stills.InterferenceWashStill
+import fr.geoking.arthur.genart.stills.NestedPackStill
 import fr.geoking.arthur.genart.stills.DriftingHalosStill
 import fr.geoking.arthur.genart.stills.AntTrailsStill
 import fr.geoking.arthur.genart.stills.AuroraWashStill
@@ -1432,6 +1434,17 @@ object GenartRegistry {
             },
             renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
                 InterferenceWashStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.NestedPack,
+            stableId = "genart.nestedpack",
+            title = "#107 - Nested Pack",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                NestedPackEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                NestedPackStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
             },
         ),
     )

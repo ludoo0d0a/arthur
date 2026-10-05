@@ -324,4 +324,5 @@ internal fun MusicStyle.labelRes(): Int = when (this) {
     MusicStyle.RockBallad -> R.string.settings_ambient_sound_style_rock_ballad
     MusicStyle.BassOnly -> R.string.settings_ambient_sound_style_bass_only
     MusicStyle.PianoBallad -> R.string.settings_ambient_sound_style_piano_ballad
+    MusicStyle.HawaiianUkulele -> R.string.settings_ambient_sound_style_hawaiian_ukulele
 }

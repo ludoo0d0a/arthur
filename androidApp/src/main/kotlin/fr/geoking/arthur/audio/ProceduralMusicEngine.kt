@@ -715,7 +715,7 @@ class ProceduralMusicEngine(
             MusicStyle.JazzPiano, MusicStyle.BarAmbience, MusicStyle.NightLounge,
             MusicStyle.ClassicalPiano, MusicStyle.PianoBallad,
             -> piano.noteOn(hz, vel)
-            MusicStyle.SoftGuitar, MusicStyle.RockBallad -> guitar.noteOn(hz, vel)
+            MusicStyle.SoftGuitar, MusicStyle.RockBallad, MusicStyle.HawaiianUkulele -> guitar.noteOn(hz, vel)
             MusicStyle.AfricanPulse -> kalimba.noteOn(hz, vel + 0.05f)
             MusicStyle.WindChimes, MusicStyle.Songbirds -> chimes.noteOn(hz, vel)
             MusicStyle.TibetanBowl -> bowl.noteOn(hz, vel * 0.85f)

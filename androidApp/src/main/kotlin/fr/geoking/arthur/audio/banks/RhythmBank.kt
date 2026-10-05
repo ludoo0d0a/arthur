@@ -45,6 +45,7 @@ object RhythmBank {
             -> listOf(flowing, swing, medium, pulseSteady)
             fr.geoking.arthur.audio.MusicStyle.SoftGuitar,
             fr.geoking.arthur.audio.MusicStyle.RockBallad,
+            fr.geoking.arthur.audio.MusicStyle.HawaiianUkulele,
             -> listOf(flowing, medium, swing, pulseSteady)
             fr.geoking.arthur.audio.MusicStyle.AfricanPulse -> listOf(claveSoft, pulseSteady, flowing, medium)
             fr.geoking.arthur.audio.MusicStyle.WindChimes,

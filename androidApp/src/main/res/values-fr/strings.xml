@@ -97,6 +97,7 @@
     <string name="audio_pack_rock_ballad">Ballade rock</string>
     <string name="audio_pack_bass_only">Basse seule</string>
     <string name="audio_pack_midnight_ballad">Ballade de minuit</string>
+    <string name="audio_pack_hawaiian_breeze">Brise hawaïenne</string>
     <string name="premium_ux_subtitle">Sans pubs et favoris (bientôt)</string>
     <string name="genart_topic_fractal">Fractale</string>
     <string name="genart_topic_custom">Perso</string>
@@ -190,6 +191,7 @@
     <string name="settings_ambient_sound_style_rock_ballad">Ballade rock</string>
     <string name="settings_ambient_sound_style_bass_only">Basse seule</string>
     <string name="settings_ambient_sound_style_piano_ballad">Ballade piano</string>
+    <string name="settings_ambient_sound_style_hawaiian_ukulele">Ukulélé hawaïen</string>
     <string name="settings_ambient_sound_complexity">Complexité</string>
     <string name="settings_ambient_sound_complexity_hint">Plus de notes et d\'ornements</string>
     <string name="car_ambient_debug">Debug</string>

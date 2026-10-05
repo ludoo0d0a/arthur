@@ -286,6 +286,8 @@ object MusicPresetResolver {
             TrackMix(bed = 0.06f, harmony = 0.04f, melody = 0.08f, bass = 0.72f, texture = 0f, pulse = 0.06f)
         MusicStyle.PianoBallad ->
             TrackMix(bed = 0.18f, harmony = 0.22f, melody = 0.54f, bass = 0.36f, texture = 0f, pulse = 0.02f)
+        MusicStyle.HawaiianUkulele ->
+            TrackMix(bed = 0.10f, harmony = 0.20f, melody = 0.58f, bass = 0.38f, texture = 0f, pulse = 0.04f)
     }
 
     private fun baseTempo(style: MusicStyle): Float = when (style) {
@@ -297,7 +299,7 @@ object MusicPresetResolver {
         MusicStyle.ViolinLead, MusicStyle.PianoBallad,
         -> 58f
         MusicStyle.SoftGuitar, MusicStyle.BarAmbience, MusicStyle.NightLounge,
-        MusicStyle.RockBallad,
+        MusicStyle.RockBallad, MusicStyle.HawaiianUkulele,
         -> 68f
         MusicStyle.JazzPiano, MusicStyle.BassOnly -> 76f
         MusicStyle.AfricanPulse -> 92f
@@ -349,8 +351,8 @@ object ScaleLibrary {
                 MusicStyle.Zen -> listOf(majorPent, minorPent, major, naturalMinor)
                 MusicStyle.BarAmbience, MusicStyle.NightLounge -> listOf(dorian, bluesLite, mixolydian, major)
                 MusicStyle.JazzPiano, MusicStyle.BassOnly -> listOf(dorian, mixolydian, bluesLite, major)
-                MusicStyle.SoftGuitar, MusicStyle.RockBallad ->
-                    listOf(majorPent, mixolydian, dorian, major, naturalMinor)
+                MusicStyle.SoftGuitar, MusicStyle.RockBallad, MusicStyle.HawaiianUkulele ->
+                    listOf(majorPent, major, mixolydian, dorian)
                 MusicStyle.TibetanBowl -> listOf(minorPent, majorPent)
                 MusicStyle.OceanWaves, MusicStyle.SoftRain, MusicStyle.WindAmbience,
                 MusicStyle.Fireplace, MusicStyle.Songbirds,
@@ -367,7 +369,7 @@ object ScaleLibrary {
             MusicStyle.Zen -> listOf(majorPent, minorPent, naturalMinor)
             MusicStyle.BarAmbience, MusicStyle.NightLounge -> listOf(dorian, bluesLite, mixolydian)
             MusicStyle.JazzPiano, MusicStyle.BassOnly -> listOf(dorian, mixolydian, bluesLite)
-            MusicStyle.SoftGuitar, MusicStyle.RockBallad -> listOf(majorPent, mixolydian, dorian)
+            MusicStyle.SoftGuitar, MusicStyle.RockBallad, MusicStyle.HawaiianUkulele -> listOf(majorPent, mixolydian, dorian)
             MusicStyle.TibetanBowl -> listOf(bowlPartials, minorPent)
             MusicStyle.OceanWaves, MusicStyle.SoftRain, MusicStyle.WindAmbience,
             MusicStyle.Fireplace, MusicStyle.Songbirds,

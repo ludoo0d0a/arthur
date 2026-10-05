@@ -4,8 +4,8 @@ Part of the [Genart roadmap](roadmap-genart.md) — see that doc for principles,
 summary, and where to look for rendering techniques ([roadmap-genart-architecture.md](roadmap-genart-architecture.md)).
 
 **Status: the original ideas backlog below is now fully shipped.** Every category is complete,
-including the one parameter-variant item. Next round should propose fresh ideas rather than draw
-from what's left here.
+including the one parameter-variant item. Fresh next-round ideas live in
+[Round 2 — ray / texture / 3D soft](#round-2--ray--texture--3d-soft) (parked until ship).
 
 ### Weather
 
@@ -302,3 +302,46 @@ Reuse this section when proposing engines, picking patterns, or choosing tooling
 | **B — Light physics** | Shared wind scalar, short Verlet tips, Gerstner sines | Yes if capped by `qualityCount` |
 | **C — Field sims** | Physarum, Gray-Scott, differential growth, wet diffusion | Park — too heavy for phone/Auto loops |
 | **D — GPU shaders** | AGSL RuntimeShader | Flagship only, API 33+, Canvas fallback |
+
+## Round 2 — ray / texture / 3D soft
+
+Parked shortlist for a later ship wave. Stack reality: Compose `Canvas` (+ blur, terminator,
+volumetric cones, `NoiseUtils` / `loopedFbm`); true raycast = soft AGSL raymarch (API 33+ +
+Canvas fallback, pattern from `InterferenceWashEngine`). Same Ambient principles: slow, car-safe,
+silhouettes.
+
+Suggested ship order (beauty / effort): Marble Drift → Canyon Light Cut → Depth Shafts →
+Glass Orb → Soft Raymarch Orbs (AGSL); then Prism / Soap / Lattice.
+
+### Priority shortlist
+
+- `genart.rayorbs` — *Soft Raymarch Orbs* (tier D AGSL): slowly orbiting SDF spheres, soft fog,
+  rim light, one specular highlight; Canvas fallback = terminator discs + glow blur. Most
+  “raycast” look viable on mobile Ambient.
+- `genart.marble` — *Marble Drift* (tier A): domain-warped fbm veins (stone / onyx / jade),
+  very slow, soft vignette. Procedural texture still missing from the catalog (Silk/Flow ≠ marble).
+- `genart.prismcave` — *Crystal Prism Cave* (tier A/B): beveled facets (Diamond Weave +
+  Prismatic Shadows), additive colored beams, dust motes. Soft 3D geometry + volumetric light.
+- `genart.depthshafts` — *Underwater Light Shafts* (tier A/B): dark water column, god rays from
+  above, fine caustics (reuse Soft Caustics), plankton motes. More cinematic than Sunbeams alone.
+- `genart.glassorb` — *Glass Orb on Desk* (tier A): glass sphere (highlights + sine-warp fake
+  refraction of the background), soft shadow, dust in volume. Small subject, premium Auto/TV still.
+- `genart.canyonlight` — *Canyon Light Cut* (tier A/B): canyon-wall silhouettes (Canyon Dunes),
+  one lateral beam cutting the gorge, dust, 2–3 parallax planes. Instant 3D read without a mesh.
+- `genart.soapfilm` — *Iridescent Soap Film* (tier A or D): slow Newton-ring / soap-film
+  iridescence (Interference Wash extension). AGSL = wow; Canvas = soft chromatic rings.
+- `genart.litlattice` — *Lit Wire Lattice Depth* (tier A): Pseudo3D evolution — lit terminator
+  nodes, depth fog, one sliding spotlight. Calmer sci-fi wireframe with more depth.
+
+### Second souffle
+
+- *Frosted Window Dawn* — condensation + soft sun disc behind frosted glass
+- *Obsidian Shore* — lit pebbles + foam wash (Pebble Shore + terminator)
+- *Volumetric Stairwell* — trapezoid perspective + one vertical light well
+- *Aurora over Ice Shelf* — ice horizon + Aurora ribbons + frost rim
+- *Paper Lantern Glow* — lantern silhouettes + warm cones (Lamp In Darkness cozy)
+
+### Success check (when shipping)
+
+On a 1080×1920 phone screenshot: readable depth in ~0.5 s, light or texture as the dominant
+material, no flashes, seamless loop via `loopedFbm` / whole-number phases.

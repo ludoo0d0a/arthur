@@ -121,6 +121,8 @@ fun ControlPlaneScreen(
     var openedFamily by remember { mutableStateOf<PackFamily?>(null) }
     var selection by remember { mutableStateOf(PackSelection(PackFamily.Museum)) }
     var startingSelection by remember { mutableStateOf<PackSelection?>(null) }
+    /** Last pack launched via Ambient / Sound player — FAB reopens this from home. */
+    var lastMediaPack by remember { mutableStateOf<PackSelection?>(null) }
     val packCatalogCache = remember { mutableMapOf<String, List<Artwork>>() }
     val imageCache = rememberArtworkImageCache()
     val scope = rememberCoroutineScope()
@@ -258,6 +260,15 @@ fun ControlPlaneScreen(
         }
     }
 
+    fun openMediaPack(forSelection: PackSelection) {
+        lastMediaPack = forSelection
+        if (forSelection.family == PackFamily.Sound) {
+            onOpenSoundPlayer?.invoke(forSelection)
+        } else {
+            launchAmbient(forSelection)
+        }
+    }
+
     // Genart/Fractal/CustomFractal are procedural (no network) — safe to load eagerly so
     // the Genart pack and the generative Ambient fallback have something to read from
     // catalog without ever waiting on an HTTP call at screen entry.
@@ -314,18 +325,13 @@ fun ControlPlaneScreen(
         onSelectSubPack = { sel ->
             selection = sel
             if (sel.family == PackFamily.Sound) {
-                onOpenSoundPlayer?.invoke(sel)
+                openMediaPack(sel)
             }
         },
         onBackToHome = { openedFamily = null },
-        onStartAmbient = {
-            if (selection.family == PackFamily.Sound) {
-                onOpenSoundPlayer?.invoke(selection)
-            } else {
-                launchAmbient(selection)
-            }
-        },
+        onStartAmbient = { openMediaPack(selection) },
         onStartAmbientArtwork = { artwork ->
+            lastMediaPack = selection
             syncSourceSettings()
             val renewIds = selection.sourceIdsForAmbientLoad()
             val pool = resolvePackPool(catalog, selection)
@@ -342,16 +348,17 @@ fun ControlPlaneScreen(
         },
         onStartMediaPlayer = {
             ambientAudioSettings?.setEnabled(true)
-            val mediaSelection = when {
-                openedFamily != null -> selection
-                defaultScreensaver != null -> defaultScreensaver!!
-                else -> PackSelection(PackFamily.Genart, PackFamily.Genart.defaultSubId())
-            }
+            val mediaSelection = resolveMediaPlayerPack(
+                openedFamily = openedFamily,
+                selection = selection,
+                lastMediaPack = lastMediaPack,
+                defaultScreensaver = defaultScreensaver,
+            )
             val home = mediaSelection.family.homeTile()
             if (home.isLocked(packOwnership)) {
                 onOpenMarketplace?.invoke(home.sellablePackId)
             } else {
-                launchAmbient(mediaSelection)
+                openMediaPack(mediaSelection)
             }
         },
         modifier = modifier,
@@ -362,8 +369,24 @@ fun ControlPlaneScreen(
         packOwnership = packOwnership,
         onOpenMarketplace = onOpenMarketplace,
         startingSelection = startingSelection,
-        onOpenMediaPlayer = { launchAmbient(selection) },
+        onOpenMediaPlayer = { openMediaPack(selection) },
     )
+}
+
+/**
+ * Pack opened by the media-player FAB: current pack when browsing a family,
+ * otherwise the last launched pack, then screensaver default, then Genart.
+ */
+internal fun resolveMediaPlayerPack(
+    openedFamily: PackFamily?,
+    selection: PackSelection,
+    lastMediaPack: PackSelection?,
+    defaultScreensaver: PackSelection?,
+): PackSelection = when {
+    openedFamily != null -> selection
+    lastMediaPack != null -> lastMediaPack
+    defaultScreensaver != null -> defaultScreensaver
+    else -> PackSelection(PackFamily.Genart, PackFamily.Genart.defaultSubId())
 }
 
 private fun PackSelection.prefetchKey(

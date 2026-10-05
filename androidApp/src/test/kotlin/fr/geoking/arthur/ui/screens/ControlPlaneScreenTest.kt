@@ -7,6 +7,8 @@ import androidx.compose.ui.test.performClick
 import fr.geoking.arthur.phone.theme.ArthurTheme
 import fr.geoking.arthur.ui.components.PackFamily
 import fr.geoking.arthur.ui.components.PackSelection
+import fr.geoking.arthur.ui.components.defaultSubId
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -41,5 +43,57 @@ class ControlPlaneScreenTest {
         composeTestRule.onNodeWithTag("media_player_fab").assertIsDisplayed()
         composeTestRule.onNodeWithTag("media_player_fab").performClick()
         assertTrue(clicked)
+    }
+
+    @Test
+    fun resolveMediaPlayerPack_prefersCurrentPackWhenBrowsingFamily() {
+        val browsing = PackSelection(PackFamily.Photo, "nature")
+        val last = PackSelection(PackFamily.Genart, "all")
+        assertEquals(
+            browsing,
+            resolveMediaPlayerPack(
+                openedFamily = PackFamily.Photo,
+                selection = browsing,
+                lastMediaPack = last,
+                defaultScreensaver = PackSelection(PackFamily.Museum, "random"),
+            ),
+        )
+    }
+
+    @Test
+    fun resolveMediaPlayerPack_reopensLastPackFromHome() {
+        val last = PackSelection(PackFamily.Sound, "essentials")
+        assertEquals(
+            last,
+            resolveMediaPlayerPack(
+                openedFamily = null,
+                selection = PackSelection(PackFamily.Museum),
+                lastMediaPack = last,
+                defaultScreensaver = PackSelection(PackFamily.Museum, "random"),
+            ),
+        )
+    }
+
+    @Test
+    fun resolveMediaPlayerPack_fallsBackToScreensaverThenGenart() {
+        val screensaver = PackSelection(PackFamily.Museum, "random")
+        assertEquals(
+            screensaver,
+            resolveMediaPlayerPack(
+                openedFamily = null,
+                selection = PackSelection(PackFamily.Museum),
+                lastMediaPack = null,
+                defaultScreensaver = screensaver,
+            ),
+        )
+        assertEquals(
+            PackSelection(PackFamily.Genart, PackFamily.Genart.defaultSubId()),
+            resolveMediaPlayerPack(
+                openedFamily = null,
+                selection = PackSelection(PackFamily.Museum),
+                lastMediaPack = null,
+                defaultScreensaver = null,
+            ),
+        )
     }
 }

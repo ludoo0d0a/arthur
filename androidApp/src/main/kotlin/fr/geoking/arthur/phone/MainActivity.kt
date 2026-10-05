@@ -28,8 +28,10 @@ import fr.geoking.arthur.BuildConfig
 import fr.geoking.arthur.R
 import fr.geoking.arthur.billing.PurchasesGateway
 import fr.geoking.arthur.fractal.CustomFractalStore
+import fr.geoking.arthur.pairing.LanPairingPrefs
 import fr.geoking.arthur.phone.theme.ArthurTheme
 import fr.geoking.arthur.shared.debug.DebugLogger
+import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.PremiumEntitlement
 import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.shared.marketplace.GenartPackTopics
@@ -53,8 +55,10 @@ import fr.geoking.arthur.ui.components.PackSelection
 import fr.geoking.arthur.ui.screens.ControlPlaneScreen
 import fr.geoking.arthur.ui.screens.CustomFractalEditorScreen
 import fr.geoking.arthur.ui.screens.MarketplaceScreen
+import fr.geoking.arthur.ui.screens.PhoneLanPairingScreen
 import fr.geoking.arthur.ui.screens.SettingsScreen
 import fr.geoking.arthur.ui.screens.SoundPlayerScreen
+import fr.geoking.arthur.ui.screens.TvLanPairingHostScreen
 import fr.geoking.arthur.update.InAppUpdateHelper
 import fr.geoking.tools.inappupdate.CheckFeedback
 import fr.geoking.tools.inappupdate.UpdateNotificationSpec
@@ -75,6 +79,7 @@ class MainActivity : ComponentActivity() {
     private val screensaverSettings: ScreensaverSettings by inject()
     private val quoteSettings: QuoteSettings by inject()
     private val ambientAudioSettings: AmbientAudioSettings by inject()
+    private val lanPairingPrefs: LanPairingPrefs by inject()
 
     private val inAppUpdateHelper by lazy {
         InAppUpdateHelper(
@@ -94,6 +99,9 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.StartIntentSenderForResult(),
     ) { /* cancel / failure: no-op */ }
 
+    private val pairingRequested = mutableStateOf(false)
+    private val pairingHostHint = mutableStateOf<String?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge(
@@ -106,6 +114,7 @@ class MainActivity : ComponentActivity() {
         inAppUpdateHelper.consumeLaunchIntent(intent)
         inAppUpdateHelper.checkForUpdate()
         handleDeepLinkIntent(intent)
+        maybeOpenPairingFromIntent(intent)
 
         setContent {
             ArthurTheme {
@@ -128,6 +137,7 @@ class MainActivity : ComponentActivity() {
                         var showEditor by remember { mutableStateOf(false) }
                         var showSettings by remember { mutableStateOf(false) }
                         var showMarketplace by remember { mutableStateOf(false) }
+                        var showPairing by pairingRequested
                         var marketplaceHighlight by remember { mutableStateOf<String?>(null) }
                         var soundPlayerSelection by remember {
                             mutableStateOf<PackSelection?>(null)
@@ -150,6 +160,27 @@ class MainActivity : ComponentActivity() {
                         val isPremium = premium.isPremium
                         // Custom fractal authoring needs touch; TV uses remote only.
                         when {
+                            showPairing -> {
+                                if (isTelevision) {
+                                    TvLanPairingHostScreen(
+                                        onDismiss = { pairingRequested.value = false },
+                                        onRotationReceived = { pool ->
+                                            startPairedAmbient(pool)
+                                            pairingRequested.value = false
+                                        },
+                                    )
+                                } else {
+                                    PhoneLanPairingScreen(
+                                        contentEngine = contentEngine,
+                                        pairingPrefs = lanPairingPrefs,
+                                        initialHost = pairingHostHint.value,
+                                        onDismiss = {
+                                            pairingRequested.value = false
+                                            pairingHostHint.value = null
+                                        },
+                                    )
+                                }
+                            }
                             soundPlayerSelection != null -> {
                                 SoundPlayerScreen(
                                     selection = soundPlayerSelection!!,
@@ -214,6 +245,10 @@ class MainActivity : ComponentActivity() {
                                         showSettings = false
                                         marketplaceHighlight = highlight
                                         showMarketplace = true
+                                    },
+                                    onOpenPairing = {
+                                        showSettings = false
+                                        pairingRequested.value = true
                                     },
                                 )
                             }
@@ -327,11 +362,13 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
         inAppUpdateHelper.consumeLaunchIntent(intent)
         handleDeepLinkIntent(intent)
+        maybeOpenPairingFromIntent(intent)
     }
 
     private fun handleDeepLinkIntent(intent: android.content.Intent?) {
         val uri = intent?.data ?: return
         if (intent.action == android.content.Intent.ACTION_VIEW) {
+            if (uriWantsPairing(uri)) return
             val isAmbient = uri.host == "ambient" ||
                 uri.path?.contains("/ambient") == true ||
                 uri.getQueryParameter("mode") == "ambient" ||
@@ -346,6 +383,26 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun maybeOpenPairingFromIntent(intent: android.content.Intent?) {
+        val uri = intent?.data ?: return
+        if (intent.action != android.content.Intent.ACTION_VIEW) return
+        if (!uriWantsPairing(uri)) return
+        pairingHostHint.value = uri.getQueryParameter("host")
+        pairingRequested.value = true
+    }
+
+    private fun startPairedAmbient(pool: List<Artwork>) {
+        if (pool.isEmpty()) return
+        AmbientRotationLaunch.prepare(pool, renewSourceIds = null)
+        startActivity(
+            AmbientActivity.intent(
+                this,
+                pool.first(),
+                rotate = pool.size >= 2,
+            ),
+        )
+    }
+
     override fun onResume() {
         super.onResume()
         if (inAppUpdateHelper.installStatus.value == InstallStatus.DOWNLOADED) {
@@ -357,4 +414,10 @@ class MainActivity : ComponentActivity() {
         inAppUpdateHelper.unregister()
         super.onDestroy()
     }
+}
+
+internal fun uriWantsPairing(uri: android.net.Uri): Boolean {
+    if (uri.host == "pair" || uri.host == "pairing") return true
+    val path = uri.path.orEmpty()
+    return path.contains("/pair") || path.contains("/pairing")
 }

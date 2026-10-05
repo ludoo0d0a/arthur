@@ -21,16 +21,29 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import java.util.concurrent.atomic.AtomicReference
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.runBlocking
 
 /** TV-side LAN pairing host (Ktor CIO). */
 class LanPairingServer(
     private val port: Int = DEFAULT_PORT,
+    private val deviceName: String = "Arthur TV",
 ) {
     private val manifest = AtomicReference<String?>(null)
+    private val _latestManifestJson = MutableStateFlow<String?>(null)
+    val latestManifestJson: StateFlow<String?> = _latestManifestJson.asStateFlow()
+
     private val engine = embeddedServer(CIO, port = port, host = "0.0.0.0") {
         routing {
             get("/health") { call.respondText("ok") }
+            get("/info") {
+                call.respondText(
+                    """{"service":"arthur-pairing","port":$port,"deviceName":${jsonString(deviceName)}}""",
+                    ContentType.Application.Json,
+                )
+            }
             get("/manifest") {
                 val body = manifest.get()
                 if (body == null) call.respond(HttpStatusCode.NoContent)
@@ -40,6 +53,7 @@ class LanPairingServer(
                 val raw = call.receiveText()
                 PairingCodec.decodeManifest(raw)
                 manifest.set(raw)
+                _latestManifestJson.value = raw
                 call.respond(HttpStatusCode.Accepted, "accepted")
             }
         }
@@ -55,8 +69,16 @@ class LanPairingServer(
 
     fun latestManifest(): String? = manifest.get()
 
+    fun clearManifest() {
+        manifest.set(null)
+        _latestManifestJson.value = null
+    }
+
     companion object {
         const val DEFAULT_PORT = 8742
+
+        private fun jsonString(value: String): String =
+            "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
     }
 }
 
@@ -71,6 +93,14 @@ class LanPairingClient(
             http.get("http://$host:$port/health").status == HttpStatusCode.OK
         } catch (_: Exception) {
             false
+        }
+    }
+
+    fun info(): String? = runBlocking {
+        try {
+            http.get("http://$host:$port/info").bodyAsText()
+        } catch (_: Exception) {
+            null
         }
     }
 

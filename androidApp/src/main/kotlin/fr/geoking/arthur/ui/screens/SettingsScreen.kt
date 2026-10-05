@@ -188,6 +188,7 @@ fun SettingsScreen(
     onDeviantArtPasswordChange: (String) -> Unit = {},
     onCheckForUpdate: (() -> Unit)? = null,
     onOpenMarketplace: ((highlightPackId: String?) -> Unit)? = null,
+    onOpenPairing: (() -> Unit)? = null,
     initialScreenStack: List<SettingsScreenPage>? = null,
     onInitialRouteConsumed: () -> Unit = {},
     errorLogger: ErrorLogger? = null,
@@ -285,6 +286,7 @@ fun SettingsScreen(
                     ambientSoundEnabled = ambientSoundEnabled,
                     onCheckForUpdate = onCheckForUpdate,
                     onOpenMarketplace = onOpenMarketplace,
+                    onOpenPairing = onOpenPairing,
                     onNavigate = { screenStack = screenStack + it },
                 )
                 SettingsScreenPage.RotationInterval -> RotationIntervalSelectionMenu(
@@ -366,6 +368,7 @@ private fun MainMenu(
     ambientSoundEnabled: Boolean,
     onCheckForUpdate: (() -> Unit)?,
     onOpenMarketplace: ((highlightPackId: String?) -> Unit)?,
+    onOpenPairing: (() -> Unit)?,
     onNavigate: (SettingsScreenPage) -> Unit,
 ) {
     Column(
@@ -423,6 +426,20 @@ private fun MainMenu(
                     label = stringResource(R.string.marketplace_open),
                     value = stringResource(R.string.marketplace_subtitle),
                     onClick = { onOpenMarketplace(null) },
+                )
+            }
+        }
+
+        if (onOpenPairing != null) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            ) {
+                SettingsItem(
+                    label = stringResource(R.string.pairing_open),
+                    value = stringResource(R.string.pairing_open_subtitle),
+                    onClick = onOpenPairing,
+                    modifier = Modifier.testTag("settings_open_pairing"),
                 )
             }
         }

@@ -240,4 +240,26 @@
     <string name="dev_no_errors">No errors recorded</string>
     <string name="dev_copy_error">Copy Error</string>
     <string name="dev_error_copied">Error copied to clipboard</string>
+    <string name="pairing_open">Pair TV on LAN</string>
+    <string name="pairing_open_subtitle">Push this phone\'s rotation to a TV on your Wi‑Fi</string>
+    <string name="pairing_phone_title">Pair TV</string>
+    <string name="pairing_phone_subtitle">Open Pairing on the TV, then enter the address shown there.</string>
+    <string name="pairing_phone_host_label">TV address</string>
+    <string name="pairing_phone_host_hint">192.168.1.20</string>
+    <string name="pairing_phone_port_hint">Uses port %1$d on your local network</string>
+    <string name="pairing_phone_push">Push rotation to TV</string>
+    <string name="pairing_phone_working">Connecting…</string>
+    <string name="pairing_phone_success">Sent %1$d artworks to the TV</string>
+    <string name="pairing_phone_empty_host">Enter the TV address</string>
+    <string name="pairing_phone_unreachable">TV not reachable on this network</string>
+    <string name="pairing_phone_empty_catalog">Nothing to send — open packs on this phone first</string>
+    <string name="pairing_phone_push_failed">Could not push the rotation</string>
+    <string name="pairing_tv_title">LAN pairing</string>
+    <string name="pairing_tv_subtitle">Waiting for your phone to push a prepared rotation over Wi‑Fi.</string>
+    <string name="pairing_tv_waiting">Ready for phone</string>
+    <string name="pairing_tv_no_ip">No Wi‑Fi address found. Connect this TV to the same network as your phone.</string>
+    <string name="pairing_tv_hint">On your phone: Settings → Pair TV on LAN, then enter one of the addresses above.</string>
+    <string name="pairing_tv_received">Received %1$d artworks</string>
+    <string name="pairing_tv_start_ambient">Start ambient</string>
+    <string name="pairing_tv_error">Could not start pairing host: %1$s</string>
 </resources>

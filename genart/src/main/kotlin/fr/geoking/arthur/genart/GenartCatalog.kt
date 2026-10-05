@@ -110,6 +110,8 @@ enum class GenartEngineId {
     InterferenceWash,
     NestedPack,
     SilkBloom,
+    CrossingSpotlights,
+    LampInDarkness,
 }
 
 enum class GenartQuality { Low, Medium, High }

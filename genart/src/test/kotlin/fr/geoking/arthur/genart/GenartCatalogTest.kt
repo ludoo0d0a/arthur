@@ -77,6 +77,8 @@ class GenartCatalogTest {
         assertEquals(GenartEngineId.InterferenceWash, GenartCatalog.engineForId("genart.interferencewash"))
         assertEquals(GenartEngineId.NestedPack, GenartCatalog.engineForId("genart.nestedpack"))
         assertEquals(GenartEngineId.SilkBloom, GenartCatalog.engineForId("genart.silkbloom"))
+        assertEquals(GenartEngineId.CrossingSpotlights, GenartCatalog.engineForId("genart.crossingspots"))
+        assertEquals(GenartEngineId.LampInDarkness, GenartCatalog.engineForId("genart.lampdark"))
     }
 
     @Test
@@ -145,5 +147,7 @@ class GenartCatalogTest {
         assertEquals("#106 - Interference Wash", GenartCatalog.entries().first { it.id == "genart.interferencewash" }.title)
         assertEquals("#107 - Nested Pack", GenartCatalog.entries().first { it.id == "genart.nestedpack" }.title)
         assertEquals("#108 - Silk Bloom", GenartCatalog.entries().first { it.id == "genart.silkbloom" }.title)
+        assertEquals("#109 - Crossing Spotlights", GenartCatalog.entries().first { it.id == "genart.crossingspots" }.title)
+        assertEquals("#110 - Lamp in Darkness", GenartCatalog.entries().first { it.id == "genart.lampdark" }.title)
     }
 }

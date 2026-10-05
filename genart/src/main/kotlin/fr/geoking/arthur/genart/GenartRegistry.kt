@@ -18,6 +18,8 @@ import fr.geoking.arthur.genart.engines.EnergyTendrilsEngine
 import fr.geoking.arthur.genart.engines.InterferenceWashEngine
 import fr.geoking.arthur.genart.engines.NestedPackEngine
 import fr.geoking.arthur.genart.engines.SilkBloomEngine
+import fr.geoking.arthur.genart.engines.CrossingSpotlightsEngine
+import fr.geoking.arthur.genart.engines.LampInDarknessEngine
 import fr.geoking.arthur.genart.engines.DriftingHalosEngine
 import fr.geoking.arthur.genart.engines.AntTrailsEngine
 import fr.geoking.arthur.genart.engines.AuroraWashEngine
@@ -127,6 +129,8 @@ import fr.geoking.arthur.genart.stills.EnergyTendrilsStill
 import fr.geoking.arthur.genart.stills.InterferenceWashStill
 import fr.geoking.arthur.genart.stills.NestedPackStill
 import fr.geoking.arthur.genart.stills.SilkBloomStill
+import fr.geoking.arthur.genart.stills.CrossingSpotlightsStill
+import fr.geoking.arthur.genart.stills.LampInDarknessStill
 import fr.geoking.arthur.genart.stills.DriftingHalosStill
 import fr.geoking.arthur.genart.stills.AntTrailsStill
 import fr.geoking.arthur.genart.stills.AuroraWashStill
@@ -1458,6 +1462,28 @@ object GenartRegistry {
             },
             renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
                 SilkBloomStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.CrossingSpotlights,
+            stableId = "genart.crossingspots",
+            title = "#109 - Crossing Spotlights",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                CrossingSpotlightsEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                CrossingSpotlightsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.LampInDarkness,
+            stableId = "genart.lampdark",
+            title = "#110 - Lamp in Darkness",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                LampInDarknessEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                LampInDarknessStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
             },
         ),
     )

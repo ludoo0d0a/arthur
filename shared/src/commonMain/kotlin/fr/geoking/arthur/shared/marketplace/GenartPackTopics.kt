@@ -132,6 +132,7 @@ object GenartPackTopics {
         GenartSource.DRIFTING_POLLEN,
         GenartSource.CANDLE_EMBER,
         GenartSource.WIND_CHIME,
+        GenartSource.LAMP_IN_DARKNESS,
     )
 
     val EARTH_IDS: Set<String> = setOf(
@@ -228,6 +229,8 @@ object GenartPackTopics {
         GenartSource.CLIFFORD_WASH,
         GenartSource.INTERFERENCE_WASH,
         GenartSource.NESTED_PACK,
+        GenartSource.CROSSING_SPOTLIGHTS,
+        GenartSource.LAMP_IN_DARKNESS,
     )
 
     val GEOMETRY_IDS: Set<String> = setOf(
@@ -248,6 +251,8 @@ object GenartPackTopics {
         GenartSource.PRISMATIC_SHADOWS,
         GenartSource.DRIFTING_HALOS,
         GenartSource.SPIRAL_MANDALA,
+        GenartSource.CROSSING_SPOTLIGHTS,
+        GenartSource.LAMP_IN_DARKNESS,
     )
 
     fun engineIdsForTopic(topicSuffix: String): Set<String> = when (topicSuffix) {

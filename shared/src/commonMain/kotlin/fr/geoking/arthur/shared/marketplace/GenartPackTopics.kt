@@ -59,6 +59,7 @@ object GenartPackTopics {
         GenartSource.SUNSHINE,
         GenartSource.STEAM_CURL,
         GenartSource.RAIN_ON_GLASS,
+        GenartSource.PANE_REFLECTIONS,
         GenartSource.WATERFALL_MIST,
         GenartSource.SOFT_WIND_STREAKS,
         GenartSource.BILLOWING_CLOTH,
@@ -118,6 +119,9 @@ object GenartPackTopics {
         GenartSource.WATERFALL_MIST,
         GenartSource.GERSTNER_OCEAN,
         GenartSource.SOFT_CAUSTICS,
+        GenartSource.GLASS_MARBLES,
+        GenartSource.PANE_REFLECTIONS,
+        GenartSource.MARBLE_CAUSTICS,
     )
 
     val LIFE_IDS: Set<String> = setOf(
@@ -237,6 +241,9 @@ object GenartPackTopics {
         GenartSource.LAMP_IN_DARKNESS,
         GenartSource.BILLOWING_CLOTH,
         GenartSource.WIND_CURTAINS,
+        GenartSource.GLASS_MARBLES,
+        GenartSource.PANE_REFLECTIONS,
+        GenartSource.MARBLE_CAUSTICS,
     )
 
     val GEOMETRY_IDS: Set<String> = setOf(
@@ -259,6 +266,8 @@ object GenartPackTopics {
         GenartSource.SPIRAL_MANDALA,
         GenartSource.CROSSING_SPOTLIGHTS,
         GenartSource.LAMP_IN_DARKNESS,
+        GenartSource.GLASS_MARBLES,
+        GenartSource.MARBLE_CAUSTICS,
     )
 
     fun engineIdsForTopic(topicSuffix: String): Set<String> = when (topicSuffix) {

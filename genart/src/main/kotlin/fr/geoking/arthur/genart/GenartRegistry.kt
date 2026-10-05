@@ -19,7 +19,10 @@ import fr.geoking.arthur.genart.engines.InterferenceWashEngine
 import fr.geoking.arthur.genart.engines.NestedPackEngine
 import fr.geoking.arthur.genart.engines.SilkBloomEngine
 import fr.geoking.arthur.genart.engines.CrossingSpotlightsEngine
+import fr.geoking.arthur.genart.engines.GlassMarblesEngine
 import fr.geoking.arthur.genart.engines.LampInDarknessEngine
+import fr.geoking.arthur.genart.engines.MarbleCausticsEngine
+import fr.geoking.arthur.genart.engines.PaneReflectionsEngine
 import fr.geoking.arthur.genart.engines.BillowingClothEngine
 import fr.geoking.arthur.genart.engines.WindCurtainsEngine
 import fr.geoking.arthur.genart.engines.DriftingHalosEngine
@@ -132,7 +135,10 @@ import fr.geoking.arthur.genart.stills.InterferenceWashStill
 import fr.geoking.arthur.genart.stills.NestedPackStill
 import fr.geoking.arthur.genart.stills.SilkBloomStill
 import fr.geoking.arthur.genart.stills.CrossingSpotlightsStill
+import fr.geoking.arthur.genart.stills.GlassMarblesStill
 import fr.geoking.arthur.genart.stills.LampInDarknessStill
+import fr.geoking.arthur.genart.stills.MarbleCausticsStill
+import fr.geoking.arthur.genart.stills.PaneReflectionsStill
 import fr.geoking.arthur.genart.stills.BillowingClothStill
 import fr.geoking.arthur.genart.stills.WindCurtainsStill
 import fr.geoking.arthur.genart.stills.DriftingHalosStill
@@ -1510,6 +1516,39 @@ object GenartRegistry {
             },
             renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
                 WindCurtainsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.GlassMarbles,
+            stableId = "genart.glassmarbles",
+            title = "#113 - Glass Marbles",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                GlassMarblesEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                GlassMarblesStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.PaneReflections,
+            stableId = "genart.panereflections",
+            title = "#114 - Pane Reflections",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                PaneReflectionsEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                PaneReflectionsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.MarbleCaustics,
+            stableId = "genart.marblecaustics",
+            title = "#115 - Marble Caustics",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                MarbleCausticsEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                MarbleCausticsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
             },
         ),
     )

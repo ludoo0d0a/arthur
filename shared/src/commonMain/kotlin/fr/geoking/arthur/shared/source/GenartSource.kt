@@ -130,6 +130,9 @@ class GenartSource(
         const val SILK_BLOOM = "genart.silkbloom"
         const val CROSSING_SPOTLIGHTS = "genart.crossingspots"
         const val LAMP_IN_DARKNESS = "genart.lampdark"
+        const val GLASS_MARBLES = "genart.glassmarbles"
+        const val PANE_REFLECTIONS = "genart.panereflections"
+        const val MARBLE_CAUSTICS = "genart.marblecaustics"
         const val BILLOWING_CLOTH = "genart.billowcloth"
         const val WIND_CURTAINS = "genart.windcurtains"
 
@@ -247,6 +250,9 @@ class GenartSource(
             entry(LAMP_IN_DARKNESS, "#110 - Lamp in Darkness"),
             entry(BILLOWING_CLOTH, "#111 - Billowing Cloth"),
             entry(WIND_CURTAINS, "#112 - Wind Curtains"),
+            entry(GLASS_MARBLES, "#113 - Glass Marbles"),
+            entry(PANE_REFLECTIONS, "#114 - Pane Reflections"),
+            entry(MARBLE_CAUSTICS, "#115 - Marble Caustics"),
         )
 
         private fun entry(id: String, title: String) = Artwork(

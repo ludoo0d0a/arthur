@@ -114,6 +114,9 @@ enum class GenartEngineId {
     LampInDarkness,
     BillowingCloth,
     WindCurtains,
+    GlassMarbles,
+    PaneReflections,
+    MarbleCaustics,
 }
 
 enum class GenartQuality { Low, Medium, High }

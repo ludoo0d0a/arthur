@@ -81,6 +81,9 @@ class GenartCatalogTest {
         assertEquals(GenartEngineId.LampInDarkness, GenartCatalog.engineForId("genart.lampdark"))
         assertEquals(GenartEngineId.BillowingCloth, GenartCatalog.engineForId("genart.billowcloth"))
         assertEquals(GenartEngineId.WindCurtains, GenartCatalog.engineForId("genart.windcurtains"))
+        assertEquals(GenartEngineId.GlassMarbles, GenartCatalog.engineForId("genart.glassmarbles"))
+        assertEquals(GenartEngineId.PaneReflections, GenartCatalog.engineForId("genart.panereflections"))
+        assertEquals(GenartEngineId.MarbleCaustics, GenartCatalog.engineForId("genart.marblecaustics"))
     }
 
     @Test

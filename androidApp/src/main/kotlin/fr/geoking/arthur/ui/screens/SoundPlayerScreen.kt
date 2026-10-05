@@ -26,13 +26,11 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -68,6 +66,7 @@ import org.koin.core.context.GlobalContext
 /**
  * Dedicated listen surface for a Sound pack: full-bleed cover + procedural playback.
  * Does not start Ambient slideshow or change the artwork pool.
+ * Volume is left to the system (phone/TV hardware); no in-app slider.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -87,8 +86,6 @@ fun SoundPlayerScreen(
 
     val context = LocalContext.current
     val settings = audioSettings
-    val volumeFlow = settings?.volume?.collectAsState()
-    val volume = volumeFlow?.value ?: 0.5f
 
     // Snapshot prefs to restore unless the user chooses "Use in Ambient".
     val previousEnabled = remember(settings) { settings?.enabled?.value ?: false }
@@ -226,48 +223,26 @@ fun SoundPlayerScreen(
                 }
             }
 
-            Row(
+            IconButton(
+                onClick = { isPlaying = !isPlaying },
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 24.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    .padding(top = 24.dp)
+                    .size(64.dp)
+                    .background(Color.White.copy(alpha = 0.18f), CircleShape)
+                    .testTag("sound_player_play_pause"),
             ) {
-                IconButton(
-                    onClick = { isPlaying = !isPlaying },
-                    modifier = Modifier
-                        .size(64.dp)
-                        .background(Color.White.copy(alpha = 0.18f), CircleShape)
-                        .testTag("sound_player_play_pause"),
-                ) {
-                    Icon(
-                        painter = painterResource(
-                            if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play_circle,
-                        ),
-                        contentDescription = if (isPlaying) {
-                            stringResource(R.string.car_pause)
-                        } else {
-                            stringResource(R.string.car_play)
-                        },
-                        tint = Color.White,
-                        modifier = Modifier.size(36.dp),
-                    )
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.settings_ambient_sound_volume),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Color.White.copy(alpha = 0.75f),
-                    )
-                    Slider(
-                        value = volume,
-                        onValueChange = { settings?.setVolume(it) },
-                        valueRange = 0f..1f,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("sound_player_volume"),
-                    )
-                }
+                Icon(
+                    painter = painterResource(
+                        if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play_circle,
+                    ),
+                    contentDescription = if (isPlaying) {
+                        stringResource(R.string.car_pause)
+                    } else {
+                        stringResource(R.string.car_play)
+                    },
+                    tint = Color.White,
+                    modifier = Modifier.size(36.dp),
+                )
             }
 
             Spacer(modifier = Modifier.height(8.dp))

@@ -1,6 +1,7 @@
 package fr.geoking.arthur.ui.screens
 
 import android.content.Intent
+import android.content.res.Configuration
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
@@ -72,6 +73,7 @@ import androidx.compose.ui.graphics.Color
 import android.content.ClipData
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.toClipEntry
@@ -312,6 +314,8 @@ fun SettingsScreen(
                     onEnabledChange = onAmbientSoundEnabledChange,
                     volume = ambientSoundVolume,
                     onVolumeChange = onAmbientSoundVolumeChange,
+                    showVolume = LocalConfiguration.current.uiMode and Configuration.UI_MODE_TYPE_MASK !=
+                        Configuration.UI_MODE_TYPE_TELEVISION,
                     character = ambientSoundCharacter,
                     onCharacterChange = onAmbientSoundCharacterChange,
                     stylePreference = ambientSoundStylePreference,
@@ -1331,6 +1335,7 @@ private fun AmbientSoundContent(
     onEnabledChange: (Boolean) -> Unit,
     volume: Float,
     onVolumeChange: (Float) -> Unit,
+    showVolume: Boolean = true,
     character: AmbientAudioCharacter,
     onCharacterChange: (AmbientAudioCharacter) -> Unit,
     stylePreference: MusicStyle?,
@@ -1400,19 +1405,21 @@ private fun AmbientSoundContent(
             )
         }
 
-        Text(
-            text = stringResource(R.string.settings_ambient_sound_volume),
-            style = MaterialTheme.typography.titleSmall,
-        )
-        Slider(
-            value = volume,
-            onValueChange = onVolumeChange,
-            valueRange = 0f..1f,
-            enabled = enabled,
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("settings_ambient_sound_volume"),
-        )
+        if (showVolume) {
+            Text(
+                text = stringResource(R.string.settings_ambient_sound_volume),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Slider(
+                value = volume,
+                onValueChange = onVolumeChange,
+                valueRange = 0f..1f,
+                enabled = enabled,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("settings_ambient_sound_volume"),
+            )
+        }
 
         Text(
             text = stringResource(R.string.settings_ambient_sound_character),

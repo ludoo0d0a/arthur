@@ -265,6 +265,14 @@ class ArthurCarAppTest {
                 "Sound player should use MediaPlaybackTemplate",
                 template is androidx.car.app.media.model.MediaPlaybackTemplate,
             )
+            val header = (template as androidx.car.app.media.model.MediaPlaybackTemplate).header
+            assertNotNull("Sound player should have a header", header)
+            assertEquals(
+                "Header end actions: change playlist / sound pack",
+                1,
+                header!!.endHeaderActions.size,
+            )
+            assertNotNull("Change-playlist should be icon-only", header.endHeaderActions[0].icon)
         } finally {
             org.koin.core.context.stopKoin()
         }
@@ -488,7 +496,7 @@ class ArthurCarAppTest {
     }
 
     @Test
-    fun mediaAmbientPlaybackScreen_headerHasNoNextActionAndAutoRotationDoesNotPause() {
+    fun mediaAmbientPlaybackScreen_headerHasSoundAndPlaylistActionsAndAutoRotationDoesNotPause() {
         val owner = object : androidx.lifecycle.LifecycleOwner {
             override val lifecycle = androidx.lifecycle.LifecycleRegistry(this)
         }
@@ -527,7 +535,14 @@ class ArthurCarAppTest {
             val template = screen.onGetTemplate() as androidx.car.app.media.model.MediaPlaybackTemplate
             val header = template.header
             assertNotNull("MediaPlaybackTemplate should have a header", header)
-            assertEquals("Header end actions should only contain sound toggle (1 action, no next action)", 1, header!!.endHeaderActions.size)
+            assertEquals(
+                "Header end actions: sound toggle + change playlist (≤2, ActionStrip successor)",
+                2,
+                header!!.endHeaderActions.size,
+            )
+            header.endHeaderActions.forEach { action ->
+                assertNotNull("Sound/playlist should be icon-only", action.icon)
+            }
 
             assertTrue("Initially should be playing", screen.isPlaying())
             screen.advance(+1, isAuto = true)

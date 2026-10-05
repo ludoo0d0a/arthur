@@ -198,6 +198,7 @@
     <string name="settings_ambient_sound_complexity_hint">More notes and ornaments</string>
     <string name="car_ambient_debug">Debug</string>
     <string name="car_ambient_sound_toggle">Toggle ambient sound</string>
+    <string name="car_change_playlist">Change playlist or sound pack</string>
     <string name="car_ambient_debug_subtitle">Rotation query &amp; cache metrics</string>
     <string name="car_ambient_debug_query">Query sources</string>
     <string name="car_ambient_debug_query_pending">Not launched yet</string>

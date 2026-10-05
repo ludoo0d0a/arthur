@@ -95,6 +95,26 @@ internal fun ambientNextAction(carContext: CarContext, onNext: () -> Unit): Acti
         .build()
 }
 
+/**
+ * Header end action (host may show it where ActionStrip used to sit): open pack /
+ * playlist browser so the driver can switch Ambient rotation or a Sound pack.
+ */
+internal fun ambientChangePlaylistAction(carContext: CarContext, onClick: () -> Unit): Action {
+    return Action.Builder()
+        .setIcon(
+            CarIcon.Builder(
+                IconCompat.createWithResource(carContext, R.drawable.ic_car_playlist),
+            ).build(),
+        )
+        .setOnClickListener { onClick() }
+        .build()
+}
+
+/** Push pack home so the user can pick another playlist / Sound pack. */
+internal fun Screen.openPackBrowser() {
+    screenManager.push(PackSelectionScreen(carContext))
+}
+
 class ArtworkPaneScreen(
     carContext: CarContext,
     val packSelection: PackSelection = PackSelection(PackFamily.Museum),
@@ -371,6 +391,7 @@ class MediaAmbientPlaybackScreen(
     private fun buildPlaybackTemplate(): Template {
         val title = carContext.getString(packSelection.family.titleRes)
         val soundOn = ambientAudioSettings.enabled.value
+        // Header end actions ≤ 2: sound toggle + change playlist (ActionStrip successor).
         val header = Header.Builder()
             .setTitle(title)
             .setStartHeaderAction(Action.BACK)
@@ -382,6 +403,9 @@ class MediaAmbientPlaybackScreen(
                         artworkId = rotation.current?.id,
                     )
                 },
+            )
+            .addEndHeaderAction(
+                ambientChangePlaylistAction(carContext) { openPackBrowser() },
             )
             .build()
         return MediaPlaybackTemplate.Builder()

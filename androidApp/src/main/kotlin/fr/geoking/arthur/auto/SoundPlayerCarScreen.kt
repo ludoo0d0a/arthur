@@ -24,6 +24,7 @@ import fr.geoking.arthur.source.AmbientAudioCharacter
 import fr.geoking.arthur.source.AmbientAudioSettings
 import fr.geoking.arthur.ui.components.AudioPackTopic
 import fr.geoking.arthur.ui.components.PackCovers
+import fr.geoking.arthur.ui.components.PackFamily
 import fr.geoking.arthur.ui.components.PackSelection
 import fr.geoking.arthur.ui.components.audioPackTopicOrNull
 import fr.geoking.arthur.ui.components.labelRes
@@ -187,9 +188,15 @@ class SoundPlayerCarScreen(
     }
 
     private fun buildPlaybackTemplate(): Template {
+        // Header end action opens Sound sub-packs (playlist / pack switch).
         val header = Header.Builder()
             .setTitle(carContext.getString(topic.labelRes))
             .setStartHeaderAction(Action.BACK)
+            .addEndHeaderAction(
+                ambientChangePlaylistAction(carContext) {
+                    screenManager.push(SubPackSelectionScreen(carContext, PackFamily.Sound))
+                },
+            )
             .build()
         return MediaPlaybackTemplate.Builder()
             .setHeader(header)

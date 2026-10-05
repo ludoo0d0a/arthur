@@ -130,6 +130,8 @@ class GenartSource(
         const val SILK_BLOOM = "genart.silkbloom"
         const val CROSSING_SPOTLIGHTS = "genart.crossingspots"
         const val LAMP_IN_DARKNESS = "genart.lampdark"
+        const val BILLOWING_CLOTH = "genart.billowcloth"
+        const val WIND_CURTAINS = "genart.windcurtains"
 
         fun defaultCatalog(): List<Artwork> = listOf(
             entry(PARTICLES, "#1 - Drifting Particles"),
@@ -243,6 +245,8 @@ class GenartSource(
             entry(SILK_BLOOM, "#108 - Silk Bloom"),
             entry(CROSSING_SPOTLIGHTS, "#109 - Crossing Spotlights"),
             entry(LAMP_IN_DARKNESS, "#110 - Lamp in Darkness"),
+            entry(BILLOWING_CLOTH, "#111 - Billowing Cloth"),
+            entry(WIND_CURTAINS, "#112 - Wind Curtains"),
         )
 
         private fun entry(id: String, title: String) = Artwork(

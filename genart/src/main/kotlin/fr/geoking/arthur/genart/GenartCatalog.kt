@@ -112,6 +112,8 @@ enum class GenartEngineId {
     SilkBloom,
     CrossingSpotlights,
     LampInDarkness,
+    BillowingCloth,
+    WindCurtains,
 }
 
 enum class GenartQuality { Low, Medium, High }

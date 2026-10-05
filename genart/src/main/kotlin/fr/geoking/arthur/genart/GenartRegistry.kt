@@ -20,6 +20,8 @@ import fr.geoking.arthur.genart.engines.NestedPackEngine
 import fr.geoking.arthur.genart.engines.SilkBloomEngine
 import fr.geoking.arthur.genart.engines.CrossingSpotlightsEngine
 import fr.geoking.arthur.genart.engines.LampInDarknessEngine
+import fr.geoking.arthur.genart.engines.BillowingClothEngine
+import fr.geoking.arthur.genart.engines.WindCurtainsEngine
 import fr.geoking.arthur.genart.engines.DriftingHalosEngine
 import fr.geoking.arthur.genart.engines.AntTrailsEngine
 import fr.geoking.arthur.genart.engines.AuroraWashEngine
@@ -131,6 +133,8 @@ import fr.geoking.arthur.genart.stills.NestedPackStill
 import fr.geoking.arthur.genart.stills.SilkBloomStill
 import fr.geoking.arthur.genart.stills.CrossingSpotlightsStill
 import fr.geoking.arthur.genart.stills.LampInDarknessStill
+import fr.geoking.arthur.genart.stills.BillowingClothStill
+import fr.geoking.arthur.genart.stills.WindCurtainsStill
 import fr.geoking.arthur.genart.stills.DriftingHalosStill
 import fr.geoking.arthur.genart.stills.AntTrailsStill
 import fr.geoking.arthur.genart.stills.AuroraWashStill
@@ -1484,6 +1488,28 @@ object GenartRegistry {
             },
             renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
                 LampInDarknessStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.BillowingCloth,
+            stableId = "genart.billowcloth",
+            title = "#111 - Billowing Cloth",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                BillowingClothEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                BillowingClothStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.WindCurtains,
+            stableId = "genart.windcurtains",
+            title = "#112 - Wind Curtains",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                WindCurtainsEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                WindCurtainsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
             },
         ),
     )

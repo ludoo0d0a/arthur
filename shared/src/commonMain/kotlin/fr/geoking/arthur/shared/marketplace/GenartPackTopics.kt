@@ -39,6 +39,8 @@ object GenartPackTopics {
         GenartSource.DIAMOND_WEAVE,
         GenartSource.NESTED_PACK,
         GenartSource.CHROMATIC_BLOBS,
+        GenartSource.BILLOWING_CLOTH,
+        GenartSource.WIND_CURTAINS,
     )
 
     val WEATHER_IDS: Set<String> = setOf(
@@ -59,6 +61,8 @@ object GenartPackTopics {
         GenartSource.RAIN_ON_GLASS,
         GenartSource.WATERFALL_MIST,
         GenartSource.SOFT_WIND_STREAKS,
+        GenartSource.BILLOWING_CLOTH,
+        GenartSource.WIND_CURTAINS,
         GenartSource.DAY_NIGHT_WASH,
         GenartSource.FROST_CRYSTALS,
         GenartSource.ECLIPSE_CORONA,
@@ -231,6 +235,8 @@ object GenartPackTopics {
         GenartSource.NESTED_PACK,
         GenartSource.CROSSING_SPOTLIGHTS,
         GenartSource.LAMP_IN_DARKNESS,
+        GenartSource.BILLOWING_CLOTH,
+        GenartSource.WIND_CURTAINS,
     )
 
     val GEOMETRY_IDS: Set<String> = setOf(

@@ -79,6 +79,8 @@ class GenartCatalogTest {
         assertEquals(GenartEngineId.SilkBloom, GenartCatalog.engineForId("genart.silkbloom"))
         assertEquals(GenartEngineId.CrossingSpotlights, GenartCatalog.engineForId("genart.crossingspots"))
         assertEquals(GenartEngineId.LampInDarkness, GenartCatalog.engineForId("genart.lampdark"))
+        assertEquals(GenartEngineId.BillowingCloth, GenartCatalog.engineForId("genart.billowcloth"))
+        assertEquals(GenartEngineId.WindCurtains, GenartCatalog.engineForId("genart.windcurtains"))
     }
 
     @Test
@@ -149,5 +151,7 @@ class GenartCatalogTest {
         assertEquals("#108 - Silk Bloom", GenartCatalog.entries().first { it.id == "genart.silkbloom" }.title)
         assertEquals("#109 - Crossing Spotlights", GenartCatalog.entries().first { it.id == "genart.crossingspots" }.title)
         assertEquals("#110 - Lamp in Darkness", GenartCatalog.entries().first { it.id == "genart.lampdark" }.title)
+        assertEquals("#111 - Billowing Cloth", GenartCatalog.entries().first { it.id == "genart.billowcloth" }.title)
+        assertEquals("#112 - Wind Curtains", GenartCatalog.entries().first { it.id == "genart.windcurtains" }.title)
     }
 }

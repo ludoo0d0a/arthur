@@ -315,7 +315,7 @@ class MainActivity : ComponentActivity() {
                                 onDismiss = { inAppUpdateHelper.resetCheckFeedback() },
                             )
                         }
-                        CheckFeedback.None, CheckFeedback.Checking, CheckFeedback.NoUpdate, null -> Unit
+                        CheckFeedback.None -> Unit
                     }
                 }
             }

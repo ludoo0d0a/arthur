@@ -25,6 +25,7 @@ internal object RainOnGlassStill {
         palette: AnimationPalette,
     ) {
         val rnd = Random(generation)
+        val intensity = rnd.nextFloat() // 0 light → 1 heavy, matches live engine
         val w = size.toFloat()
         val h = size.toFloat()
         paint.shader = LinearGradient(
@@ -58,20 +59,57 @@ internal object RainOnGlassStill {
             paint.shader = null
         }
 
-        for (i in 0 until 16) {
+        val streakN = ((4 + intensity * 12).toInt()).coerceAtLeast(if (intensity > 0.55f) 2 else 0)
+        for (i in 0 until streakN) {
+            val x = rnd.nextFloat() * w
+            val y = rnd.nextFloat() * h
+            val len = (0.04f + rnd.nextFloat() * 0.1f) * h
+            val thickness = 0.8f + rnd.nextFloat() * 1.4f
+            val tint = palette.colorAt(i)
+            val r = (Color.red(tint) + 220) / 2
+            val g = (Color.green(tint) + 235) / 2
+            val b = (Color.blue(tint) + 250) / 2
+            val alpha = ((0.08f + rnd.nextFloat() * 0.14f) * intensity * dim * 255).toInt().coerceIn(0, 255)
+            paint.shader = null
+            paint.color = Color.argb(alpha, r, g, b)
+            paint.strokeWidth = thickness
+            paint.strokeCap = Paint.Cap.ROUND
+            paint.style = Paint.Style.STROKE
+            canvas.drawLine(x, y, x, y + len, paint)
+            paint.style = Paint.Style.FILL
+        }
+
+        val dropN = (6 + intensity * 18).toInt().coerceIn(4, 28)
+        for (i in 0 until dropN) {
             val x0 = rnd.nextFloat()
             val y0 = rnd.nextFloat()
-            val baseRadiusFrac = 0.018f + rnd.nextFloat() * 0.027f
+            val baseRadiusFrac = 0.014f + rnd.nextFloat() * 0.024f
             val growAmpFrac = 0.006f + rnd.nextFloat() * 0.012f
             val growFreq = 0.05f + rnd.nextFloat() * 0.11f
             val growPhase = rnd.nextFloat()
+            val runDistFrac = (0.03f + intensity * 0.18f) * rnd.nextFloat()
             val alphaBase = 0.32f + rnd.nextFloat() * 0.28f
             val highlightAngle = rnd.nextFloat() * 2f * PI.toFloat()
 
             val grow = (sin(drift * growFreq + growPhase * 2f * PI.toFloat()) + 1f) / 2f
             val radius = (baseRadiusFrac + growAmpFrac * grow) * w
             val x = x0 * w
-            val y = y0 * h
+            val y = y0 * h + runDistFrac * h * 0.55f
+
+            if (runDistFrac > 0.02f) {
+                val tint = palette.colorAt(i)
+                val r = (Color.red(tint) + 220) / 2
+                val g = (Color.green(tint) + 235) / 2
+                val b = (Color.blue(tint) + 250) / 2
+                val trailAlpha = (alphaBase * 0.28f * dim * 255).toInt().coerceIn(0, 255)
+                paint.shader = null
+                paint.color = Color.argb(trailAlpha, r, g, b)
+                paint.strokeWidth = radius * 0.5f
+                paint.strokeCap = Paint.Cap.ROUND
+                paint.style = Paint.Style.STROKE
+                canvas.drawLine(x, y - runDistFrac * h * 0.55f, x, y - radius * 0.3f, paint)
+                paint.style = Paint.Style.FILL
+            }
 
             val tint = palette.colorAt(i)
             val r = (Color.red(tint) + 220) / 2

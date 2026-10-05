@@ -17,9 +17,11 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
+import fr.geoking.arthur.genart.lerp
 import fr.geoking.arthur.genart.phase01
 import fr.geoking.arthur.genart.qualityCount
 import fr.geoking.arthur.genart.seededRange
@@ -27,8 +29,13 @@ import fr.geoking.arthur.genart.seededUnit
 import fr.geoking.arthur.genart.sin01
 import kotlin.math.PI
 import kotlin.math.sin
+import kotlin.random.Random
 
-/** Condensation droplets on glass over a softly blurred backdrop — calm, car-safe. */
+/**
+ * Condensation droplets on glass over a softly blurred backdrop.
+ * Each composition rolls a rain intensity (light → heavy) that scales bead count,
+ * how often drops run, and how far the rivulets travel — calm, car-safe.
+ */
 @Composable
 internal fun RainOnGlassEngine(
     isActive: Boolean,
@@ -38,31 +45,65 @@ internal fun RainOnGlassEngine(
     speed: Float,
     modifier: Modifier = Modifier,
 ) {
-    val count = qualityCount(quality, low = 6, medium = 10, high = 16)
-    val droplets = remember(count) {
+    // 0 = light drizzle on glass, 1 = heavy sheet of running drops.
+    val intensity = remember { Random.nextFloat() }
+    val baseCount = qualityCount(quality, low = 6, medium = 10, high = 16)
+    val count = (baseCount * lerp(0.4f, 1.85f, intensity)).toInt().coerceAtLeast(3)
+    val streakCount = (qualityCount(quality, low = 4, medium = 8, high = 14) * intensity)
+        .toInt()
+        .coerceAtLeast(if (intensity > 0.55f) 2 else 0)
+
+    val droplets = remember(count, intensity) {
         List(count) { i ->
-            DropletSeed(
+            RainOnGlassDropletSeed(
                 x0 = seededUnit(i * 17 + 3),
                 y0 = seededUnit(i * 29 + 7),
-                baseRadiusFrac = seededRange(i * 41 + 11, 0.018f, 0.045f),
+                baseRadiusFrac = seededRange(
+                    i * 41 + 11,
+                    lerp(0.022f, 0.014f, intensity),
+                    lerp(0.04f, 0.038f, intensity),
+                ),
                 growAmpFrac = seededRange(i * 53 + 13, 0.006f, 0.018f),
                 growFreq = seededRange(i * 67 + 19, 0.05f, 0.16f),
                 growPhase = seededUnit(i * 71 + 41),
-                runFreq = seededRange(i * 79 + 23, 0.03f, 0.09f),
+                runFreq = seededRange(
+                    i * 79 + 23,
+                    lerp(0.02f, 0.06f, intensity),
+                    lerp(0.06f, 0.16f, intensity),
+                ),
                 runPhase = seededUnit(i * 83 + 47),
-                runDistFrac = seededRange(i * 89 + 29, 0.05f, 0.14f),
+                runDistFrac = seededRange(
+                    i * 89 + 29,
+                    lerp(0.03f, 0.1f, intensity),
+                    lerp(0.08f, 0.28f, intensity),
+                ),
                 alphaBase = seededRange(i * 97 + 31, 0.32f, 0.6f),
                 highlightAngle = seededRange(i * 101 + 53, 0f, 2f * PI.toFloat()),
                 colorIndex = i,
             )
         }
     }
+    val streaks = remember(streakCount, intensity) {
+        List(streakCount) { i ->
+            RainOnGlassStreakSeed(
+                x0 = seededUnit(i * 23 + 5),
+                y0 = seededUnit(i * 37 + 11),
+                fallSpeed = seededRange(i * 47 + 13, lerp(0.35f, 0.7f, intensity), lerp(0.7f, 1.4f, intensity)),
+                lengthFrac = seededRange(i * 59 + 17, 0.04f, 0.12f),
+                thickness = seededRange(i * 73 + 19, 0.8f, 2.2f),
+                alphaBase = seededRange(i * 89 + 29, 0.08f, 0.22f),
+                colorIndex = i,
+            )
+        }
+    }
+
+    val cycleMs = (lerp(70000f, 38000f, intensity) / speed.coerceAtLeast(0.2f)).toInt()
     val transition = rememberInfiniteTransition(label = "rain_on_glass")
     val t by transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((60000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween(cycleMs, easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "rain_on_glass_t",
@@ -102,6 +143,23 @@ internal fun RainOnGlassEngine(
             val h = size.height
             val time = phase01(t)
             val dim = if (isActive) 1f else 0.6f
+
+            streaks.forEach { streak ->
+                val fall = phase01(streak.y0 + streak.fallSpeed * time)
+                val y = fall * h
+                val x = streak.x0 * w
+                val len = streak.lengthFrac * h
+                val base = TonalPalette.mix(Color(0xFFDCEBFA), TonalPalette.pick(paletteColors, streak.colorIndex), 0.15f)
+                val tint = TonalPalette.brightness(base, brightness)
+                drawLine(
+                    color = TonalPalette.withAlpha(tint, streak.alphaBase * dim * intensity),
+                    start = Offset(x, y),
+                    end = Offset(x, y + len),
+                    strokeWidth = streak.thickness,
+                    cap = StrokeCap.Round,
+                )
+            }
+
             droplets.forEach { drop ->
                 val grow = sin01(time * 2f * PI.toFloat() * drop.growFreq + drop.growPhase * 2f * PI.toFloat())
                 val radius = (drop.baseRadiusFrac + drop.growAmpFrac * grow) * w
@@ -122,6 +180,7 @@ internal fun RainOnGlassEngine(
                         start = Offset(x, y - slideDist),
                         end = Offset(x, y - radius * 0.3f),
                         strokeWidth = radius * 0.5f,
+                        cap = StrokeCap.Round,
                     )
                 }
 
@@ -162,7 +221,7 @@ internal fun RainOnGlassEngine(
     }
 }
 
-private data class DropletSeed(
+private data class RainOnGlassDropletSeed(
     val x0: Float,
     val y0: Float,
     val baseRadiusFrac: Float,
@@ -174,5 +233,15 @@ private data class DropletSeed(
     val runDistFrac: Float,
     val alphaBase: Float,
     val highlightAngle: Float,
+    val colorIndex: Int,
+)
+
+private data class RainOnGlassStreakSeed(
+    val x0: Float,
+    val y0: Float,
+    val fallSpeed: Float,
+    val lengthFrac: Float,
+    val thickness: Float,
+    val alphaBase: Float,
     val colorIndex: Int,
 )

@@ -17,6 +17,7 @@ import fr.geoking.arthur.genart.engines.PlasmaNovaEngine
 import fr.geoking.arthur.genart.engines.EnergyTendrilsEngine
 import fr.geoking.arthur.genart.engines.InterferenceWashEngine
 import fr.geoking.arthur.genart.engines.NestedPackEngine
+import fr.geoking.arthur.genart.engines.SilkBloomEngine
 import fr.geoking.arthur.genart.engines.DriftingHalosEngine
 import fr.geoking.arthur.genart.engines.AntTrailsEngine
 import fr.geoking.arthur.genart.engines.AuroraWashEngine
@@ -125,6 +126,7 @@ import fr.geoking.arthur.genart.stills.PlasmaNovaStill
 import fr.geoking.arthur.genart.stills.EnergyTendrilsStill
 import fr.geoking.arthur.genart.stills.InterferenceWashStill
 import fr.geoking.arthur.genart.stills.NestedPackStill
+import fr.geoking.arthur.genart.stills.SilkBloomStill
 import fr.geoking.arthur.genart.stills.DriftingHalosStill
 import fr.geoking.arthur.genart.stills.AntTrailsStill
 import fr.geoking.arthur.genart.stills.AuroraWashStill
@@ -1445,6 +1447,17 @@ object GenartRegistry {
             },
             renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
                 NestedPackStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.SilkBloom,
+            stableId = "genart.silkbloom",
+            title = "#108 - Silk Bloom",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                SilkBloomEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                SilkBloomStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
             },
         ),
     )

@@ -109,6 +109,7 @@ enum class GenartEngineId {
     EnergyTendrils,
     InterferenceWash,
     NestedPack,
+    SilkBloom,
 }
 
 enum class GenartQuality { Low, Medium, High }

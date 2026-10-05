@@ -76,6 +76,7 @@ class GenartCatalogTest {
         assertEquals(GenartEngineId.EnergyTendrils, GenartCatalog.engineForId("genart.energytendrils"))
         assertEquals(GenartEngineId.InterferenceWash, GenartCatalog.engineForId("genart.interferencewash"))
         assertEquals(GenartEngineId.NestedPack, GenartCatalog.engineForId("genart.nestedpack"))
+        assertEquals(GenartEngineId.SilkBloom, GenartCatalog.engineForId("genart.silkbloom"))
     }
 
     @Test
@@ -143,5 +144,6 @@ class GenartCatalogTest {
         assertEquals("#105 - Energy Tendrils", GenartCatalog.entries().first { it.id == "genart.energytendrils" }.title)
         assertEquals("#106 - Interference Wash", GenartCatalog.entries().first { it.id == "genart.interferencewash" }.title)
         assertEquals("#107 - Nested Pack", GenartCatalog.entries().first { it.id == "genart.nestedpack" }.title)
+        assertEquals("#108 - Silk Bloom", GenartCatalog.entries().first { it.id == "genart.silkbloom" }.title)
     }
 }

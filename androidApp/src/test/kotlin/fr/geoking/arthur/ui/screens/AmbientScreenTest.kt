@@ -70,4 +70,41 @@ class AmbientScreenTest {
             stopKoin()
         }
     }
+
+    @Test
+    @Config(qualifiers = "television")
+    fun ambientScreen_onTv_whenSoundOff_displaysBottomMuteToggle() {
+        stopKoin()
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val audioSettings = AmbientAudioSettings(context)
+        audioSettings.setEnabled(false)
+        startKoin {
+            modules(
+                module {
+                    single { audioSettings }
+                },
+            )
+        }
+        try {
+            composeTestRule.setContent {
+                ArthurTheme {
+                    AmbientScreenContent(
+                        title = "Ambient TV Test",
+                        artwork = sampleArtwork,
+                        rotationPool = listOf(
+                            sampleArtwork,
+                            sampleArtwork.copy(id = "test-art-2", title = "Artwork 2"),
+                        ),
+                        isActive = true,
+                    )
+                }
+            }
+
+            composeTestRule.onNodeWithTag("ambient_sound_toggle").assertExists()
+            composeTestRule.onNodeWithTag("ambient_details").assertExists()
+            composeTestRule.onNodeWithTag("ambient_media_play_pause").assertDoesNotExist()
+        } finally {
+            stopKoin()
+        }
+    }
 }

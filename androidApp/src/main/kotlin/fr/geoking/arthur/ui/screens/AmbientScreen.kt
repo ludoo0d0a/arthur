@@ -106,11 +106,9 @@ import kotlin.math.abs
  *   Parent should append new ids to [rotationPool].
  *
  * Navigation while rotating:
- * - Sound on (phone & TV): bottom icons — phone: play/pause + mute + info; TV: mute + info.
- *   Phone keeps swipe; TV focuses mute (OK toggles sound). D-pad left/right skips,
- *   up opens info. Media keys still work as shortcuts.
- * - Sound off on TV: D-pad left/right skips; MediaPlayPause toggles rotation; up = info
- * - Sound off on phone: bottom play/pause + mute (+ info); swipe left/right skips
+ * - Phone & TV: bottom mute always visible (toggles sound on/off). Phone also shows
+ *   play/pause (+ info); TV focuses mute (OK toggles sound). D-pad left/right skips,
+ *   up opens info. Media keys still work as shortcuts. Phone keeps swipe.
  * - Phone chrome stays above the nav bar; quotes respect the status bar.
  *
  * Display interval starts only after the still is ready (loader time excluded).
@@ -213,9 +211,8 @@ fun AmbientScreenContent(
         runCatching { GlobalContext.get().get<AmbientAudioSettings>() }.getOrNull()
     }
     val audioEnabled = ambientAudioSettings?.enabled?.collectAsState()?.value == true
-    // audioEnabled implies settings are present (null settings → audioEnabled is false).
-    val bottomAudioSettings = ambientAudioSettings?.takeIf { audioEnabled }
-    val showBottomChrome = bottomAudioSettings != null
+    // Mute stays at the bottom whenever audio settings are available (sound on or off).
+    val showBottomChrome = ambientAudioSettings != null
     val tvUsesRootKeys = isTelevision && shouldRotate && !showBottomChrome
     val context = LocalContext.current
     val zenAudio = remember(ambientAudioSettings) {
@@ -489,9 +486,8 @@ fun AmbientScreenContent(
                 }
             }
         }
-        val phoneBottomControls = !isTelevision && ambientAudioSettings != null
         val reserveBottomControls =
-            showBottomChrome || phoneBottomControls || (shouldRotate && !isTelevision)
+            showBottomChrome || (shouldRotate && !isTelevision)
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
@@ -564,7 +560,7 @@ fun AmbientScreenContent(
                     },
             )
         }
-        val showTransportChrome = shouldRotate || showBottomChrome || phoneBottomControls
+        val showTransportChrome = shouldRotate || showBottomChrome
         if (showTransportChrome) {
             val currentIndex = remember(shown?.id, rotatePool) {
                 val idx = rotatePool.indexOfFirst { it.id == shown?.id }
@@ -587,7 +583,7 @@ fun AmbientScreenContent(
                         modifier = Modifier.testTag("ambient_counter"),
                     )
                 }
-                if (bottomAudioSettings != null) {
+                if (ambientAudioSettings != null) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -599,8 +595,8 @@ fun AmbientScreenContent(
                             )
                         }
                         AmbientSoundToggleButton(
-                            enabled = true,
-                            onToggle = { bottomAudioSettings.setEnabled(false) },
+                            enabled = audioEnabled,
+                            onToggle = { ambientAudioSettings.setEnabled(!audioEnabled) },
                             focusRequester = if (isTelevision) soundFocusRequester else null,
                             onTvKeyEvent = if (isTelevision) {
                                 { key ->
@@ -643,28 +639,6 @@ fun AmbientScreenContent(
                             )
                         }
                     }
-                } else if (phoneBottomControls && ambientAudioSettings != null) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        if (shouldRotate) {
-                            AmbientPlayPauseButton(
-                                isPlaying = isPlaying,
-                                onToggle = { isPlaying = !isPlaying },
-                            )
-                        }
-                        AmbientSoundToggleButton(
-                            enabled = false,
-                            onToggle = { ambientAudioSettings.setEnabled(true) },
-                        )
-                        if (canOpenDetails) {
-                            AmbientDetailsButton(
-                                onClick = { showDetails = true },
-                                focusable = true,
-                            )
-                        }
-                    }
                 } else if (!isTelevision && shouldRotate) {
                     AmbientPlayPauseButton(
                         isPlaying = isPlaying,
@@ -673,7 +647,7 @@ fun AmbientScreenContent(
                 }
             }
         }
-        if (canOpenDetails && !showBottomChrome && !phoneBottomControls) {
+        if (canOpenDetails && !showBottomChrome) {
             AmbientDetailsButton(
                 onClick = { showDetails = true },
                 focusable = !isTelevision,
@@ -771,9 +745,7 @@ private fun AmbientSoundToggleButton(
     focusRequester: FocusRequester? = null,
     onTvKeyEvent: ((Key) -> Boolean)? = null,
 ) {
-    val description = stringResource(
-        if (enabled) R.string.settings_ambient_sound_enable else R.string.cd_media_player,
-    )
+    val description = stringResource(R.string.car_ambient_mute)
     val interactionSource = remember { MutableInteractionSource() }
     val focused by interactionSource.collectIsFocusedAsState()
     Box(

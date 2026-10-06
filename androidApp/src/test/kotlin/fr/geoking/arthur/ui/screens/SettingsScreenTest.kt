@@ -6,6 +6,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import android.content.Context
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
 import fr.geoking.arthur.R
 import fr.geoking.arthur.phone.theme.ArthurTheme
@@ -157,5 +158,59 @@ class SettingsScreenTest {
         composeTestRule.onNodeWithTag("dev_simulate_all_packs").assertIsDisplayed()
         composeTestRule.onNodeWithTag("dev_simulate_all_packs").performClick()
         assertEquals(true, simulateAllPacksState)
+    }
+
+    @Test
+    fun ambientSound_onPhone_showsVolumeAndComplexitySliders() {
+        composeTestRule.setContent {
+            ArthurTheme {
+                SettingsScreen(
+                    onDismiss = {},
+                    initialScreenStack = listOf(SettingsScreenPage.AmbientSound),
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithTag("settings_ambient_sound_volume")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithTag("settings_ambient_sound_complexity")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithTag("settings_ambient_sound_complexity_levels").assertDoesNotExist()
+    }
+
+    @Test
+    @Config(qualifiers = "television")
+    fun ambientSound_onTv_usesDiscreteComplexityAndNoSliders() {
+        var complexity = 0.55f
+        composeTestRule.setContent {
+            ArthurTheme {
+                SettingsScreen(
+                    onDismiss = {},
+                    ambientSoundEnabled = true,
+                    ambientSoundComplexity = complexity,
+                    onAmbientSoundComplexityChange = { complexity = it },
+                    initialScreenStack = listOf(SettingsScreenPage.AmbientSound),
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithTag("settings_ambient_sound_volume").assertDoesNotExist()
+        composeTestRule.onNodeWithTag("settings_ambient_sound_complexity").assertDoesNotExist()
+        composeTestRule.onNodeWithTag("settings_ambient_sound_complexity_levels")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithTag("settings_ambient_sound_complexity_high")
+            .performScrollTo()
+            .performClick()
+        assertEquals(0.9f, complexity, 0.001f)
+    }
+
+    @Test
+    fun nearestAmbientComplexityLevel_snapsToClosestStep() {
+        assertEquals(0.25f, nearestAmbientComplexityLevel(0.1f), 0.001f)
+        assertEquals(0.55f, nearestAmbientComplexityLevel(0.5f), 0.001f)
+        assertEquals(0.9f, nearestAmbientComplexityLevel(0.8f), 0.001f)
     }
 }

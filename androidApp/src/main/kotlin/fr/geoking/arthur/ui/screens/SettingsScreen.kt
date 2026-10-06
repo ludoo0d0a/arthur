@@ -311,21 +311,27 @@ fun SettingsScreen(
                     selected = quoteProvider,
                     onSelect = onQuoteProviderChange,
                 )
-                SettingsScreenPage.AmbientSound -> AmbientSoundContent(
-                    enabled = ambientSoundEnabled,
-                    onEnabledChange = onAmbientSoundEnabledChange,
-                    volume = ambientSoundVolume,
-                    onVolumeChange = onAmbientSoundVolumeChange,
-                    showVolume = LocalConfiguration.current.uiMode and Configuration.UI_MODE_TYPE_MASK !=
-                        Configuration.UI_MODE_TYPE_TELEVISION,
-                    character = ambientSoundCharacter,
-                    onCharacterChange = onAmbientSoundCharacterChange,
-                    stylePreference = ambientSoundStylePreference,
-                    onStylePreferenceChange = onAmbientSoundStylePreferenceChange,
-                    complexity = ambientSoundComplexity,
-                    onComplexityChange = onAmbientSoundComplexityChange,
-                    onOpenMarketplace = onOpenMarketplace,
-                )
+                SettingsScreenPage.AmbientSound -> {
+                    val isTelevision =
+                        LocalConfiguration.current.uiMode and Configuration.UI_MODE_TYPE_MASK ==
+                            Configuration.UI_MODE_TYPE_TELEVISION
+                    AmbientSoundContent(
+                        enabled = ambientSoundEnabled,
+                        onEnabledChange = onAmbientSoundEnabledChange,
+                        volume = ambientSoundVolume,
+                        onVolumeChange = onAmbientSoundVolumeChange,
+                        // TV: system volume + no sliders (D-pad). Phone keeps continuous sliders.
+                        showVolume = !isTelevision,
+                        useDiscreteComplexity = isTelevision,
+                        character = ambientSoundCharacter,
+                        onCharacterChange = onAmbientSoundCharacterChange,
+                        stylePreference = ambientSoundStylePreference,
+                        onStylePreferenceChange = onAmbientSoundStylePreferenceChange,
+                        complexity = ambientSoundComplexity,
+                        onComplexityChange = onAmbientSoundComplexityChange,
+                        onOpenMarketplace = onOpenMarketplace,
+                    )
+                }
                 SettingsScreenPage.DeviantArtCredentials -> DeviantArtCredentialsContent(
                     username = deviantArtUsername,
                     password = deviantArtPassword,
@@ -1353,6 +1359,7 @@ private fun AmbientSoundContent(
     volume: Float,
     onVolumeChange: (Float) -> Unit,
     showVolume: Boolean = true,
+    useDiscreteComplexity: Boolean = false,
     character: AmbientAudioCharacter,
     onCharacterChange: (AmbientAudioCharacter) -> Unit,
     stylePreference: MusicStyle?,
@@ -1529,17 +1536,65 @@ private fun AmbientSoundContent(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Slider(
-            value = complexity,
-            onValueChange = onComplexityChange,
-            valueRange = 0f..1f,
-            enabled = enabled,
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("settings_ambient_sound_complexity"),
-        )
+        if (useDiscreteComplexity) {
+            val selectedLevel = nearestAmbientComplexityLevel(complexity)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("settings_ambient_sound_complexity_levels"),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                AmbientComplexityLevels.forEach { level ->
+                    FilterChip(
+                        selected = selectedLevel == level.value,
+                        onClick = { onComplexityChange(level.value) },
+                        enabled = enabled,
+                        label = { Text(stringResource(level.labelRes)) },
+                        modifier = Modifier.testTag(level.testTag),
+                    )
+                }
+            }
+        } else {
+            Slider(
+                value = complexity,
+                onValueChange = onComplexityChange,
+                valueRange = 0f..1f,
+                enabled = enabled,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("settings_ambient_sound_complexity"),
+            )
+        }
     }
 }
+
+private data class AmbientComplexityLevel(
+    val value: Float,
+    val labelRes: Int,
+    val testTag: String,
+)
+
+/** Discrete complexity steps for TV (no Slider / D-pad). */
+private val AmbientComplexityLevels = listOf(
+    AmbientComplexityLevel(
+        value = 0.25f,
+        labelRes = R.string.settings_ambient_sound_complexity_low,
+        testTag = "settings_ambient_sound_complexity_low",
+    ),
+    AmbientComplexityLevel(
+        value = 0.55f,
+        labelRes = R.string.settings_ambient_sound_complexity_medium,
+        testTag = "settings_ambient_sound_complexity_medium",
+    ),
+    AmbientComplexityLevel(
+        value = 0.9f,
+        labelRes = R.string.settings_ambient_sound_complexity_high,
+        testTag = "settings_ambient_sound_complexity_high",
+    ),
+)
+
+internal fun nearestAmbientComplexityLevel(value: Float): Float =
+    AmbientComplexityLevels.minBy { kotlin.math.abs(it.value - value) }.value
 
 @Composable
 private fun quoteProviderLabel(provider: QuoteProvider): String = when (provider) {

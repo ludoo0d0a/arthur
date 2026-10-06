@@ -196,6 +196,9 @@
     <string name="settings_ambient_sound_style_hawaiian_ukulele">Hawaiian ukulele</string>
     <string name="settings_ambient_sound_complexity">Complexity</string>
     <string name="settings_ambient_sound_complexity_hint">More notes and ornaments</string>
+    <string name="settings_ambient_sound_complexity_low">Low</string>
+    <string name="settings_ambient_sound_complexity_medium">Medium</string>
+    <string name="settings_ambient_sound_complexity_high">High</string>
     <string name="car_ambient_debug">Debug</string>
     <string name="car_ambient_sound_toggle">Toggle ambient sound</string>
     <string name="car_ambient_mute">Mute or unmute sound</string>

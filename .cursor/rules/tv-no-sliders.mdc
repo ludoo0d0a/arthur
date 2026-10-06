@@ -1,0 +1,10 @@
+---
+description: Never use sliders on Android TV / Leanback UI
+alwaysApply: true
+---
+
+# TV: no sliders
+
+- **Never** use `Slider`, seek bars, or continuous drag controls on TV UI (D-pad / remote).
+- Prefer discrete steps: buttons, focusable chips, +/- steppers, list items, or system controls.
+- Phone-only screens may use sliders; shared UI that can run on TV must not.

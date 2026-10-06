@@ -60,8 +60,9 @@ android {
         buildConfigField("String", "SMITHSONIAN_API_KEY", "\"${secret("SMITHSONIAN_API_KEY")}\"")
         buildConfigField("String", "DEVIANTART_CLIENT_ID", "\"${secret("DEVIANTART_CLIENT_ID")}\"")
         buildConfigField("String", "DEVIANTART_CLIENT_SECRET", "\"${secret("DEVIANTART_CLIENT_SECRET")}\"")
-        // Opt-in developer UI on non-debug builds (local.properties / CI: DEBUG_DEV=true).
-        buildConfigField("boolean", "DEBUG_DEV", secretFlag("DEBUG_DEV").toString())
+        // Developer UI: on for debug builds; off for release / Play Store by default.
+        // Debug can still opt via local.properties DEBUG_DEV (redundant with BuildConfig.DEBUG).
+        buildConfigField("boolean", "DEBUG_DEV", "false")
         val buildDate = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
         buildConfigField("String", "BUILD_DATE", "\"$buildDate\"")
     }
@@ -84,7 +85,14 @@ android {
     }
 
     buildTypes {
+        getByName("debug") {
+            // local.properties / CI: DEBUG_DEV=true (optional; BuildConfig.DEBUG already gates UI).
+            buildConfigField("boolean", "DEBUG_DEV", secretFlag("DEBUG_DEV").toString())
+        }
         getByName("release") {
+            // Play Store AABs must not ship developer UI. Do not read DEBUG_DEV from
+            // local.properties here — a local DEBUG_DEV=true would otherwise bake into release.
+            buildConfigField("boolean", "DEBUG_DEV", "false")
             if (keystorePath.isNotBlank()) {
                 signingConfig = signingConfigs.getByName("release")
             }

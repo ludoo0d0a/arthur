@@ -40,7 +40,7 @@ env:
   SMITHSONIAN_API_KEY: ${{ secrets.SMITHSONIAN_API_KEY }}
   DEVIANTART_CLIENT_ID: ${{ secrets.DEVIANTART_CLIENT_ID }}
   DEVIANTART_CLIENT_SECRET: ${{ secrets.DEVIANTART_CLIENT_SECRET }}
-  DEBUG_DEV: ${{ secrets.DEBUG_DEV }}
+  # DEBUG_DEV intentionally unset: release / Play Store builds keep developer UI off.
 
 jobs:
   release:

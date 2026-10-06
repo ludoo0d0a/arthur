@@ -25,6 +25,14 @@ import fr.geoking.arthur.genart.engines.MarbleCausticsEngine
 import fr.geoking.arthur.genart.engines.PaneReflectionsEngine
 import fr.geoking.arthur.genart.engines.BillowingClothEngine
 import fr.geoking.arthur.genart.engines.WindCurtainsEngine
+import fr.geoking.arthur.genart.engines.MarbleDriftEngine
+import fr.geoking.arthur.genart.engines.CanyonLightEngine
+import fr.geoking.arthur.genart.engines.DepthShaftsEngine
+import fr.geoking.arthur.genart.engines.GlassOrbEngine
+import fr.geoking.arthur.genart.engines.SoftRayOrbsEngine
+import fr.geoking.arthur.genart.engines.PrismCaveEngine
+import fr.geoking.arthur.genart.engines.SoapFilmEngine
+import fr.geoking.arthur.genart.engines.LitLatticeEngine
 import fr.geoking.arthur.genart.engines.DriftingHalosEngine
 import fr.geoking.arthur.genart.engines.AntTrailsEngine
 import fr.geoking.arthur.genart.engines.AuroraWashEngine
@@ -141,6 +149,14 @@ import fr.geoking.arthur.genart.stills.MarbleCausticsStill
 import fr.geoking.arthur.genart.stills.PaneReflectionsStill
 import fr.geoking.arthur.genart.stills.BillowingClothStill
 import fr.geoking.arthur.genart.stills.WindCurtainsStill
+import fr.geoking.arthur.genart.stills.MarbleDriftStill
+import fr.geoking.arthur.genart.stills.CanyonLightStill
+import fr.geoking.arthur.genart.stills.DepthShaftsStill
+import fr.geoking.arthur.genart.stills.GlassOrbStill
+import fr.geoking.arthur.genart.stills.SoftRayOrbsStill
+import fr.geoking.arthur.genart.stills.PrismCaveStill
+import fr.geoking.arthur.genart.stills.SoapFilmStill
+import fr.geoking.arthur.genart.stills.LitLatticeStill
 import fr.geoking.arthur.genart.stills.DriftingHalosStill
 import fr.geoking.arthur.genart.stills.AntTrailsStill
 import fr.geoking.arthur.genart.stills.AuroraWashStill
@@ -1549,6 +1565,94 @@ object GenartRegistry {
             },
             renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
                 MarbleCausticsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.MarbleDrift,
+            stableId = "genart.marble",
+            title = "#116 - Marble Drift",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                MarbleDriftEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                MarbleDriftStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.CanyonLight,
+            stableId = "genart.canyonlight",
+            title = "#117 - Canyon Light Cut",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                CanyonLightEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                CanyonLightStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.DepthShafts,
+            stableId = "genart.depthshafts",
+            title = "#118 - Underwater Light Shafts",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                DepthShaftsEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                DepthShaftsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.GlassOrb,
+            stableId = "genart.glassorb",
+            title = "#119 - Glass Orb on Desk",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                GlassOrbEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                GlassOrbStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.SoftRayOrbs,
+            stableId = "genart.rayorbs",
+            title = "#120 - Soft Raymarch Orbs",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                SoftRayOrbsEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                SoftRayOrbsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.PrismCave,
+            stableId = "genart.prismcave",
+            title = "#121 - Crystal Prism Cave",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                PrismCaveEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                PrismCaveStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.SoapFilm,
+            stableId = "genart.soapfilm",
+            title = "#122 - Iridescent Soap Film",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                SoapFilmEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                SoapFilmStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.LitLattice,
+            stableId = "genart.litlattice",
+            title = "#123 - Lit Wire Lattice Depth",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                LitLatticeEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                LitLatticeStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
             },
         ),
     )

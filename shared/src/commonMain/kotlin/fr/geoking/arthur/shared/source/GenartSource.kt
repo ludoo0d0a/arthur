@@ -135,6 +135,14 @@ class GenartSource(
         const val MARBLE_CAUSTICS = "genart.marblecaustics"
         const val BILLOWING_CLOTH = "genart.billowcloth"
         const val WIND_CURTAINS = "genart.windcurtains"
+        const val MARBLE_DRIFT = "genart.marble"
+        const val CANYON_LIGHT = "genart.canyonlight"
+        const val DEPTH_SHAFTS = "genart.depthshafts"
+        const val GLASS_ORB = "genart.glassorb"
+        const val SOFT_RAY_ORBS = "genart.rayorbs"
+        const val PRISM_CAVE = "genart.prismcave"
+        const val SOAP_FILM = "genart.soapfilm"
+        const val LIT_LATTICE = "genart.litlattice"
 
         fun defaultCatalog(): List<Artwork> = listOf(
             entry(PARTICLES, "#1 - Drifting Particles"),
@@ -253,6 +261,14 @@ class GenartSource(
             entry(GLASS_MARBLES, "#113 - Glass Marbles"),
             entry(PANE_REFLECTIONS, "#114 - Pane Reflections"),
             entry(MARBLE_CAUSTICS, "#115 - Marble Caustics"),
+            entry(MARBLE_DRIFT, "#116 - Marble Drift"),
+            entry(CANYON_LIGHT, "#117 - Canyon Light Cut"),
+            entry(DEPTH_SHAFTS, "#118 - Underwater Light Shafts"),
+            entry(GLASS_ORB, "#119 - Glass Orb on Desk"),
+            entry(SOFT_RAY_ORBS, "#120 - Soft Raymarch Orbs"),
+            entry(PRISM_CAVE, "#121 - Crystal Prism Cave"),
+            entry(SOAP_FILM, "#122 - Iridescent Soap Film"),
+            entry(LIT_LATTICE, "#123 - Lit Wire Lattice Depth"),
         )
 
         private fun entry(id: String, title: String) = Artwork(

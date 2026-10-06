@@ -84,6 +84,14 @@ class GenartCatalogTest {
         assertEquals(GenartEngineId.GlassMarbles, GenartCatalog.engineForId("genart.glassmarbles"))
         assertEquals(GenartEngineId.PaneReflections, GenartCatalog.engineForId("genart.panereflections"))
         assertEquals(GenartEngineId.MarbleCaustics, GenartCatalog.engineForId("genart.marblecaustics"))
+        assertEquals(GenartEngineId.MarbleDrift, GenartCatalog.engineForId("genart.marble"))
+        assertEquals(GenartEngineId.CanyonLight, GenartCatalog.engineForId("genart.canyonlight"))
+        assertEquals(GenartEngineId.DepthShafts, GenartCatalog.engineForId("genart.depthshafts"))
+        assertEquals(GenartEngineId.GlassOrb, GenartCatalog.engineForId("genart.glassorb"))
+        assertEquals(GenartEngineId.SoftRayOrbs, GenartCatalog.engineForId("genart.rayorbs"))
+        assertEquals(GenartEngineId.PrismCave, GenartCatalog.engineForId("genart.prismcave"))
+        assertEquals(GenartEngineId.SoapFilm, GenartCatalog.engineForId("genart.soapfilm"))
+        assertEquals(GenartEngineId.LitLattice, GenartCatalog.engineForId("genart.litlattice"))
     }
 
     @Test
@@ -156,5 +164,13 @@ class GenartCatalogTest {
         assertEquals("#110 - Lamp in Darkness", GenartCatalog.entries().first { it.id == "genart.lampdark" }.title)
         assertEquals("#111 - Billowing Cloth", GenartCatalog.entries().first { it.id == "genart.billowcloth" }.title)
         assertEquals("#112 - Wind Curtains", GenartCatalog.entries().first { it.id == "genart.windcurtains" }.title)
+        assertEquals("#116 - Marble Drift", GenartCatalog.entries().first { it.id == "genart.marble" }.title)
+        assertEquals("#117 - Canyon Light Cut", GenartCatalog.entries().first { it.id == "genart.canyonlight" }.title)
+        assertEquals("#118 - Underwater Light Shafts", GenartCatalog.entries().first { it.id == "genart.depthshafts" }.title)
+        assertEquals("#119 - Glass Orb on Desk", GenartCatalog.entries().first { it.id == "genart.glassorb" }.title)
+        assertEquals("#120 - Soft Raymarch Orbs", GenartCatalog.entries().first { it.id == "genart.rayorbs" }.title)
+        assertEquals("#121 - Crystal Prism Cave", GenartCatalog.entries().first { it.id == "genart.prismcave" }.title)
+        assertEquals("#122 - Iridescent Soap Film", GenartCatalog.entries().first { it.id == "genart.soapfilm" }.title)
+        assertEquals("#123 - Lit Wire Lattice Depth", GenartCatalog.entries().first { it.id == "genart.litlattice" }.title)
     }
 }

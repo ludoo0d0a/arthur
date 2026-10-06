@@ -117,6 +117,14 @@ enum class GenartEngineId {
     GlassMarbles,
     PaneReflections,
     MarbleCaustics,
+    MarbleDrift,
+    CanyonLight,
+    DepthShafts,
+    GlassOrb,
+    SoftRayOrbs,
+    PrismCave,
+    SoapFilm,
+    LitLattice,
 }
 
 enum class GenartQuality { Low, Medium, High }

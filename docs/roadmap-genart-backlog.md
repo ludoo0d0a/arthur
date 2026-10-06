@@ -5,8 +5,7 @@ summary, and where to look for rendering techniques ([roadmap-genart-architectur
 
 **Status: the original ideas backlog below is now fully shipped.** Every category is complete,
 including the one parameter-variant item. [Round 2 — ray / texture / 3D soft](#round-2--ray--texture--3d-soft)
-is also **shipped**. Fresh next-round ideas live in
-[Round 3 — ambient themes](#round-3--ambient-themes) (parked until ship).
+and [Round 3 — ambient themes](#round-3--ambient-themes) are also **shipped**.
 
 ### Weather
 
@@ -336,25 +335,26 @@ material, no flashes, seamless loop via `loopedFbm` / whole-number phases.
 
 ## Round 3 — ambient themes
 
-Fresh theme ideas (not in the original backlog). Same Ambient rules: slow loops, no flashes,
-silhouettes over detail. Status: `idea` until an engine ships.
+**Shipped.** Same Ambient rules: slow loops, no flashes, silhouettes over detail.
 
-- `genart.retrowave` — *Retro-futurist Demo* (tier A/B): Amiga demoscene / *Tron*-film vibe —
-  soft neon grid floor (Data Horizon perspective), slow chrome-ish or wireframe shapes,
-  mild scanline / phosphor glow, cyan–magenta palette. Keep motion lazy and car-safe (no
-  strobing plasma, no hard black/white flicker). Distinct from Matrix / Warp Streak by reading
-  as 80s vector/demo culture rather than code rain or hyperspace.
-- `genart.terrainmaker` — *Landscape / Terrain Maker* (tier A/B): soft procedural height-band
-  silhouettes (Mountains + Continents family) that slowly “terraform” — ridges rise/settle,
-  valleys deepen, palette shifts rock → grass → snow over a multi-minute cycle. Analytic /
-  low-frequency fbm only — not full hydraulic-erosion sims (those stay parked under
-  [Proposed Future Engine Concepts](#proposed-future-engine-concepts-for-arthur-genart)).
-- `genart.multiflames` — *Multiple Fires* (tier A/B): several distinct flame clusters (campfires /
-  braziers) across the frame, each with soft stacked flame teardrops + ember sparks
-  (Fire / Fireplace Embers / Candle Ember techniques), independent breathe phases so they don’t
-  pulse in lockstep. Warmer cozy read than the single wildfire sheet of `genart.fire`.
-- `genart.airbubbles` — *Underwater Air Bubbles* (tier A): air bubbles rising through a clear
-  water column — glassy beads with offset highlights (Rain on Glass refraction trick), slight
-  horizontal wobble, size growth near the surface, soft depth gradient. Richer “in water”
-  read than the existing sparse `genart.bubbles` / Aquarium combo; optional light shafts via
-  Depth Shafts / Soft Caustics once Round 2 ships (now shipped — can layer).
+### Shipped shortlist
+
+- `genart.retrowave` — *Retro-futurist Demo* — shipped as `genart.retrowave`
+- `genart.terrainmaker` — *Landscape / Terrain Maker* — shipped as `genart.terrainmaker`
+- `genart.multiflames` — *Multiple Fires* — shipped as `genart.multiflames`
+- `genart.airbubbles` — *Underwater Air Bubbles* — shipped as `genart.airbubbles`
+
+### Notes (shipped intent)
+
+- `genart.retrowave` — Amiga demoscene / *Tron*-film vibe: soft neon grid floor (Data Horizon
+  perspective), slow chrome-ish or wireframe shapes, mild scanline / phosphor glow, cyan–magenta
+  palette. Lazy motion, car-safe (no strobing plasma). Distinct from Matrix / Warp Streak.
+- `genart.terrainmaker` — Soft procedural height-band silhouettes (Mountains + Continents family)
+  that slowly “terraform” — ridges rise/settle, valleys deepen, palette rock → grass → snow over
+  a multi-minute cycle. Analytic / low-frequency fbm only — not hydraulic-erosion sims.
+- `genart.multiflames` — Several distinct flame clusters (campfires / braziers), soft stacked
+  flame teardrops + ember sparks, independent breathe phases. Cozier than single wildfire
+  `genart.fire`.
+- `genart.airbubbles` — Glassy beads with offset highlights (Rain on Glass refraction), horizontal
+  wobble, size growth near the surface, soft depth gradient + light shafts (Depth Shafts family).
+  Richer than sparse `genart.bubbles` / Aquarium.

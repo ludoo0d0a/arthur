@@ -33,6 +33,10 @@ import fr.geoking.arthur.genart.engines.SoftRayOrbsEngine
 import fr.geoking.arthur.genart.engines.PrismCaveEngine
 import fr.geoking.arthur.genart.engines.SoapFilmEngine
 import fr.geoking.arthur.genart.engines.LitLatticeEngine
+import fr.geoking.arthur.genart.engines.RetroWaveEngine
+import fr.geoking.arthur.genart.engines.TerrainMakerEngine
+import fr.geoking.arthur.genart.engines.MultiFlamesEngine
+import fr.geoking.arthur.genart.engines.AirBubblesEngine
 import fr.geoking.arthur.genart.engines.DriftingHalosEngine
 import fr.geoking.arthur.genart.engines.AntTrailsEngine
 import fr.geoking.arthur.genart.engines.AuroraWashEngine
@@ -157,6 +161,10 @@ import fr.geoking.arthur.genart.stills.SoftRayOrbsStill
 import fr.geoking.arthur.genart.stills.PrismCaveStill
 import fr.geoking.arthur.genart.stills.SoapFilmStill
 import fr.geoking.arthur.genart.stills.LitLatticeStill
+import fr.geoking.arthur.genart.stills.RetroWaveStill
+import fr.geoking.arthur.genart.stills.TerrainMakerStill
+import fr.geoking.arthur.genart.stills.MultiFlamesStill
+import fr.geoking.arthur.genart.stills.AirBubblesStill
 import fr.geoking.arthur.genart.stills.DriftingHalosStill
 import fr.geoking.arthur.genart.stills.AntTrailsStill
 import fr.geoking.arthur.genart.stills.AuroraWashStill
@@ -1653,6 +1661,50 @@ object GenartRegistry {
             },
             renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
                 LitLatticeStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.RetroWave,
+            stableId = "genart.retrowave",
+            title = "#124 - Retro-futurist Demo",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                RetroWaveEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                RetroWaveStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.TerrainMaker,
+            stableId = "genart.terrainmaker",
+            title = "#125 - Landscape Terrain Maker",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                TerrainMakerEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                TerrainMakerStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.MultiFlames,
+            stableId = "genart.multiflames",
+            title = "#126 - Multiple Fires",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                MultiFlamesEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                MultiFlamesStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.AirBubbles,
+            stableId = "genart.airbubbles",
+            title = "#127 - Underwater Air Bubbles",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                AirBubblesEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                AirBubblesStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
             },
         ),
     )

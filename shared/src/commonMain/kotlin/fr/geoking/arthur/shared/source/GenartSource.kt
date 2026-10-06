@@ -143,6 +143,10 @@ class GenartSource(
         const val PRISM_CAVE = "genart.prismcave"
         const val SOAP_FILM = "genart.soapfilm"
         const val LIT_LATTICE = "genart.litlattice"
+        const val RETRO_WAVE = "genart.retrowave"
+        const val TERRAIN_MAKER = "genart.terrainmaker"
+        const val MULTI_FLAMES = "genart.multiflames"
+        const val AIR_BUBBLES = "genart.airbubbles"
 
         fun defaultCatalog(): List<Artwork> = listOf(
             entry(PARTICLES, "#1 - Drifting Particles"),
@@ -269,6 +273,10 @@ class GenartSource(
             entry(PRISM_CAVE, "#121 - Crystal Prism Cave"),
             entry(SOAP_FILM, "#122 - Iridescent Soap Film"),
             entry(LIT_LATTICE, "#123 - Lit Wire Lattice Depth"),
+            entry(RETRO_WAVE, "#124 - Retro-futurist Demo"),
+            entry(TERRAIN_MAKER, "#125 - Landscape Terrain Maker"),
+            entry(MULTI_FLAMES, "#126 - Multiple Fires"),
+            entry(AIR_BUBBLES, "#127 - Underwater Air Bubbles"),
         )
 
         private fun entry(id: String, title: String) = Artwork(

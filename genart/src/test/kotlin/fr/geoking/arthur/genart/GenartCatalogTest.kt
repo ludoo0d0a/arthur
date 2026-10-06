@@ -92,6 +92,10 @@ class GenartCatalogTest {
         assertEquals(GenartEngineId.PrismCave, GenartCatalog.engineForId("genart.prismcave"))
         assertEquals(GenartEngineId.SoapFilm, GenartCatalog.engineForId("genart.soapfilm"))
         assertEquals(GenartEngineId.LitLattice, GenartCatalog.engineForId("genart.litlattice"))
+        assertEquals(GenartEngineId.RetroWave, GenartCatalog.engineForId("genart.retrowave"))
+        assertEquals(GenartEngineId.TerrainMaker, GenartCatalog.engineForId("genart.terrainmaker"))
+        assertEquals(GenartEngineId.MultiFlames, GenartCatalog.engineForId("genart.multiflames"))
+        assertEquals(GenartEngineId.AirBubbles, GenartCatalog.engineForId("genart.airbubbles"))
     }
 
     @Test
@@ -172,5 +176,9 @@ class GenartCatalogTest {
         assertEquals("#121 - Crystal Prism Cave", GenartCatalog.entries().first { it.id == "genart.prismcave" }.title)
         assertEquals("#122 - Iridescent Soap Film", GenartCatalog.entries().first { it.id == "genart.soapfilm" }.title)
         assertEquals("#123 - Lit Wire Lattice Depth", GenartCatalog.entries().first { it.id == "genart.litlattice" }.title)
+        assertEquals("#124 - Retro-futurist Demo", GenartCatalog.entries().first { it.id == "genart.retrowave" }.title)
+        assertEquals("#125 - Landscape Terrain Maker", GenartCatalog.entries().first { it.id == "genart.terrainmaker" }.title)
+        assertEquals("#126 - Multiple Fires", GenartCatalog.entries().first { it.id == "genart.multiflames" }.title)
+        assertEquals("#127 - Underwater Air Bubbles", GenartCatalog.entries().first { it.id == "genart.airbubbles" }.title)
     }
 }

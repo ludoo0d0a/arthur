@@ -125,6 +125,10 @@ enum class GenartEngineId {
     PrismCave,
     SoapFilm,
     LitLattice,
+    RetroWave,
+    TerrainMaker,
+    MultiFlames,
+    AirBubbles,
 }
 
 enum class GenartQuality { Low, Medium, High }

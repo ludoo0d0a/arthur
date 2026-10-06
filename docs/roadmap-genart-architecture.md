@@ -19,8 +19,8 @@ Shipping an engine from the backlog means:
 4. Add the id/title to `GenartSource` in `:shared` — a separate KMP-only catalog, since
    `:genart` is Android-only and `:shared` can't depend on it, so the two stay in sync by hand.
 
-`FreeTierLimits.maxGenart` / `StockPhotoSettings.MAX_GENART` (bumped 120 → 128 as the catalog
-reached 123 engines) are sized to "cover the full shipped catalog" — bump both together again
+`FreeTierLimits.maxGenart` / `StockPhotoSettings.MAX_GENART` (bumped 128 → 136 as the catalog
+reached 127 engines) are sized to "cover the full shipped catalog" — bump both together again
 once the count gets within ~5 of the ceiling.
 
 ## Realism upgrades (rendering techniques)

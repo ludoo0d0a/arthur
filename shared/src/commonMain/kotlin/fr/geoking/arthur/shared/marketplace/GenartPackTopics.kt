@@ -70,6 +70,7 @@ object GenartPackTopics {
         GenartSource.FIRE,
         GenartSource.AURORA_WASH,
         GenartSource.FIREWORKS,
+        GenartSource.MULTI_FLAMES,
     )
 
     val NATURE_IDS: Set<String> = setOf(
@@ -97,6 +98,10 @@ object GenartPackTopics {
         GenartSource.DRIFTING_POLLEN,
         GenartSource.WIND_CHIME,
         GenartSource.FLOW_RIBBONS,
+        GenartSource.CANYON_LIGHT,
+        GenartSource.TERRAIN_MAKER,
+        GenartSource.MULTI_FLAMES,
+        GenartSource.AIR_BUBBLES,
     )
 
     val WATER_IDS: Set<String> = setOf(
@@ -122,6 +127,10 @@ object GenartPackTopics {
         GenartSource.GLASS_MARBLES,
         GenartSource.PANE_REFLECTIONS,
         GenartSource.MARBLE_CAUSTICS,
+        GenartSource.DEPTH_SHAFTS,
+        GenartSource.SOAP_FILM,
+        GenartSource.AIR_BUBBLES,
+        GenartSource.GLASS_ORB,
     )
 
     val LIFE_IDS: Set<String> = setOf(
@@ -157,6 +166,9 @@ object GenartPackTopics {
         GenartSource.CANYON_DUNES,
         GenartSource.CONTINENTS,
         GenartSource.FIRE,
+        GenartSource.CANYON_LIGHT,
+        GenartSource.TERRAIN_MAKER,
+        GenartSource.MULTI_FLAMES,
     )
 
     val PLANETS_IDS: Set<String> = setOf(
@@ -204,6 +216,10 @@ object GenartPackTopics {
         GenartSource.ENERGY_TENDRILS,
         GenartSource.NEBULA,
         GenartSource.ECLIPSE_CORONA,
+        GenartSource.SOFT_RAY_ORBS,
+        GenartSource.PRISM_CAVE,
+        GenartSource.LIT_LATTICE,
+        GenartSource.RETRO_WAVE,
     )
 
     val ABSTRACT_IDS: Set<String> = setOf(
@@ -244,6 +260,12 @@ object GenartPackTopics {
         GenartSource.GLASS_MARBLES,
         GenartSource.PANE_REFLECTIONS,
         GenartSource.MARBLE_CAUSTICS,
+        GenartSource.MARBLE_DRIFT,
+        GenartSource.SOFT_RAY_ORBS,
+        GenartSource.PRISM_CAVE,
+        GenartSource.SOAP_FILM,
+        GenartSource.GLASS_ORB,
+        GenartSource.LIT_LATTICE,
     )
 
     val GEOMETRY_IDS: Set<String> = setOf(
@@ -268,6 +290,10 @@ object GenartPackTopics {
         GenartSource.LAMP_IN_DARKNESS,
         GenartSource.GLASS_MARBLES,
         GenartSource.MARBLE_CAUSTICS,
+        GenartSource.PRISM_CAVE,
+        GenartSource.LIT_LATTICE,
+        GenartSource.GLASS_ORB,
+        GenartSource.RETRO_WAVE,
     )
 
     fun engineIdsForTopic(topicSuffix: String): Set<String> = when (topicSuffix) {

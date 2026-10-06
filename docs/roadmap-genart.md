@@ -1,33 +1,109 @@
-# Genart animation ideas
+# Genart
 
-Ideas backlog for on-device procedural **Genart** (Compose Canvas in `:genart`). Not a ship commitment, not AI image generation, not stock photo packs.
+On-device procedural Ambient loops (Compose Canvas in `:genart`). Not AI image generation, not stock photo packs.
 
-**Goal:** simple, satisfying, relaxing Ambient loops for phone preview, Auto album art, and TV Dream.
+**Goal:** simple, satisfying, relaxing loops for phone preview, Auto album art, and TV Dream.
 
-This roadmap is split into three parts:
-
-- **This doc** — principles and the shipped-today reference.
-- [roadmap-genart-backlog.md](roadmap-genart-backlog.md) — the ideas backlog, organized by
-  category (Weather, Nature, Live nature, Planet, Light & sky, Water & fluids, Seasons & time,
-  Abstract calm, Cozy micro, Sand & earth, Celestial soft, Sci-fi), plus what's explicitly out
-  of scope, and curated external references (algorithms, methodology, skills/tooling).
-- [roadmap-genart-architecture.md](roadmap-genart-architecture.md) — the `GenartRegistry`
-  plugin mechanism, and the realism/rendering-technique upgrades (blur, noise, physics-inspired
-  motion, shaders) to reach for on new and existing engines.
+Canonical catalog: `GenartRegistry` / `GenartSource` (stable `genart.*` ids).
 
 ## Principles
 
 - Slow motion, soft loops, low cognitive load.
 - No sudden flashes or high-contrast flicker (car-safe).
 - **Live creatures** = silhouettes, flocks, schools, tiny agents — not detailed anatomy sims.
-- Status: `idea` until an engine ships (then add a stable `genart.*` id in `GenartCatalog`).
 
-## Shipped today (127 engines)
+## Status
 
-drifting particles, wire lattice, soft shadows, vanishing tunnel, tonal geometry, orbiting sphere, layered waves, volumetric rays, falling snow (`genart.snow`), grass in wind (`genart.grass`), bird flock (`genart.birdflock`), layered mountains (`genart.mountains`), aurora ribbons (`genart.aurora`), pond ripples (`genart.pondripples`), falling leaves (`genart.fallingleaves`), breath circles (`genart.breathcircles`), fireplace embers (`genart.fireembers`), wind-blown dunes (`genart.dunes`), constellation twinkle (`genart.constellation`), drifting clouds (`genart.clouds`), soft rain (`genart.rain`), soft fog (`genart.fog`), school of fish (`genart.fishschool`), fireflies (`genart.fireflies`), sunbeams through haze (`genart.sunbeams`), sparse meteors (`genart.meteors`), rising bubbles (`genart.bubbles`), cherry blossom petals (`genart.cherryblossoms`), soft ribbons (`genart.ribbons`), nebula drift (`genart.nebula`), morphing blobs (`genart.blobs`), soft noise field (`genart.noisefield`), voronoi wash (`genart.voronoi`), silk folds (`genart.silk`), gradient mesh (`genart.gradientmesh`), arc mosaic (`genart.arcmosaic`), soft storm (`genart.storm`), star field parallax (`genart.starfield`), solar system (`genart.solarsystem`), candle ember (`genart.candleember`), soft rainbow (`genart.rainbow`), soft smog (`genart.smog`), rising smoke (`genart.smoke`), heat haze (`genart.heathaze`), soft sunshine (`genart.sunshine`), light drizzle (`genart.lightdrizzle`), steam curl (`genart.steamcurl`), drifting pollen (`genart.pollen`), soft landslide dust (`genart.landslidedust`), pebble shore wash (`genart.pebbleshore`), first frost crystals (`genart.frostcrystals`), ion trail (`genart.iontrail`), ant trails (`genart.anttrails`), sleeping pet outline (`genart.sleepingpet`), warp streak (`genart.warpstreak`), space station drift (`genart.spacestation`), moonlight ripples (`genart.moonlightripples`), eclipse corona (`genart.eclipsecorona`), ink in water (`genart.inkinwater`), wind chime silhouette (`genart.windchime`), soft day-night wash (`genart.daynightwash`), tumbleweed drift (`genart.tumbleweed`), distant dinosaur silhouettes (`genart.dinosaurs`), city night lights (`genart.citylights`), moss growth (`genart.moss`), terrarium drip (`genart.terrariumdrip`), aquarium (`genart.aquarium`), soft fields (`genart.fields`), rain on glass (`genart.rainonglass`), reeds (`genart.reeds`), canyon dunes (`genart.canyondunes`), continents (`genart.continents`), roads (`genart.roads`), rivers (`genart.rivers`), tree in wind (`genart.tree`), flower bloom (`genart.flower`), lake surface (`genart.lake`), asteroids (`genart.asteroids`), waterfall mist (`genart.waterfallmist`), soft wind streaks (`genart.windstreaks`), ocean swell (`genart.oceanswell`), spiral galaxy drift (`genart.galaxy`), data horizon (`genart.datahorizon`), soft caustics (`genart.caustics`), low-frequency noise field (`genart.lowfreqnoise`), wildfire (`genart.fire`), paper-cut pack (`genart.papercut`), diamond weave (`genart.diamondweave`), matrix rain (`genart.matrix`), moving halos (`genart.driftinghalos`), superdrive vibes (`genart.superdrive`), soft fireworks (`genart.fireworks`), atmospheric asteroid (`genart.atmosphericasteroid`), saturn and rings (`genart.saturnrings`), lava sun (`genart.lavasun`), full moon (`genart.moon`), spiral mandala (`genart.spiralmandala`), flow ribbons (`genart.flowribbons`), clifford wash (`genart.cliffordwash`), plasma nova (`genart.plasmanova`), energy tendrils (`genart.energytendrils`), marble drift (`genart.marble`), canyon light cut (`genart.canyonlight`), underwater light shafts (`genart.depthshafts`), glass orb on desk (`genart.glassorb`), soft raymarch orbs (`genart.rayorbs`), crystal prism cave (`genart.prismcave`), iridescent soap film (`genart.soapfilm`), lit wire lattice depth (`genart.litlattice`), retro-futurist demo (`genart.retrowave`), landscape terrain maker (`genart.terrainmaker`), multiple fires (`genart.multiflames`), underwater air bubbles (`genart.airbubbles`).
+**Backlog cleared.** Original category list, Round 2 (ray / texture / 3D soft), and Round 3 (ambient themes) are all shipped.
 
-The original ideas backlog, [Round 2](roadmap-genart-backlog.md#round-2--ray--texture--3d-soft),
-and [Round 3](roadmap-genart-backlog.md#round-3--ambient-themes) are now **fully shipped**.
-See [roadmap-genart-backlog.md](roadmap-genart-backlog.md) for second-souffle / future concepts,
-and [roadmap-genart-architecture.md](roadmap-genart-architecture.md) for how engines are wired
-up and rendered.
+## Optional next ideas (unscoped)
+
+Light Ambient themes — not committed, no stable ids yet:
+
+- *Frosted Window Dawn* — condensation + soft sun disc behind frosted glass
+- *Obsidian Shore* — lit pebbles + foam wash (Pebble Shore + terminator)
+- *Volumetric Stairwell* — trapezoid perspective + one vertical light well
+- *Aurora over Ice Shelf* — ice horizon + Aurora ribbons + frost rim
+- *Paper Lantern Glow* — lantern silhouettes + warm cones
+
+## Parked (too heavy for Ambient)
+
+Sim / buffer-heavy concepts — impress but wrong cost for phone / Auto loops:
+
+- `genart.slimegrowth` — Physarum-style transport filaments
+- `genart.differentialgrowth` — expanding self-repelling lichen rim
+- `genart.wetwash` — watercolor bleeding (needs diffusion buffers)
+- `genart.hatching` — charcoal stroke physics
+- Gray-Scott reaction-diffusion, hydraulic erosion — optional future GPU / AGSL only
+
+## Out of scope
+
+- Detailed pets walking or interacting
+- City traffic sims
+- Real storm lightning strobes (calm glow pulses already ship as `genart.storm`)
+- Anything that fights “relax” on Auto / TV Ambient
+
+## Ship filter
+
+| Tier | Style | Ambient? |
+|------|--------|----------|
+| **A — Analytic** | Polar math, prebaked attractors, `loopedFbm` / `flowAngle01` | Preferred |
+| **B — Light physics** | Shared wind scalar, short Verlet, Gerstner sines | OK if `qualityCount`-capped |
+| **C — Field sims** | Physarum, Gray-Scott, wet diffusion | Park |
+| **D — GPU shaders** | AGSL `RuntimeShader` | Flagship only, API 33+, Canvas fallback |
+
+## Registry
+
+Engines register through `GenartRegistry` (`GenartEngineDescriptor` = one live Composable + one
+baked still, keyed by id/title) — `GenartEffectCanvas` and `GenartStillRenderer` just dispatch
+through it, so `GenartCatalog.entries()`/`engineForId()` are derived, not hand-maintained.
+
+Shipping an engine means:
+
+1. Add a `GenartEngineId` case.
+2. Write the engine Composable + `stills/XxxStill.kt` (or rely on the generic particle-scatter
+   fallback for engines with no dedicated still).
+3. Add one `GenartEngineDescriptor` to `GenartRegistry.all`.
+4. Add the id/title to `GenartSource` in `:shared` — a separate KMP-only catalog, since
+   `:genart` is Android-only and `:shared` can't depend on it, so the two stay in sync by hand.
+
+`FreeTierLimits.maxGenart` / `StockPhotoSettings.MAX_GENART` (bumped 128 → 136 as the catalog
+reached 127 engines) are sized to "cover the full shipped catalog" — bump both together again
+once the count gets within ~5 of the ceiling.
+
+## Realism upgrades (rendering techniques)
+
+Codebase-compatible upgrades for new *and* existing engines, in rough order of effort/impact:
+
+1. **Real blur** — wrap soft elements in `Modifier.blur(...)` (no-op below API 31). **Done** for
+   Clouds, Fog, Aurora, Nebula, Storm (`Box` crisp layer + blurred soft layer; stills may use
+   `BlurMaskFilter`). Remaining candidates: Spiral galaxy core glow, Soft caustics.
+2. **Domain-warped noise (fbm)** — **Done.** `NoiseUtils.kt`: `valueNoise2D` / `fbm2D` /
+   `loopedFbm`. Prefer `loopedFbm(t, …)` so `t = 0` and `t = 1` match under `RepeatMode.Restart`
+   (plain `fbm2D(t * freq, 0f)` pops at the seam). Applied to Clouds, Fog, Nebula, Low-Frequency
+   Noise Field. Remaining: Soft Caustics streak jitter, Spiral Galaxy core pulse.
+3. **Depth/parallax layering** — 2–3 Canvas layers at different scroll speeds *and* blur radii
+   (near = sharp + fast, far = blurred + slow).
+4. **Physically-inspired motion, not full sims**:
+   - Grass/Reeds/wind-chime: shared wind-gust scalar + light spring/Verlet tips
+   - Rain/Snow: horizontal drift tied to that gust
+   - Water: Gerstner-style summed sines (see `genart.oceanswell`) instead of one radial ripple
+5. **Light/shading realism** — off-center radial + terminator for spheres; thin blurred atmosphere
+   rim. Shipped for Solar System planets and Moonlight Ripples’ moon.
+6. **AGSL `RuntimeShader`** (API 33+) — flagship path with Canvas fallback for `minSdk = 26`
+   (pattern: Interference Wash, Soft Ray Orbs, Soap Film).
+7. **Anti-pixelation hygiene** — still bakers: `Paint` with `isAntiAlias` + `isDither`.
+
+## Parallel-build notes (large batches)
+
+Do shared plumbing (steps 1, 3, 4 above) single-threaded first; hand each engine Composable +
+still to an independent session that touches only those two files.
+
+- **Prefix private top-level data classes with the engine name** (`LakeRippleSeed`, not
+  `RippleSeed`) — Kotlin `private` is file-scoped for access but not for JVM class names;
+  duplicate names collide across files in the same package.
+- `Brush.radialGradient` — use vararg `Pair` form: `0f to c1, 0.5f to c2, …` (not
+  `colors =` + `colorStops =`).
+- Concurrent checkouts in a shared working tree: prefer `git worktree add` for isolated work;
+  copy `local.properties` into a fresh worktree.
+- macOS/BSD `sed -i ''` does not support `\b`; use substring replace or `\<...\>`.

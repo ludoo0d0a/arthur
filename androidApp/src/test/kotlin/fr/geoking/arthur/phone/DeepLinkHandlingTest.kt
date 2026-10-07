@@ -32,4 +32,10 @@ class DeepLinkHandlingTest {
         val controller = org.robolectric.Robolectric.buildActivity(MainActivity::class.java, intent)
         assertNotNull(controller)
     }
+
+    @Test
+    fun uriWantsPairing_arthurPairWithHost() {
+        val uri = Uri.parse("arthur://pair?host=192.168.1.20&port=8742")
+        org.junit.Assert.assertTrue(uriWantsPairing(uri))
+    }
 }

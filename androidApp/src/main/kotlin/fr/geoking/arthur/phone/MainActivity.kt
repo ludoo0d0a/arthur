@@ -29,6 +29,8 @@ import fr.geoking.arthur.R
 import fr.geoking.arthur.billing.PurchasesGateway
 import fr.geoking.arthur.fractal.CustomFractalStore
 import fr.geoking.arthur.pairing.LanPairingPrefs
+import fr.geoking.arthur.pairing.LanPairingServer
+import fr.geoking.arthur.pairing.PairingDeepLink
 import fr.geoking.arthur.phone.theme.ArthurTheme
 import fr.geoking.arthur.shared.debug.DebugLogger
 import fr.geoking.arthur.shared.domain.Artwork
@@ -101,6 +103,8 @@ class MainActivity : ComponentActivity() {
 
     private val pairingRequested = mutableStateOf(false)
     private val pairingHostHint = mutableStateOf<String?>(null)
+    private val pairingPortHint = mutableStateOf(LanPairingServer.DEFAULT_PORT)
+    private val pairingAutoPush = mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -174,9 +178,13 @@ class MainActivity : ComponentActivity() {
                                         contentEngine = contentEngine,
                                         pairingPrefs = lanPairingPrefs,
                                         initialHost = pairingHostHint.value,
+                                        initialPort = pairingPortHint.value,
+                                        autoPush = pairingAutoPush.value,
                                         onDismiss = {
                                             pairingRequested.value = false
                                             pairingHostHint.value = null
+                                            pairingPortHint.value = LanPairingServer.DEFAULT_PORT
+                                            pairingAutoPush.value = false
                                         },
                                     )
                                 }
@@ -387,7 +395,10 @@ class MainActivity : ComponentActivity() {
         val uri = intent?.data ?: return
         if (intent.action != android.content.Intent.ACTION_VIEW) return
         if (!uriWantsPairing(uri)) return
-        pairingHostHint.value = uri.getQueryParameter("host")
+        val target = PairingDeepLink.parse(uri)
+        pairingHostHint.value = target?.host
+        pairingPortHint.value = target?.port ?: LanPairingServer.DEFAULT_PORT
+        pairingAutoPush.value = target != null
         pairingRequested.value = true
     }
 
@@ -416,8 +427,5 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-internal fun uriWantsPairing(uri: android.net.Uri): Boolean {
-    if (uri.host == "pair" || uri.host == "pairing") return true
-    val path = uri.path.orEmpty()
-    return path.contains("/pair") || path.contains("/pairing")
-}
+internal fun uriWantsPairing(uri: android.net.Uri): Boolean =
+    PairingDeepLink.wantsPairing(uri)

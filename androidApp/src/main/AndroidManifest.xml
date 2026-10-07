@@ -3,6 +3,7 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="androidx.car.app.MEDIA_TEMPLATES" />
 
@@ -29,6 +30,11 @@
         <meta-data
             android:name="androidx.car.app.minCarApiLevel"
             android:value="8" />
+
+        <!-- Google Code Scanner downloads barcode module on demand (no CAMERA in manifest). -->
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="barcode_ui" />
 
         <activity
             android:name=".phone.MainActivity"

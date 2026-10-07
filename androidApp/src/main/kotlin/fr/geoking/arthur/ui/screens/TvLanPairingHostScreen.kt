@@ -1,11 +1,16 @@
 package fr.geoking.arthur.ui.screens
 
+import android.graphics.Bitmap
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -26,6 +31,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -33,13 +40,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.R
 import fr.geoking.arthur.pairing.LanPairingServer
+import fr.geoking.arthur.pairing.PairingDeepLink
 import fr.geoking.arthur.pairing.PairingManifestMapper
-import fr.geoking.arthur.pairing.lanIpv4Addresses
+import fr.geoking.arthur.pairing.PairingNsdAdvertiser
+import fr.geoking.arthur.pairing.PairingQrEncoder
+import fr.geoking.arthur.pairing.preferredLanIpv4
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.pairing.PairingCodec
 
 /**
- * TV Canvas host: advertises LAN endpoint and waits for a Control Plane push.
+ * TV Canvas host: shows QR + NSD, waits for a Control Plane push.
  * Dedicated screen — does not alter Control Plane / Ambient layouts.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,9 +61,19 @@ fun TvLanPairingHostScreen(
     port: Int = LanPairingServer.DEFAULT_PORT,
 ) {
     BackHandler(onBack = onDismiss)
-    val addresses = remember { lanIpv4Addresses() }
+    val context = LocalContext.current
+    val hostIp = remember { preferredLanIpv4() }
+    val pairingUrl = remember(hostIp, port) {
+        hostIp?.let { PairingDeepLink.build(host = it, port = port) }
+    }
+    val qrBitmap: Bitmap? = remember(pairingUrl) {
+        pairingUrl?.let { PairingQrEncoder.encode(it, sizePx = 640) }
+    }
     val server = remember {
         LanPairingServer(port = port, deviceName = "Arthur TV")
+    }
+    val nsd = remember {
+        PairingNsdAdvertiser(context = context, port = port, deviceName = "Arthur TV")
     }
     var started by remember { mutableStateOf(false) }
     var startError by remember { mutableStateOf<String?>(null) }
@@ -69,6 +89,7 @@ fun TvLanPairingHostScreen(
     LaunchedEffect(server) {
         try {
             server.start()
+            nsd.start()
             started = true
             startError = null
         } catch (e: Exception) {
@@ -77,8 +98,9 @@ fun TvLanPairingHostScreen(
         }
     }
 
-    DisposableEffect(server) {
+    DisposableEffect(server, nsd) {
         onDispose {
+            runCatching { nsd.stop() }
             runCatching { server.stop() }
         }
     }
@@ -112,7 +134,8 @@ fun TvLanPairingHostScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(24.dp),
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -136,21 +159,20 @@ fun TvLanPairingHostScreen(
                     modifier = Modifier.testTag("tv_lan_pairing_waiting"),
                 )
             }
-            if (addresses.isEmpty()) {
+            if (qrBitmap != null) {
+                Image(
+                    bitmap = qrBitmap.asImageBitmap(),
+                    contentDescription = stringResource(R.string.pairing_tv_qr_cd),
+                    modifier = Modifier
+                        .size(280.dp)
+                        .testTag("tv_lan_pairing_qr"),
+                )
+            } else {
                 Text(
                     text = stringResource(R.string.pairing_tv_no_ip),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium,
                 )
-            } else {
-                addresses.forEach { ip ->
-                    Text(
-                        text = "$ip:$port",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontFamily = FontFamily.Monospace,
-                        modifier = Modifier.testTag("tv_lan_pairing_endpoint"),
-                    )
-                }
             }
             Text(
                 text = stringResource(R.string.pairing_tv_hint),
@@ -158,6 +180,15 @@ fun TvLanPairingHostScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
+            if (hostIp != null) {
+                Text(
+                    text = "$hostIp:$port",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontFamily = FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                    modifier = Modifier.testTag("tv_lan_pairing_endpoint"),
+                )
+            }
             if (received != null) {
                 Text(
                     text = stringResource(R.string.pairing_tv_received, received.size),

@@ -172,6 +172,8 @@ dependencies {
     implementation(libs.revenuecat.purchases)
     implementation(libs.play.app.update)
     implementation(libs.play.app.update.ktx)
+    implementation(libs.play.services.code.scanner)
+    implementation(libs.zxing.core)
     implementation(libs.aboutlibraries.compose.m3)
     implementation("fr.geoking.tools:debug-bar")
     implementation("fr.geoking.tools:in-app-update")

@@ -23,7 +23,9 @@ media = "1.8.0"
 media3 = "1.11.1"
 mockwebserver = "5.5.0"
 play-app-update = "2.1.0"
+play-services-code-scanner = "16.1.0"
 purchases = "10.22.1"
+zxing = "3.5.3"
 robolectric = "4.17"
 roborazzi = "1.75.0"
 version-catalog-update = "1.1.1"
@@ -70,6 +72,8 @@ ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
 mockwebserver = { module = "com.squareup.okhttp3:mockwebserver3", version.ref = "mockwebserver" }
 play-app-update = { module = "com.google.android.play:app-update", version.ref = "play-app-update" }
 play-app-update-ktx = { module = "com.google.android.play:app-update-ktx", version.ref = "play-app-update" }
+play-services-code-scanner = { module = "com.google.android.gms:play-services-code-scanner", version.ref = "play-services-code-scanner" }
+zxing-core = { module = "com.google.zxing:core", version.ref = "zxing" }
 revenuecat-purchases = { module = "com.revenuecat.purchases:purchases", version.ref = "purchases" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 roborazzi = { module = "io.github.takahirom.roborazzi:roborazzi", version.ref = "roborazzi" }

@@ -72,17 +72,19 @@ class LanPairingScreensTest {
     }
 
     @Test
-    fun tvLanPairingHostScreen_rendersWaitingAndQrTagWhenPossible() {
+    fun tvLanPairingHostScreen_showsQrWhenHostKnown() {
         composeTestRule.setContent {
             ArthurTheme {
                 TvLanPairingHostScreen(
                     onDismiss = {},
                     onRotationReceived = {},
                     port = 18744,
+                    hostOverride = "192.168.1.42",
                 )
             }
         }
         composeTestRule.onNodeWithTag("tv_lan_pairing_screen").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("tv_lan_pairing_qr").assertIsDisplayed()
     }
 
     @Test

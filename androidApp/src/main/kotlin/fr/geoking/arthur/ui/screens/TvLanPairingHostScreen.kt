@@ -3,7 +3,9 @@ package fr.geoking.arthur.ui.screens
 import android.graphics.Bitmap
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,7 +33,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -49,7 +53,7 @@ import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.pairing.PairingCodec
 
 /**
- * TV Canvas host: shows QR + NSD, waits for a Control Plane push.
+ * TV Canvas host: large QR + NSD, waits for a Control Plane push.
  * Dedicated screen — does not alter Control Plane / Ambient layouts.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,15 +63,17 @@ fun TvLanPairingHostScreen(
     onRotationReceived: (List<Artwork>) -> Unit,
     modifier: Modifier = Modifier,
     port: Int = LanPairingServer.DEFAULT_PORT,
+    /** Test / debug override for LAN IPv4 used in the QR payload. */
+    hostOverride: String? = null,
 ) {
     BackHandler(onBack = onDismiss)
     val context = LocalContext.current
-    val hostIp = remember { preferredLanIpv4() }
+    val hostIp = remember(hostOverride) { hostOverride?.takeIf { it.isNotBlank() } ?: preferredLanIpv4() }
     val pairingUrl = remember(hostIp, port) {
         hostIp?.let { PairingDeepLink.build(host = it, port = port) }
     }
     val qrBitmap: Bitmap? = remember(pairingUrl) {
-        pairingUrl?.let { PairingQrEncoder.encode(it, sizePx = 640) }
+        pairingUrl?.let { PairingQrEncoder.encodeOrNull(it, sizePx = 720) }
     }
     val server = remember {
         LanPairingServer(port = port, deviceName = "Arthur TV")
@@ -132,19 +138,56 @@ fun TvLanPairingHostScreen(
     ) { padding ->
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .padding(padding)
-                .padding(24.dp)
+                .padding(horizontal = 24.dp, vertical = 16.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
                 text = stringResource(R.string.pairing_tv_subtitle),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
             )
+
+            when {
+                qrBitmap != null -> {
+                    Box(
+                        modifier = Modifier
+                            .background(Color.White)
+                            .padding(20.dp)
+                            .testTag("tv_lan_pairing_qr"),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Image(
+                            bitmap = qrBitmap.asImageBitmap(),
+                            contentDescription = stringResource(R.string.pairing_tv_qr_cd),
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier.size(320.dp),
+                        )
+                    }
+                }
+                hostIp == null -> {
+                    Text(
+                        text = stringResource(R.string.pairing_tv_no_ip),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+                else -> {
+                    Text(
+                        text = stringResource(R.string.pairing_tv_qr_failed),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.testTag("tv_lan_pairing_qr_failed"),
+                    )
+                }
+            }
+
             if (startError != null) {
                 Text(
                     text = stringResource(R.string.pairing_tv_error, startError!!),
@@ -155,40 +198,29 @@ fun TvLanPairingHostScreen(
             } else if (started) {
                 Text(
                     text = stringResource(R.string.pairing_tv_waiting),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.testTag("tv_lan_pairing_waiting"),
                 )
             }
-            if (qrBitmap != null) {
-                Image(
-                    bitmap = qrBitmap.asImageBitmap(),
-                    contentDescription = stringResource(R.string.pairing_tv_qr_cd),
-                    modifier = Modifier
-                        .size(280.dp)
-                        .testTag("tv_lan_pairing_qr"),
-                )
-            } else {
-                Text(
-                    text = stringResource(R.string.pairing_tv_no_ip),
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
+
             Text(
                 text = stringResource(R.string.pairing_tv_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
+
             if (hostIp != null) {
                 Text(
                     text = "$hostIp:$port",
                     style = MaterialTheme.typography.labelSmall,
                     fontFamily = FontFamily.Monospace,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
                     modifier = Modifier.testTag("tv_lan_pairing_endpoint"),
                 )
             }
+
             if (received != null) {
                 Text(
                     text = stringResource(R.string.pairing_tv_received, received.size),

@@ -60,11 +60,29 @@ android {
         buildConfigField("String", "SMITHSONIAN_API_KEY", "\"${secret("SMITHSONIAN_API_KEY")}\"")
         buildConfigField("String", "DEVIANTART_CLIENT_ID", "\"${secret("DEVIANTART_CLIENT_ID")}\"")
         buildConfigField("String", "DEVIANTART_CLIENT_SECRET", "\"${secret("DEVIANTART_CLIENT_SECRET")}\"")
-        // Developer UI: on for debug builds; off for release / Play Store by default.
-        // Debug can still opt via local.properties DEBUG_DEV (redundant with BuildConfig.DEBUG).
+        // Developer UI: baseline off; `full` flavor may opt in via props/env; `playstore` stays false.
         buildConfigField("boolean", "DEBUG_DEV", "false")
         val buildDate = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
         buildConfigField("String", "BUILD_DATE", "\"$buildDate\"")
+    }
+
+    // local.properties / gradle.properties / CI: DEBUG_DEV=true (optional). Used by `full` only.
+    val debugDevEnabled = secretFlag("DEBUG_DEV") || secretFlag("debug_dev")
+
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("full") {
+            dimension = "distribution"
+            buildConfigField("boolean", "IS_PLAYSTORE_DISTRIBUTION", "false")
+            // Developer UI on fullDebug and fullRelease when debug_dev / DEBUG_DEV is true.
+            buildConfigField("boolean", "DEBUG_DEV", debugDevEnabled.toString())
+        }
+        create("playstore") {
+            dimension = "distribution"
+            buildConfigField("boolean", "IS_PLAYSTORE_DISTRIBUTION", "true")
+            // Play Store AABs must not ship developer UI — ignore local debug_dev flags.
+            buildConfigField("boolean", "DEBUG_DEV", "false")
+        }
     }
 
     buildFeatures {
@@ -85,14 +103,7 @@ android {
     }
 
     buildTypes {
-        getByName("debug") {
-            // local.properties / CI: DEBUG_DEV=true (optional; BuildConfig.DEBUG already gates UI).
-            buildConfigField("boolean", "DEBUG_DEV", secretFlag("DEBUG_DEV").toString())
-        }
         getByName("release") {
-            // Play Store AABs must not ship developer UI. Do not read DEBUG_DEV from
-            // local.properties here — a local DEBUG_DEV=true would otherwise bake into release.
-            buildConfigField("boolean", "DEBUG_DEV", "false")
             if (keystorePath.isNotBlank()) {
                 signingConfig = signingConfigs.getByName("release")
             }
@@ -233,7 +244,7 @@ afterEvaluate {
     val genartOnly = screenshotTasks.any { it.contains("generateGenartScreenshots") }
 
     if (framedOnly) {
-        tasks.named<Test>("testDebugUnitTest").configure {
+        tasks.named<Test>("testFullDebugUnitTest").configure {
             filter {
                 includeTestsMatching("fr.geoking.arthur.preview.PhonePreviewFramedScreenshotTest")
             }
@@ -245,7 +256,7 @@ afterEvaluate {
         }
     }
     if (screenOnly) {
-        tasks.named<Test>("testDebugUnitTest").configure {
+        tasks.named<Test>("testFullDebugUnitTest").configure {
             filter {
                 includeTestsMatching("fr.geoking.arthur.preview.PhonePreviewScreenshotTest")
             }
@@ -257,7 +268,7 @@ afterEvaluate {
         }
     }
     if (genartOnly) {
-        tasks.named<Test>("testDebugUnitTest").configure {
+        tasks.named<Test>("testFullDebugUnitTest").configure {
             filter {
                 includeTestsMatching("fr.geoking.arthur.preview.GenartPreviewScreenshotTest")
             }
@@ -273,7 +284,7 @@ afterEvaluate {
         }
     }
     if (!framedOnly && !screenOnly && !genartOnly) {
-        tasks.named<Test>("testDebugUnitTest").configure {
+        tasks.named<Test>("testFullDebugUnitTest").configure {
             filter {
                 excludeTestsMatching("fr.geoking.arthur.preview.*")
             }
@@ -300,7 +311,7 @@ tasks.register("generatePhoneScreenshots") {
     description =
         "Renders phone key screens to screenshots/phone/{lang}/ " +
             "(screen-only; Robolectric + Roborazzi; -PscreenshotLocales=en,fr|all)"
-    dependsOn("testDebugUnitTest")
+    dependsOn("testFullDebugUnitTest")
 }
 
 tasks.register("generatePhoneScreenshotsFramed") {
@@ -308,7 +319,7 @@ tasks.register("generatePhoneScreenshotsFramed") {
     description =
         "Renders phone key screens to screenshots/phone/framed/{lang}/ " +
             "(device chassis; Robolectric + Roborazzi; -PscreenshotLocales=en,fr|all)"
-    dependsOn("testDebugUnitTest")
+    dependsOn("testFullDebugUnitTest")
 }
 
 tasks.register("generateGenartScreenshots") {
@@ -316,7 +327,7 @@ tasks.register("generateGenartScreenshots") {
     description =
         "Bakes genart still previews to screenshots/#N-Name.png " +
             "(-PgenartScreenshotSize=720, -PgenartScreenshotGeneration=7)"
-    dependsOn("testDebugUnitTest")
+    dependsOn("testFullDebugUnitTest")
 }
 
 val googleServices = file("google-services.json")

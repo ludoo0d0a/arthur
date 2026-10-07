@@ -44,8 +44,8 @@ Options can be combined, e.g. `./scripts/debug-play-dhu.sh --adb --logcat`.
 ## 3. Manual steps (if you'd rather drive it yourself)
 
 ```bash
-./gradlew :androidApp:assembleDebug
-adb install -r androidApp/build/outputs/apk/debug/androidApp-debug.apk
+./gradlew :androidApp:assembleFullDebug
+adb install -r androidApp/build/outputs/apk/full/debug/androidApp-full-debug.apk
 ./scripts/run-dhu.sh            # USB accessory mode
 ./scripts/run-dhu.sh --adb      # ADB tunneling
 ./scripts/run-dhu.sh -c config/default_1080p.ini
@@ -73,7 +73,7 @@ and exercise `ArthurCarAppService`/`ArthurMediaService` without a phone —
 run them on every change:
 
 ```bash
-./gradlew :androidApp:testDebugUnitTest --tests "fr.geoking.arthur.auto.*"
+./gradlew :androidApp:testFullDebugUnitTest --tests "fr.geoking.arthur.auto.*"
 ```
 
 These catch DI-wiring and template-building regressions; they don't replace

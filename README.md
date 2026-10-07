@@ -19,7 +19,7 @@ Domain language: [`CONTEXT.md`](CONTEXT.md) · Decisions: [`docs/adr/`](docs/adr
 
 ```bash
 export JAVA_HOME="$HOME/.sdkman/candidates/java/21.0.2-open"
-./gradlew :shared:testAndroidHostTest :fractal:testDebugUnitTest :genart:testDebugUnitTest :androidApp:assembleDebug
+./gradlew :shared:testAndroidHostTest :fractal:testDebugUnitTest :genart:testDebugUnitTest :androidApp:assembleFullDebug
 ```
 
 ## Tests

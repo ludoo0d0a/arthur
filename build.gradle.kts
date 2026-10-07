@@ -22,7 +22,7 @@ tasks.register<Exec>("copyWebsiteScreenshots") {
     commandLine("scripts/fill_website_screenshots.py")
 }
 
-// Screen + framed share :androidApp:testDebugUnitTest with different filters /
+// Screen + framed share :androidApp:testFullDebugUnitTest with different filters /
 // output dirs, so they cannot run in one Gradle invocation. Chain via Exec.
 tasks.register<Exec>("generateWebsiteScreenshots") {
     group = "screenshots"

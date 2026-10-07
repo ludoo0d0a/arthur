@@ -40,7 +40,7 @@ env:
   SMITHSONIAN_API_KEY: ${{ secrets.SMITHSONIAN_API_KEY }}
   DEVIANTART_CLIENT_ID: ${{ secrets.DEVIANTART_CLIENT_ID }}
   DEVIANTART_CLIENT_SECRET: ${{ secrets.DEVIANTART_CLIENT_SECRET }}
-  # DEBUG_DEV intentionally unset: release / Play Store builds keep developer UI off.
+  # DEBUG_DEV unused here: playstore flavor forces BuildConfig.DEBUG_DEV=false.
 
 jobs:
   release:
@@ -54,13 +54,14 @@ jobs:
           package_name: fr.geoking.arthur
           gradle_version: wrapper
           gradle_module: ':androidApp'
-          aab_glob: 'androidApp/build/outputs/bundle/release/androidApp-release.aab'
+          bundle_task: bundlePlaystoreRelease
+          aab_glob: 'androidApp/build/outputs/bundle/playstoreRelease/*.aab'
           google_services_path: 'androidApp/google-services.json'
           unit_test_tasks: >-
             :shared:testAndroidHostTest
             :fractal:testDebugUnitTest
             :genart:testDebugUnitTest
-            :androidApp:testDebugUnitTest
+            :androidApp:testFullDebugUnitTest
           is_workflow_dispatch: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
           workflow_dispatch_track: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.track || '' }}
           workflow_dispatch_skip_review: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.changesNotSentForReview == 'true' && 'true' || 'false' }}

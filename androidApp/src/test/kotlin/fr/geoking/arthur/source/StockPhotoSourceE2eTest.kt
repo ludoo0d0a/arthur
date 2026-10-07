@@ -24,7 +24,7 @@ import org.junit.Test
  * write under `androidApp/build/e2e-samples/stock/` for manual inspection.
  *
  * Skips when API keys are blank. Opt-in so default CI does not hit rate limits:
- * `./gradlew :androidApp:testDebugUnitTest -Pe2eStockPhotos=true --tests '*StockPhotoSourceE2eTest'`
+ * `./gradlew :androidApp:testFullDebugUnitTest -Pe2eStockPhotos=true --tests '*StockPhotoSourceE2eTest'`
  */
 class StockPhotoSourceE2eTest {
 

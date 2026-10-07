@@ -31,7 +31,7 @@ import org.junit.Test
  * Writes under `androidApp/build/e2e-samples/museum/` for manual inspection.
  *
  * Opt-in (default CI skips live calls):
- * `./gradlew :androidApp:testDebugUnitTest -Pe2eMuseumSources=true --tests '*MuseumSourceE2eTest'`
+ * `./gradlew :androidApp:testFullDebugUnitTest -Pe2eMuseumSources=true --tests '*MuseumSourceE2eTest'`
  */
 class MuseumSourceE2eTest {
 

@@ -116,7 +116,9 @@ class MainActivity : ComponentActivity() {
             Configuration.UI_MODE_TYPE_TELEVISION
 
         inAppUpdateHelper.consumeLaunchIntent(intent)
-        inAppUpdateHelper.checkForUpdate()
+        if (BuildConfig.IS_PLAYSTORE_DISTRIBUTION) {
+            inAppUpdateHelper.checkForUpdate()
+        }
         handleDeepLinkIntent(intent)
         maybeOpenPairingFromIntent(intent)
 

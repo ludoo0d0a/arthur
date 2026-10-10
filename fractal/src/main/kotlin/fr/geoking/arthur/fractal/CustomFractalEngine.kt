@@ -5,7 +5,7 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
 
-/** Quality maps to recursion depth and stroke density. */
+/** Quality maps to recursion depth and stroke budget. */
 enum class CustomFractalQuality {
     Low,
     Medium,
@@ -31,12 +31,44 @@ data class FractalVec2(val x: Float, val y: Float) {
     }
 }
 
+/** Cubic Bezier segment in normalized [0,1] space. */
+data class FractalCubic(
+    val p0: FractalVec2,
+    val c1: FractalVec2,
+    val c2: FractalVec2,
+    val p3: FractalVec2,
+)
+
 /** One luminous stroke for Compose or android.graphics bakers. */
 data class FractalStroke(
-    val points: List<FractalVec2>,
+    val cubics: List<FractalCubic>,
     val alpha: Float,
     val strokeScale: Float,
     val colorIndex: Int,
+) {
+    val start: FractalVec2 get() = cubics.first().p0
+    val end: FractalVec2 get() = cubics.last().p3
+}
+
+/**
+ * Fixed recursive branch structure (random scales) independent of morph phase [t].
+ * Rebuild only when [CustomFractalParams] or quality changes.
+ */
+data class FractalTopology(
+    val params: CustomFractalParams,
+    val quality: CustomFractalQuality,
+    val branchAngle0: Float,
+    val root: FractalTopologyNode,
+)
+
+data class FractalTopologyNode(
+    val alpha: Float,
+    val strokeScale: Float,
+    val colorIndex: Int,
+    val branchAngle: Float,
+    /** Random scale used when spawning this node from a parent edge; unused for root. */
+    val spawnScale: Float,
+    val children: List<FractalTopologyNode>,
 )
 
 /**
@@ -58,43 +90,73 @@ object CustomFractalEngine {
     fun paletteArgb(colorSeed: Int): List<Int> =
         FractalCoherentPalette.escapeArgb(colorSeed, count = 8)
 
+    fun strokeBudget(quality: CustomFractalQuality): Int = when (quality) {
+        CustomFractalQuality.Low -> 48
+        CustomFractalQuality.Medium -> 96
+        CustomFractalQuality.High -> 160
+    }
+
+    fun topology(
+        params: CustomFractalParams,
+        quality: CustomFractalQuality = CustomFractalQuality.Medium,
+    ): FractalTopology {
+        val p = params.normalized()
+        val depth = depthFor(quality)
+        val rnd = Random(seed(p))
+        val branchAngle0 = (seed(p) % 360).toFloat() * (PI.toFloat() / 180f)
+        val rootAnchors = p.points.map { FractalVec2(it.x, it.y) }
+        val root = buildNode(
+            anchors = rootAnchors,
+            depth = depth,
+            alpha = 0.92f,
+            strokeScale = 1f,
+            colorIndex = 0,
+            branchAngle = branchAngle0,
+            spawnScale = 1f,
+            rnd = rnd,
+            budget = strokeBudget(quality),
+            used = intArrayOf(0),
+        )
+        return FractalTopology(
+            params = p,
+            quality = quality,
+            branchAngle0 = branchAngle0,
+            root = root,
+        )
+    }
+
+    fun strokesAt(
+        topology: FractalTopology,
+        t: Float,
+    ): List<FractalStroke> {
+        val p = topology.params
+        val anchors = morphAnchors(p, t.mod(1f), seed(p))
+        val out = ArrayList<FractalStroke>(strokeBudget(topology.quality))
+        emitFromNode(
+            node = topology.root,
+            anchors = anchors,
+            out = out,
+            budget = strokeBudget(topology.quality),
+        )
+        return out
+    }
+
     fun frame(
         params: CustomFractalParams,
         t: Float,
         quality: CustomFractalQuality = CustomFractalQuality.Medium,
-    ): List<FractalStroke> {
-        val p = params.normalized()
-        val depth = when (quality) {
-            CustomFractalQuality.Low -> 3
-            CustomFractalQuality.Medium -> 4
-            CustomFractalQuality.High -> 5
-        }
-        val samples = when (quality) {
-            CustomFractalQuality.Low -> 16
-            CustomFractalQuality.Medium -> 24
-            CustomFractalQuality.High -> 36
-        }
-        val rnd = Random(seed(p))
-        val anchors = morphAnchors(p, t.mod(1f), rnd)
-        val strokes = mutableListOf<FractalStroke>()
-        emitRecursive(
-            anchors = anchors,
-            depth = depth,
-            samples = samples,
-            alpha = 0.92f,
-            strokeScale = 1f,
-            colorIndex = 0,
-            branchAngle = (seed(p) % 360).toFloat() * (PI.toFloat() / 180f),
-            out = strokes,
-            rnd = rnd,
-        )
-        return strokes
+    ): List<FractalStroke> = strokesAt(topology(params, quality), t)
+
+    private fun depthFor(quality: CustomFractalQuality): Int = when (quality) {
+        CustomFractalQuality.Low -> 3
+        CustomFractalQuality.Medium -> 4
+        CustomFractalQuality.High -> 5
     }
 
     private fun morphAnchors(
         params: CustomFractalParams,
         t: Float,
-        rnd: Random,
+        structureSeed: Long,
     ): List<FractalVec2> {
         val base = params.points.map { FractalVec2(it.x, it.y) }
         val twoPi = 2f * PI.toFloat()
@@ -117,14 +179,18 @@ object CustomFractalEngine {
                     c + spin * pulse
                 }
             }
-            CustomFractalMorphMode.Unfold -> base.mapIndexed { i, v ->
-                val dir = (v - centroid(base)).normalized()
-                val expand = 0.5f + 0.5f * sin(t * twoPi - i * 0.4f)
-                val jitter = (rnd.nextFloat() - 0.5f) * 0.002f
-                FractalVec2(
-                    (v.x + dir.x * expand * 0.06f + jitter).coerceIn(0.02f, 0.98f),
-                    (v.y + dir.y * expand * 0.06f - jitter).coerceIn(0.02f, 0.98f),
-                )
+            CustomFractalMorphMode.Unfold -> {
+                // Dedicated stream so morph jitter never steals branch-scale randomness.
+                val rnd = Random(structureSeed xor 0xD1B54A32L)
+                base.mapIndexed { i, v ->
+                    val dir = (v - centroid(base)).normalized()
+                    val expand = 0.5f + 0.5f * sin(t * twoPi - i * 0.4f)
+                    val jitter = (rnd.nextFloat() - 0.5f) * 0.002f
+                    FractalVec2(
+                        (v.x + dir.x * expand * 0.06f + jitter).coerceIn(0.02f, 0.98f),
+                        (v.y + dir.y * expand * 0.06f - jitter).coerceIn(0.02f, 0.98f),
+                    )
+                }
             }
         }
     }
@@ -140,65 +206,119 @@ object CustomFractalEngine {
         return FractalVec2(sx / n, sy / n)
     }
 
-    private fun emitRecursive(
+    private fun buildNode(
         anchors: List<FractalVec2>,
         depth: Int,
-        samples: Int,
         alpha: Float,
         strokeScale: Float,
         colorIndex: Int,
         branchAngle: Float,
-        out: MutableList<FractalStroke>,
+        spawnScale: Float,
         rnd: Random,
-    ) {
-        if (anchors.size < 2) return
-        val curve = sampleOpenBezier(anchors, samples)
-        out += FractalStroke(
-            points = curve,
+        budget: Int,
+        used: IntArray,
+    ): FractalTopologyNode {
+        used[0]++
+        val children = mutableListOf<FractalTopologyNode>()
+        if (depth > 0 && anchors.size >= 2 && used[0] < budget) {
+            val midCount = (anchors.size - 1).coerceAtLeast(1)
+            for (i in 0 until midCount) {
+                if (used[0] >= budget) break
+                val a = anchors[i]
+                val b = anchors[(i + 1) % anchors.size]
+                val mid = (a + b) * 0.5f
+                val edge = b - a
+                val len = edge.length().coerceAtLeast(1e-4f)
+                val normal = FractalVec2(-edge.y / len, edge.x / len)
+                val scale = 0.38f + rnd.nextFloat() * 0.12f
+                val childAnchors = childAnchors(mid, edge, normal, branchAngle, strokeScale, scale)
+                children += buildNode(
+                    anchors = childAnchors,
+                    depth = depth - 1,
+                    alpha = alpha * 0.72f,
+                    strokeScale = strokeScale * 0.65f,
+                    colorIndex = (colorIndex + 1 + i) % 8,
+                    branchAngle = branchAngle + 0.4f + i * 0.15f,
+                    spawnScale = scale,
+                    rnd = rnd,
+                    budget = budget,
+                    used = used,
+                )
+            }
+        }
+        return FractalTopologyNode(
             alpha = alpha,
             strokeScale = strokeScale,
             colorIndex = colorIndex,
+            branchAngle = branchAngle,
+            spawnScale = spawnScale,
+            children = children,
         )
-        if (depth <= 0) return
+    }
 
+    private fun emitFromNode(
+        node: FractalTopologyNode,
+        anchors: List<FractalVec2>,
+        out: MutableList<FractalStroke>,
+        budget: Int,
+    ) {
+        if (out.size >= budget || anchors.size < 2) return
+        val cubics = openBezierCubics(anchors)
+        if (cubics.isEmpty()) return
+        out += FractalStroke(
+            cubics = cubics,
+            alpha = node.alpha,
+            strokeScale = node.strokeScale,
+            colorIndex = node.colorIndex,
+        )
+        if (node.children.isEmpty()) return
         val midCount = (anchors.size - 1).coerceAtLeast(1)
-        for (i in 0 until midCount) {
+        for (i in node.children.indices) {
+            if (out.size >= budget) return
+            if (i >= midCount) break
             val a = anchors[i]
             val b = anchors[(i + 1) % anchors.size]
             val mid = (a + b) * 0.5f
             val edge = b - a
             val len = edge.length().coerceAtLeast(1e-4f)
             val normal = FractalVec2(-edge.y / len, edge.x / len)
-            val scale = 0.38f + rnd.nextFloat() * 0.12f
-            val child = listOf(
-                mid + normal * (0.04f * strokeScale),
-                mid + edge.rotated(branchAngle) * (scale * 0.35f) + normal * (0.08f * strokeScale),
-                mid + edge.rotated(-branchAngle) * (scale * 0.35f) - normal * (0.06f * strokeScale),
-                mid - normal * (0.03f * strokeScale),
+            val child = node.children[i]
+            val childAnchors = childAnchors(
+                mid = mid,
+                edge = edge,
+                normal = normal,
+                branchAngle = node.branchAngle,
+                strokeScale = node.strokeScale,
+                scale = child.spawnScale,
             )
-            emitRecursive(
-                anchors = child,
-                depth = depth - 1,
-                samples = (samples * 0.7f).toInt().coerceAtLeast(8),
-                alpha = alpha * 0.72f,
-                strokeScale = strokeScale * 0.65f,
-                colorIndex = (colorIndex + 1 + i) % 8,
-                branchAngle = branchAngle + 0.4f + i * 0.15f,
-                out = out,
-                rnd = rnd,
-            )
+            emitFromNode(child, childAnchors, out, budget)
         }
     }
 
-    /** Catmull-style cubic through anchors via derived Bezier handles. */
-    private fun sampleOpenBezier(anchors: List<FractalVec2>, samplesPerSeg: Int): List<FractalVec2> {
+    private fun childAnchors(
+        mid: FractalVec2,
+        edge: FractalVec2,
+        normal: FractalVec2,
+        branchAngle: Float,
+        strokeScale: Float,
+        scale: Float,
+    ): List<FractalVec2> = listOf(
+        mid + normal * (0.04f * strokeScale),
+        mid + edge.rotated(branchAngle) * (scale * 0.35f) + normal * (0.08f * strokeScale),
+        mid + edge.rotated(-branchAngle) * (scale * 0.35f) - normal * (0.06f * strokeScale),
+        mid - normal * (0.03f * strokeScale),
+    )
+
+    /** Catmull-style open cubic chain through anchors (no polyline sampling). */
+    private fun openBezierCubics(anchors: List<FractalVec2>): List<FractalCubic> {
+        if (anchors.size < 2) return emptyList()
         if (anchors.size == 2) {
-            return List(samplesPerSeg) { i ->
-                val u = i / (samplesPerSeg - 1).coerceAtLeast(1).toFloat()
-                anchors[0] * (1f - u) + anchors[1] * u
-            }
+            val a = anchors[0]
+            val b = anchors[1]
+            val third = (b - a) * (1f / 3f)
+            return listOf(FractalCubic(a, a + third, b - third, b))
         }
-        val out = mutableListOf<FractalVec2>()
+        val out = ArrayList<FractalCubic>(anchors.lastIndex)
         for (i in 0 until anchors.lastIndex) {
             val p0 = anchors[(i - 1).coerceAtLeast(0)]
             val p1 = anchors[i]
@@ -206,28 +326,8 @@ object CustomFractalEngine {
             val p3 = anchors[(i + 2).coerceAtMost(anchors.lastIndex)]
             val c1 = p1 + (p2 - p0) * (1f / 6f)
             val c2 = p2 - (p3 - p1) * (1f / 6f)
-            val segSamples = samplesPerSeg.coerceAtLeast(4)
-            val start = if (i == 0) 0 else 1
-            for (s in start until segSamples) {
-                val u = s / (segSamples - 1).toFloat()
-                out += cubicBezier(p1, c1, c2, p2, u)
-            }
+            out += FractalCubic(p1, c1, c2, p2)
         }
         return out
-    }
-
-    private fun cubicBezier(
-        p0: FractalVec2,
-        p1: FractalVec2,
-        p2: FractalVec2,
-        p3: FractalVec2,
-        u: Float,
-    ): FractalVec2 {
-        val omu = 1f - u
-        val a = p0 * (omu * omu * omu)
-        val b = p1 * (3f * omu * omu * u)
-        val c = p2 * (3f * omu * u * u)
-        val d = p3 * (u * u * u)
-        return a + b + c + d
     }
 }

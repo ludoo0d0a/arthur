@@ -25,8 +25,44 @@ class CustomFractalEngineTest {
         val a = CustomFractalEngine.frame(triangle, 0.33f, CustomFractalQuality.Medium)
         val b = CustomFractalEngine.frame(triangle, 0.33f, CustomFractalQuality.Medium)
         assertEquals(a.size, b.size)
-        assertEquals(a.first().points, b.first().points)
+        assertEquals(a.first().cubics, b.first().cubics)
         assertEquals(CustomFractalEngine.seed(triangle), CustomFractalEngine.seed(triangle))
+    }
+
+    @Test
+    fun topology_then_strokesAt_matches_frame() {
+        val topology = CustomFractalEngine.topology(triangle, CustomFractalQuality.High)
+        val fromTopo = CustomFractalEngine.strokesAt(topology, 0.42f)
+        val fromFrame = CustomFractalEngine.frame(triangle, 0.42f, CustomFractalQuality.High)
+        assertEquals(fromFrame.size, fromTopo.size)
+        assertEquals(fromFrame.first().cubics, fromTopo.first().cubics)
+        assertEquals(fromFrame.last().cubics, fromTopo.last().cubics)
+    }
+
+    @Test
+    fun topology_reused_across_phases() {
+        val topology = CustomFractalEngine.topology(triangle, CustomFractalQuality.Medium)
+        val a = CustomFractalEngine.strokesAt(topology, 0.1f)
+        val b = CustomFractalEngine.strokesAt(topology, 0.7f)
+        assertEquals(a.size, b.size)
+        assertNotEquals(a.first().cubics.first().p0, b.first().cubics.first().p0)
+    }
+
+    @Test
+    fun strokeBudget_capsHigh() {
+        val dense = CustomFractalParams(
+            points = List(CustomFractalParams.MAX_POINTS) { i ->
+                NormPoint(0.1f + i * 0.07f, 0.2f + (i % 3) * 0.2f)
+            },
+            colorSeed = 7,
+        )
+        val strokes = CustomFractalEngine.frame(dense, 0.2f, CustomFractalQuality.High)
+        assertTrue(strokes.isNotEmpty())
+        assertTrue(
+            "expected budget cap, got ${strokes.size}",
+            strokes.size <= CustomFractalEngine.strokeBudget(CustomFractalQuality.High),
+        )
+        assertTrue(strokes.all { it.cubics.isNotEmpty() })
     }
 
     @Test
@@ -41,7 +77,7 @@ class CustomFractalEngineTest {
         assertNotEquals(CustomFractalEngine.seed(triangle), CustomFractalEngine.seed(edited))
         val a = CustomFractalEngine.frame(triangle, 0.1f, CustomFractalQuality.Low)
         val b = CustomFractalEngine.frame(edited, 0.1f, CustomFractalQuality.Low)
-        assertNotEquals(a.first().points.first(), b.first().points.first())
+        assertNotEquals(a.first().cubics.first().p0, b.first().cubics.first().p0)
     }
 
     @Test
@@ -84,7 +120,7 @@ class CustomFractalEngineTest {
                 CustomFractalQuality.High,
             )
             assertTrue(strokes.isNotEmpty())
-            assertTrue(strokes.first().points.size >= 2)
+            assertTrue(strokes.first().cubics.isNotEmpty())
         }
     }
 

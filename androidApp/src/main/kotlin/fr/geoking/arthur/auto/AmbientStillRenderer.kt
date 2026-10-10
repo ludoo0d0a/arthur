@@ -271,7 +271,7 @@ object AmbientStillRenderer {
             params = params,
             size = SIZE,
             generation = generation,
-            quality = CustomFractalQuality.Medium,
+            quality = CustomFractalQuality.High,
         )
     }
 

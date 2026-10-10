@@ -183,6 +183,7 @@ class PackModelsTest {
         assertEquals("genart_all", suffixes.first())
         assertTrue(suffixes.contains("genart_abstract"))
         assertTrue(suffixes.contains("genart_tapet"))
+        assertTrue(suffixes.contains("genart_vintage"))
     }
 
     @Test
@@ -192,9 +193,35 @@ class PackModelsTest {
         assertEquals(null, tiles.first().sellablePackId)
         assertTrue(tiles.any { it.testTagSuffix == "sound_hearth_weather" })
         assertTrue(tiles.any { it.testTagSuffix == "sound_solo_violin" })
+        assertTrue(tiles.any { it.testTagSuffix == "sound_arcade_chips" })
         val hearth = tiles.first { it.testTagSuffix == "sound_hearth_weather" }
         assertEquals("audio_hearth_weather", hearth.sellablePackId)
         assertEquals(R.drawable.pack_audio_hearth_weather, hearth.coverRes)
+        val chips = tiles.first { it.testTagSuffix == "sound_arcade_chips" }
+        assertEquals("audio_arcade_chips", chips.sellablePackId)
+    }
+
+    @Test
+    fun vintageGamesSubPacks_ambientVisualsMusic() {
+        val tiles = PackFamily.VintageGames.subPackTiles()
+        assertEquals(
+            listOf("vintage_ambient", "vintage_visuals", "vintage_music"),
+            tiles.map { it.testTagSuffix },
+        )
+        assertEquals("genart_vintage", tiles[0].sellablePackId)
+        assertEquals("genart_vintage", tiles[1].sellablePackId)
+        assertEquals("audio_arcade_chips", tiles[2].sellablePackId)
+        assertTrue(
+            PackSelection(PackFamily.VintageGames, VintageGamesSub.AMBIENT)
+                .appliesArcadeChipsOnAmbientStart(),
+        )
+        assertTrue(
+            PackSelection(PackFamily.VintageGames, VintageGamesSub.MUSIC).opensSoundPlayer(),
+        )
+        assertFalse(
+            PackSelection(PackFamily.VintageGames, VintageGamesSub.VISUALS)
+                .appliesArcadeChipsOnAmbientStart(),
+        )
     }
 
     @Test

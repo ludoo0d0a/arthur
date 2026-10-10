@@ -15,6 +15,7 @@ object GenartPackTopics {
     const val EARTH = "earth"
     const val PLANETS = "planets"
     const val SCIFI = "scifi"
+    const val VINTAGE = "vintage"
     const val ABSTRACT = "abstract"
     const val GEOMETRY = "geometry"
     const val FRACTAL = "fractal"
@@ -22,7 +23,7 @@ object GenartPackTopics {
 
     /** Monetized topic suffixes (excludes All / Random). */
     val monetizedTopicSuffixes: List<String> = listOf(
-        TAPET, NATURE, WEATHER, WATER, LIFE, EARTH, PLANETS, SCIFI, ABSTRACT, GEOMETRY, FRACTAL, CUSTOM,
+        TAPET, NATURE, WEATHER, WATER, LIFE, EARTH, PLANETS, SCIFI, VINTAGE, ABSTRACT, GEOMETRY, FRACTAL, CUSTOM,
     )
 
     val TAPET_IDS: Set<String> = setOf(
@@ -222,6 +223,25 @@ object GenartPackTopics {
         GenartSource.RETRO_WAVE,
     )
 
+    val VINTAGE_IDS: Set<String> = setOf(
+        GenartSource.COURT_BOUNCE,
+        GenartSource.COPPER_BARS,
+        GenartSource.NEON_HIGHWAY,
+        GenartSource.SOFT_DROP,
+        GenartSource.VECTOR_ROCKS,
+        GenartSource.BRICK_CASCADE,
+        GenartSource.PIXEL_FORMATION,
+        GenartSource.CRT_BOOT,
+        GenartSource.RETRO_WAVE,
+        GenartSource.TUNNEL,
+        GenartSource.ROADS,
+        GenartSource.PSEUDO3D,
+        GenartSource.MATRIX,
+        GenartSource.ASTEROIDS,
+        GenartSource.DATA_HORIZON,
+        GenartSource.WARP_STREAK,
+    )
+
     val ABSTRACT_IDS: Set<String> = setOf(
         GenartSource.BREATH_CIRCLES,
         GenartSource.RIBBONS,
@@ -305,6 +325,7 @@ object GenartPackTopics {
         EARTH -> EARTH_IDS
         PLANETS -> PLANETS_IDS
         SCIFI -> SCIFI_IDS
+        VINTAGE -> VINTAGE_IDS
         ABSTRACT -> ABSTRACT_IDS
         GEOMETRY -> GEOMETRY_IDS
         else -> emptySet()

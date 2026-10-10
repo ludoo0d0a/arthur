@@ -182,6 +182,8 @@ object MusicPresetResolver {
             },
             pulse = when (style) {
                 MusicStyle.AfricanPulse -> mix.pulse.coerceAtMost(0.12f)
+                MusicStyle.Chiptune, MusicStyle.ChipArp, MusicStyle.ArcadeGlow ->
+                    mix.pulse.coerceAtMost(0.10f)
                 else -> 0.02f
             },
             transition = mix.transition.coerceAtMost(0.35f),
@@ -192,7 +194,7 @@ object MusicPresetResolver {
     private fun audioTopicPriority(topic: String): Int = when (topic) {
         GenartPackTopics.WATER -> 0
         GenartPackTopics.WEATHER -> 1
-        GenartPackTopics.PLANETS, GenartPackTopics.SCIFI -> 2
+        GenartPackTopics.PLANETS, GenartPackTopics.SCIFI, GenartPackTopics.VINTAGE -> 2
         GenartPackTopics.LIFE -> 3
         GenartPackTopics.EARTH -> 4
         GenartPackTopics.NATURE -> 5
@@ -214,6 +216,8 @@ object MusicPresetResolver {
             listOf(MusicStyle.JazzPiano, MusicStyle.BarAmbience, MusicStyle.NightLounge)
         GenartPackTopics.PLANETS, GenartPackTopics.SCIFI ->
             listOf(MusicStyle.CosmicDrone, MusicStyle.OrchestraPads, MusicStyle.Zen)
+        GenartPackTopics.VINTAGE ->
+            listOf(MusicStyle.Chiptune, MusicStyle.ChipArp, MusicStyle.ArcadeGlow)
         GenartPackTopics.FRACTAL, GenartPackTopics.CUSTOM ->
             listOf(MusicStyle.JazzPiano, MusicStyle.Zen, MusicStyle.OrchestraPads)
         else -> listOf(MusicStyle.JazzPiano, MusicStyle.Zen)
@@ -288,8 +292,12 @@ object MusicPresetResolver {
             TrackMix(bed = 0.14f, harmony = 0.12f, melody = 0.58f, bass = 0.36f, texture = 0f, pulse = 0.02f)
         MusicStyle.HawaiianUkulele ->
             TrackMix(bed = 0.10f, harmony = 0.20f, melody = 0.58f, bass = 0.38f, texture = 0f, pulse = 0.04f)
-        MusicStyle.Chiptune, MusicStyle.ChipArp, MusicStyle.ArcadeGlow ->
-            TrackMix(bed = 0.08f, harmony = 0.14f, melody = 0.55f, bass = 0.42f, texture = 0f, pulse = 0.16f)
+        MusicStyle.Chiptune ->
+            TrackMix(bed = 0.08f, harmony = 0.12f, melody = 0.58f, bass = 0.40f, texture = 0f, pulse = 0.10f)
+        MusicStyle.ChipArp ->
+            TrackMix(bed = 0.06f, harmony = 0.10f, melody = 0.60f, bass = 0.38f, texture = 0f, pulse = 0.12f)
+        MusicStyle.ArcadeGlow ->
+            TrackMix(bed = 0.18f, harmony = 0.16f, melody = 0.42f, bass = 0.32f, texture = 0.06f, pulse = 0.06f)
     }
 
     private fun baseTempo(style: MusicStyle): Float = when (style) {
@@ -298,14 +306,14 @@ object MusicPresetResolver {
         MusicStyle.OrchestraPads, MusicStyle.OrchestraSwell,
         -> 56f
         MusicStyle.WindChimes, MusicStyle.Songbirds, MusicStyle.ClassicalPiano,
-        MusicStyle.ViolinLead, MusicStyle.PianoBallad,
+        MusicStyle.ViolinLead, MusicStyle.PianoBallad, MusicStyle.ArcadeGlow,
         -> 58f
         MusicStyle.SoftGuitar, MusicStyle.BarAmbience, MusicStyle.NightLounge,
         MusicStyle.RockBallad, MusicStyle.HawaiianUkulele,
         -> 68f
         MusicStyle.JazzPiano, MusicStyle.BassOnly -> 76f
         MusicStyle.AfricanPulse -> 92f
-        MusicStyle.Chiptune, MusicStyle.ChipArp, MusicStyle.ArcadeGlow -> 110f
+        MusicStyle.Chiptune, MusicStyle.ChipArp -> 96f
     }
 
     private fun delta(seed: Long, lane: Int): Float =

@@ -13,8 +13,10 @@ class MarketplaceCatalogTest {
         assertTrue(MarketplaceCatalog.PERSONAL_PHOTOS_ID in ids)
         assertTrue(MarketplaceCatalog.genartPackId(GenartPackTopics.TAPET) in ids)
         assertTrue(MarketplaceCatalog.genartPackId(GenartPackTopics.CUSTOM) in ids)
+        assertTrue(MarketplaceCatalog.genartPackId(GenartPackTopics.VINTAGE) in ids)
         assertTrue(MarketplaceCatalog.audioPackId(AudioPackCatalog.HEARTH_WEATHER) in ids)
         assertTrue(MarketplaceCatalog.audioPackId(AudioPackCatalog.SOLO_VIOLIN) in ids)
+        assertTrue(MarketplaceCatalog.audioPackId(AudioPackCatalog.ARCADE_CHIPS) in ids)
         assertEquals(
             1 + GenartPackTopics.monetizedTopicSuffixes.size +
                 AudioPackCatalog.monetizedPackSuffixes.size,

@@ -29,6 +29,10 @@
     <string name="rotation_section">Prepared rotation</string>
     <string name="packs_section">Packs</string>
     <string name="pack_museum">Museum</string>
+    <string name="pack_vintage_games">Vintage Games</string>
+    <string name="vintage_sub_ambient">Ambient</string>
+    <string name="vintage_sub_visuals">Visuals</string>
+    <string name="vintage_sub_music">Music</string>
     <string name="load_more">Load more</string>
     <string name="fractal_hero_label">Live fractal canvas</string>
     <string name="genart_hero_label">Live genart canvas</string>
@@ -99,6 +103,7 @@
     <string name="audio_pack_bass_only">Bass Only</string>
     <string name="audio_pack_midnight_ballad">Midnight Ballad</string>
     <string name="audio_pack_hawaiian_breeze">Hawaiian Breeze</string>
+    <string name="audio_pack_arcade_chips">Arcade Chips</string>
     <string name="premium_ux_subtitle">No ads and favorites (coming soon)</string>
     <string name="genart_topic_fractal">Fractal</string>
     <string name="genart_topic_custom">Custom</string>
@@ -112,6 +117,7 @@
     <string name="genart_topic_life">Life</string>
     <string name="genart_topic_earth">Earth</string>
     <string name="genart_topic_scifi">Sci-Fi</string>
+    <string name="genart_topic_vintage">Vintage Games</string>
     <string name="search_genart_placeholder">Search genart...</string>
     <string name="custom_fractal_create">Create custom fractal</string>
     <string name="custom_fractal_title">Custom Fractal</string>
@@ -194,6 +200,9 @@
     <string name="settings_ambient_sound_style_bass_only">Bass only</string>
     <string name="settings_ambient_sound_style_piano_ballad">Piano ballad</string>
     <string name="settings_ambient_sound_style_hawaiian_ukulele">Hawaiian ukulele</string>
+    <string name="settings_ambient_sound_style_chiptune">Chiptune</string>
+    <string name="settings_ambient_sound_style_chip_arp">Chip arpeggio</string>
+    <string name="settings_ambient_sound_style_arcade_glow">Arcade glow</string>
     <string name="settings_ambient_sound_complexity">Complexity</string>
     <string name="settings_ambient_sound_complexity_hint">More notes and ornaments</string>
     <string name="settings_ambient_sound_complexity_low">Low</string>

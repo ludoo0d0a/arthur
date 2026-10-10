@@ -35,6 +35,9 @@ import fr.geoking.arthur.source.QuoteSettings
 import fr.geoking.arthur.source.RotationSettings
 import fr.geoking.arthur.ui.components.PackFamily
 import fr.geoking.arthur.ui.components.PackSelection
+import fr.geoking.arthur.ui.components.appliesArcadeChipsOnAmbientStart
+import fr.geoking.arthur.ui.components.applySoundPack
+import fr.geoking.arthur.ui.components.opensSoundPlayer
 import fr.geoking.arthur.ui.components.subPackTiles
 import fr.geoking.arthur.shared.marketplace.PackOwnership
 import org.koin.core.component.KoinComponent
@@ -424,6 +427,7 @@ class SubPackSelectionScreen(
 ) : Screen(carContext), KoinComponent {
     private val packOwnership: PackOwnership
         get() = runCatching { getKoin().get<PackOwnership>() }.getOrDefault(PackOwnership.NONE)
+    private val ambientAudioSettings: AmbientAudioSettings by inject()
 
     override fun onGetTemplate(): Template {
         return try {
@@ -438,8 +442,8 @@ class SubPackSelectionScreen(
         val tiles = family.subPackTiles()
             .filter { tile ->
                 when (family) {
-                    // Sound: free + owned only (no Marketplace unlock on Auto).
-                    PackFamily.Sound -> !tile.isLocked(packOwnership)
+                    // Sound / Vintage Games: free + owned only (no Marketplace unlock on Auto).
+                    PackFamily.Sound, PackFamily.VintageGames -> !tile.isLocked(packOwnership)
                     // Other families: no sellable/commerce tiles on Auto.
                     else -> tile.sellablePackId == null
                 }
@@ -455,9 +459,12 @@ class SubPackSelectionScreen(
                 .setTitle(carContext.getString(tile.titleRes))
                 .setImage(coverCarIcon(carContext, tile.coverRes))
                 .setOnClickListener {
-                    if (tile.selection.family == PackFamily.Sound) {
+                    if (tile.selection.opensSoundPlayer()) {
                         screenManager.push(SoundPlayerCarScreen(carContext, tile.selection))
                     } else {
+                        if (tile.selection.appliesArcadeChipsOnAmbientStart()) {
+                            tile.selection.applySoundPack(ambientAudioSettings)
+                        }
                         screenManager.push(createAmbientScreen(carContext, tile.selection))
                     }
                 }

@@ -35,6 +35,7 @@ object PackCovers {
         GenartTopic.Earth -> R.drawable.pack_genart_earth
         GenartTopic.Planets -> R.drawable.pack_genart_planets
         GenartTopic.SciFi -> R.drawable.pack_genart_scifi
+        GenartTopic.Vintage -> R.drawable.pack_genart_vintage
         GenartTopic.Abstract -> R.drawable.pack_genart_abstract
         GenartTopic.Geometry -> R.drawable.pack_genart_geometry
         GenartTopic.Fractal -> R.drawable.pack_genart_fractal
@@ -89,5 +90,6 @@ object PackCovers {
         AudioPackTopic.BassOnly -> R.drawable.pack_audio_bass_only
         AudioPackTopic.MidnightBallad -> R.drawable.pack_audio_midnight_ballad
         AudioPackTopic.HawaiianBreeze -> R.drawable.pack_audio_hawaiian_breeze
+        AudioPackTopic.ArcadeChips -> R.drawable.pack_audio_arcade_chips
     }
 }

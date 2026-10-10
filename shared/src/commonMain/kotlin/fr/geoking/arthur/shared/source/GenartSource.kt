@@ -147,6 +147,14 @@ class GenartSource(
         const val TERRAIN_MAKER = "genart.terrainmaker"
         const val MULTI_FLAMES = "genart.multiflames"
         const val AIR_BUBBLES = "genart.airbubbles"
+        const val COURT_BOUNCE = "genart.courtbounce"
+        const val COPPER_BARS = "genart.copperbars"
+        const val NEON_HIGHWAY = "genart.neonhighway"
+        const val SOFT_DROP = "genart.softdrop"
+        const val VECTOR_ROCKS = "genart.vectorrocks"
+        const val BRICK_CASCADE = "genart.brickcascade"
+        const val PIXEL_FORMATION = "genart.pixelformation"
+        const val CRT_BOOT = "genart.crtboot"
 
         fun defaultCatalog(): List<Artwork> = listOf(
             entry(PARTICLES, "#1 - Drifting Particles"),
@@ -277,6 +285,14 @@ class GenartSource(
             entry(TERRAIN_MAKER, "#125 - Landscape Terrain Maker"),
             entry(MULTI_FLAMES, "#126 - Multiple Fires"),
             entry(AIR_BUBBLES, "#127 - Underwater Air Bubbles"),
+            entry(COURT_BOUNCE, "#128 - Court Bounce"),
+            entry(COPPER_BARS, "#129 - Copper Bars"),
+            entry(NEON_HIGHWAY, "#130 - Neon Highway"),
+            entry(SOFT_DROP, "#131 - Soft Drop"),
+            entry(VECTOR_ROCKS, "#132 - Vector Rocks"),
+            entry(BRICK_CASCADE, "#133 - Brick Cascade"),
+            entry(PIXEL_FORMATION, "#134 - Pixel Formation"),
+            entry(CRT_BOOT, "#135 - CRT Boot"),
         )
 
         private fun entry(id: String, title: String) = Artwork(

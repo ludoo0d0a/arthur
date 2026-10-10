@@ -96,6 +96,14 @@ class GenartCatalogTest {
         assertEquals(GenartEngineId.TerrainMaker, GenartCatalog.engineForId("genart.terrainmaker"))
         assertEquals(GenartEngineId.MultiFlames, GenartCatalog.engineForId("genart.multiflames"))
         assertEquals(GenartEngineId.AirBubbles, GenartCatalog.engineForId("genart.airbubbles"))
+        assertEquals(GenartEngineId.CourtBounce, GenartCatalog.engineForId("genart.courtbounce"))
+        assertEquals(GenartEngineId.CopperBars, GenartCatalog.engineForId("genart.copperbars"))
+        assertEquals(GenartEngineId.NeonHighway, GenartCatalog.engineForId("genart.neonhighway"))
+        assertEquals(GenartEngineId.SoftDrop, GenartCatalog.engineForId("genart.softdrop"))
+        assertEquals(GenartEngineId.VectorRocks, GenartCatalog.engineForId("genart.vectorrocks"))
+        assertEquals(GenartEngineId.BrickCascade, GenartCatalog.engineForId("genart.brickcascade"))
+        assertEquals(GenartEngineId.PixelFormation, GenartCatalog.engineForId("genart.pixelformation"))
+        assertEquals(GenartEngineId.CrtBoot, GenartCatalog.engineForId("genart.crtboot"))
     }
 
     @Test
@@ -180,5 +188,13 @@ class GenartCatalogTest {
         assertEquals("#125 - Landscape Terrain Maker", GenartCatalog.entries().first { it.id == "genart.terrainmaker" }.title)
         assertEquals("#126 - Multiple Fires", GenartCatalog.entries().first { it.id == "genart.multiflames" }.title)
         assertEquals("#127 - Underwater Air Bubbles", GenartCatalog.entries().first { it.id == "genart.airbubbles" }.title)
+        assertEquals("#128 - Court Bounce", GenartCatalog.entries().first { it.id == "genart.courtbounce" }.title)
+        assertEquals("#129 - Copper Bars", GenartCatalog.entries().first { it.id == "genart.copperbars" }.title)
+        assertEquals("#130 - Neon Highway", GenartCatalog.entries().first { it.id == "genart.neonhighway" }.title)
+        assertEquals("#131 - Soft Drop", GenartCatalog.entries().first { it.id == "genart.softdrop" }.title)
+        assertEquals("#132 - Vector Rocks", GenartCatalog.entries().first { it.id == "genart.vectorrocks" }.title)
+        assertEquals("#133 - Brick Cascade", GenartCatalog.entries().first { it.id == "genart.brickcascade" }.title)
+        assertEquals("#134 - Pixel Formation", GenartCatalog.entries().first { it.id == "genart.pixelformation" }.title)
+        assertEquals("#135 - CRT Boot", GenartCatalog.entries().first { it.id == "genart.crtboot" }.title)
     }
 }

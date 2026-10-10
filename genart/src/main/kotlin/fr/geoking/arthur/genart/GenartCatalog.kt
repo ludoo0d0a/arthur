@@ -129,6 +129,14 @@ enum class GenartEngineId {
     TerrainMaker,
     MultiFlames,
     AirBubbles,
+    CourtBounce,
+    CopperBars,
+    NeonHighway,
+    SoftDrop,
+    VectorRocks,
+    BrickCascade,
+    PixelFormation,
+    CrtBoot,
 }
 
 enum class GenartQuality { Low, Medium, High }

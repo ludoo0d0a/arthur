@@ -74,6 +74,7 @@ import fr.geoking.arthur.shared.source.MuseumSearchKind
 import fr.geoking.arthur.shared.source.StockPhotoCategory
 import fr.geoking.arthur.shared.debug.DebugLogger
 import fr.geoking.arthur.source.AmbientAudioSettings
+import fr.geoking.arthur.tv.AmbientRotationLaunch
 import fr.geoking.arthur.source.MuseumSearchSettings
 import fr.geoking.arthur.source.ScreensaverSettings
 import fr.geoking.arthur.source.StillImagePrefetcher
@@ -88,11 +89,14 @@ import fr.geoking.arthur.ui.components.PackGrid
 import fr.geoking.arthur.ui.components.PackSelection
 import fr.geoking.arthur.ui.components.PackTile
 import fr.geoking.arthur.ui.components.allowsGenerativeAmbientFallback
+import fr.geoking.arthur.ui.components.appliesArcadeChipsOnAmbientStart
+import fr.geoking.arthur.ui.components.applySoundPack
 import fr.geoking.arthur.ui.components.defaultSubId
 import fr.geoking.arthur.ui.components.genartTopicOrNull
 import fr.geoking.arthur.ui.components.homeTile
 import fr.geoking.arthur.ui.components.isGenartCustom
 import fr.geoking.arthur.ui.components.museumTopicOrNull
+import fr.geoking.arthur.ui.components.opensSoundPlayer
 import fr.geoking.arthur.ui.components.resolvePackPool
 import fr.geoking.arthur.ui.components.sourceIdsForAmbientLoad
 import fr.geoking.arthur.ui.components.stockCategoryOrNull
@@ -190,10 +194,20 @@ fun ControlPlaneScreen(
         }
     }
 
-    fun launchAmbient(forSelection: PackSelection) {
+    fun launchAmbient(forSelection: PackSelection, resumeIfPossible: Boolean = true) {
         if (startingSelection != null) return
         startingSelection = forSelection
         syncSourceSettings(forSelection)
+        val packKey = forSelection.sessionKey()
+        AmbientRotationLaunch.bindPack(packKey)
+        if (resumeIfPossible) {
+            val resume = AmbientRotationLaunch.matchingSession(packKey)
+            if (resume != null) {
+                startingSelection = null
+                onStartAmbient(resume.artwork, resume.pool, resume.renewSourceIds)
+                return
+            }
+        }
         val renewIds = forSelection.sourceIdsForAmbientLoad()
         val cat = forSelection.stockCategoryOrNull()
             ?: if (forSelection.videoSourceOrNull() != null || forSelection.museumTopicOrNull() != null) {
@@ -253,6 +267,11 @@ fun ControlPlaneScreen(
                 ) {
                     StillImagePrefetcher.ensureCached(imageCache, chosen, allowNetwork = true)
                 }
+                AmbientRotationLaunch.prepare(
+                    pool = rotationPool,
+                    renewSourceIds = renewIds,
+                    currentArtworkId = chosen?.id,
+                )
                 onStartAmbient(chosen, rotationPool, renewIds)
             } finally {
                 startingSelection = null
@@ -260,12 +279,15 @@ fun ControlPlaneScreen(
         }
     }
 
-    fun openMediaPack(forSelection: PackSelection) {
+    fun openMediaPack(forSelection: PackSelection, resumeIfPossible: Boolean = true) {
         lastMediaPack = forSelection
-        if (forSelection.family == PackFamily.Sound) {
+        if (forSelection.opensSoundPlayer()) {
             onOpenSoundPlayer?.invoke(forSelection)
         } else {
-            launchAmbient(forSelection)
+            if (forSelection.appliesArcadeChipsOnAmbientStart()) {
+                ambientAudioSettings?.let { forSelection.applySoundPack(it) }
+            }
+            launchAmbient(forSelection, resumeIfPossible = resumeIfPossible)
         }
     }
 
@@ -324,14 +346,20 @@ fun ControlPlaneScreen(
         },
         onSelectSubPack = { sel ->
             selection = sel
-            if (sel.family == PackFamily.Sound) {
+            if (sel.opensSoundPlayer()) {
                 openMediaPack(sel)
             }
         },
         onBackToHome = { openedFamily = null },
-        onStartAmbient = { openMediaPack(selection) },
+        onStartAmbient = { openMediaPack(selection, resumeIfPossible = false) },
         onStartAmbientArtwork = { artwork ->
             lastMediaPack = selection
+            if (selection.appliesArcadeChipsOnAmbientStart()) {
+                ambientAudioSettings?.let { selection.applySoundPack(it) }
+            }
+            AmbientRotationLaunch.bindPack(selection.sessionKey())
+            AmbientRotationLaunch.resetPack()
+            AmbientRotationLaunch.bindPack(selection.sessionKey())
             syncSourceSettings()
             val renewIds = selection.sourceIdsForAmbientLoad()
             val pool = resolvePackPool(catalog, selection)
@@ -344,10 +372,15 @@ fun ControlPlaneScreen(
                         imageCache.hasImage(art.id)
                 },
             )
+            AmbientRotationLaunch.prepare(
+                pool = rotationPool,
+                renewSourceIds = renewIds,
+                currentArtworkId = artwork.id,
+            )
             onStartAmbient(artwork, rotationPool, renewIds)
         },
         onStartMediaPlayer = {
-            ambientAudioSettings?.setEnabled(true)
+            // Resume last playlist in place; do not force-unmute (mute is persisted per device).
             val mediaSelection = resolveMediaPlayerPack(
                 openedFamily = openedFamily,
                 selection = selection,
@@ -358,7 +391,7 @@ fun ControlPlaneScreen(
             if (home.isLocked(packOwnership)) {
                 onOpenMarketplace?.invoke(home.sellablePackId)
             } else {
-                openMediaPack(mediaSelection)
+                openMediaPack(mediaSelection, resumeIfPossible = true)
             }
         },
         modifier = modifier,
@@ -589,7 +622,7 @@ private fun PhoneControlPlaneContent(
                     onTileClick = { tile: PackTile ->
                         if (tile.isLocked(packOwnership)) {
                             onOpenMarketplace?.invoke(tile.sellablePackId)
-                        } else if (tile.selection.family == PackFamily.Sound) {
+                        } else if (tile.selection.opensSoundPlayer()) {
                             onSelectSubPack(tile.selection)
                         } else if (tile.selection == selection) {
                             onStartAmbient()

@@ -37,6 +37,14 @@ import fr.geoking.arthur.genart.engines.RetroWaveEngine
 import fr.geoking.arthur.genart.engines.TerrainMakerEngine
 import fr.geoking.arthur.genart.engines.MultiFlamesEngine
 import fr.geoking.arthur.genart.engines.AirBubblesEngine
+import fr.geoking.arthur.genart.engines.CourtBounceEngine
+import fr.geoking.arthur.genart.engines.CopperBarsEngine
+import fr.geoking.arthur.genart.engines.NeonHighwayEngine
+import fr.geoking.arthur.genart.engines.SoftDropEngine
+import fr.geoking.arthur.genart.engines.VectorRocksEngine
+import fr.geoking.arthur.genart.engines.BrickCascadeEngine
+import fr.geoking.arthur.genart.engines.PixelFormationEngine
+import fr.geoking.arthur.genart.engines.CrtBootEngine
 import fr.geoking.arthur.genart.engines.DriftingHalosEngine
 import fr.geoking.arthur.genart.engines.AntTrailsEngine
 import fr.geoking.arthur.genart.engines.AuroraWashEngine
@@ -165,6 +173,14 @@ import fr.geoking.arthur.genart.stills.RetroWaveStill
 import fr.geoking.arthur.genart.stills.TerrainMakerStill
 import fr.geoking.arthur.genart.stills.MultiFlamesStill
 import fr.geoking.arthur.genart.stills.AirBubblesStill
+import fr.geoking.arthur.genart.stills.CourtBounceStill
+import fr.geoking.arthur.genart.stills.CopperBarsStill
+import fr.geoking.arthur.genart.stills.NeonHighwayStill
+import fr.geoking.arthur.genart.stills.SoftDropStill
+import fr.geoking.arthur.genart.stills.VectorRocksStill
+import fr.geoking.arthur.genart.stills.BrickCascadeStill
+import fr.geoking.arthur.genart.stills.PixelFormationStill
+import fr.geoking.arthur.genart.stills.CrtBootStill
 import fr.geoking.arthur.genart.stills.DriftingHalosStill
 import fr.geoking.arthur.genart.stills.AntTrailsStill
 import fr.geoking.arthur.genart.stills.AuroraWashStill
@@ -1705,6 +1721,94 @@ object GenartRegistry {
             },
             renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
                 AirBubblesStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.CourtBounce,
+            stableId = "genart.courtbounce",
+            title = "#128 - Court Bounce",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                CourtBounceEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                CourtBounceStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.CopperBars,
+            stableId = "genart.copperbars",
+            title = "#129 - Copper Bars",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                CopperBarsEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                CopperBarsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.NeonHighway,
+            stableId = "genart.neonhighway",
+            title = "#130 - Neon Highway",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                NeonHighwayEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                NeonHighwayStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.SoftDrop,
+            stableId = "genart.softdrop",
+            title = "#131 - Soft Drop",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                SoftDropEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                SoftDropStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.VectorRocks,
+            stableId = "genart.vectorrocks",
+            title = "#132 - Vector Rocks",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                VectorRocksEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                VectorRocksStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.BrickCascade,
+            stableId = "genart.brickcascade",
+            title = "#133 - Brick Cascade",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                BrickCascadeEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                BrickCascadeStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.PixelFormation,
+            stableId = "genart.pixelformation",
+            title = "#134 - Pixel Formation",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                PixelFormationEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                PixelFormationStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.CrtBoot,
+            stableId = "genart.crtboot",
+            title = "#135 - CRT Boot",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                CrtBootEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                CrtBootStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
             },
         ),
     )

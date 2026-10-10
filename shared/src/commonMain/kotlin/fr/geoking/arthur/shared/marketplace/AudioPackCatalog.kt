@@ -19,6 +19,7 @@ object AudioPackCatalog {
     const val BASS_ONLY = "bass_only"
     const val MIDNIGHT_BALLAD = "midnight_ballad"
     const val HAWAIIAN_BREEZE = "hawaiian_breeze"
+    const val ARCADE_CHIPS = "arcade_chips"
 
     /** Free styles always playable without a pack purchase. */
     val freeStyleSuffixes: Set<String> = setOf(
@@ -57,6 +58,11 @@ object AudioPackCatalog {
         PackDef(BASS_ONLY, listOf("bass_only"), "bass_only"),
         PackDef(MIDNIGHT_BALLAD, listOf("piano_ballad"), "piano_ballad"),
         PackDef(HAWAIIAN_BREEZE, listOf("hawaiian_ukulele"), "hawaiian_ukulele"),
+        PackDef(
+            ARCADE_CHIPS,
+            listOf("chiptune", "chip_arp", "arcade_glow"),
+            "chiptune",
+        ),
     )
 
     val monetizedPackSuffixes: List<String> = monetizedPacks.map { it.suffix }

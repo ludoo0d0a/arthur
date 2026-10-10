@@ -22,12 +22,20 @@ enum class PackFamily(
 ) {
     Museum(R.string.pack_museum, R.drawable.pack_museum, "museum"),
     Genart(R.string.kind_genart, R.drawable.pack_genart, "genart"),
+    VintageGames(R.string.pack_vintage_games, R.drawable.pack_vintage_games, "vintage_games"),
     Photo(R.string.kind_photo, R.drawable.pack_photo, "photo"),
     Personal(R.string.pack_personal, R.drawable.pack_photo, "personal"),
     Sound(R.string.pack_sound, R.drawable.pack_sound, "sound"),
     Video(R.string.kind_video, R.drawable.pack_video, "video"),
     Sculpture(R.string.kind_sculpture, R.drawable.pack_sculpture, "sculpture"),
     Painting(R.string.kind_painting, R.drawable.pack_painting, "painting"),
+}
+
+/** Sub-pack ids under [PackFamily.VintageGames]. */
+object VintageGamesSub {
+    const val AMBIENT = "ambient"
+    const val VISUALS = "visuals"
+    const val MUSIC = "music"
 }
 
 /**
@@ -40,6 +48,9 @@ data class PackSelection(
     val subId: String? = null,
 ) {
     val isAll: Boolean get() = subId == null
+
+    /** Stable identity for in-memory Ambient playlist resume. */
+    fun sessionKey(): String = "${family.name}|${subId.orEmpty()}"
 }
 
 data class PackTile(
@@ -52,8 +63,19 @@ data class PackTile(
     /** Marketplace SKU when this tile requires a purchase; null = free. */
     val sellablePackId: String? = null,
 ) {
-    fun isLocked(ownership: PackOwnership): Boolean =
-        sellablePackId != null && !ownership.owns(sellablePackId)
+    fun isLocked(ownership: PackOwnership): Boolean {
+        // Home tile: locked only when neither visuals nor chiptune pack is owned.
+        if (selection.family == PackFamily.VintageGames && selection.subId == null) {
+            val ownsVisuals = ownership.ownsGenartTopic(
+                fr.geoking.arthur.shared.marketplace.GenartPackTopics.VINTAGE,
+            )
+            val ownsAudio = ownership.ownsAudioPack(
+                fr.geoking.arthur.shared.marketplace.AudioPackCatalog.ARCADE_CHIPS,
+            )
+            return !ownsVisuals && !ownsAudio
+        }
+        return sellablePackId != null && !ownership.owns(sellablePackId)
+    }
 }
 
 /** Genart sub-pack order for the grid ([GenartTopic.All] leads). */
@@ -68,6 +90,7 @@ private val GenartSubTopics = listOf(
     GenartTopic.Earth,
     GenartTopic.Planets,
     GenartTopic.SciFi,
+    GenartTopic.Vintage,
     GenartTopic.Abstract,
     GenartTopic.Geometry,
     GenartTopic.Fractal,
@@ -77,6 +100,7 @@ private val GenartSubTopics = listOf(
 /** Default sub-pack id when opening a family on the Control Plane. */
 fun PackFamily.defaultSubId(): String = when (this) {
     PackFamily.Genart -> GenartTopic.All.testTagSuffix
+    PackFamily.VintageGames -> VintageGamesSub.AMBIENT
     PackFamily.Museum -> MuseumTopic.Random.testTagSuffix
     PackFamily.Personal -> "all"
     PackFamily.Sound -> AudioPackTopic.Essentials.testTagSuffix
@@ -93,13 +117,20 @@ fun PackFamily.homeTile(catalog: List<Artwork> = emptyList()): PackTile = PackTi
     coverRes = coverRes,
     selection = PackSelection(this),
     testTagSuffix = testTagSuffix,
-    itemCount = if (this == PackFamily.Genart && catalog.isNotEmpty()) {
-        resolvePackPool(catalog, PackSelection(PackFamily.Genart)).size
-    } else null,
-    sellablePackId = if (this == PackFamily.Personal) {
-        MarketplaceCatalog.PERSONAL_PHOTOS_ID
-    } else {
-        null
+    itemCount = when {
+        this == PackFamily.Genart && catalog.isNotEmpty() ->
+            resolvePackPool(catalog, PackSelection(PackFamily.Genart)).size
+        this == PackFamily.VintageGames && catalog.isNotEmpty() ->
+            resolvePackPool(
+                catalog,
+                PackSelection(PackFamily.VintageGames, VintageGamesSub.AMBIENT),
+            ).size
+        else -> null
+    },
+    sellablePackId = when (this) {
+        PackFamily.Personal -> MarketplaceCatalog.PERSONAL_PHOTOS_ID
+        PackFamily.VintageGames -> MarketplaceCatalog.genartPackId(fr.geoking.arthur.shared.marketplace.GenartPackTopics.VINTAGE)
+        else -> null
     },
 )
 
@@ -226,6 +257,52 @@ fun PackFamily.subPackTiles(catalog: List<Artwork> = emptyList()): List<PackTile
             sellablePackId = topic.sellablePackId,
         )
     }
+    PackFamily.VintageGames -> listOf(
+        PackTile(
+            id = "sub_vintage_${VintageGamesSub.AMBIENT}",
+            titleRes = R.string.vintage_sub_ambient,
+            coverRes = R.drawable.pack_vintage_games,
+            selection = PackSelection(PackFamily.VintageGames, VintageGamesSub.AMBIENT),
+            testTagSuffix = "vintage_${VintageGamesSub.AMBIENT}",
+            itemCount = if (catalog.isNotEmpty()) {
+                resolvePackPool(
+                    catalog,
+                    PackSelection(PackFamily.VintageGames, VintageGamesSub.AMBIENT),
+                ).size
+            } else {
+                null
+            },
+            sellablePackId = MarketplaceCatalog.genartPackId(
+                fr.geoking.arthur.shared.marketplace.GenartPackTopics.VINTAGE,
+            ),
+        ),
+        PackTile(
+            id = "sub_vintage_${VintageGamesSub.VISUALS}",
+            titleRes = R.string.vintage_sub_visuals,
+            coverRes = R.drawable.pack_genart_vintage,
+            selection = PackSelection(PackFamily.VintageGames, VintageGamesSub.VISUALS),
+            testTagSuffix = "vintage_${VintageGamesSub.VISUALS}",
+            itemCount = if (catalog.isNotEmpty()) {
+                resolvePackPool(
+                    catalog,
+                    PackSelection(PackFamily.VintageGames, VintageGamesSub.VISUALS),
+                ).size
+            } else {
+                null
+            },
+            sellablePackId = MarketplaceCatalog.genartPackId(
+                fr.geoking.arthur.shared.marketplace.GenartPackTopics.VINTAGE,
+            ),
+        ),
+        PackTile(
+            id = "sub_vintage_${VintageGamesSub.MUSIC}",
+            titleRes = R.string.vintage_sub_music,
+            coverRes = PackCovers.audio(AudioPackTopic.ArcadeChips),
+            selection = PackSelection(PackFamily.VintageGames, VintageGamesSub.MUSIC),
+            testTagSuffix = "vintage_${VintageGamesSub.MUSIC}",
+            sellablePackId = AudioPackTopic.ArcadeChips.sellablePackId,
+        ),
+    )
 }
 
 fun resolvePackPool(catalog: List<Artwork>, selection: PackSelection): List<Artwork> {
@@ -249,6 +326,10 @@ fun resolvePackPool(catalog: List<Artwork>, selection: PackSelection): List<Artw
                 genartTopic = topic,
             )
         }
+        PackFamily.VintageGames -> catalog.filterByCategoryAndSources(
+            category = CategoryFilter.GENART,
+            genartTopic = GenartTopic.Vintage,
+        )
         PackFamily.Personal -> catalog.filter { it.kind == ArtworkKind.PersonalPhoto }
         PackFamily.Photo -> {
             val photoSource = selection.photoSourceOrNull()
@@ -299,6 +380,7 @@ fun resolvePackPool(catalog: List<Artwork>, selection: PackSelection): List<Artw
         PackFamily.Museum -> (selection.museumTopicOrNull() ?: MuseumTopic.Random) == MuseumTopic.Random
         PackFamily.Personal -> true
         PackFamily.Sound -> true
+        PackFamily.VintageGames -> true
         PackFamily.Genart -> (selection.genartTopicOrNull() ?: GenartTopic.Random) == GenartTopic.Random
         PackFamily.Photo ->
             selection.photoSourceOrNull() != null ||
@@ -352,11 +434,23 @@ fun PackSelection.genartTopicOrNull(): GenartTopic? =
     }
 
 fun PackSelection.audioPackTopicOrNull(): AudioPackTopic? =
-    if (family != PackFamily.Sound || subId == null) {
-        null
-    } else {
-        AudioPackTopic.entries.firstOrNull { it.testTagSuffix == subId }
+    when {
+        family == PackFamily.Sound && subId != null ->
+            AudioPackTopic.entries.firstOrNull { it.testTagSuffix == subId }
+        family == PackFamily.VintageGames && subId == VintageGamesSub.MUSIC ->
+            AudioPackTopic.ArcadeChips
+        else -> null
     }
+
+/** True when this selection opens Sound Player instead of Ambient. */
+fun PackSelection.opensSoundPlayer(): Boolean =
+    family == PackFamily.Sound ||
+        (family == PackFamily.VintageGames && subId == VintageGamesSub.MUSIC)
+
+/** True when Ambient start should enable the Arcade Chips chiptune pack. */
+fun PackSelection.appliesArcadeChipsOnAmbientStart(): Boolean =
+    family == PackFamily.VintageGames &&
+        (subId == null || subId == VintageGamesSub.AMBIENT)
 
 /**
  * Enables ambient sound and sets style preference for a Sound pack tile.
@@ -366,9 +460,15 @@ fun PackSelection.applySoundPack(
     settings: AmbientAudioSettings,
     styleOverride: MusicStyle? = null,
 ) {
-    if (family != PackFamily.Sound) return
+    val topic = when {
+        family == PackFamily.Sound -> audioPackTopicOrNull()
+        family == PackFamily.VintageGames && appliesArcadeChipsOnAmbientStart() ->
+            AudioPackTopic.ArcadeChips
+        family == PackFamily.VintageGames && subId == VintageGamesSub.MUSIC ->
+            AudioPackTopic.ArcadeChips
+        else -> return
+    }
     settings.setEnabled(true)
-    val topic = audioPackTopicOrNull()
     val style: MusicStyle? = styleOverride ?: when {
         topic == null -> MusicStyle.JazzPiano
         else -> MusicStyleIds.fromSuffix(topic.primaryStyleSuffix())
@@ -412,6 +512,9 @@ fun MusicStyle.labelRes(): Int = when (this) {
     MusicStyle.BassOnly -> R.string.settings_ambient_sound_style_bass_only
     MusicStyle.PianoBallad -> R.string.settings_ambient_sound_style_piano_ballad
     MusicStyle.HawaiianUkulele -> R.string.settings_ambient_sound_style_hawaiian_ukulele
+    MusicStyle.Chiptune -> R.string.settings_ambient_sound_style_chiptune
+    MusicStyle.ChipArp -> R.string.settings_ambient_sound_style_chip_arp
+    MusicStyle.ArcadeGlow -> R.string.settings_ambient_sound_style_arcade_glow
 }
 
 fun PackSelection.museumTopicOrNull(): MuseumTopic? =
@@ -461,6 +564,7 @@ fun PackSelection.sourceIdsForAmbientLoad(): List<String>? = when (family) {
         else -> listOf(source.sourceId)
     }
     PackFamily.Genart -> null
+    PackFamily.VintageGames -> null
     PackFamily.Personal -> null
     PackFamily.Sound -> null
 }
@@ -477,7 +581,7 @@ fun PackSelection.isGenartCustom(): Boolean =
 
 /** True when an empty pool may resolve a generative Artwork from the in-memory catalog. */
 fun PackSelection.allowsGenerativeAmbientFallback(): Boolean =
-    family == PackFamily.Genart
+    family == PackFamily.Genart || family == PackFamily.VintageGames
 
 @StringRes
 private fun StockPhotoCategory.packLabelRes(): Int = when (this) {

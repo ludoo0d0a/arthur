@@ -25,6 +25,7 @@ import fr.geoking.arthur.ui.components.PackGrid
 import fr.geoking.arthur.ui.components.PackSelection
 import fr.geoking.arthur.ui.components.PackTile
 import fr.geoking.arthur.ui.components.homeTile
+import fr.geoking.arthur.ui.components.opensSoundPlayer
 import fr.geoking.arthur.ui.components.subPackTiles
 
 /**
@@ -119,19 +120,21 @@ fun TvControlPlaneContent(
                     onTileClick = { tile ->
                         if (tile.isLocked(packOwnership)) {
                             onOpenMarketplace?.invoke(tile.sellablePackId)
-                        } else if (tile.selection.family == PackFamily.Sound) {
+                        } else if (tile.selection.opensSoundPlayer()) {
                             // onSelectSubPack opens SoundPlayer via ControlPlaneScreen.
                             onSelectSubPack(tile.selection)
                         } else {
+                            onSelectSubPack(tile.selection)
                             onStartAmbient()
                         }
                     },
                     onTileLongClick = { tile ->
                         if (tile.isLocked(packOwnership)) {
                             onOpenMarketplace?.invoke(tile.sellablePackId)
-                        } else if (tile.selection.family == PackFamily.Sound) {
+                        } else if (tile.selection.opensSoundPlayer()) {
                             onSelectSubPack(tile.selection)
                         } else {
+                            onSelectSubPack(tile.selection)
                             onSetDefaultScreensaver?.invoke(tile.selection)
                             onStartAmbient()
                         }

@@ -96,6 +96,7 @@ enum class GenartTopic(
     Earth(R.string.genart_topic_earth, "earth"),
     Planets(R.string.genart_topic_planets, "planets"),
     SciFi(R.string.genart_topic_scifi, "scifi"),
+    Vintage(R.string.genart_topic_vintage, "vintage"),
     Abstract(R.string.genart_topic_abstract, "abstract"),
     Geometry(R.string.genart_topic_geometry, "geometry"),
     Fractal(R.string.genart_topic_fractal, "fractal"),
@@ -126,6 +127,7 @@ enum class AudioPackTopic(
     BassOnly(R.string.audio_pack_bass_only, "bass_only", "bass_only"),
     MidnightBallad(R.string.audio_pack_midnight_ballad, "midnight_ballad", "midnight_ballad"),
     HawaiianBreeze(R.string.audio_pack_hawaiian_breeze, "hawaiian_breeze", "hawaiian_breeze"),
+    ArcadeChips(R.string.audio_pack_arcade_chips, "arcade_chips", "arcade_chips"),
     ;
 
     val sellablePackId: String?
@@ -307,6 +309,7 @@ fun matchesGenartTopic(art: Artwork, topic: GenartTopic): Boolean = when (topic)
     GenartTopic.Earth -> art.id in GenartPackTopics.EARTH_IDS
     GenartTopic.Planets -> art.id in GenartPackTopics.PLANETS_IDS
     GenartTopic.SciFi -> art.id in GenartPackTopics.SCIFI_IDS
+    GenartTopic.Vintage -> art.id in GenartPackTopics.VINTAGE_IDS
     GenartTopic.Abstract -> art.id in GenartPackTopics.ABSTRACT_IDS
     GenartTopic.Geometry -> art.id in GenartPackTopics.GEOMETRY_IDS
     GenartTopic.Fractal -> art.kind == ArtworkKind.FractalPreset

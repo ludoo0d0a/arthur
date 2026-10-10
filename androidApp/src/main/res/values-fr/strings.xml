@@ -28,6 +28,10 @@
     <string name="rotation_section">Rotation préparée</string>
     <string name="packs_section">Packs</string>
     <string name="pack_museum">Musée</string>
+    <string name="pack_vintage_games">Jeux vintage</string>
+    <string name="vintage_sub_ambient">Ambiance</string>
+    <string name="vintage_sub_visuals">Visuels</string>
+    <string name="vintage_sub_music">Musique</string>
     <string name="load_more">Charger plus</string>
     <string name="fractal_hero_label">Canevas fractal live</string>
     <string name="genart_hero_label">Canevas genart live</string>
@@ -98,6 +102,7 @@
     <string name="audio_pack_bass_only">Basse seule</string>
     <string name="audio_pack_midnight_ballad">Ballade de minuit</string>
     <string name="audio_pack_hawaiian_breeze">Brise hawaïenne</string>
+    <string name="audio_pack_arcade_chips">Puces arcade</string>
     <string name="premium_ux_subtitle">Sans pubs et favoris (bientôt)</string>
     <string name="genart_topic_fractal">Fractale</string>
     <string name="genart_topic_custom">Perso</string>
@@ -111,6 +116,7 @@
     <string name="genart_topic_life">Vivant</string>
     <string name="genart_topic_earth">Terre</string>
     <string name="genart_topic_scifi">Sci-Fi</string>
+    <string name="genart_topic_vintage">Jeux vintage</string>
     <string name="search_genart_placeholder">Rechercher un genart...</string>
     <string name="custom_fractal_create">Créer une fractale perso</string>
     <string name="custom_fractal_title">Fractale perso</string>
@@ -192,6 +198,9 @@
     <string name="settings_ambient_sound_style_bass_only">Basse seule</string>
     <string name="settings_ambient_sound_style_piano_ballad">Ballade piano</string>
     <string name="settings_ambient_sound_style_hawaiian_ukulele">Ukulélé hawaïen</string>
+    <string name="settings_ambient_sound_style_chiptune">Chiptune</string>
+    <string name="settings_ambient_sound_style_chip_arp">Arpège chip</string>
+    <string name="settings_ambient_sound_style_arcade_glow">Lueur arcade</string>
     <string name="settings_ambient_sound_complexity">Complexité</string>
     <string name="settings_ambient_sound_complexity_hint">Plus de notes et d\'ornements</string>
     <string name="settings_ambient_sound_complexity_low">Faible</string>

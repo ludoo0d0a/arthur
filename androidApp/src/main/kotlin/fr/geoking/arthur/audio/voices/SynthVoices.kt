@@ -1190,7 +1190,7 @@ class SquareLeadVoice(
 
     override fun noteOn(freqHz: Float, velocity: Float) {
         env = 1.0
-        peak = (velocity.coerceIn(0.05f, 1f) * 0.22).toDouble()
+        peak = velocity.coerceIn(0.05f, 1f) * 0.22
         age = 0L
         active = true
         phase = 0.0

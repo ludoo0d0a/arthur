@@ -20,7 +20,6 @@ object FractalAgslShaders {
         uniform float2 iResolution;
         uniform float2 iCenter;
         uniform float iZoom;
-        uniform float iTime;
         uniform float iMaxIter;
         uniform float iType;
         uniform float2 iJuliaC;
@@ -166,10 +165,9 @@ object FractalAgslShaders {
                 return half4(0.008, 0.024, 0.086, 1.0);
             }
 
-            // Few cycles so the coherent theme stays readable (zen, not flashy).
-            float cycles = 2.8;
+            // Julia Touch style: soft power curve + 4-stop mix (no stripe cycling).
             float normalized = log(1.0 + continuous) / log(1.0 + maxIter);
-            float t = fract(normalized * cycles + iPhase * 0.35 + iTime * 0.004);
+            float t = pow(clamp(normalized + iPhase * 0.08, 0.0, 1.0), 0.8);
             half3 col = palette(t);
             float edge = clamp(continuous / maxIter, 0.0, 1.0);
             float glow = 0.88 + 0.22 * pow(edge, 0.55);

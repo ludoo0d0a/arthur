@@ -1,5 +1,6 @@
 package fr.geoking.arthur.fractal
 
+import android.graphics.Bitmap
 import android.os.Build
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -12,32 +13,53 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ShaderBrush
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntSize
+import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.atan2
+import kotlin.math.cos
 import kotlin.math.ln
 import kotlin.math.pow
+import kotlin.math.roundToInt
+import kotlin.math.sin
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
 
 enum class FractalQuality { Low, Medium, High }
 enum class FractalColorIntensity { Low, Medium, High }
 
 /** Rich multi-stop palette for smooth escape-time gradients (CPU path). */
 private val DefaultPalette = FractalCoherentPalette.escapeStops(seed = 1, count = 12)
+
+private const val CpuBakeLongSidePx = 1120
+private const val CpuBakeIntervalMs = 90L
+private const val CpuCrossfadeMs = 280
 
 enum class FractalType {
     Mandelbrot,
@@ -69,7 +91,8 @@ enum class FractalType {
  * Cycles through different fractal types unless [forceType] is set.
  *
  * On API 33+ renders via AGSL [RuntimeShader] (GPU per-pixel). Older devices
- * keep the Compose Canvas CPU grid. Julia reacts to drag when forced or active.
+ * bake a medium-res bitmap and upscale with soft crossfades. Julia reacts to
+ * drag when forced or active.
  */
 @Composable
 fun FractalEffectCanvas(
@@ -86,21 +109,25 @@ fun FractalEffectCanvas(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            // Zen: slow infinite zoom (~2.3 min)
-            animation = tween(140_000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
+            // Zen: slow zoom (~2.5 min one way), reverse avoids hard restart jump
+            animation = tween(150_000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse,
         ),
-        label = "zoomProgress"
+        label = "zoomProgress",
     )
-    val zoom = 1f + zoomProgress * 79f
+    val zoom = 1f + zoomProgress * 39f
 
     var zoomCycleCount by remember { mutableStateOf(0) }
-    var lastZoomProgress by remember { mutableStateOf(0f) }
+    var lastZoomProgress by remember { mutableFloatStateOf(0f) }
+    var zoomAscending by remember { mutableStateOf(true) }
 
     LaunchedEffect(zoomProgress, forceType) {
         if (forceType != null) return@LaunchedEffect
-        if (zoomProgress < lastZoomProgress) {
+        if (zoomAscending && zoomProgress < lastZoomProgress) {
+            zoomAscending = false
+        } else if (!zoomAscending && zoomProgress > lastZoomProgress) {
             zoomCycleCount++
+            zoomAscending = true
         }
         lastZoomProgress = zoomProgress
     }
@@ -138,48 +165,39 @@ fun FractalEffectCanvas(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(70_000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
+            animation = tween(180_000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse,
         ),
-        label = "phase"
-    )
-    val time by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1000f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1_000_000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "time",
+        label = "phase",
     )
     val brightness by animateFloatAsState(
         targetValue = if (isActive) 1.15f else 1f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        label = "brightness"
+        label = "brightness",
     )
 
-    // Julia constant — animated drift, overridden by drag
+    // Julia constant — gentle orbit like JuliaBahlaiCanvas, overridden by drag
     var juliaCx by remember { mutableFloatStateOf(-0.7f) }
     var juliaCy by remember { mutableFloatStateOf(0.27015f) }
     var draggingJulia by remember { mutableStateOf(false) }
-    val juliaDrift by infiniteTransition.animateFloat(
+    val juliaOrbit by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(100_000, easing = LinearEasing),
+            animation = tween(120_000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
-        label = "juliaDrift",
+        label = "juliaOrbit",
     )
-    LaunchedEffect(juliaDrift, fractalType, draggingJulia) {
+    LaunchedEffect(juliaOrbit, fractalType, draggingJulia) {
         if ((fractalType != FractalType.Julia && fractalType != FractalType.JuliaTouch) ||
             draggingJulia
         ) {
             return@LaunchedEffect
         }
-        val a = juliaDrift * (2f * Math.PI.toFloat())
-        juliaCx = -0.7f + 0.12f * kotlin.math.cos(a)
-        juliaCy = 0.27015f + 0.1f * kotlin.math.sin(a * 1.3f)
+        val a = juliaOrbit * (2f * PI.toFloat())
+        juliaCx = -0.7f + 0.12f * cos(a)
+        juliaCy = 0.27015f + 0.1f * sin(a * 1.15f)
     }
 
     val interactive = fractalType == FractalType.Julia || fractalType == FractalType.JuliaTouch
@@ -207,7 +225,6 @@ fun FractalEffectCanvas(
             fractalType = fractalType,
             zoom = zoom,
             phase = phase,
-            time = time,
             brightness = brightness,
             quality = quality,
             juliaCx = juliaCx,
@@ -237,7 +254,6 @@ private fun FractalAgslCanvas(
     fractalType: FractalType,
     zoom: Float,
     phase: Float,
-    time: Float,
     brightness: Float,
     quality: FractalQuality,
     juliaCx: Float,
@@ -245,31 +261,67 @@ private fun FractalAgslCanvas(
     colorSeed: Int,
     modifier: Modifier,
 ) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+
     val shader = remember { FractalAgslShaders.createEscapeShader() }
-    val brush = remember(shader) { ShaderBrush(shader) }
     val stops = remember(colorSeed) { FractalCoherentPalette.fourStops(colorSeed) }
     val maxIter = when (quality) {
-        FractalQuality.Low -> 160f
-        FractalQuality.Medium -> 280f
-        FractalQuality.High -> 420f
+        FractalQuality.Low -> 120f
+        FractalQuality.Medium -> 180f
+        FractalQuality.High -> 240f
     }
     val (cx, cy) = fractalCenter(fractalType)
 
-    Canvas(modifier = modifier) {
-        shader.setFloatUniform("iResolution", size.width, size.height)
-        shader.setFloatUniform("iCenter", cx, cy)
-        shader.setFloatUniform("iZoom", zoom)
-        shader.setFloatUniform("iTime", time)
-        shader.setFloatUniform("iMaxIter", maxIter)
-        shader.setFloatUniform("iType", fractalType.ordinal.toFloat())
-        shader.setFloatUniform("iJuliaC", juliaCx, juliaCy)
-        shader.setFloatUniform("iPhase", phase)
-        shader.setFloatUniform("iBrightness", brightness)
-        shader.setColorUniform("color1", stops[0].toArgb())
-        shader.setColorUniform("color2", stops[1].toArgb())
-        shader.setColorUniform("color3", stops[2].toArgb())
-        shader.setColorUniform("color4", stops[3].toArgb())
-        drawRect(brush = brush)
+    BoxWithConstraints(modifier = modifier) {
+        val density = LocalDensity.current
+        val boxMaxWidth = maxWidth
+        val boxMaxHeight = maxHeight
+        val minSidePx = with(density) {
+            minOf(boxMaxWidth.toPx(), boxMaxHeight.toPx())
+        }
+        val renderScale = if (minSidePx >= 1080f) 0.75f else 1f
+
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            val shaderModifier = if (renderScale < 1f) {
+                Modifier
+                    .requiredSize(
+                        width = boxMaxWidth * renderScale,
+                        height = boxMaxHeight * renderScale,
+                    )
+                    .graphicsLayer {
+                        scaleX = 1f / renderScale
+                        scaleY = 1f / renderScale
+                        transformOrigin = TransformOrigin.Center
+                    }
+            } else {
+                Modifier.fillMaxSize()
+            }
+
+            AgslShaderBox(
+                shader = shader,
+                modifier = shaderModifier,
+                cacheKey = colorSeed,
+                onConfigure = { size, s ->
+                    s.setFloatUniform("iResolution", size.width, size.height)
+                    s.setColorUniform("color1", stops[0].toArgb())
+                    s.setColorUniform("color2", stops[1].toArgb())
+                    s.setColorUniform("color3", stops[2].toArgb())
+                    s.setColorUniform("color4", stops[3].toArgb())
+                },
+                onDrawFrame = { _, s ->
+                    s.setFloatUniform("iCenter", cx, cy)
+                    s.setFloatUniform("iZoom", zoom)
+                    s.setFloatUniform("iMaxIter", maxIter)
+                    s.setFloatUniform("iType", fractalType.ordinal.toFloat())
+                    s.setFloatUniform("iJuliaC", juliaCx, juliaCy)
+                    s.setFloatUniform("iPhase", phase)
+                    s.setFloatUniform("iBrightness", brightness)
+                },
+            )
+        }
     }
 }
 
@@ -287,91 +339,170 @@ private fun FractalCpuCanvas(
     juliaCy: Float,
     modifier: Modifier,
 ) {
-    Canvas(modifier = modifier) {
-        val w = size.width
-        val h = size.height
-        val centerX = w / 2
-        val centerY = h / 2
-        val (cx, cy) = fractalCenter(fractalType)
+    var base by remember { mutableStateOf<Bitmap?>(null) }
+    var overlay by remember { mutableStateOf<Bitmap?>(null) }
+    var overlayAlphaTarget by remember { mutableFloatStateOf(0f) }
+    var layoutSize by remember { mutableStateOf(IntSize.Zero) }
 
-        val gridSize = when (quality) {
-            FractalQuality.Low -> 128
-            FractalQuality.Medium -> 216
-            FractalQuality.High -> 320
+    val overlayAlpha by animateFloatAsState(
+        targetValue = overlayAlphaTarget,
+        animationSpec = tween(CpuCrossfadeMs, easing = LinearEasing),
+        label = "cpu_fractal_crossfade",
+    )
+
+    LaunchedEffect(overlayAlpha, overlay) {
+        if (overlay != null && overlayAlpha >= 0.99f) {
+            val done = overlay ?: return@LaunchedEffect
+            base?.recycle()
+            base = done
+            overlay = null
+            overlayAlphaTarget = 0f
         }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            base?.recycle()
+            overlay?.recycle()
+        }
+    }
+
+    LaunchedEffect(
+        fractalType,
+        quality,
+        colorIntensity,
+        paletteColors,
+        layoutSize,
+    ) {
+        val w = layoutSize.width
+        val h = layoutSize.height
+        if (w <= 0 || h <= 0) return@LaunchedEffect
         val maxIter = when (quality) {
-            FractalQuality.Low -> 160
-            FractalQuality.Medium -> 320
-            FractalQuality.High -> 512
+            FractalQuality.Low -> 120
+            FractalQuality.Medium -> 200
+            FractalQuality.High -> 280
         }
-
-        val cellW = w / gridSize
-        val cellH = h / gridSize
-        val halfSpan = 2.2f / zoom
-
-        drawRect(
-            brush = Brush.radialGradient(
-                colors = listOf(
-                    Color(0xFF1E1B4B),
-                    Color(0xFF0F172A),
-                    Color(0xFF020617),
-                ),
-                center = Offset(centerX, centerY),
-                radius = maxOf(w, h) * 0.85f,
-            )
-        )
-
-        for (iy in 0 until gridSize) {
-            for (ix in 0 until gridSize) {
-                val sx = (ix + 0.5f) * cellW
-                val sy = (iy + 0.5f) * cellH
-                val re = cx - halfSpan + (sx / w) * (2f * halfSpan)
-                val im = cy - halfSpan + (1f - sy / h) * (2f * halfSpan)
-
-                val continuous = when (fractalType) {
-                    FractalType.Mandelbrot -> mandelbrotSmooth(re, im, maxIter)
-                    FractalType.Julia -> juliaSmooth(re, im, maxIter, juliaCx, juliaCy)
-                    FractalType.BurningShip -> burningShipSmooth(re, im, maxIter)
-                    FractalType.Tricorn -> tricornSmooth(re, im, maxIter)
-                    FractalType.Multibrot -> multibrotSmooth(re, im, maxIter)
-                    FractalType.Celtic -> celticSmooth(re, im, maxIter)
-                    FractalType.Buffalo -> buffaloSmooth(re, im, maxIter)
-                    FractalType.Phoenix -> phoenixSmooth(re, im, maxIter)
-                    FractalType.Nova -> novaSmooth(re, im, maxIter)
-                    FractalType.Newton -> newtonSmooth(re, im, maxIter)
-                    FractalType.MandelbrotGlow -> mandelbrotSmooth(re, im, maxIter)
-                    FractalType.JuliaTouch -> juliaSmooth(re, im, maxIter, juliaCx, juliaCy)
-                }
-
-                val color = fractalColor(
-                    continuous = continuous,
+        val aspect = w.toFloat() / h.toFloat()
+        while (true) {
+            while (overlay != null) {
+                yield()
+                delay(16)
+            }
+            val baked = withContext(Dispatchers.Default) {
+                bakeFractalBitmap(
+                    longSide = CpuBakeLongSidePx,
+                    aspect = aspect,
+                    fractalType = fractalType,
+                    zoom = zoom,
                     phase = phase,
                     brightness = brightness,
-                    isActive = isActive,
+                    sceneActive = isActive,
                     paletteColors = paletteColors,
-                    intensity = colorIntensity,
+                    colorIntensity = colorIntensity,
+                    juliaCx = juliaCx,
+                    juliaCy = juliaCy,
                     maxIter = maxIter,
                 )
-                drawRect(
-                    color = color,
-                    topLeft = Offset(ix * cellW, iy * cellH),
-                    size = Size(cellW + 1f, cellH + 1f),
-                )
             }
+            overlay = baked
+            overlayAlphaTarget = 1f
+            delay(if (isActive) CpuBakeIntervalMs else CpuBakeIntervalMs * 3)
         }
-
-        drawRect(
-            brush = Brush.radialGradient(
-                colors = listOf(
-                    Color(0x33F472B6),
-                    Color(0x140EA5E9),
-                    Color(0x99020617),
-                ),
-                center = Offset(centerX, centerY * 0.92f),
-                radius = maxOf(w, h) * 0.78f,
-            )
-        )
     }
+
+    Canvas(
+        modifier = modifier
+            .fillMaxSize()
+            .onSizeChanged { layoutSize = it },
+    ) {
+        val dst = IntSize(
+            size.width.roundToInt().coerceAtLeast(1),
+            size.height.roundToInt().coerceAtLeast(1),
+        )
+        val baseBmp = base
+        val overlayBmp = overlay
+        if (baseBmp != null && !baseBmp.isRecycled) {
+            drawImage(
+                image = baseBmp.asImageBitmap(),
+                dstSize = dst,
+                alpha = 1f,
+                filterQuality = FilterQuality.High,
+            )
+        } else {
+            drawRect(Color(0xFF020617))
+        }
+        if (overlayBmp != null && !overlayBmp.isRecycled && overlayAlpha > 0f) {
+            drawImage(
+                image = overlayBmp.asImageBitmap(),
+                dstSize = dst,
+                alpha = overlayAlpha,
+                filterQuality = FilterQuality.High,
+            )
+        }
+    }
+}
+
+private fun bakeFractalBitmap(
+    longSide: Int,
+    aspect: Float,
+    fractalType: FractalType,
+    zoom: Float,
+    phase: Float,
+    brightness: Float,
+    sceneActive: Boolean,
+    paletteColors: List<Color>,
+    colorIntensity: FractalColorIntensity,
+    juliaCx: Float,
+    juliaCy: Float,
+    maxIter: Int,
+): Bitmap {
+    val safeAspect = aspect.coerceIn(0.4f, 2.8f)
+    val (bw, bh) = if (safeAspect >= 1f) {
+        longSide to (longSide / safeAspect).roundToInt().coerceAtLeast(1)
+    } else {
+        (longSide * safeAspect).roundToInt().coerceAtLeast(1) to longSide
+    }
+    val bitmap = Bitmap.createBitmap(bw, bh, Bitmap.Config.ARGB_8888)
+    val pixels = IntArray(bw * bh)
+    val (cx, cy) = fractalCenter(fractalType)
+    val halfSpan = 2.2f / zoom
+
+    for (iy in 0 until bh) {
+        for (ix in 0 until bw) {
+            val sx = (ix + 0.5f) / bw
+            val sy = (iy + 0.5f) / bh
+            val re = cx - halfSpan + sx * (2f * halfSpan)
+            val im = cy - halfSpan + (1f - sy) * (2f * halfSpan)
+
+            val continuous = when (fractalType) {
+                FractalType.Mandelbrot -> mandelbrotSmooth(re, im, maxIter)
+                FractalType.Julia -> juliaSmooth(re, im, maxIter, juliaCx, juliaCy)
+                FractalType.BurningShip -> burningShipSmooth(re, im, maxIter)
+                FractalType.Tricorn -> tricornSmooth(re, im, maxIter)
+                FractalType.Multibrot -> multibrotSmooth(re, im, maxIter)
+                FractalType.Celtic -> celticSmooth(re, im, maxIter)
+                FractalType.Buffalo -> buffaloSmooth(re, im, maxIter)
+                FractalType.Phoenix -> phoenixSmooth(re, im, maxIter)
+                FractalType.Nova -> novaSmooth(re, im, maxIter)
+                FractalType.Newton -> newtonSmooth(re, im, maxIter)
+                FractalType.MandelbrotGlow -> mandelbrotSmooth(re, im, maxIter)
+                FractalType.JuliaTouch -> juliaSmooth(re, im, maxIter, juliaCx, juliaCy)
+            }
+
+            val color = fractalColor(
+                continuous = continuous,
+                phase = phase,
+                brightness = brightness,
+                isActive = sceneActive,
+                paletteColors = paletteColors,
+                intensity = colorIntensity,
+                maxIter = maxIter,
+            )
+            pixels[iy * bw + ix] = color.toArgb()
+        }
+    }
+    bitmap.setPixels(pixels, 0, bw, 0, 0, bw, bh)
+    return bitmap
 }
 
 internal fun fractalCenter(type: FractalType): Pair<Float, Float> = when (type) {
@@ -601,14 +732,14 @@ private fun fractalColor(
 
     val safePalette = if (paletteColors.size >= 2) paletteColors else DefaultPalette
 
-    val cycles = when (intensity) {
-        FractalColorIntensity.Low -> 1.6f
-        FractalColorIntensity.Medium -> 2.4f
-        FractalColorIntensity.High -> 3.2f
-    }
-
     val normalized = (ln(1.0 + continuous.toDouble()) / ln(1.0 + maxIter.toDouble())).toFloat()
-    val t = ((normalized * cycles + phase).mod(1f) + 1f).mod(1f)
+    // Match AGSL / Julia Touch soft curve; intensity gently stretches the ramp.
+    val stretch = when (intensity) {
+        FractalColorIntensity.Low -> 0.85f
+        FractalColorIntensity.Medium -> 1f
+        FractalColorIntensity.High -> 1.15f
+    }
+    val t = ((normalized * stretch + phase * 0.08f).coerceIn(0f, 1f)).pow(0.8f)
 
     val color = samplePalette(safePalette, t)
 
@@ -626,10 +757,10 @@ private fun fractalColor(
 }
 
 private fun samplePalette(palette: List<Color>, t: Float): Color {
-    val scaled = t * palette.size
-    val i0 = scaled.toInt().mod(palette.size)
-    val i1 = (i0 + 1).mod(palette.size)
-    val frac = smoothstep(scaled - scaled.toInt())
+    val scaled = t * (palette.size - 1).coerceAtLeast(1)
+    val i0 = scaled.toInt().coerceIn(0, palette.lastIndex)
+    val i1 = (i0 + 1).coerceAtMost(palette.lastIndex)
+    val frac = smoothstep(scaled - i0)
     val c0 = palette[i0]
     val c1 = palette[i1]
     return Color(

@@ -1,5 +1,6 @@
 package fr.geoking.arthur.ui.components
 
+import android.content.res.Configuration
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -13,11 +14,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.shared.domain.Artwork
 
-private const val CrossfadeDurationMs = 400
+private const val CrossfadeDurationPhoneMs = 400
+private const val CrossfadeDurationTvMs = 1100
 
 /**
  * Keeps the last successfully displayed artwork visible until [artwork] is ready,
@@ -37,6 +40,11 @@ fun ArtworkTransitionHost(
     var revealIncoming by remember { mutableStateOf(false) }
     var visibleId by remember { mutableStateOf<String?>(null) }
 
+    val isTelevision =
+        LocalConfiguration.current.uiMode and Configuration.UI_MODE_TYPE_MASK ==
+            Configuration.UI_MODE_TYPE_TELEVISION
+    val crossfadeMs = if (isTelevision) CrossfadeDurationTvMs else CrossfadeDurationPhoneMs
+
     LaunchedEffect(artwork.id) {
         if (artwork.id != visibleId) {
             revealIncoming = false
@@ -49,7 +57,7 @@ fun ArtworkTransitionHost(
     val incomingAlpha by animateFloatAsState(
         targetValue = if (showingIncoming) 1f else 0f,
         animationSpec = tween(
-            durationMillis = CrossfadeDurationMs,
+            durationMillis = crossfadeMs,
             easing = FastOutSlowInEasing,
         ),
         label = "artwork_crossfade",

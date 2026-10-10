@@ -203,7 +203,7 @@ class MarkovSequencerTest {
     }
 
     @Test
-    fun grooveClockOnForJazzZenClassicalMelodyNotAtmosphere() {
+    fun grooveClockOnForJazzZenOceanCosmicAndAtmosphere() {
         val jazz = MusicPresetResolver.resolve(
             Artwork("test.groove", "G", sourceId = "test", kind = ArtworkKind.Photo),
             MusicUserPrefs(
@@ -218,21 +218,34 @@ class MarkovSequencerTest {
                 stylePreference = MusicStyle.Zen,
             ),
         )
-        val classical = MusicPresetResolver.resolve(
-            Artwork("test.classical", "C", sourceId = "test", kind = ArtworkKind.Photo),
+        val ocean = MusicPresetResolver.resolve(
+            Artwork("test.ocean", "O", sourceId = "test", kind = ArtworkKind.Photo),
             MusicUserPrefs(
                 character = AmbientAudioCharacter.Melody,
-                stylePreference = MusicStyle.ClassicalPiano,
+                stylePreference = MusicStyle.OceanWaves,
             ),
         )
-        val jazzSeq = MarkovSequencer(jazz, 1L, AmbientAudioCharacter.Melody)
-        val zenSeq = MarkovSequencer(zen, 1L, AmbientAudioCharacter.Melody)
-        val classicalSeq = MarkovSequencer(classical, 1L, AmbientAudioCharacter.Melody)
-        val zenAtm = MarkovSequencer(zen, 1L, AmbientAudioCharacter.Atmosphere)
-        assertTrue(jazzSeq.useGrooveClock)
-        assertTrue(zenSeq.useGrooveClock)
-        assertTrue(classicalSeq.useGrooveClock)
-        assertTrue(!zenAtm.useGrooveClock)
+        val cosmic = MusicPresetResolver.resolve(
+            Artwork("test.cosmic", "C", sourceId = "test", kind = ArtworkKind.Photo),
+            MusicUserPrefs(
+                character = AmbientAudioCharacter.Melody,
+                stylePreference = MusicStyle.CosmicDrone,
+            ),
+        )
+        val guitar = MusicPresetResolver.resolve(
+            Artwork("test.guitar", "Gu", sourceId = "test", kind = ArtworkKind.Photo),
+            MusicUserPrefs(
+                character = AmbientAudioCharacter.Melody,
+                stylePreference = MusicStyle.SoftGuitar,
+            ),
+        )
+        assertTrue(MarkovSequencer(jazz, 1L, AmbientAudioCharacter.Melody).useGrooveClock)
+        assertTrue(MarkovSequencer(zen, 1L, AmbientAudioCharacter.Melody).useGrooveClock)
+        assertTrue(MarkovSequencer(ocean, 1L, AmbientAudioCharacter.Melody).useGrooveClock)
+        assertTrue(MarkovSequencer(cosmic, 1L, AmbientAudioCharacter.Melody).useGrooveClock)
+        assertTrue(MarkovSequencer(zen, 1L, AmbientAudioCharacter.Atmosphere).useGrooveClock)
+        assertTrue(MarkovSequencer(guitar, 1L, AmbientAudioCharacter.Atmosphere).useGrooveClock)
+        assertTrue(!MarkovSequencer(guitar, 1L, AmbientAudioCharacter.Melody).useGrooveClock)
     }
 
     @Test

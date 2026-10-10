@@ -66,6 +66,23 @@ object RhythmBank {
 
     private val ambientGroovePatterns = listOf(straightSparse, balladCells, zenBreath)
 
+    // Ultra-sparse drift for Ocean / Cosmic / Atmosphere beds.
+    private val oceanDrift = GrooveCellPattern(
+        "ocean_drift",
+        booleanArrayOf(true, false, false, false, false, false, false, false),
+    )
+    private val cosmicPulse = GrooveCellPattern(
+        "cosmic_pulse",
+        booleanArrayOf(true, false, false, false, false, false, true, false),
+    )
+    private val atmBreath = GrooveCellPattern(
+        "atm_breath",
+        booleanArrayOf(true, false, false, false, false, false, false, false),
+    )
+
+    private val textureGroovePatterns = listOf(oceanDrift, cosmicPulse, atmBreath)
+    private val atmosphereGroovePatterns = listOf(atmBreath, oceanDrift)
+
     fun patternsFor(style: fr.geoking.arthur.audio.MusicStyle): List<RhythmPattern> =
         when (style) {
             fr.geoking.arthur.audio.MusicStyle.TibetanBowl,
@@ -101,9 +118,16 @@ object RhythmBank {
             -> listOf(pulseSteady, flowing, medium, swing)
         }
 
-    /** Eighth-cell patterns for groove-clock styles. */
-    fun groovePatternsFor(style: fr.geoking.arthur.audio.MusicStyle): List<GrooveCellPattern> =
-        when (style) {
+    /**
+     * Eighth-cell patterns for groove-clock styles.
+     * [atmosphere] forces ultra-sparse drift cells so beds stay calm.
+     */
+    fun groovePatternsFor(
+        style: fr.geoking.arthur.audio.MusicStyle,
+        atmosphere: Boolean = false,
+    ): List<GrooveCellPattern> {
+        if (atmosphere) return atmosphereGroovePatterns
+        return when (style) {
             fr.geoking.arthur.audio.MusicStyle.JazzPiano,
             fr.geoking.arthur.audio.MusicStyle.BarAmbience,
             fr.geoking.arthur.audio.MusicStyle.NightLounge,
@@ -113,12 +137,24 @@ object RhythmBank {
             fr.geoking.arthur.audio.MusicStyle.ClassicalPiano,
             fr.geoking.arthur.audio.MusicStyle.PianoBallad,
             -> ambientGroovePatterns
+            fr.geoking.arthur.audio.MusicStyle.OceanWaves,
+            fr.geoking.arthur.audio.MusicStyle.SoftRain,
+            fr.geoking.arthur.audio.MusicStyle.WindAmbience,
+            fr.geoking.arthur.audio.MusicStyle.CosmicDrone,
+            fr.geoking.arthur.audio.MusicStyle.OrchestraPads,
+            fr.geoking.arthur.audio.MusicStyle.OrchestraSwell,
+            -> textureGroovePatterns
             else -> emptyList()
         }
+    }
 
     /** Swing ratio for [GrooveTransport]; 0.5 = straight eighths. */
-    fun grooveSwingRatio(style: fr.geoking.arthur.audio.MusicStyle): Float =
-        when (style) {
+    fun grooveSwingRatio(
+        style: fr.geoking.arthur.audio.MusicStyle,
+        atmosphere: Boolean = false,
+    ): Float {
+        if (atmosphere) return 0.52f
+        return when (style) {
             fr.geoking.arthur.audio.MusicStyle.JazzPiano,
             fr.geoking.arthur.audio.MusicStyle.BarAmbience,
             fr.geoking.arthur.audio.MusicStyle.NightLounge,
@@ -127,9 +163,18 @@ object RhythmBank {
             fr.geoking.arthur.audio.MusicStyle.ClassicalPiano,
             fr.geoking.arthur.audio.MusicStyle.PianoBallad,
             -> 0.55f
+            fr.geoking.arthur.audio.MusicStyle.OceanWaves,
+            fr.geoking.arthur.audio.MusicStyle.SoftRain,
+            fr.geoking.arthur.audio.MusicStyle.WindAmbience,
+            -> 0.54f
+            fr.geoking.arthur.audio.MusicStyle.CosmicDrone,
+            fr.geoking.arthur.audio.MusicStyle.OrchestraPads,
+            fr.geoking.arthur.audio.MusicStyle.OrchestraSwell,
+            -> 0.52f
             fr.geoking.arthur.audio.MusicStyle.Zen -> 0.50f
             else -> 0.50f
         }
+    }
 
     fun pickGroove(style: fr.geoking.arthur.audio.MusicStyle, index: Int): GrooveCellPattern? {
         val list = groovePatternsFor(style)

@@ -37,9 +37,11 @@ class MarkovSequencer(
 ) {
     private val random = Random(preset.artworkSeed xor sessionSalt)
 
+    private val atmosphere: Boolean = character == AmbientAudioCharacter.Atmosphere
+
     private val motifs = MelodyBank.motifsFor(preset.style)
     private val rhythm = RhythmBank.pick(preset.style, preset.rhythmBankIndex)
-    private val groovePatterns = RhythmBank.groovePatternsFor(preset.style)
+    private val groovePatterns = RhythmBank.groovePatternsFor(preset.style, atmosphere)
     private val harmonyPattern = HarmonyBank.pick(preset.style, preset.harmonyBankIndex)
     private val bassPattern = BassBank.patternFor(preset.style, preset.harmonyBankIndex)
 
@@ -115,11 +117,12 @@ class MarkovSequencer(
             MusicStyle.ArcadeGlow,
         )
 
-    private val atmosphere: Boolean = character == AmbientAudioCharacter.Atmosphere
-
-    /** True when melody/bass/harmony share a swung eighth transport. */
+    /**
+     * Shared swung-eighth transport for groove styles, plus any Atmosphere session
+     * (ultra-sparse cells keep beds calm).
+     */
     val useGrooveClock: Boolean =
-        !atmosphere && preset.style in GROOVE_STYLES
+        atmosphere || preset.style in GROOVE_STYLES
 
     val harmonyState: HarmonyState get() = currentHarmony
     val currentMelodyHz: Float?
@@ -204,10 +207,11 @@ class MarkovSequencer(
         }
         advanceHarmonyState()
         harmonyChanged = true
-        val bars = if (preset.style in AMBIENT_GROOVE_STYLES) {
-            2 + random.nextInt(3) // 2–4 bars — slower harmony for Zen/Classical
-        } else {
-            1 + random.nextInt(2) // 1–2 bars for jazz motion
+        val bars = when {
+            atmosphere -> 4 + random.nextInt(5) // 4–8 bars — long drones
+            preset.style in TEXTURE_GROOVE_STYLES -> 3 + random.nextInt(3) // 3–5
+            preset.style in AMBIENT_GROOVE_STYLES -> 2 + random.nextInt(3) // 2–4
+            else -> 1 + random.nextInt(2) // 1–2 jazz
         }
         // Countdown semantics: N decrements then fire → period N+1; store duration-1.
         samplesUntilHarmony = (t.barsDuration(grooveBarIndex, bars) - 1).coerceAtLeast(0)
@@ -273,9 +277,9 @@ class MarkovSequencer(
         val step = bassPattern.steps[bassStepCursor % bassPattern.steps.size]
         bassStepCursor++
         val chordRootSemi = HarmonyBank.stateSemitones(currentHarmony)
-        val octaveDown = -12
+        val octaveDown = if (atmosphere && step == BassStep.Pedal) -24 else -12
         val oneBar = t.barsDuration(grooveBarIndex, 1)
-        val approachingChange = samplesUntilHarmony in 1 until oneBar
+        val approachingChange = !atmosphere && samplesUntilHarmony in 1 until oneBar
         val semis = when {
             approachingChange && (step == BassStep.WalkUp || step == BassStep.WalkDown) -> {
                 val nextRoot = HarmonyBank.stateSemitones(peekNextHarmonyState())
@@ -293,8 +297,17 @@ class MarkovSequencer(
         }
         currentBassHz = (preset.rootHz * 2.0.pow(semis / 12.0).toFloat())
             .coerceIn(40f, 140f)
-        samplesUntilBass = (t.quarterDuration(grooveQuarterIndex) - 1).coerceAtLeast(0)
-        grooveQuarterIndex++
+        val quarters = when {
+            atmosphere -> 2 + random.nextInt(3) // 2–4
+            preset.style in TEXTURE_GROOVE_STYLES -> 2
+            else -> 1
+        }
+        var wait = 0
+        repeat(quarters) {
+            wait += t.quarterDuration(grooveQuarterIndex)
+            grooveQuarterIndex++
+        }
+        samplesUntilBass = (wait - 1).coerceAtLeast(0)
         return true
     }
 
@@ -412,11 +425,17 @@ class MarkovSequencer(
         if (random.nextFloat() < 0.78f) {
             degree = snapToChordTone(degree)
         }
-        val activityFloor = if (preset.style in AMBIENT_GROOVE_STYLES) 0.42f else 0.68f
-        val densityBoost = if (preset.style in AMBIENT_GROOVE_STYLES) {
-            preset.density * 0.18f
-        } else {
-            preset.density * 0.28f
+        val activityFloor = when {
+            atmosphere -> 0.16f
+            preset.style in TEXTURE_GROOVE_STYLES -> 0.28f
+            preset.style in AMBIENT_GROOVE_STYLES -> 0.42f
+            else -> 0.68f
+        }
+        val densityBoost = when {
+            atmosphere -> preset.density * 0.10f
+            preset.style in TEXTURE_GROOVE_STYLES -> preset.density * 0.14f
+            preset.style in AMBIENT_GROOVE_STYLES -> preset.density * 0.18f
+            else -> preset.density * 0.28f
         }
         if (random.nextFloat() > (activityFloor + densityBoost)) {
             currentDegree = null
@@ -463,7 +482,7 @@ class MarkovSequencer(
         val created = GrooveTransport(
             tempoBpm = preset.tempoBpm,
             sampleRate = sampleRate,
-            swingRatio = RhythmBank.grooveSwingRatio(preset.style),
+            swingRatio = RhythmBank.grooveSwingRatio(preset.style, atmosphere),
         )
         transport = created
         return created
@@ -527,12 +546,27 @@ class MarkovSequencer(
             MusicStyle.Zen,
             MusicStyle.ClassicalPiano,
             MusicStyle.PianoBallad,
+            MusicStyle.OceanWaves,
+            MusicStyle.SoftRain,
+            MusicStyle.WindAmbience,
+            MusicStyle.CosmicDrone,
+            MusicStyle.OrchestraPads,
+            MusicStyle.OrchestraSwell,
         )
 
         private val AMBIENT_GROOVE_STYLES: Set<MusicStyle> = setOf(
             MusicStyle.Zen,
             MusicStyle.ClassicalPiano,
             MusicStyle.PianoBallad,
+        )
+
+        private val TEXTURE_GROOVE_STYLES: Set<MusicStyle> = setOf(
+            MusicStyle.OceanWaves,
+            MusicStyle.SoftRain,
+            MusicStyle.WindAmbience,
+            MusicStyle.CosmicDrone,
+            MusicStyle.OrchestraPads,
+            MusicStyle.OrchestraSwell,
         )
     }
 

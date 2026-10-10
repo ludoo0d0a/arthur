@@ -60,28 +60,28 @@ android {
         buildConfigField("String", "SMITHSONIAN_API_KEY", "\"${secret("SMITHSONIAN_API_KEY")}\"")
         buildConfigField("String", "DEVIANTART_CLIENT_ID", "\"${secret("DEVIANTART_CLIENT_ID")}\"")
         buildConfigField("String", "DEVIANTART_CLIENT_SECRET", "\"${secret("DEVIANTART_CLIENT_SECRET")}\"")
-        // Developer UI: baseline off; `full` flavor may opt in via props/env; `playstore` stays false.
-        buildConfigField("boolean", "DEBUG_DEV", "false")
+        // TEMP: force developer UI on for all variants (including playstore). Revert before shipping.
+        buildConfigField("boolean", "DEBUG_DEV", "true")
         val buildDate = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
         buildConfigField("String", "BUILD_DATE", "\"$buildDate\"")
     }
 
-    // local.properties / gradle.properties / CI: DEBUG_DEV=true (optional). Used by `full` only.
-    val debugDevEnabled = secretFlag("DEBUG_DEV") || secretFlag("debug_dev")
+    // TEMP: debug_dev prop/env ignored while DEBUG_DEV is forced true for all flavors.
+    // Restore local.properties / gradle.properties / CI resolution when reverting the force.
 
     flavorDimensions += "distribution"
     productFlavors {
         create("full") {
             dimension = "distribution"
             buildConfigField("boolean", "IS_PLAYSTORE_DISTRIBUTION", "false")
-            // Developer UI on fullDebug and fullRelease when debug_dev / DEBUG_DEV is true.
-            buildConfigField("boolean", "DEBUG_DEV", debugDevEnabled.toString())
+            // TEMP: forced true above in defaultConfig; keep flavor override in sync.
+            buildConfigField("boolean", "DEBUG_DEV", "true")
         }
         create("playstore") {
             dimension = "distribution"
             buildConfigField("boolean", "IS_PLAYSTORE_DISTRIBUTION", "true")
-            // Play Store AABs must not ship developer UI — ignore local debug_dev flags.
-            buildConfigField("boolean", "DEBUG_DEV", "false")
+            // TEMP: force developer UI on playstore too. Revert to false before shipping AABs.
+            buildConfigField("boolean", "DEBUG_DEV", "true")
         }
     }
 

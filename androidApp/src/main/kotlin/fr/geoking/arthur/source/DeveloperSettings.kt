@@ -5,7 +5,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-/** Debug-only prefs (developer menu). Not applied in release. */
+/**
+ * Debug-only prefs (Settings → Developer), gated by [fr.geoking.arthur.BuildConfig.DEBUG_DEV].
+ * Defaults unlock Premium UX and all Marketplace packs so local/dev builds are fully usable.
+ */
 class DeveloperSettings(context: Context) {
     private val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     private val _simulatePremium = MutableStateFlow(

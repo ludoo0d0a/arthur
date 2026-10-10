@@ -40,7 +40,7 @@ env:
   SMITHSONIAN_API_KEY: ${{ secrets.SMITHSONIAN_API_KEY }}
   DEVIANTART_CLIENT_ID: ${{ secrets.DEVIANTART_CLIENT_ID }}
   DEVIANTART_CLIENT_SECRET: ${{ secrets.DEVIANTART_CLIENT_SECRET }}
-  # DEBUG_DEV unused here: playstore flavor forces BuildConfig.DEBUG_DEV=false.
+  # TEMP: BuildConfig.DEBUG_DEV forced true in androidApp/build.gradle.kts (incl. playstore).
 
 jobs:
   release:

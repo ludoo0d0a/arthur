@@ -168,8 +168,8 @@ val appModule = module {
         DevAwarePremiumEntitlement(
             delegate = gatewayEntitlement,
             simulatePremium = {
-                (BuildConfig.DEBUG || BuildConfig.DEBUG_DEV) &&
-                    developerSettings.simulatePremium.value
+                // DEBUG_DEV (and debug builds) enable developer overrides; prefs default true.
+                BuildConfig.DEBUG_DEV && developerSettings.simulatePremium.value
             },
         )
     }
@@ -178,8 +178,8 @@ val appModule = module {
         DevAwarePackOwnership(
             delegate = RevenueCatPackOwnership(get()),
             simulateAllPacks = {
-                (BuildConfig.DEBUG || BuildConfig.DEBUG_DEV) &&
-                    developerSettings.simulateAllPacks.value
+                // When developer mode is on, all packs unlock by default (toggle in Settings).
+                BuildConfig.DEBUG_DEV && developerSettings.simulateAllPacks.value
             },
         )
     }

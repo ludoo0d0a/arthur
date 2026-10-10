@@ -215,7 +215,7 @@ class MainActivity : ComponentActivity() {
                                 SettingsScreen(
                                     onDismiss = { showSettings = false },
                                     isPremium = isPremium,
-                                    showDeveloper = BuildConfig.DEBUG || BuildConfig.DEBUG_DEV,
+                                    showDeveloper = BuildConfig.DEBUG_DEV,
                                     simulatePremium = simulatePremium,
                                     onSimulatePremiumChange = developerSettings::setSimulatePremium,
                                     simulateAllPacks = simulateAllPacks,

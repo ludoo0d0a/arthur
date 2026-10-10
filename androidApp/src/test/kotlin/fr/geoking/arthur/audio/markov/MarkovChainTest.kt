@@ -203,7 +203,7 @@ class MarkovSequencerTest {
     }
 
     @Test
-    fun jazzUsesGrooveClockZenDoesNot() {
+    fun grooveClockOnForJazzZenClassicalMelodyNotAtmosphere() {
         val jazz = MusicPresetResolver.resolve(
             Artwork("test.groove", "G", sourceId = "test", kind = ArtworkKind.Photo),
             MusicUserPrefs(
@@ -218,12 +218,21 @@ class MarkovSequencerTest {
                 stylePreference = MusicStyle.Zen,
             ),
         )
+        val classical = MusicPresetResolver.resolve(
+            Artwork("test.classical", "C", sourceId = "test", kind = ArtworkKind.Photo),
+            MusicUserPrefs(
+                character = AmbientAudioCharacter.Melody,
+                stylePreference = MusicStyle.ClassicalPiano,
+            ),
+        )
         val jazzSeq = MarkovSequencer(jazz, 1L, AmbientAudioCharacter.Melody)
         val zenSeq = MarkovSequencer(zen, 1L, AmbientAudioCharacter.Melody)
-        val jazzAtm = MarkovSequencer(jazz, 1L, AmbientAudioCharacter.Atmosphere)
+        val classicalSeq = MarkovSequencer(classical, 1L, AmbientAudioCharacter.Melody)
+        val zenAtm = MarkovSequencer(zen, 1L, AmbientAudioCharacter.Atmosphere)
         assertTrue(jazzSeq.useGrooveClock)
-        assertTrue(!zenSeq.useGrooveClock)
-        assertTrue(!jazzAtm.useGrooveClock)
+        assertTrue(zenSeq.useGrooveClock)
+        assertTrue(classicalSeq.useGrooveClock)
+        assertTrue(!zenAtm.useGrooveClock)
     }
 
     @Test
@@ -296,8 +305,8 @@ class MarkovSequencerTest {
 class ArrangementFormTest {
     @Test
     fun forceBridgeThenTicks() {
-        val form = ArrangementForm(123L)
-        form.forceBridge(44_100, 0.01f)
+        val form = ArrangementForm(123L, tempoBpm = 72f)
+        form.forceBridge(44_100, bars = 1)
         assertEquals(FormSection.Bridge, form.section)
         repeat(500) { form.tick(44_100) }
         // After bridge expires, section advances into cycle.
@@ -306,11 +315,45 @@ class ArrangementFormTest {
 
     @Test
     fun usesProvidedSampleRateForSectionLength() {
-        val form = ArrangementForm(1L)
+        val form = ArrangementForm(1L, tempoBpm = 60f)
         form.tick(22_050)
-        // After scheduling, remaining ticks should roughly match ~4–6s at 22050.
-        // Just ensure ticking at alternate SR does not crash and advances.
         repeat(22_050 * 20) { form.tick(22_050) }
         assertNotNull(form.section)
+    }
+
+    @Test
+    fun sectionALengthMatchesBarsAtTempo() {
+        val bpm = 120f
+        val sr = 48_000
+        val form = ArrangementForm(42L, tempoBpm = bpm)
+        form.tick(sr) // schedule Intro
+        // Drain Intro
+        while (form.section == FormSection.Intro) {
+            form.tick(sr)
+        }
+        assertEquals(FormSection.A, form.section)
+        val bars = form.currentSectionBars
+        assertTrue("A should be 8–12 bars, got $bars", bars in 8..12)
+        val secondsPerBar = 4.0 * 60.0 / bpm
+        val expected = (bars * secondsPerBar * sr).toInt()
+        // samplesRemaining was set then one tick already decremented once in the loop that left Intro…
+        // Re-read: after advance into A, scheduleCurrent sets samplesRemaining, then tick returns.
+        // First tick that enters A: samplesRemaining was 0, scheduleCurrent sets it, no decrement that call.
+        // So samplesUntilSectionChange ≈ expected (within 1).
+        val remaining = form.samplesUntilSectionChange()
+        assertTrue(
+            "remaining=$remaining expected≈$expected bars=$bars",
+            abs(remaining - expected) <= 1,
+        )
+    }
+
+    @Test
+    fun sameSeedSameSectionBars() {
+        val a = ArrangementForm(99L, 76f)
+        val b = ArrangementForm(99L, 76f)
+        a.tick(44_100)
+        b.tick(44_100)
+        assertEquals(a.currentSectionBars, b.currentSectionBars)
+        assertEquals(a.section, b.section)
     }
 }

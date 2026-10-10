@@ -204,7 +204,11 @@ class MarkovSequencer(
         }
         advanceHarmonyState()
         harmonyChanged = true
-        val bars = 1 + random.nextInt(2) // 1–2 bars for jazz motion
+        val bars = if (preset.style in AMBIENT_GROOVE_STYLES) {
+            2 + random.nextInt(3) // 2–4 bars — slower harmony for Zen/Classical
+        } else {
+            1 + random.nextInt(2) // 1–2 bars for jazz motion
+        }
         // Countdown semantics: N decrements then fire → period N+1; store duration-1.
         samplesUntilHarmony = (t.barsDuration(grooveBarIndex, bars) - 1).coerceAtLeast(0)
         grooveBarIndex += bars
@@ -408,8 +412,12 @@ class MarkovSequencer(
         if (random.nextFloat() < 0.78f) {
             degree = snapToChordTone(degree)
         }
-        val activityFloor = 0.68f
-        val densityBoost = preset.density * 0.28f
+        val activityFloor = if (preset.style in AMBIENT_GROOVE_STYLES) 0.42f else 0.68f
+        val densityBoost = if (preset.style in AMBIENT_GROOVE_STYLES) {
+            preset.density * 0.18f
+        } else {
+            preset.density * 0.28f
+        }
         if (random.nextFloat() > (activityFloor + densityBoost)) {
             currentDegree = null
             return false
@@ -446,13 +454,16 @@ class MarkovSequencer(
         return partials
     }
 
+    /** Shared groove transport when active (for arrangement bar alignment). */
+    fun grooveTransportOrNull(): GrooveTransport? = transport
+
     private fun ensureTransport(sampleRate: Int): GrooveTransport {
         val existing = transport
         if (existing != null) return existing
         val created = GrooveTransport(
             tempoBpm = preset.tempoBpm,
             sampleRate = sampleRate,
-            swingRatio = GrooveTransport.DEFAULT_SWING,
+            swingRatio = RhythmBank.grooveSwingRatio(preset.style),
         )
         transport = created
         return created
@@ -513,6 +524,15 @@ class MarkovSequencer(
             MusicStyle.BarAmbience,
             MusicStyle.NightLounge,
             MusicStyle.BassOnly,
+            MusicStyle.Zen,
+            MusicStyle.ClassicalPiano,
+            MusicStyle.PianoBallad,
+        )
+
+        private val AMBIENT_GROOVE_STYLES: Set<MusicStyle> = setOf(
+            MusicStyle.Zen,
+            MusicStyle.ClassicalPiano,
+            MusicStyle.PianoBallad,
         )
     }
 

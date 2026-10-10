@@ -50,6 +50,22 @@ object RhythmBank {
 
     private val jazzGroovePatterns = listOf(swingComp, swingSparse, swingWalk)
 
+    // Straight / sparse cells for ambient piano (Zen, Classical, Ballad).
+    private val straightSparse = GrooveCellPattern(
+        "straight_sparse",
+        booleanArrayOf(true, false, false, false, true, false, false, false),
+    )
+    private val balladCells = GrooveCellPattern(
+        "ballad_cells",
+        booleanArrayOf(true, false, false, true, false, false, true, false),
+    )
+    private val zenBreath = GrooveCellPattern(
+        "zen_breath",
+        booleanArrayOf(true, false, false, false, false, false, true, false),
+    )
+
+    private val ambientGroovePatterns = listOf(straightSparse, balladCells, zenBreath)
+
     fun patternsFor(style: fr.geoking.arthur.audio.MusicStyle): List<RhythmPattern> =
         when (style) {
             fr.geoking.arthur.audio.MusicStyle.TibetanBowl,
@@ -85,7 +101,7 @@ object RhythmBank {
             -> listOf(pulseSteady, flowing, medium, swing)
         }
 
-    /** Swung eighth-cell patterns for groove-clock styles. */
+    /** Eighth-cell patterns for groove-clock styles. */
     fun groovePatternsFor(style: fr.geoking.arthur.audio.MusicStyle): List<GrooveCellPattern> =
         when (style) {
             fr.geoking.arthur.audio.MusicStyle.JazzPiano,
@@ -93,7 +109,26 @@ object RhythmBank {
             fr.geoking.arthur.audio.MusicStyle.NightLounge,
             fr.geoking.arthur.audio.MusicStyle.BassOnly,
             -> jazzGroovePatterns
+            fr.geoking.arthur.audio.MusicStyle.Zen,
+            fr.geoking.arthur.audio.MusicStyle.ClassicalPiano,
+            fr.geoking.arthur.audio.MusicStyle.PianoBallad,
+            -> ambientGroovePatterns
             else -> emptyList()
+        }
+
+    /** Swing ratio for [GrooveTransport]; 0.5 = straight eighths. */
+    fun grooveSwingRatio(style: fr.geoking.arthur.audio.MusicStyle): Float =
+        when (style) {
+            fr.geoking.arthur.audio.MusicStyle.JazzPiano,
+            fr.geoking.arthur.audio.MusicStyle.BarAmbience,
+            fr.geoking.arthur.audio.MusicStyle.NightLounge,
+            fr.geoking.arthur.audio.MusicStyle.BassOnly,
+            -> 0.67f
+            fr.geoking.arthur.audio.MusicStyle.ClassicalPiano,
+            fr.geoking.arthur.audio.MusicStyle.PianoBallad,
+            -> 0.55f
+            fr.geoking.arthur.audio.MusicStyle.Zen -> 0.50f
+            else -> 0.50f
         }
 
     fun pickGroove(style: fr.geoking.arthur.audio.MusicStyle, index: Int): GrooveCellPattern? {

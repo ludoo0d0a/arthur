@@ -25,7 +25,9 @@ import fr.geoking.arthur.audio.voices.SoftBassVoice
 import fr.geoking.arthur.audio.voices.SoftPianoPool
 import fr.geoking.arthur.audio.voices.SoftPulseVoice
 import fr.geoking.arthur.audio.voices.SquareLeadVoice
+import fr.geoking.arthur.audio.voices.SynthVoice
 import fr.geoking.arthur.audio.voices.WaveNoiseVoice
+import fr.geoking.arthur.audio.voices.WavetablePianoPool
 import fr.geoking.arthur.audio.voices.WindTextureVoice
 import fr.geoking.arthur.audio.voices.softLimit
 import fr.geoking.arthur.error.ErrorTrap
@@ -121,7 +123,8 @@ class ProceduralMusicEngine(
     // Voices (reused across presets). Melody/Balanced use a single pad; Atmosphere may use padB.
     private val padA = SinePadVoice(2.5f, glideSeconds = 0.06f)
     private val padB = SinePadVoice(3f, glideSeconds = 0.06f)
-    private val piano = SoftPianoPool(6)
+    private val softPiano = SoftPianoPool(4)
+    private val wavePiano = WavetablePianoPool(6)
     private val guitar = PluckGuitarVoice()
     private val bass = SoftBassVoice()
     private val bowl = BowlVoice()
@@ -214,7 +217,7 @@ class ProceduralMusicEngine(
         if (!isRunning.get()) {
             preset = next
             sequencer = MarkovSequencer(next, sessionSalt, character)
-            form = ArrangementForm(next.formSeed)
+            form = ArrangementForm(next.formSeed, next.tempoBpm)
             return
         }
         pendingPreset = next
@@ -229,7 +232,7 @@ class ProceduralMusicEngine(
     fun triggerTransition() {
         if (!isEnabled) return
         triggerTransitionFlag = true
-        form?.forceBridge(sampleRate, 2.5f)
+        form?.forceBridge(sampleRate, bars = 2)
         sequencer?.resetPhrase()
     }
 
@@ -264,7 +267,7 @@ class ProceduralMusicEngine(
             val fallback = MusicPresetResolver.resolve(fallbackArt, userPrefs(), packOwnership())
             preset = fallback
             sequencer = MarkovSequencer(fallback, sessionSalt, character)
-            form = ArrangementForm(fallback.formSeed)
+            form = ArrangementForm(fallback.formSeed, fallback.tempoBpm)
         }
         initAudioTrack()
         beginEnvelope(from = 0f, to = 1f, seconds = FADE_IN_SEC)
@@ -455,9 +458,13 @@ class ProceduralMusicEngine(
         }
     }
 
+    private fun leadPiano(quality: SynthQuality): SynthVoice =
+        if (quality == SynthQuality.Minimal) softPiano else wavePiano
+
     private fun releaseLeadVoices() {
         // Soft-release event voices; pads glide to the new chord instead of cutting.
-        piano.noteOff()
+        softPiano.noteOff()
+        wavePiano.noteOff()
         guitar.noteOff()
         kalimba.noteOff()
         chimes.noteOff()
@@ -492,7 +499,7 @@ class ProceduralMusicEngine(
                     releaseLeadVoices()
                     preset = next
                     sequencer = MarkovSequencer(next, sessionSalt xor sampleIndex, char)
-                    form = ArrangementForm(next.formSeed)
+                    form = ArrangementForm(next.formSeed, next.tempoBpm)
                     lastChordKey = Int.MIN_VALUE
                     applyBedVoices(next, sequencer!!, atmosphere, quality)
                     pendingPreset = null
@@ -504,6 +511,7 @@ class ProceduralMusicEngine(
                 val activePreset = preset ?: continue
                 val seq = sequencer ?: continue
                 val arrangement = form ?: continue
+                arrangement.attachTransport(seq.grooveTransportOrNull())
 
                 val glide = if (atmosphere) 0.22f else 0.06f
                 padA.setGlideSeconds(glide)
@@ -647,7 +655,7 @@ class ProceduralMusicEngine(
                                     OrnamentKind.Roll ->
                                         seq.currentMelodyHz?.let { kalimba.noteOn(it, 0.35f) }
                                     OrnamentKind.DoubleStrike -> seq.currentMelodyHz?.let {
-                                        piano.noteOn(it, 0.30f)
+                                        leadPiano(quality).noteOn(it, 0.30f)
                                         // Same register echo — avoid octave-up chime glare.
                                         chimes.noteOn(it, 0.16f)
                                     }
@@ -703,8 +711,11 @@ class ProceduralMusicEngine(
                     }
 
                     val leadMul = melodyGain * arrangement.melodyMul
-                    if (pianoAudible && piano.isAudible()) {
-                        var pianoSample = piano.render(sampleIndex, sr) * leadMul
+                    val pianoVoice = leadPiano(quality)
+                    val idlePiano = if (quality == SynthQuality.Minimal) wavePiano else softPiano
+                    if (idlePiano.isAudible()) idlePiano.render(sampleIndex, sr)
+                    if (pianoAudible && pianoVoice.isAudible()) {
+                        var pianoSample = pianoVoice.render(sampleIndex, sr) * leadMul
                         if (pianoRoomStyle) {
                             pianoSample = roomBus.processPianoLp(pianoSample)
                         }
@@ -899,8 +910,9 @@ class ProceduralMusicEngine(
             while (f > 620f) f *= 0.5f
             f
         }.distinct().take(if (quality == SynthQuality.Minimal) 2 else 3)
+        val pianoVoice = leadPiano(quality)
         shell.forEachIndexed { i, hz ->
-            piano.noteOn(hz, (0.32f - i * 0.04f).coerceAtLeast(0.18f))
+            pianoVoice.noteOn(hz, (0.32f - i * 0.04f).coerceAtLeast(0.18f))
         }
     }
 
@@ -912,27 +924,28 @@ class ProceduralMusicEngine(
     ) {
         val hz = seq.currentMelodyHz ?: return
         val vel = if (atmosphere) 0.32f else 0.55f
+        val pianoVoice = leadPiano(quality)
         when (p.style) {
             MusicStyle.JazzPiano, MusicStyle.BarAmbience, MusicStyle.NightLounge,
             MusicStyle.ClassicalPiano, MusicStyle.PianoBallad,
-            -> piano.noteOn(hz, vel)
+            -> pianoVoice.noteOn(hz, vel)
             MusicStyle.SoftGuitar, MusicStyle.RockBallad, MusicStyle.HawaiianUkulele -> guitar.noteOn(hz, vel)
             MusicStyle.AfricanPulse -> kalimba.noteOn(hz, vel + 0.05f)
             MusicStyle.WindChimes, MusicStyle.Songbirds -> chimes.noteOn(hz, vel)
             MusicStyle.TibetanBowl -> bowl.noteOn(hz, vel * 0.85f)
             MusicStyle.OceanWaves, MusicStyle.SoftRain, MusicStyle.WindAmbience,
             MusicStyle.Fireplace,
-            -> piano.noteOn(hz, vel * 0.75f)
+            -> pianoVoice.noteOn(hz, vel * 0.75f)
             MusicStyle.ViolinLead -> bowed.noteOn(hz, vel)
             MusicStyle.BassOnly -> Unit // bass stem carries the lead
             MusicStyle.CosmicDrone, MusicStyle.OrchestraPads, MusicStyle.OrchestraSwell -> {
-                piano.noteOn(hz, vel * 0.7f)
+                pianoVoice.noteOn(hz, vel * 0.7f)
                 if (!atmosphere && quality == SynthQuality.Full) {
                     chimes.noteOn(hz, vel * 0.5f)
                 }
             }
             MusicStyle.Zen -> {
-                piano.noteOn(hz, vel)
+                pianoVoice.noteOn(hz, vel)
                 if (!atmosphere &&
                     quality == SynthQuality.Full &&
                     Random(hz.toBits().toLong()).nextFloat() < 0.15f
@@ -945,7 +958,7 @@ class ProceduralMusicEngine(
             MusicStyle.ArcadeGlow -> {
                 squareLead.noteOn(hz, vel * 0.55f)
                 if (!atmosphere && quality == SynthQuality.Full) {
-                    piano.noteOn(hz, vel * 0.35f)
+                    pianoVoice.noteOn(hz, vel * 0.35f)
                 }
             }
         }
@@ -965,6 +978,7 @@ class ProceduralMusicEngine(
             MusicStyle.NightLounge,
             MusicStyle.ClassicalPiano,
             MusicStyle.PianoBallad,
+            MusicStyle.Zen,
         )
 
         private val JAZZ_COMPING_STYLES = setOf(
@@ -1021,8 +1035,9 @@ class ProceduralMusicEngine(
             TextureCueKind.ArpeggioCascade, TextureCueKind.StringSwell -> {
                 val a = (root * 2f).coerceAtMost(MarkovSequencer.MELODY_MAX_HZ)
                 val b = (root * 2.5f).coerceAtMost(MarkovSequencer.MELODY_MAX_HZ)
-                piano.noteOn(a, 0.35f)
-                piano.noteOn(b, 0.28f)
+                val pianoVoice = leadPiano(cpuLoad.quality)
+                pianoVoice.noteOn(a, 0.35f)
+                pianoVoice.noteOn(b, 0.28f)
             }
             TextureCueKind.ThumbPianoRoll -> {
                 val a = (root * 2f).coerceAtMost(MarkovSequencer.MELODY_MAX_HZ)

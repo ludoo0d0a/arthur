@@ -11,6 +11,17 @@ data class RhythmPattern(
     override fun hashCode(): Int = 31 * id.hashCode() + tokens.contentHashCode()
 }
 
+/** Onset cells on a swung eighth grid (true = strike, false = rest). */
+data class GrooveCellPattern(
+    val id: String,
+    val cells: BooleanArray,
+) {
+    override fun equals(other: Any?): Boolean =
+        other is GrooveCellPattern && id == other.id && cells.contentEquals(other.cells)
+
+    override fun hashCode(): Int = 31 * id.hashCode() + cells.contentHashCode()
+}
+
 object RhythmBank {
     private val sparse = RhythmPattern("sparse", floatArrayOf(2f, -1f, 1f, -2f, 2f))
     private val medium = RhythmPattern("medium", floatArrayOf(1f, 1f, -0.5f, 0.5f, 1f, -1f))
@@ -22,6 +33,22 @@ object RhythmBank {
     private val whole = RhythmPattern("whole", floatArrayOf(4f, -2f, 4f))
 
     private val all = listOf(sparse, medium, flowing, swing, claveSoft, freeish, pulseSteady, whole)
+
+    // Swung-eighth cell grids (8 cells = 1 bar of 4/4).
+    private val swingComp = GrooveCellPattern(
+        "swing_comp",
+        booleanArrayOf(true, false, true, true, true, false, true, false),
+    )
+    private val swingSparse = GrooveCellPattern(
+        "swing_sparse",
+        booleanArrayOf(true, false, false, true, false, false, true, false),
+    )
+    private val swingWalk = GrooveCellPattern(
+        "swing_walk",
+        booleanArrayOf(true, false, true, false, true, false, true, true),
+    )
+
+    private val jazzGroovePatterns = listOf(swingComp, swingSparse, swingWalk)
 
     fun patternsFor(style: fr.geoking.arthur.audio.MusicStyle): List<RhythmPattern> =
         when (style) {
@@ -39,10 +66,11 @@ object RhythmBank {
             fr.geoking.arthur.audio.MusicStyle.PianoBallad,
             fr.geoking.arthur.audio.MusicStyle.ViolinLead,
             -> listOf(flowing, medium, swing, freeish)
+            // Legacy token list kept for non-groove fallback; groove path uses [groovePatternsFor].
             fr.geoking.arthur.audio.MusicStyle.JazzPiano, fr.geoking.arthur.audio.MusicStyle.BarAmbience,
             fr.geoking.arthur.audio.MusicStyle.NightLounge,
             fr.geoking.arthur.audio.MusicStyle.BassOnly,
-            -> listOf(flowing, swing, medium, pulseSteady)
+            -> listOf(swing, swing, flowing, medium)
             fr.geoking.arthur.audio.MusicStyle.SoftGuitar,
             fr.geoking.arthur.audio.MusicStyle.RockBallad,
             fr.geoking.arthur.audio.MusicStyle.HawaiianUkulele,
@@ -51,7 +79,28 @@ object RhythmBank {
             fr.geoking.arthur.audio.MusicStyle.WindChimes,
             fr.geoking.arthur.audio.MusicStyle.Songbirds,
             -> listOf(flowing, freeish, medium, swing)
+            fr.geoking.arthur.audio.MusicStyle.Chiptune,
+            fr.geoking.arthur.audio.MusicStyle.ChipArp,
+            fr.geoking.arthur.audio.MusicStyle.ArcadeGlow,
+            -> listOf(pulseSteady, flowing, medium, swing)
         }
+
+    /** Swung eighth-cell patterns for groove-clock styles. */
+    fun groovePatternsFor(style: fr.geoking.arthur.audio.MusicStyle): List<GrooveCellPattern> =
+        when (style) {
+            fr.geoking.arthur.audio.MusicStyle.JazzPiano,
+            fr.geoking.arthur.audio.MusicStyle.BarAmbience,
+            fr.geoking.arthur.audio.MusicStyle.NightLounge,
+            fr.geoking.arthur.audio.MusicStyle.BassOnly,
+            -> jazzGroovePatterns
+            else -> emptyList()
+        }
+
+    fun pickGroove(style: fr.geoking.arthur.audio.MusicStyle, index: Int): GrooveCellPattern? {
+        val list = groovePatternsFor(style)
+        if (list.isEmpty()) return null
+        return list[Math.floorMod(index, list.size)]
+    }
 
     fun pick(style: fr.geoking.arthur.audio.MusicStyle, index: Int): RhythmPattern {
         val list = patternsFor(style)

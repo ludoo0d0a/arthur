@@ -288,6 +288,8 @@ object MusicPresetResolver {
             TrackMix(bed = 0.14f, harmony = 0.12f, melody = 0.58f, bass = 0.36f, texture = 0f, pulse = 0.02f)
         MusicStyle.HawaiianUkulele ->
             TrackMix(bed = 0.10f, harmony = 0.20f, melody = 0.58f, bass = 0.38f, texture = 0f, pulse = 0.04f)
+        MusicStyle.Chiptune, MusicStyle.ChipArp, MusicStyle.ArcadeGlow ->
+            TrackMix(bed = 0.08f, harmony = 0.14f, melody = 0.55f, bass = 0.42f, texture = 0f, pulse = 0.16f)
     }
 
     private fun baseTempo(style: MusicStyle): Float = when (style) {
@@ -303,6 +305,7 @@ object MusicPresetResolver {
         -> 68f
         MusicStyle.JazzPiano, MusicStyle.BassOnly -> 76f
         MusicStyle.AfricanPulse -> 92f
+        MusicStyle.Chiptune, MusicStyle.ChipArp, MusicStyle.ArcadeGlow -> 110f
     }
 
     private fun delta(seed: Long, lane: Int): Float =
@@ -363,6 +366,8 @@ object ScaleLibrary {
                     listOf(minorPent, naturalMinor, dorian)
                 MusicStyle.ClassicalPiano, MusicStyle.PianoBallad, MusicStyle.ViolinLead ->
                     listOf(major, naturalMinor, majorPent, dorian)
+                MusicStyle.Chiptune, MusicStyle.ChipArp, MusicStyle.ArcadeGlow ->
+                    listOf(majorPent, major, mixolydian, hexatonic)
             }
         }
         return when (style) {
@@ -380,6 +385,8 @@ object ScaleLibrary {
                 listOf(wholeTone, minorPent, bowlPartials)
             MusicStyle.ClassicalPiano, MusicStyle.PianoBallad, MusicStyle.ViolinLead ->
                 listOf(major, naturalMinor, majorPent)
+            MusicStyle.Chiptune, MusicStyle.ChipArp, MusicStyle.ArcadeGlow ->
+                listOf(majorPent, mixolydian, hexatonic)
         }.ifEmpty { melodic }
     }
 }

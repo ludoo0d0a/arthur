@@ -24,6 +24,9 @@ enum class MusicStyle {
     BassOnly,
     PianoBallad,
     HawaiianUkulele,
+    Chiptune,
+    ChipArp,
+    ArcadeGlow,
 }
 
 /** Snake_case ids shared with [fr.geoking.arthur.shared.marketplace.AudioPackCatalog]. */
@@ -51,6 +54,9 @@ object MusicStyleIds {
         MusicStyle.BassOnly -> "bass_only"
         MusicStyle.PianoBallad -> "piano_ballad"
         MusicStyle.HawaiianUkulele -> "hawaiian_ukulele"
+        MusicStyle.Chiptune -> "chiptune"
+        MusicStyle.ChipArp -> "chip_arp"
+        MusicStyle.ArcadeGlow -> "arcade_glow"
     }
 
     fun fromSuffix(suffix: String): MusicStyle? = MusicStyle.entries.firstOrNull {

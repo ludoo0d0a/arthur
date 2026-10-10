@@ -4,6 +4,7 @@ import fr.geoking.arthur.audio.MusicPreset
 import fr.geoking.arthur.audio.MusicStyle
 import fr.geoking.arthur.audio.banks.BassBank
 import fr.geoking.arthur.audio.banks.BassStep
+import fr.geoking.arthur.audio.banks.GrooveCellPattern
 import fr.geoking.arthur.audio.banks.HarmonyBank
 import fr.geoking.arthur.audio.banks.HarmonyState
 import fr.geoking.arthur.audio.banks.MelodyBank
@@ -25,6 +26,9 @@ enum class OrnamentKind {
 /**
  * Couples pitch / rhythm / harmony / bass / ornament walks for one preset.
  * Session salt varies walks; artwork seed selects banks/matrices.
+ *
+ * Jazz/lounge (non-Atmosphere) uses a shared [GrooveTransport] swing grid;
+ * other styles keep independent duration-token countdowns.
  */
 class MarkovSequencer(
     private val preset: MusicPreset,
@@ -35,6 +39,7 @@ class MarkovSequencer(
 
     private val motifs = MelodyBank.motifsFor(preset.style)
     private val rhythm = RhythmBank.pick(preset.style, preset.rhythmBankIndex)
+    private val groovePatterns = RhythmBank.groovePatternsFor(preset.style)
     private val harmonyPattern = HarmonyBank.pick(preset.style, preset.harmonyBankIndex)
     private val bassPattern = BassBank.patternFor(preset.style, preset.harmonyBankIndex)
 
@@ -48,6 +53,12 @@ class MarkovSequencer(
         states = rhythm.tokens.indices.toList(),
         random = random,
         selfBias = 0.25f,
+    )
+    private val groovePatternChain = MarkovChain.connected(
+        states = if (groovePatterns.isEmpty()) listOf(0) else groovePatterns.indices.toList(),
+        random = random,
+        selfBias = 0.35f,
+        initial = Math.floorMod(preset.rhythmBankIndex, groovePatterns.size.coerceAtLeast(1)),
     )
     private val harmonyChain = MarkovChain(
         states = HarmonyState.entries.toList(),
@@ -76,6 +87,15 @@ class MarkovSequencer(
     private var lastHarmonyPartials: List<Float> = emptyList()
     private var lastHarmonyState: HarmonyState? = null
 
+    // Groove-clock state (jazz/lounge only).
+    private var transport: GrooveTransport? = null
+    private var grooveEighthIndex = 0L
+    private var grooveQuarterIndex = 0L
+    private var grooveBarIndex = 0L
+    private var grooveCellCursor = 0
+    private var activeGroovePattern: GrooveCellPattern? =
+        groovePatterns.getOrNull(Math.floorMod(preset.rhythmBankIndex, groovePatterns.size.coerceAtLeast(1)))
+
     private val melodicStyle: Boolean =
         preset.style in setOf(
             MusicStyle.JazzPiano,
@@ -90,9 +110,16 @@ class MarkovSequencer(
             MusicStyle.PianoBallad,
             MusicStyle.BassOnly,
             MusicStyle.HawaiianUkulele,
+            MusicStyle.Chiptune,
+            MusicStyle.ChipArp,
+            MusicStyle.ArcadeGlow,
         )
 
     private val atmosphere: Boolean = character == AmbientAudioCharacter.Atmosphere
+
+    /** True when melody/bass/harmony share a swung eighth transport. */
+    val useGrooveClock: Boolean =
+        !atmosphere && preset.style in GROOVE_STYLES
 
     val harmonyState: HarmonyState get() = currentHarmony
     val currentMelodyHz: Float?
@@ -134,14 +161,24 @@ class MarkovSequencer(
     fun resetPhrase() {
         pitchChain.reset()
         rhythmChain.reset()
+        groovePatternChain.reset()
         activeMotif = motifs[pitchChain.current]
         motifCursor = 0
         samplesUntilNextNote = 0
         currentDegree = 0
         lastDegree = 0
+        grooveCellCursor = 0
+        activeGroovePattern = groovePatterns.getOrNull(groovePatternChain.current)
+        grooveEighthIndex = 0L
+        grooveQuarterIndex = 0L
+        grooveBarIndex = 0L
     }
 
     fun advanceHarmonyClock(sampleRate: Int) {
+        if (useGrooveClock) {
+            advanceGrooveHarmony(sampleRate)
+            return
+        }
         harmonyChanged = false
         if (samplesUntilHarmony > 0) {
             samplesUntilHarmony--
@@ -158,6 +195,21 @@ class MarkovSequencer(
         samplesUntilHarmony = (bars * secondsPerBar * sampleRate).toInt().coerceAtLeast(sampleRate)
     }
 
+    private fun advanceGrooveHarmony(sampleRate: Int) {
+        val t = ensureTransport(sampleRate)
+        harmonyChanged = false
+        if (samplesUntilHarmony > 0) {
+            samplesUntilHarmony--
+            return
+        }
+        advanceHarmonyState()
+        harmonyChanged = true
+        val bars = 1 + random.nextInt(2) // 1–2 bars for jazz motion
+        // Countdown semantics: N decrements then fire → period N+1; store duration-1.
+        samplesUntilHarmony = (t.barsDuration(grooveBarIndex, bars) - 1).coerceAtLeast(0)
+        grooveBarIndex += bars
+    }
+
     private fun advanceHarmonyState() {
         if (harmonyPattern.sequential && harmonyPattern.progression.isNotEmpty()) {
             // Occasional jump to refresh refrain feel.
@@ -172,8 +224,17 @@ class MarkovSequencer(
         }
     }
 
+    private fun peekNextHarmonyState(): HarmonyState {
+        if (harmonyPattern.sequential && harmonyPattern.progression.isNotEmpty()) {
+            val nextIdx = (progressionIndex + 1) % harmonyPattern.progression.size
+            return harmonyPattern.progression[nextIdx]
+        }
+        return currentHarmony
+    }
+
     /** Advance bass clock; returns true when a new bass note should fire. */
     fun tickBass(sampleRate: Int): Boolean {
+        if (useGrooveClock) return tickGrooveBass(sampleRate)
         if (samplesUntilBass > 0) {
             samplesUntilBass--
             return false
@@ -199,8 +260,43 @@ class MarkovSequencer(
         return true
     }
 
+    private fun tickGrooveBass(sampleRate: Int): Boolean {
+        val t = ensureTransport(sampleRate)
+        if (samplesUntilBass > 0) {
+            samplesUntilBass--
+            return false
+        }
+        val step = bassPattern.steps[bassStepCursor % bassPattern.steps.size]
+        bassStepCursor++
+        val chordRootSemi = HarmonyBank.stateSemitones(currentHarmony)
+        val octaveDown = -12
+        val oneBar = t.barsDuration(grooveBarIndex, 1)
+        val approachingChange = samplesUntilHarmony in 1 until oneBar
+        val semis = when {
+            approachingChange && (step == BassStep.WalkUp || step == BassStep.WalkDown) -> {
+                val nextRoot = HarmonyBank.stateSemitones(peekNextHarmonyState())
+                val approach = when {
+                    nextRoot > chordRootSemi -> nextRoot - 1
+                    nextRoot < chordRootSemi -> nextRoot + 1
+                    else -> nextRoot - 1
+                }
+                approach + octaveDown
+            }
+            else -> {
+                val walk = 1 + random.nextInt(2)
+                chordRootSemi + BassBank.stepSemitones(step, walk) + octaveDown
+            }
+        }
+        currentBassHz = (preset.rootHz * 2.0.pow(semis / 12.0).toFloat())
+            .coerceIn(40f, 140f)
+        samplesUntilBass = (t.quarterDuration(grooveQuarterIndex) - 1).coerceAtLeast(0)
+        grooveQuarterIndex++
+        return true
+    }
+
     /** Advance melody clock by one sample; returns true when a new note onset fires. */
     fun tickMelody(sampleRate: Int): Boolean {
+        if (useGrooveClock) return tickGrooveMelody(sampleRate)
         if (samplesUntilNextNote > 0) {
             samplesUntilNextNote--
             return false
@@ -265,6 +361,64 @@ class MarkovSequencer(
         return currentDegree != null
     }
 
+    private fun tickGrooveMelody(sampleRate: Int): Boolean {
+        val t = ensureTransport(sampleRate)
+        if (samplesUntilNextNote > 0) {
+            samplesUntilNextNote--
+            return false
+        }
+        var pattern = activeGroovePattern
+        if (pattern == null || pattern.cells.isEmpty()) {
+            samplesUntilNextNote = (t.eighthDuration(grooveEighthIndex) - 1).coerceAtLeast(0)
+            grooveEighthIndex++
+            currentDegree = null
+            return false
+        }
+        if (grooveCellCursor >= pattern.cells.size) {
+            activeGroovePattern = groovePatterns[groovePatternChain.next()]
+            pattern = activeGroovePattern!!
+            grooveCellCursor = 0
+        }
+        val cellOnset = pattern.cells[grooveCellCursor++]
+        val fire = cellOnset && pickGrooveDegree()
+        samplesUntilNextNote = (t.eighthDuration(grooveEighthIndex) - 1).coerceAtLeast(0)
+        grooveEighthIndex++
+        return fire
+    }
+
+    /** Selects a melody degree for a groove onset; returns false if treated as rest. */
+    private fun pickGrooveDegree(): Boolean {
+        if (motifCursor >= activeMotif.degrees.size) {
+            activeMotif = motifs[pitchChain.next()]
+            motifCursor = 0
+        }
+        var degree = activeMotif.degrees[motifCursor++]
+        if (degree == MelodyMotif.REST) {
+            currentDegree = null
+            return false
+        }
+        if (melodicStyle && motifCursor > 1) {
+            val delta = kotlin.math.abs(degree - lastDegree)
+            if (delta > 2 && random.nextFloat() < 0.78f) {
+                degree = lastDegree + if (degree > lastDegree) 1 else -1
+            }
+        }
+        val maxDegree = (preset.scaleSemitones.size - 1).coerceAtLeast(0).coerceAtMost(4)
+        degree = degree.coerceIn(0, maxDegree)
+        if (random.nextFloat() < 0.78f) {
+            degree = snapToChordTone(degree)
+        }
+        val activityFloor = 0.68f
+        val densityBoost = preset.density * 0.28f
+        if (random.nextFloat() > (activityFloor + densityBoost)) {
+            currentDegree = null
+            return false
+        }
+        currentDegree = degree
+        lastDegree = degree
+        return true
+    }
+
     fun nextOrnament(): OrnamentKind {
         if (atmosphere && random.nextFloat() > preset.ornamentRate * 0.35f) {
             return OrnamentKind.None
@@ -290,6 +444,18 @@ class MarkovSequencer(
         lastHarmonyPartials = partials
         lastHarmonyState = currentHarmony
         return partials
+    }
+
+    private fun ensureTransport(sampleRate: Int): GrooveTransport {
+        val existing = transport
+        if (existing != null) return existing
+        val created = GrooveTransport(
+            tempoBpm = preset.tempoBpm,
+            sampleRate = sampleRate,
+            swingRatio = GrooveTransport.DEFAULT_SWING,
+        )
+        transport = created
+        return created
     }
 
     private fun snapToChordTone(degree: Int): Int {
@@ -341,6 +507,13 @@ class MarkovSequencer(
         const val MELODY_MIN_HZ = 180f
         /** Cap bright tops — above ~E5 ambient piano/chimes get harsh in-car. */
         const val MELODY_MAX_HZ = 660f
+
+        val GROOVE_STYLES: Set<MusicStyle> = setOf(
+            MusicStyle.JazzPiano,
+            MusicStyle.BarAmbience,
+            MusicStyle.NightLounge,
+            MusicStyle.BassOnly,
+        )
     }
 
     private fun harmonyTransitions(): Map<HarmonyState, Map<HarmonyState, Float>> {

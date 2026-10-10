@@ -11,6 +11,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlin.math.abs
 import kotlin.random.Random
 
 class MarkovChainTest {
@@ -198,6 +199,96 @@ class MarkovSequencerTest {
             assertEquals(a.samplesUntilMelody(), b.samplesUntilMelody())
             assertEquals(a.samplesUntilBass(), b.samplesUntilBass())
             assertEquals(a.samplesUntilHarmony(), b.samplesUntilHarmony())
+        }
+    }
+
+    @Test
+    fun jazzUsesGrooveClockZenDoesNot() {
+        val jazz = MusicPresetResolver.resolve(
+            Artwork("test.groove", "G", sourceId = "test", kind = ArtworkKind.Photo),
+            MusicUserPrefs(
+                character = AmbientAudioCharacter.Melody,
+                stylePreference = MusicStyle.JazzPiano,
+            ),
+        )
+        val zen = MusicPresetResolver.resolve(
+            Artwork("test.zen", "Z", sourceId = "test", kind = ArtworkKind.Photo),
+            MusicUserPrefs(
+                character = AmbientAudioCharacter.Melody,
+                stylePreference = MusicStyle.Zen,
+            ),
+        )
+        val jazzSeq = MarkovSequencer(jazz, 1L, AmbientAudioCharacter.Melody)
+        val zenSeq = MarkovSequencer(zen, 1L, AmbientAudioCharacter.Melody)
+        val jazzAtm = MarkovSequencer(jazz, 1L, AmbientAudioCharacter.Atmosphere)
+        assertTrue(jazzSeq.useGrooveClock)
+        assertTrue(!zenSeq.useGrooveClock)
+        assertTrue(!jazzAtm.useGrooveClock)
+    }
+
+    @Test
+    fun grooveBassAlignsToTransportQuarters() {
+        val preset = MusicPresetResolver.resolve(
+            Artwork("test.bassAlign", "B", sourceId = "test", kind = ArtworkKind.Photo),
+            MusicUserPrefs(
+                character = AmbientAudioCharacter.Melody,
+                stylePreference = MusicStyle.JazzPiano,
+            ),
+        )
+        val seq = MarkovSequencer(preset, 99L, AmbientAudioCharacter.Melody)
+        assertTrue(seq.useGrooveClock)
+        val transport = GrooveTransport(preset.tempoBpm, 44_100)
+        val bassOnsets = mutableListOf<Long>()
+        var sample = 0L
+        repeat(44_100 * 4) {
+            seq.advanceHarmonyClock(44_100)
+            seq.tickMelody(44_100)
+            if (seq.tickBass(44_100)) {
+                bassOnsets += sample
+            }
+            sample++
+        }
+        assertTrue("expected several bass onsets, got ${bassOnsets.size}", bassOnsets.size >= 4)
+        for (onset in bassOnsets.take(12)) {
+            val q = transport.quarterIndexAt(onset)
+            val expected = transport.sampleAtQuarter(q)
+            assertTrue(
+                "bass onset $onset not on quarter (expected $expected)",
+                abs(onset - expected) <= 1L,
+            )
+        }
+    }
+
+    @Test
+    fun grooveHarmonyChangesOnBarBoundary() {
+        val preset = MusicPresetResolver.resolve(
+            Artwork("test.harmBar", "H", sourceId = "test", kind = ArtworkKind.Photo),
+            MusicUserPrefs(
+                character = AmbientAudioCharacter.Melody,
+                stylePreference = MusicStyle.JazzPiano,
+            ),
+        )
+        val seq = MarkovSequencer(preset, 3L, AmbientAudioCharacter.Melody)
+        val transport = GrooveTransport(preset.tempoBpm, 44_100)
+        val changes = mutableListOf<Long>()
+        var sample = 0L
+        // First advanceHarmonyClock fires immediately (samplesUntil=0).
+        repeat(44_100 * 8) {
+            seq.advanceHarmonyClock(44_100)
+            if (seq.harmonyChanged) changes += sample
+            seq.tickMelody(44_100)
+            seq.tickBass(44_100)
+            sample++
+        }
+        assertTrue("expected harmony changes, got ${changes.size}", changes.size >= 2)
+        // Skip the initial change at sample 0; later ones should land on bar starts.
+        for (onset in changes.drop(1).take(8)) {
+            val bar = transport.barIndexAt(onset)
+            val expected = transport.sampleAtBar(bar)
+            assertTrue(
+                "harmony change $onset not on bar (expected $expected)",
+                abs(onset - expected) <= 1L,
+            )
         }
     }
 }

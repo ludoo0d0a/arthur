@@ -104,6 +104,11 @@ object MelodyBank {
             -> listOf(classicalTheme, balladArc, waltz, ascendingPhrase, descendingSigh, lullaby)
             fr.geoking.arthur.audio.MusicStyle.BassOnly ->
                 listOf(pedalReturn, longTone, sparseBreath, bluesLick)
+            fr.geoking.arthur.audio.MusicStyle.Chiptune,
+            fr.geoking.arthur.audio.MusicStyle.ChipArp,
+            -> listOf(arcade, bounce, leapReturn, callHigh, pedalReturn, echoPair)
+            fr.geoking.arthur.audio.MusicStyle.ArcadeGlow ->
+                listOf(arcade, wholeDrift, lullaby, sparseBreath, pedalReturn, echoPair)
         }
 
     fun pick(style: fr.geoking.arthur.audio.MusicStyle, index: Int): MelodyMotif {

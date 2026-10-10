@@ -120,6 +120,10 @@ object HarmonyBank {
             fr.geoking.arthur.audio.MusicStyle.ViolinLead,
             -> listOf(classicalCadence, balladPop, zenPads)
             fr.geoking.arthur.audio.MusicStyle.BassOnly -> listOf(blues12, barWarm, jazzProg)
+            fr.geoking.arthur.audio.MusicStyle.Chiptune,
+            fr.geoking.arthur.audio.MusicStyle.ChipArp,
+            fr.geoking.arthur.audio.MusicStyle.ArcadeGlow,
+            -> listOf(balladPop, classicalCadence, africanPar, blues12)
         }
 
     fun pick(style: fr.geoking.arthur.audio.MusicStyle, index: Int): HarmonyPattern {

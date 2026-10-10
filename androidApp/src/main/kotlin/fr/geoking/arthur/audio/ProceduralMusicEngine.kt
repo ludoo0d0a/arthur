@@ -24,6 +24,7 @@ import fr.geoking.arthur.audio.voices.SinePadVoice
 import fr.geoking.arthur.audio.voices.SoftBassVoice
 import fr.geoking.arthur.audio.voices.SoftPianoPool
 import fr.geoking.arthur.audio.voices.SoftPulseVoice
+import fr.geoking.arthur.audio.voices.SquareLeadVoice
 import fr.geoking.arthur.audio.voices.WaveNoiseVoice
 import fr.geoking.arthur.audio.voices.WindTextureVoice
 import fr.geoking.arthur.audio.voices.softLimit
@@ -133,6 +134,8 @@ class ProceduralMusicEngine(
     private val pulse = SoftPulseVoice()
     private val chimes = ChimeClusterVoice()
     private val kalimba = KalimbaPluckVoice()
+    private val squareLead = SquareLeadVoice(duty = 0.35f)
+    private val chipPulse = SquareLeadVoice(duty = 0.18f, decayPerSec = 9.0)
     private val roomBus = RoomBus()
 
     private val cpuLoad = CpuLoadTracker()
@@ -518,10 +521,12 @@ class ProceduralMusicEngine(
                     SynthQuality.Minimal -> 0f
                     else -> trackMix.texture
                 }
-                val pulseGain = when (quality) {
-                    SynthQuality.Minimal -> 0f
-                    SynthQuality.Reduced -> trackMix.pulse * 0.5f
-                    SynthQuality.Full -> trackMix.pulse
+                // Straight pulse fights swung groove — mute on jazz/lounge transport.
+                val pulseGain = when {
+                    seq.useGrooveClock -> 0f
+                    quality == SynthQuality.Minimal -> 0f
+                    quality == SynthQuality.Reduced -> trackMix.pulse * 0.5f
+                    else -> trackMix.pulse
                 }
                 val transitionGain = when (quality) {
                     SynthQuality.Minimal -> trackMix.transition * 0.35f
@@ -650,7 +655,8 @@ class ProceduralMusicEngine(
                                 }
                             }
                         }
-                        if (bassAudibleStem && seq.tickBass(sr)) {
+                        // Always advance bass clock (keeps groove phase locked); gate audible noteOn.
+                        if (seq.tickBass(sr) && bassAudibleStem) {
                             seq.currentBassFrequencyHz?.let { hz ->
                                 val vel = if (atmosphere) 0.35f else 0.55f
                                 bass.noteOn(hz, vel * bassGain.coerceAtMost(1f))
@@ -714,6 +720,15 @@ class ProceduralMusicEngine(
                             ) * leadMul
                     } else if (bowed.isAudible()) {
                         bowed.render(sampleIndex, sr)
+                    }
+                    if (pianoAudible && (squareLead.isAudible() || chipPulse.isAudible())) {
+                        mixed += (
+                            squareLead.render(sampleIndex, sr) +
+                                chipPulse.render(sampleIndex, sr)
+                            ) * leadMul
+                    } else {
+                        if (squareLead.isAudible()) squareLead.render(sampleIndex, sr)
+                        if (chipPulse.isAudible()) chipPulse.render(sampleIndex, sr)
                     }
 
                     if (textureKind != TextureKind.None) {
@@ -923,6 +938,14 @@ class ProceduralMusicEngine(
                     Random(hz.toBits().toLong()).nextFloat() < 0.15f
                 ) {
                     chimes.noteOn(hz, 0.18f)
+                }
+            }
+            MusicStyle.Chiptune -> squareLead.noteOn(hz, vel)
+            MusicStyle.ChipArp -> chipPulse.noteOn(hz, vel * 0.9f)
+            MusicStyle.ArcadeGlow -> {
+                squareLead.noteOn(hz, vel * 0.55f)
+                if (!atmosphere && quality == SynthQuality.Full) {
+                    piano.noteOn(hz, vel * 0.35f)
                 }
             }
         }

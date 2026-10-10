@@ -1166,6 +1166,69 @@ class BowedVoice : SynthVoice {
 }
 
 /**
+ * Soft square / pulse lead for procedural chiptune styles.
+ * Duty cycle [duty] (0.1–0.5); short decay; no harsh clicks.
+ */
+class SquareLeadVoice(
+    private val duty: Float = 0.35f,
+    private val decayPerSec: Double = 6.5,
+) : SynthVoice {
+    private var age = 0L
+    private var active = false
+    private var env = 0.0
+    private var phase = 0.0
+    private var invSr = 1.0 / 44_100
+    private var cachedSr = 0
+    private var decayMul = 0.99
+    private var maxAge = 0L
+    private var phaseInc = 0.0
+    private var freqHz = 220.0
+    private var peak = 0.2
+    private val dutyClamped = duty.coerceIn(0.1f, 0.5f)
+
+    override fun isAudible(): Boolean = active
+
+    override fun noteOn(freqHz: Float, velocity: Float) {
+        env = 1.0
+        peak = (velocity.coerceIn(0.05f, 1f) * 0.22).toDouble()
+        age = 0L
+        active = true
+        phase = 0.0
+        this.freqHz = freqHz.toDouble().coerceIn(40.0, 2_800.0)
+        cachedSr = 0
+    }
+
+    private fun ensureCoeffs(sampleRate: Int) {
+        if (sampleRate == cachedSr) return
+        cachedSr = sampleRate
+        invSr = 1.0 / sampleRate
+        decayMul = EnvMath.decayMul(decayPerSec, sampleRate)
+        maxAge = (0.45 * sampleRate).toLong()
+        phaseInc = freqHz * invSr
+    }
+
+    override fun render(sampleIndex: Long, sampleRate: Int): Float {
+        if (!active) return 0f
+        ensureCoeffs(sampleRate)
+        age++
+        env *= decayMul
+        if (age > maxAge || env < 1e-4) {
+            active = false
+            return 0f
+        }
+        phase += phaseInc
+        if (phase >= 1.0) phase -= 1.0
+        val raw = if (phase < dutyClamped) 1.0 else -1.0
+        return (raw * peak * env * 0.85).toFloat()
+    }
+
+    override fun reset() {
+        active = false
+        env = 0.0
+    }
+}
+
+/**
  * Fast rational soft clip (replaces tanh in the hot path).
  * Smooth knee, hard-bounded to [-1, 1].
  */

@@ -212,28 +212,40 @@ class SoftBassVoice : SynthVoice {
     }
 }
 
-/** Single piano voice — multiplicative decay/release, no per-sample exp(). */
+/**
+ * Soft piano: stretched partials, dual decay, velocity brightness, short hammer noise.
+ * Still CPU-cheap (LUT sines + 1-pole noise LP) — not a physical model.
+ */
 class SoftPianoVoice : SynthVoice {
-    private var phase1 = 0.0
-    private var phase2 = 0.0
-    private var phase3 = 0.0
-    private var phase4 = 0.0
+    companion object {
+        private const val PARTIAL_COUNT = 7
+        /** String-like inharmonicity coefficient (ratio ≈ n * (1 + stretch * n²)). */
+        private const val STRETCH = 0.00055
+        private val BASE_AMPS = floatArrayOf(1.00f, 0.42f, 0.26f, 0.16f, 0.10f, 0.06f, 0.035f)
+    }
+
+    private val phases = DoubleArray(PARTIAL_COUNT)
+    private val phaseIncs = DoubleArray(PARTIAL_COUNT)
+    private val amps = FloatArray(PARTIAL_COUNT)
     private var freq = 0.0
     private var age = 0L
     private var env = 0.0
+    private var bright = 0.0
     private var peak = 0.0
+    private var brightness = 0.7
     private var active = false
     private var releasing = false
     private var invSr = 1.0 / 44_100
     private var cachedSr = 0
     private var attackSamples = 1
+    private var hammerSamples = 1
     private var decayMul = 0.999
+    private var brightDecayMul = 0.999
     private var releaseMul = 0.99
     private var maxAge = 0L
-    private var phaseInc1 = 0.0
-    private var phaseInc2 = 0.0
-    private var phaseInc3 = 0.0
-    private var phaseInc4 = 0.0
+    private var hammerLp = 0.0
+    private var hammerLpCoeff = 0.0
+    private var noise = Random(1)
 
     val isActive: Boolean get() = active
     val ageSamples: Long get() = age
@@ -241,16 +253,25 @@ class SoftPianoVoice : SynthVoice {
     override fun isAudible(): Boolean = active
 
     override fun noteOn(freqHz: Float, velocity: Float) {
+        val vel = velocity.coerceIn(0.1f, 1f)
         freq = freqHz.toDouble()
-        peak = velocity.coerceIn(0.1f, 1f).toDouble()
+        peak = vel.toDouble()
+        brightness = 0.45 + 0.55 * vel
         age = 0L
         env = 0.0
+        bright = 1.0
         active = true
         releasing = false
-        phase1 = 0.0
-        phase2 = 0.0
-        phase3 = 0.0
-        phase4 = 0.0
+        hammerLp = 0.0
+        noise = Random((freqHz * 97).toInt().coerceAtLeast(1))
+        phases.fill(0.0)
+        // Velocity → high-partial presence (low notes stay warmer).
+        val brightScale = brightness.toFloat()
+        for (i in 0 until PARTIAL_COUNT) {
+            val n = i + 1
+            val tilt = if (n <= 2) 1f else brightScale.pow((n - 2) * 0.55f)
+            amps[i] = BASE_AMPS[i] * tilt
+        }
         cachedSr = 0
     }
 
@@ -262,14 +283,19 @@ class SoftPianoVoice : SynthVoice {
         if (sampleRate == cachedSr) return
         cachedSr = sampleRate
         invSr = 1.0 / sampleRate
-        attackSamples = (0.006 * sampleRate).toInt().coerceAtLeast(1)
-        decayMul = EnvMath.decayMul(3.2, sampleRate)
-        releaseMul = EnvMath.decayMul(12.0, sampleRate)
-        maxAge = (2.8 * sampleRate).toLong()
-        phaseInc1 = 2.0 * PI * freq * invSr
-        phaseInc2 = 2.0 * PI * freq * 2.002 * invSr
-        phaseInc3 = 2.0 * PI * freq * 3.004 * invSr
-        phaseInc4 = 2.0 * PI * freq * 4.006 * invSr
+        attackSamples = (0.010 * sampleRate).toInt().coerceAtLeast(1)
+        hammerSamples = (0.009 * sampleRate).toInt().coerceAtLeast(1)
+        decayMul = EnvMath.decayMul(1.85, sampleRate)
+        brightDecayMul = EnvMath.decayMul(4.8, sampleRate)
+        releaseMul = EnvMath.decayMul(6.5, sampleRate)
+        maxAge = (4.5 * sampleRate).toLong()
+        // Hammer noise LP ~2.2 kHz.
+        hammerLpCoeff = 1.0 - exp(-2.0 * PI * 2200.0 * invSr)
+        for (i in 0 until PARTIAL_COUNT) {
+            val n = (i + 1).toDouble()
+            val ratio = n * (1.0 + STRETCH * n * n)
+            phaseIncs[i] = 2.0 * PI * freq * ratio * invSr
+        }
     }
 
     override fun render(sampleIndex: Long, sampleRate: Int): Float {
@@ -278,6 +304,7 @@ class SoftPianoVoice : SynthVoice {
         age++
         if (releasing) {
             env *= releaseMul
+            bright *= brightDecayMul
             if (env < 1e-4) {
                 active = false
                 return 0f
@@ -286,32 +313,41 @@ class SoftPianoVoice : SynthVoice {
             env = peak * age.toDouble() / attackSamples
         } else {
             env *= decayMul
+            bright *= brightDecayMul
             if (age > maxAge || env < 1e-4) {
                 active = false
                 return 0f
             }
         }
-        phase1 = SinLut.wrapPhase(phase1 + phaseInc1)
-        phase2 = SinLut.wrapPhase(phase2 + phaseInc2)
-        phase3 = SinLut.wrapPhase(phase3 + phaseInc3)
-        phase4 = SinLut.wrapPhase(phase4 + phaseInc4)
-        val h1 = SinLut.sin(phase1)
-        val h2 = SinLut.sin(phase2) * 0.32f
-        val h3 = SinLut.sin(phase3) * 0.14f
-        val h4 = SinLut.sin(phase4) * 0.06f
-        return ((h1 + h2 + h3 + h4) * 0.48f * env).toFloat()
+        var body = 0f
+        val brightF = bright.toFloat().coerceIn(0f, 1f)
+        for (i in 0 until PARTIAL_COUNT) {
+            phases[i] = SinLut.wrapPhase(phases[i] + phaseIncs[i])
+            val partialBright = if (i <= 1) 1f else brightF
+            body += SinLut.sin(phases[i]) * amps[i] * partialBright
+        }
+        var hammer = 0f
+        if (age <= hammerSamples) {
+            val w = 1.0 - age.toDouble() / hammerSamples
+            val raw = noise.nextFloat() * 2f - 1f
+            hammerLp += hammerLpCoeff * (raw - hammerLp)
+            hammer = (hammerLp * 0.22 * peak * brightness * w).toFloat()
+        }
+        return (body * 0.38f * env).toFloat() + hammer
     }
 
     override fun reset() {
         active = false
         releasing = false
         env = 0.0
+        bright = 0.0
+        hammerLp = 0.0
     }
 }
 
-/** 4-voice piano pool with release-before-steal. */
+/** Piano pool with release-before-steal (default 6 for shell voicings). */
 class SoftPianoPool(
-    voiceCount: Int = 4,
+    voiceCount: Int = 6,
 ) : SynthVoice {
     private val voices = Array(voiceCount.coerceAtLeast(1)) { SoftPianoVoice() }
 

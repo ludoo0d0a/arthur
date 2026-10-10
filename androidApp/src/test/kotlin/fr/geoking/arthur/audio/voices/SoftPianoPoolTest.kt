@@ -1,5 +1,6 @@
 package fr.geoking.arthur.audio.voices
 
+import fr.geoking.arthur.audio.fx.RoomBus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -8,7 +9,7 @@ import kotlin.math.abs
 class SoftPianoPoolTest {
     @Test
     fun polyphonyAllowsOverlappingNotes() {
-        val pool = SoftPianoPool(4)
+        val pool = SoftPianoPool(6)
         pool.noteOn(261.63f, 0.8f)
         pool.noteOn(329.63f, 0.7f)
         pool.noteOn(392.00f, 0.6f)
@@ -18,6 +19,69 @@ class SoftPianoPoolTest {
             peak = maxOf(peak, abs(s))
         }
         assertTrue("expected audible output, peak=$peak", peak > 0.05f)
+    }
+
+    @Test
+    fun pianoAttackIsAudibleAndReleaseFades() {
+        val voice = SoftPianoVoice()
+        voice.noteOn(220f, 0.85f)
+        var attackPeak = 0f
+        repeat(800) { i ->
+            attackPeak = maxOf(attackPeak, abs(voice.render(i.toLong(), 44_100)))
+        }
+        assertTrue("attack should be audible, peak=$attackPeak", attackPeak > 0.04f)
+        voice.noteOff()
+        var last = 1f
+        var faded = false
+        for (i in 0 until 20_000) {
+            val s = abs(voice.render(800L + i, 44_100))
+            last = s
+            if (s < 1e-3f) {
+                faded = true
+                break
+            }
+        }
+        assertTrue("release should fade toward silence, last=$last", faded || last < 0.02f)
+    }
+
+    @Test
+    fun higherVelocityYieldsBrighterEarlyEnergy() {
+        fun earlyEnergy(vel: Float): Double {
+            val v = SoftPianoVoice()
+            v.noteOn(330f, vel)
+            var sum = 0.0
+            // Capture attack + hammer window where brightness matters most.
+            repeat(600) { i -> sum += abs(v.render(i.toLong(), 44_100)).toDouble() }
+            return sum
+        }
+        val soft = earlyEnergy(0.25f)
+        val hard = earlyEnergy(0.95f)
+        assertTrue("hard strike should carry more early energy soft=$soft hard=$hard", hard > soft * 1.15)
+    }
+
+    @Test
+    fun roomBusLpAttenuatesAndReverbAddsTail() {
+        val bus = RoomBus()
+        bus.configure(44_100, reverb = true, wetAmount = 0.2f)
+        // Impulse through LP then room — expect non-zero tail after impulse ends.
+        var lpOut = 0f
+        repeat(8) { lpOut = bus.processPianoLp(1f) }
+        assertTrue("LP should pass energy, out=$lpOut", abs(lpOut) > 0.1f)
+        var impulseOut = 0f
+        repeat(32) { impulseOut = maxOf(impulseOut, abs(bus.processRoom(1f))) }
+        assertTrue("reverb wet path should be audible, peak=$impulseOut", impulseOut > 0.05f)
+        var tail = 0f
+        repeat(8_000) { i ->
+            if (i > 2_000) tail = maxOf(tail, abs(bus.processRoom(0f)))
+        }
+        assertTrue("short reverb should leave a tail, tail=$tail", tail > 1e-4f)
+    }
+
+    @Test
+    fun roomBusMinimalSkipsReverb() {
+        val bus = RoomBus()
+        bus.configure(44_100, reverb = false, wetAmount = 0.2f)
+        assertEquals(0.5f, bus.processRoom(0.5f), 1e-6f)
     }
 
     @Test

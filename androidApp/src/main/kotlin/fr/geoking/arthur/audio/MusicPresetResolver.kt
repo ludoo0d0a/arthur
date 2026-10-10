@@ -247,9 +247,9 @@ object MusicPresetResolver {
         MusicStyle.Zen ->
             TrackMix(bed = 0.12f, harmony = 0.16f, melody = 0.58f, bass = 0.40f, texture = 0f, pulse = 0.02f)
         MusicStyle.BarAmbience ->
-            TrackMix(bed = 0.12f, harmony = 0.20f, melody = 0.52f, bass = 0.42f, texture = 0f, pulse = 0.04f)
+            TrackMix(bed = 0.10f, harmony = 0.10f, melody = 0.56f, bass = 0.42f, texture = 0f, pulse = 0.04f)
         MusicStyle.JazzPiano ->
-            TrackMix(bed = 0.10f, harmony = 0.18f, melody = 0.60f, bass = 0.45f, texture = 0f, pulse = 0.04f)
+            TrackMix(bed = 0.08f, harmony = 0.08f, melody = 0.62f, bass = 0.45f, texture = 0f, pulse = 0.04f)
         MusicStyle.SoftGuitar ->
             TrackMix(bed = 0.12f, harmony = 0.16f, melody = 0.56f, bass = 0.38f, texture = 0f, pulse = 0.02f)
         MusicStyle.TibetanBowl ->
@@ -269,11 +269,11 @@ object MusicPresetResolver {
         MusicStyle.WindChimes ->
             TrackMix(bed = 0.14f, harmony = 0.12f, melody = 0.40f, bass = 0.22f, texture = 0.22f, pulse = 0.02f)
         MusicStyle.NightLounge ->
-            TrackMix(bed = 0.12f, harmony = 0.22f, melody = 0.52f, bass = 0.44f, texture = 0f, pulse = 0.06f)
+            TrackMix(bed = 0.10f, harmony = 0.10f, melody = 0.56f, bass = 0.44f, texture = 0f, pulse = 0.06f)
         MusicStyle.CosmicDrone ->
             TrackMix(bed = 0.48f, harmony = 0.20f, melody = 0.18f, bass = 0.35f, texture = 0.14f, pulse = 0.02f)
         MusicStyle.ClassicalPiano ->
-            TrackMix(bed = 0.10f, harmony = 0.20f, melody = 0.58f, bass = 0.38f, texture = 0f, pulse = 0.02f)
+            TrackMix(bed = 0.08f, harmony = 0.12f, melody = 0.60f, bass = 0.38f, texture = 0f, pulse = 0.02f)
         MusicStyle.OrchestraPads ->
             TrackMix(bed = 0.44f, harmony = 0.28f, melody = 0.22f, bass = 0.32f, texture = 0.10f, pulse = 0.02f)
         MusicStyle.OrchestraSwell ->
@@ -285,7 +285,7 @@ object MusicPresetResolver {
         MusicStyle.BassOnly ->
             TrackMix(bed = 0.06f, harmony = 0.04f, melody = 0.08f, bass = 0.72f, texture = 0f, pulse = 0.06f)
         MusicStyle.PianoBallad ->
-            TrackMix(bed = 0.18f, harmony = 0.22f, melody = 0.54f, bass = 0.36f, texture = 0f, pulse = 0.02f)
+            TrackMix(bed = 0.14f, harmony = 0.12f, melody = 0.58f, bass = 0.36f, texture = 0f, pulse = 0.02f)
         MusicStyle.HawaiianUkulele ->
             TrackMix(bed = 0.10f, harmony = 0.20f, melody = 0.58f, bass = 0.38f, texture = 0f, pulse = 0.04f)
     }

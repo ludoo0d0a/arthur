@@ -64,4 +64,14 @@ class CpuLoadTrackerTest {
             ),
         )
     }
+
+    @Test
+    fun pianoRoomAndJazzCompingStyleGates() {
+        assertTrue(ProceduralMusicEngine.isPianoRoomStyle(MusicStyle.JazzPiano))
+        assertTrue(ProceduralMusicEngine.isPianoRoomStyle(MusicStyle.PianoBallad))
+        assertTrue(!ProceduralMusicEngine.isPianoRoomStyle(MusicStyle.AfricanPulse))
+        assertTrue(ProceduralMusicEngine.isJazzCompingStyle(MusicStyle.JazzPiano))
+        assertTrue(ProceduralMusicEngine.isJazzCompingStyle(MusicStyle.NightLounge))
+        assertTrue(!ProceduralMusicEngine.isJazzCompingStyle(MusicStyle.ClassicalPiano))
+    }
 }

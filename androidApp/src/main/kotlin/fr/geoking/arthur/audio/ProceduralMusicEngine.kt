@@ -8,6 +8,7 @@ import android.media.AudioManager
 import android.media.AudioTrack
 import android.os.Build
 import fr.geoking.arthur.audio.banks.TextureCueKind
+import fr.geoking.arthur.audio.fx.RoomBus
 import fr.geoking.arthur.audio.markov.ArrangementForm
 import fr.geoking.arthur.audio.markov.MarkovSequencer
 import fr.geoking.arthur.audio.markov.OrnamentKind
@@ -119,7 +120,7 @@ class ProceduralMusicEngine(
     // Voices (reused across presets). Melody/Balanced use a single pad; Atmosphere may use padB.
     private val padA = SinePadVoice(2.5f, glideSeconds = 0.06f)
     private val padB = SinePadVoice(3f, glideSeconds = 0.06f)
-    private val piano = SoftPianoPool(3)
+    private val piano = SoftPianoPool(6)
     private val guitar = PluckGuitarVoice()
     private val bass = SoftBassVoice()
     private val bowl = BowlVoice()
@@ -132,6 +133,7 @@ class ProceduralMusicEngine(
     private val pulse = SoftPulseVoice()
     private val chimes = ChimeClusterVoice()
     private val kalimba = KalimbaPluckVoice()
+    private val roomBus = RoomBus()
 
     private val cpuLoad = CpuLoadTracker()
 
@@ -525,10 +527,22 @@ class ProceduralMusicEngine(
                     SynthQuality.Minimal -> trackMix.transition * 0.35f
                     else -> trackMix.transition
                 }
-                val allowOrnaments = quality == SynthQuality.Full && !atmosphere
+                val pianoRoomStyle = isPianoRoomStyle(activePreset.style)
+                val allowOrnaments = quality == SynthQuality.Full &&
+                    !atmosphere &&
+                    !pianoRoomStyle
                 val root = activePreset.rootHz
                 waves.setRootHz(root)
                 wind.setRootHz(root)
+                roomBus.configure(
+                    sampleRate = sr,
+                    reverb = pianoRoomStyle && quality != SynthQuality.Minimal,
+                    wetAmount = when (quality) {
+                        SynthQuality.Full -> 0.16f
+                        SynthQuality.Reduced -> 0.11f
+                        SynthQuality.Minimal -> 0f
+                    },
+                )
                 val vol = masterVolume
                 val samplesPerPulse = if (pulseGain > 0.05f) {
                     (60.0 / activePreset.tempoBpm * sr).toInt().coerceAtLeast(1)
@@ -682,18 +696,22 @@ class ProceduralMusicEngine(
                         mixed += bass.render(sampleIndex, sr) * bassGain
                     }
 
+                    val leadMul = melodyGain * arrangement.melodyMul
+                    if (pianoAudible && piano.isAudible()) {
+                        var pianoSample = piano.render(sampleIndex, sr) * leadMul
+                        if (pianoRoomStyle) {
+                            pianoSample = roomBus.processPianoLp(pianoSample)
+                        }
+                        mixed += pianoSample
+                    }
                     if (pianoAudible &&
-                        (
-                            piano.isAudible() || guitar.isAudible() || kalimba.isAudible() ||
-                                bowed.isAudible()
-                            )
+                        (guitar.isAudible() || kalimba.isAudible() || bowed.isAudible())
                     ) {
                         mixed += (
-                            piano.render(sampleIndex, sr) +
-                                guitar.render(sampleIndex, sr) +
+                            guitar.render(sampleIndex, sr) +
                                 kalimba.render(sampleIndex, sr) +
                                 bowed.render(sampleIndex, sr)
-                            ) * melodyGain * arrangement.melodyMul
+                            ) * leadMul
                     } else if (bowed.isAudible()) {
                         bowed.render(sampleIndex, sr)
                     }
@@ -748,6 +766,9 @@ class ProceduralMusicEngine(
 
                     advanceDuck()
                     val env = envelopeGain()
+                    if (pianoRoomStyle) {
+                        mixed = roomBus.processRoom(mixed)
+                    }
                     mixed = softLimit(mixed * duckGain() * vol * env)
                     advanceEnvelope()
 
@@ -826,6 +847,9 @@ class ProceduralMusicEngine(
             if (atmosphere && quality == SynthQuality.Full) {
                 padB.setChord(partials.ifEmpty { listOf(p.rootHz) })
             }
+            if (isJazzCompingStyle(p.style) && !atmosphere) {
+                fireJazzComping(partials, quality)
+            }
         }
         val sustainBowl = atmosphere &&
             quality != SynthQuality.Minimal &&
@@ -839,6 +863,29 @@ class ProceduralMusicEngine(
             bowl.setSustainPartials(partials.ifEmpty { listOf(p.rootHz) }, true)
         } else {
             bowl.setSustain(p.rootHz, false)
+        }
+    }
+
+    /** Shell / rootless piano voicing on harmony change (3+7, optional 9). */
+    private fun fireJazzComping(partials: List<Float>, quality: SynthQuality) {
+        if (partials.size < 2) return
+        val shell = buildList {
+            // Prefer 3rd + 7th when available (indices 1 and 3 on m7/dom7).
+            if (partials.size >= 4) {
+                add(partials[1])
+                add(partials[3])
+                if (quality == SynthQuality.Full) add(partials[2])
+            } else {
+                addAll(partials.drop(1).take(if (quality == SynthQuality.Minimal) 2 else 3))
+            }
+        }.map { hz ->
+            var f = hz
+            while (f < 180f) f *= 2f
+            while (f > 620f) f *= 0.5f
+            f
+        }.distinct().take(if (quality == SynthQuality.Minimal) 2 else 3)
+        shell.forEachIndexed { i, hz ->
+            piano.noteOn(hz, (0.32f - i * 0.04f).coerceAtLeast(0.18f))
         }
     }
 
@@ -888,6 +935,24 @@ class ProceduralMusicEngine(
         private const val FADE_OUT_SEC = 1.1f
         private const val TRACK_FADE_OUT_SEC = 0.9f
         private const val TRACK_FADE_IN_SEC = 1.1f
+
+        private val PIANO_ROOM_STYLES = setOf(
+            MusicStyle.JazzPiano,
+            MusicStyle.BarAmbience,
+            MusicStyle.NightLounge,
+            MusicStyle.ClassicalPiano,
+            MusicStyle.PianoBallad,
+        )
+
+        private val JAZZ_COMPING_STYLES = setOf(
+            MusicStyle.JazzPiano,
+            MusicStyle.BarAmbience,
+            MusicStyle.NightLounge,
+        )
+
+        internal fun isPianoRoomStyle(style: MusicStyle): Boolean = style in PIANO_ROOM_STYLES
+
+        internal fun isJazzCompingStyle(style: MusicStyle): Boolean = style in JAZZ_COMPING_STYLES
 
         /** Merge bed+harmony into one pad gain for Melody/Balanced (or Reduced Atmosphere). */
         internal fun combinedPadGain(bed: Float, harmony: Float, dualPad: Boolean): Float =

@@ -13,6 +13,9 @@
   },
   "build": {
     "gradleModule": ":androidApp",
+    "bundleTask": "bundlePlaystoreRelease",
+    "aabGlob": "androidApp/build/outputs/bundle/playstoreRelease/*.aab",
+    "unitTestTasks": ":shared:testAndroidHostTest :fractal:testDebugUnitTest :genart:testDebugUnitTest :androidApp:testFullDebugUnitTest",
     "googleServices": "androidApp/google-services.json",
     "keystoreAlias": "key0",
     "keystoreDn": "CN=Arthur, OU=GeoKing, O=GeoKing, L=Paris, C=FR",

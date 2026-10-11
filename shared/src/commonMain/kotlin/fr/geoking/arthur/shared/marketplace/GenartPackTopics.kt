@@ -42,6 +42,10 @@ object GenartPackTopics {
         GenartSource.CHROMATIC_BLOBS,
         GenartSource.BILLOWING_CLOTH,
         GenartSource.WIND_CURTAINS,
+        GenartSource.PAPER_SIMPLEX_NOISE,
+        GenartSource.PAPER_GRAIN_GRADIENT,
+        GenartSource.SHADY_MARBLED_PAPER,
+        GenartSource.LWP_VORONOI,
     )
 
     val WEATHER_IDS: Set<String> = setOf(
@@ -189,6 +193,8 @@ object GenartPackTopics {
         GenartSource.SATURN_RINGS,
         GenartSource.LAVA_SUN,
         GenartSource.MOON,
+        GenartSource.LWP_STARFIELD,
+        GenartSource.SHADY_WARP_SPEED,
     )
 
     val SCIFI_IDS: Set<String> = setOf(
@@ -221,6 +227,12 @@ object GenartPackTopics {
         GenartSource.PRISM_CAVE,
         GenartSource.LIT_LATTICE,
         GenartSource.RETRO_WAVE,
+        GenartSource.LWP_PLASMA,
+        GenartSource.LWP_STARFIELD,
+        GenartSource.SHADERLAY_NEON_GRID,
+        GenartSource.SHADERLAY_VORTEX_TUNNEL,
+        GenartSource.SHADY_NOODLE_ZOOM,
+        GenartSource.SHADY_WARP_SPEED,
     )
 
     val VINTAGE_IDS: Set<String> = setOf(
@@ -240,6 +252,10 @@ object GenartPackTopics {
         GenartSource.ASTEROIDS,
         GenartSource.DATA_HORIZON,
         GenartSource.WARP_STREAK,
+        GenartSource.SHADERLAY_NEON_GRID,
+        GenartSource.PPSSPP_CRT_SCANLINES,
+        GenartSource.PPSSPP_CEL_SHADER,
+        GenartSource.PPSSPP_BLOOM_VIGNETTE,
     )
 
     val ABSTRACT_IDS: Set<String> = setOf(
@@ -286,6 +302,16 @@ object GenartPackTopics {
         GenartSource.SOAP_FILM,
         GenartSource.GLASS_ORB,
         GenartSource.LIT_LATTICE,
+        GenartSource.LWP_PLASMA,
+        GenartSource.LWP_VORONOI,
+        GenartSource.PAPER_SIMPLEX_NOISE,
+        GenartSource.PAPER_NEURO_NOISE,
+        GenartSource.PAPER_GRAIN_GRADIENT,
+        GenartSource.SHADY_MARBLED_PAPER,
+        GenartSource.PPSSPP_BLOOM_VIGNETTE,
+        GenartSource.PPSSPP_CEL_SHADER,
+        GenartSource.SHADERLAY_VORTEX_TUNNEL,
+        GenartSource.SHADY_NOODLE_ZOOM,
     )
 
     val GEOMETRY_IDS: Set<String> = setOf(
@@ -314,6 +340,10 @@ object GenartPackTopics {
         GenartSource.LIT_LATTICE,
         GenartSource.GLASS_ORB,
         GenartSource.RETRO_WAVE,
+        GenartSource.SHADERLAY_NEON_GRID,
+        GenartSource.SHADERLAY_VORTEX_TUNNEL,
+        GenartSource.SHADY_NOODLE_ZOOM,
+        GenartSource.LWP_VORONOI,
     )
 
     fun engineIdsForTopic(topicSuffix: String): Set<String> = when (topicSuffix) {

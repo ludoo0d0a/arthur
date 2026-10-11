@@ -306,6 +306,14 @@ afterEvaluate {
     }
 }
 
+// Exact name so `:androidApp:testDebugUnitTest` is not an ambiguous camelCase match
+// against both testFullDebugUnitTest and testPlaystoreDebugUnitTest.
+tasks.register("testDebugUnitTest") {
+    group = "verification"
+    description = "Runs unit tests for the fullDebug variant (default debug flavor)."
+    dependsOn("testFullDebugUnitTest")
+}
+
 tasks.register("generatePhoneScreenshots") {
     group = "screenshots"
     description =

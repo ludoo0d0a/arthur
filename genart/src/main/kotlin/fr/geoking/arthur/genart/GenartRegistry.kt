@@ -45,6 +45,20 @@ import fr.geoking.arthur.genart.engines.VectorRocksEngine
 import fr.geoking.arthur.genart.engines.BrickCascadeEngine
 import fr.geoking.arthur.genart.engines.PixelFormationEngine
 import fr.geoking.arthur.genart.engines.CrtBootEngine
+import fr.geoking.arthur.genart.engines.LwpPlasmaEngine
+import fr.geoking.arthur.genart.engines.LwpStarfieldEngine
+import fr.geoking.arthur.genart.engines.LwpVoronoiEngine
+import fr.geoking.arthur.genart.engines.ShaderlayNeonGridEngine
+import fr.geoking.arthur.genart.engines.ShaderlayVortexTunnelEngine
+import fr.geoking.arthur.genart.engines.PpssppCrtScanlinesEngine
+import fr.geoking.arthur.genart.engines.PpssppCelShaderEngine
+import fr.geoking.arthur.genart.engines.PpssppBloomVignetteEngine
+import fr.geoking.arthur.genart.engines.PaperSimplexNoiseEngine
+import fr.geoking.arthur.genart.engines.PaperNeuroNoiseEngine
+import fr.geoking.arthur.genart.engines.PaperGrainGradientEngine
+import fr.geoking.arthur.genart.engines.ShadyNoodleZoomEngine
+import fr.geoking.arthur.genart.engines.ShadyWarpSpeedEngine
+import fr.geoking.arthur.genart.engines.ShadyMarbledPaperEngine
 import fr.geoking.arthur.genart.engines.DriftingHalosEngine
 import fr.geoking.arthur.genart.engines.AntTrailsEngine
 import fr.geoking.arthur.genart.engines.AuroraWashEngine
@@ -181,6 +195,20 @@ import fr.geoking.arthur.genart.stills.VectorRocksStill
 import fr.geoking.arthur.genart.stills.BrickCascadeStill
 import fr.geoking.arthur.genart.stills.PixelFormationStill
 import fr.geoking.arthur.genart.stills.CrtBootStill
+import fr.geoking.arthur.genart.stills.LwpPlasmaStill
+import fr.geoking.arthur.genart.stills.LwpStarfieldStill
+import fr.geoking.arthur.genart.stills.LwpVoronoiStill
+import fr.geoking.arthur.genart.stills.ShaderlayNeonGridStill
+import fr.geoking.arthur.genart.stills.ShaderlayVortexTunnelStill
+import fr.geoking.arthur.genart.stills.PpssppCrtScanlinesStill
+import fr.geoking.arthur.genart.stills.PpssppCelShaderStill
+import fr.geoking.arthur.genart.stills.PpssppBloomVignetteStill
+import fr.geoking.arthur.genart.stills.PaperSimplexNoiseStill
+import fr.geoking.arthur.genart.stills.PaperNeuroNoiseStill
+import fr.geoking.arthur.genart.stills.PaperGrainGradientStill
+import fr.geoking.arthur.genart.stills.ShadyNoodleZoomStill
+import fr.geoking.arthur.genart.stills.ShadyWarpSpeedStill
+import fr.geoking.arthur.genart.stills.ShadyMarbledPaperStill
 import fr.geoking.arthur.genart.stills.DriftingHalosStill
 import fr.geoking.arthur.genart.stills.AntTrailsStill
 import fr.geoking.arthur.genart.stills.AuroraWashStill
@@ -1809,6 +1837,160 @@ object GenartRegistry {
             },
             renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
                 CrtBootStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.LwpPlasma,
+            stableId = "genart.lwpplasma",
+            title = "#136 - LWP Harmonic Plasma",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                LwpPlasmaEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                LwpPlasmaStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.LwpStarfield,
+            stableId = "genart.lwpstarfield",
+            title = "#137 - LWP 3D Warp Starfield",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                LwpStarfieldEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                LwpStarfieldStill().draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.LwpVoronoi,
+            stableId = "genart.lwpvoronoi",
+            title = "#138 - LWP Voronoi Cellular Caustics",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                LwpVoronoiEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                LwpVoronoiStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.ShaderlayNeonGrid,
+            stableId = "genart.neongrid",
+            title = "#139 - Shaderlay Synthwave Neon Grid",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                ShaderlayNeonGridEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                ShaderlayNeonGridStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.ShaderlayVortexTunnel,
+            stableId = "genart.vortextunnel",
+            title = "#140 - Shaderlay Vortex Warp Tunnel",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                ShaderlayVortexTunnelEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                ShaderlayVortexTunnelStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.PpssppCrtScanlines,
+            stableId = "genart.crtscanlines",
+            title = "#141 - PPSSPP CRT Scanlines",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                PpssppCrtScanlinesEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                PpssppCrtScanlinesStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.PpssppCelShader,
+            stableId = "genart.celshader",
+            title = "#142 - PPSSPP Cel-Shader",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                PpssppCelShaderEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                PpssppCelShaderStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.PpssppBloomVignette,
+            stableId = "genart.bloomvignette",
+            title = "#143 - PPSSPP Bloom Vignette",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                PpssppBloomVignetteEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                PpssppBloomVignetteStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.PaperSimplexNoise,
+            stableId = "genart.simplexnoise",
+            title = "#144 - Paper Simplex Noise Flow",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                PaperSimplexNoiseEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                PaperSimplexNoiseStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.PaperNeuroNoise,
+            stableId = "genart.neuronnoise",
+            title = "#145 - Paper Neuro-Noise Waves",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                PaperNeuroNoiseEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                PaperNeuroNoiseStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.PaperGrainGradient,
+            stableId = "genart.graingradient",
+            title = "#146 - Paper Grain Gradient",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                PaperGrainGradientEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                PaperGrainGradientStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.ShadyNoodleZoom,
+            stableId = "genart.noodlezoom",
+            title = "#147 - Shady Noodle Zoom Tunnel",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                ShadyNoodleZoomEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                ShadyNoodleZoomStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.ShadyWarpSpeed,
+            stableId = "genart.warpspeed",
+            title = "#148 - Shady Warp Speed",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                ShadyWarpSpeedEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                ShadyWarpSpeedStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.ShadyMarbledPaper,
+            stableId = "genart.marbledpaper",
+            title = "#149 - Shady Marbled Paper",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                ShadyMarbledPaperEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                ShadyMarbledPaperStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
             },
         ),
     )

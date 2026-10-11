@@ -137,6 +137,20 @@ enum class GenartEngineId {
     BrickCascade,
     PixelFormation,
     CrtBoot,
+    LwpPlasma,
+    LwpStarfield,
+    LwpVoronoi,
+    ShaderlayNeonGrid,
+    ShaderlayVortexTunnel,
+    PpssppCrtScanlines,
+    PpssppCelShader,
+    PpssppBloomVignette,
+    PaperSimplexNoise,
+    PaperNeuroNoise,
+    PaperGrainGradient,
+    ShadyNoodleZoom,
+    ShadyWarpSpeed,
+    ShadyMarbledPaper,
 }
 
 enum class GenartQuality { Low, Medium, High }

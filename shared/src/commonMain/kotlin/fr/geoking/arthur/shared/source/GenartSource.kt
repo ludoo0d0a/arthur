@@ -155,6 +155,20 @@ class GenartSource(
         const val BRICK_CASCADE = "genart.brickcascade"
         const val PIXEL_FORMATION = "genart.pixelformation"
         const val CRT_BOOT = "genart.crtboot"
+        const val LWP_PLASMA = "genart.lwpplasma"
+        const val LWP_STARFIELD = "genart.lwpstarfield"
+        const val LWP_VORONOI = "genart.lwpvoronoi"
+        const val SHADERLAY_NEON_GRID = "genart.neongrid"
+        const val SHADERLAY_VORTEX_TUNNEL = "genart.vortextunnel"
+        const val PPSSPP_CRT_SCANLINES = "genart.crtscanlines"
+        const val PPSSPP_CEL_SHADER = "genart.celshader"
+        const val PPSSPP_BLOOM_VIGNETTE = "genart.bloomvignette"
+        const val PAPER_SIMPLEX_NOISE = "genart.simplexnoise"
+        const val PAPER_NEURO_NOISE = "genart.neuronnoise"
+        const val PAPER_GRAIN_GRADIENT = "genart.graingradient"
+        const val SHADY_NOODLE_ZOOM = "genart.noodlezoom"
+        const val SHADY_WARP_SPEED = "genart.warpspeed"
+        const val SHADY_MARBLED_PAPER = "genart.marbledpaper"
 
         fun defaultCatalog(): List<Artwork> = listOf(
             entry(PARTICLES, "#1 - Drifting Particles"),
@@ -293,6 +307,20 @@ class GenartSource(
             entry(BRICK_CASCADE, "#133 - Brick Cascade"),
             entry(PIXEL_FORMATION, "#134 - Pixel Formation"),
             entry(CRT_BOOT, "#135 - CRT Boot"),
+            entry(LWP_PLASMA, "#136 - LWP Harmonic Plasma"),
+            entry(LWP_STARFIELD, "#137 - LWP 3D Warp Starfield"),
+            entry(LWP_VORONOI, "#138 - LWP Voronoi Cellular Caustics"),
+            entry(SHADERLAY_NEON_GRID, "#139 - Shaderlay Synthwave Neon Grid"),
+            entry(SHADERLAY_VORTEX_TUNNEL, "#140 - Shaderlay Vortex Warp Tunnel"),
+            entry(PPSSPP_CRT_SCANLINES, "#141 - PPSSPP CRT Scanlines"),
+            entry(PPSSPP_CEL_SHADER, "#142 - PPSSPP Cel-Shader"),
+            entry(PPSSPP_BLOOM_VIGNETTE, "#143 - PPSSPP Bloom Vignette"),
+            entry(PAPER_SIMPLEX_NOISE, "#144 - Paper Simplex Noise Flow"),
+            entry(PAPER_NEURO_NOISE, "#145 - Paper Neuro-Noise Waves"),
+            entry(PAPER_GRAIN_GRADIENT, "#146 - Paper Grain Gradient"),
+            entry(SHADY_NOODLE_ZOOM, "#147 - Shady Noodle Zoom Tunnel"),
+            entry(SHADY_WARP_SPEED, "#148 - Shady Warp Speed"),
+            entry(SHADY_MARBLED_PAPER, "#149 - Shady Marbled Paper"),
         )
 
         private fun entry(id: String, title: String) = Artwork(

@@ -339,13 +339,14 @@ internal class AmbientRotationController(
         }
     }
 
-    /** Session mute: silence Zen without leaving MediaPlayback / flipping prefs. */
-    var soundMuted: Boolean = false
+    /** Persisted mute — silence Zen without leaving MediaPlayback / flipping [AmbientAudioSettings.enabled]. */
+    var soundMuted: Boolean = ambientAudioSettings.muted.value
         private set
 
     fun setSoundMuted(muted: Boolean) {
         if (soundMuted == muted) return
         soundMuted = muted
+        ambientAudioSettings.setMuted(muted)
         syncAudio()
         onInvalidate()
     }

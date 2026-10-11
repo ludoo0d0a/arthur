@@ -30,6 +30,10 @@ class AmbientAudioSettings(context: Context) {
     private val _enabled = MutableStateFlow(prefs.getBoolean(KEY_ENABLED, false))
     val enabled: StateFlow<Boolean> = _enabled.asStateFlow()
 
+    /** Transport mute — persisted per device; silences playback without clearing [enabled]. */
+    private val _muted = MutableStateFlow(prefs.getBoolean(KEY_MUTED, false))
+    val muted: StateFlow<Boolean> = _muted.asStateFlow()
+
     private val _volume = MutableStateFlow(prefs.getFloat(KEY_VOLUME, 0.5f).coerceIn(0f, 1f))
     val volume: StateFlow<Float> = _volume.asStateFlow()
 
@@ -76,6 +80,12 @@ class AmbientAudioSettings(context: Context) {
         _enabled.value = value
     }
 
+    fun setMuted(value: Boolean) {
+        if (_muted.value == value) return
+        prefs.edit().putBoolean(KEY_MUTED, value).apply()
+        _muted.value = value
+    }
+
     fun setVolume(value: Float) {
         val clamped = value.coerceIn(0f, 1f)
         if (_volume.value == clamped) return
@@ -120,6 +130,7 @@ class AmbientAudioSettings(context: Context) {
     companion object {
         private const val PREFS = "arthur_ambient_audio"
         private const val KEY_ENABLED = "audio_enabled"
+        private const val KEY_MUTED = "audio_muted"
         private const val KEY_VOLUME = "audio_volume"
         private const val KEY_MODE = "audio_mode"
         private const val KEY_CHARACTER = "audio_character"

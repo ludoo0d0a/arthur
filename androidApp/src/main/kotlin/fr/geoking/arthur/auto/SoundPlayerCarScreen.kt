@@ -52,8 +52,8 @@ class SoundPlayerCarScreen(
 
     private var styleIndex: Int = 0
     private var isPlaying: Boolean = true
-    /** Session mute: silence Zen without destroying the listen surface. */
-    private var muted: Boolean = false
+    /** Persisted mute — silence Zen without destroying the listen surface. */
+    private var muted: Boolean = ambientAudioSettings.muted.value
 
     private val previousEnabled = ambientAudioSettings.enabled.value
     private val previousStyle = ambientAudioSettings.stylePreference.value
@@ -162,6 +162,7 @@ class SoundPlayerCarScreen(
 
     private fun toggleMute() {
         muted = !muted
+        ambientAudioSettings.setMuted(muted)
         syncEngine()
         invalidate()
     }

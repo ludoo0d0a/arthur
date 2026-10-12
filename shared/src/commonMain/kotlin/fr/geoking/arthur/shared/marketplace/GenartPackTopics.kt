@@ -195,6 +195,7 @@ object GenartPackTopics {
         GenartSource.MOON,
         GenartSource.LWP_STARFIELD,
         GenartSource.SHADY_WARP_SPEED,
+        GenartSource.MILKY_WAY,
     )
 
     val SCIFI_IDS: Set<String> = setOf(
@@ -233,6 +234,7 @@ object GenartPackTopics {
         GenartSource.SHADERLAY_VORTEX_TUNNEL,
         GenartSource.SHADY_NOODLE_ZOOM,
         GenartSource.SHADY_WARP_SPEED,
+        GenartSource.MILKY_WAY,
     )
 
     val VINTAGE_IDS: Set<String> = setOf(
@@ -312,6 +314,7 @@ object GenartPackTopics {
         GenartSource.PPSSPP_CEL_SHADER,
         GenartSource.SHADERLAY_VORTEX_TUNNEL,
         GenartSource.SHADY_NOODLE_ZOOM,
+        GenartSource.MILKY_WAY,
     )
 
     val GEOMETRY_IDS: Set<String> = setOf(

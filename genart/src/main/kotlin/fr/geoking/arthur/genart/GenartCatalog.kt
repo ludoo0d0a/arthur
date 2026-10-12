@@ -151,6 +151,7 @@ enum class GenartEngineId {
     ShadyNoodleZoom,
     ShadyWarpSpeed,
     ShadyMarbledPaper,
+    MilkyWay,
 }
 
 enum class GenartQuality { Low, Medium, High }

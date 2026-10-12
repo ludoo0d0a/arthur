@@ -118,6 +118,7 @@ class GenartCatalogTest {
         assertEquals(GenartEngineId.ShadyNoodleZoom, GenartCatalog.engineForId("genart.noodlezoom"))
         assertEquals(GenartEngineId.ShadyWarpSpeed, GenartCatalog.engineForId("genart.warpspeed"))
         assertEquals(GenartEngineId.ShadyMarbledPaper, GenartCatalog.engineForId("genart.marbledpaper"))
+        assertEquals(GenartEngineId.MilkyWay, GenartCatalog.engineForId("genart.milkyway"))
     }
 
     @Test
@@ -224,5 +225,6 @@ class GenartCatalogTest {
         assertEquals("#147 - Shady Noodle Zoom Tunnel", GenartCatalog.entries().first { it.id == "genart.noodlezoom" }.title)
         assertEquals("#148 - Shady Warp Speed", GenartCatalog.entries().first { it.id == "genart.warpspeed" }.title)
         assertEquals("#149 - Shady Marbled Paper", GenartCatalog.entries().first { it.id == "genart.marbledpaper" }.title)
+        assertEquals("#150 - Milky Way Galaxy", GenartCatalog.entries().first { it.id == "genart.milkyway" }.title)
     }
 }

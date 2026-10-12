@@ -59,6 +59,7 @@ import fr.geoking.arthur.genart.engines.PaperGrainGradientEngine
 import fr.geoking.arthur.genart.engines.ShadyNoodleZoomEngine
 import fr.geoking.arthur.genart.engines.ShadyWarpSpeedEngine
 import fr.geoking.arthur.genart.engines.ShadyMarbledPaperEngine
+import fr.geoking.arthur.genart.engines.MilkyWayEngine
 import fr.geoking.arthur.genart.engines.DriftingHalosEngine
 import fr.geoking.arthur.genart.engines.AntTrailsEngine
 import fr.geoking.arthur.genart.engines.AuroraWashEngine
@@ -209,6 +210,7 @@ import fr.geoking.arthur.genart.stills.PaperGrainGradientStill
 import fr.geoking.arthur.genart.stills.ShadyNoodleZoomStill
 import fr.geoking.arthur.genart.stills.ShadyWarpSpeedStill
 import fr.geoking.arthur.genart.stills.ShadyMarbledPaperStill
+import fr.geoking.arthur.genart.stills.MilkyWayStill
 import fr.geoking.arthur.genart.stills.DriftingHalosStill
 import fr.geoking.arthur.genart.stills.AntTrailsStill
 import fr.geoking.arthur.genart.stills.AuroraWashStill
@@ -1991,6 +1993,17 @@ object GenartRegistry {
             },
             renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
                 ShadyMarbledPaperStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.MilkyWay,
+            stableId = "genart.milkyway",
+            title = "#150 - Milky Way Galaxy",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                MilkyWayEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                MilkyWayStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
             },
         ),
     )

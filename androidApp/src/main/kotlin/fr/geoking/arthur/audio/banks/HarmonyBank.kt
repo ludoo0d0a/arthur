@@ -11,6 +11,9 @@ enum class ChordQuality(val intervals: IntArray) {
     Dom7(intArrayOf(0, 4, 7, 10)),
     ParallelThirds(intArrayOf(0, 4)),
     ParallelFourths(intArrayOf(0, 5)),
+    Maj7(intArrayOf(0, 4, 7, 11)),
+    Min9(intArrayOf(0, 3, 7, 10, 14)),
+    Sus4(intArrayOf(0, 5, 7)),
 }
 
 /** Roman-ish progression state for the harmony chain. */
@@ -39,12 +42,12 @@ object HarmonyBank {
     )
     private val jazzProg = HarmonyPattern(
         "jazz_ii_v",
-        listOf(ChordQuality.Minor7, ChordQuality.Dom7, ChordQuality.JazzDrop, ChordQuality.OpenTriad),
+        listOf(ChordQuality.Min9, ChordQuality.Dom7, ChordQuality.Maj7, ChordQuality.JazzDrop, ChordQuality.OpenTriad),
         listOf(HarmonyState.Ii, HarmonyState.V, HarmonyState.I, HarmonyState.Vi),
     )
     private val jazzTurnaround = HarmonyPattern(
         "jazz_turn",
-        listOf(ChordQuality.Minor7, ChordQuality.Dom7, ChordQuality.Add9),
+        listOf(ChordQuality.Maj7, ChordQuality.Min9, ChordQuality.Dom7, ChordQuality.Add9),
         listOf(HarmonyState.I, HarmonyState.Vi, HarmonyState.Ii, HarmonyState.V),
     )
     private val blues12 = HarmonyPattern(
@@ -58,12 +61,12 @@ object HarmonyBank {
     )
     private val barWarm = HarmonyPattern(
         "bar_warm",
-        listOf(ChordQuality.OpenTriad, ChordQuality.Add9, ChordQuality.Sus2, ChordQuality.Minor7),
+        listOf(ChordQuality.Maj7, ChordQuality.Add9, ChordQuality.Sus2, ChordQuality.Min9),
         listOf(HarmonyState.I, HarmonyState.BVII, HarmonyState.IV, HarmonyState.I),
     )
     private val balladPop = HarmonyPattern(
         "ballad_pop",
-        listOf(ChordQuality.OpenTriad, ChordQuality.Add9, ChordQuality.Sus2),
+        listOf(ChordQuality.OpenTriad, ChordQuality.Maj7, ChordQuality.Add9, ChordQuality.Sus2),
         listOf(HarmonyState.I, HarmonyState.V, HarmonyState.Vi, HarmonyState.IV),
     )
     private val guitarOpen = HarmonyPattern(

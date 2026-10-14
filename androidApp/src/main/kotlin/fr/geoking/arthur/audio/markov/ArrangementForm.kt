@@ -59,6 +59,41 @@ class ArrangementForm(
             FormSection.Bridge -> 1.3f
         }
 
+    /** Pad layer multiplier: swells into B/Bridge. */
+    val padMul: Float
+        get() = when (section) {
+            FormSection.Intro -> 1f
+            FormSection.A -> 0.9f
+            FormSection.B -> 1f
+            FormSection.Bridge -> 1.1f
+        }
+
+    /** Bass layer enters after the intro and thins out on the bridge. */
+    val bassMul: Float
+        get() = when (section) {
+            FormSection.Intro -> 0.45f
+            FormSection.A -> 1f
+            FormSection.B -> 1f
+            FormSection.Bridge -> 0.4f
+        }
+
+    /** Soft percussion: absent in the intro, full in A/B, ghost-only on the bridge. */
+    val percMul: Float
+        get() = when (section) {
+            FormSection.Intro -> 0f
+            FormSection.A -> 1f
+            FormSection.B -> 1f
+            FormSection.Bridge -> 0.3f
+        }
+
+    /** Counter-melody layer: only in the contrast sections. */
+    val counterMul: Float
+        get() = when (section) {
+            FormSection.Intro, FormSection.A -> 0f
+            FormSection.B -> 1f
+            FormSection.Bridge -> 0.5f
+        }
+
     /** Optional shared groove transport so section lengths stay phase-locked with harmony. */
     fun attachTransport(groove: GrooveTransport?) {
         transport = groove

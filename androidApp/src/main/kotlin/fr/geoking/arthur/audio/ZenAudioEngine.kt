@@ -29,4 +29,7 @@ class ZenAudioEngine(
     fun triggerChime() = engine.triggerChime()
     fun triggerTransition() = engine.triggerTransition()
     fun setArtwork(artwork: Artwork) = engine.setArtwork(artwork)
+
+    /** Live scene mood (0..1 each): brightness opens the tone filter, energy raises note density. */
+    fun setVisualMood(brightness: Float, energy: Float) = engine.setVisualMood(brightness, energy)
 }

@@ -56,6 +56,7 @@ class SinePadVoice(
     private var fCoeff = 0.0
     private var gCoeff = 0.0
     private var invSr = 0.0
+    private val lfo = Lfo()
 
     fun setChord(freqs: List<Float>) {
         if (freqs.isEmpty()) return
@@ -89,8 +90,10 @@ class SinePadVoice(
         f3 += (t3 - f3) * fCoeff
         currentGain += (targetGain - currentGain) * gCoeff
         phase1 = SinLut.wrapPhase(phase1 + 2.0 * PI * f1 * invSr)
-        phase2 = SinLut.wrapPhase(phase2 + 2.0 * PI * f2 * invSr)
-        phase3 = SinLut.wrapPhase(phase3 + 2.0 * PI * f3 * invSr)
+        // Slow opposite drift on the upper voices = gentle chorus-like movement.
+        val drift = 1.0 + 0.0012 * lfo.next(0.17, sampleRate)
+        phase2 = SinLut.wrapPhase(phase2 + 2.0 * PI * f2 * drift * invSr)
+        phase3 = SinLut.wrapPhase(phase3 + 2.0 * PI * f3 / drift * invSr)
         val s = SinLut.sin(phase1) + 0.4f * SinLut.sin(phase2) + 0.22f * SinLut.sin(phase3)
         return (s * currentGain).toFloat()
     }
@@ -390,32 +393,24 @@ class PluckGuitarVoice : SynthVoice {
     private var phase2 = 0.0
     private var phase3 = 0.0
     private var freq = 0.0
-    private var age = 0L
-    private var env = 0.0
-    private var peak = 0.0
-    private var active = false
-    private var releasing = false
     private var noise = Random(1)
     private var invSr = 1.0 / 44_100
     private var cachedSr = 0
-    private var attackSamples = 1
     private var burstSamples = 1
-    private var decayMul = 0.999
-    private var releaseMul = 0.99
-    private var maxAge = 0L
+    private var burstAge = 0L
     private var phaseInc1 = 0.0
     private var phaseInc2 = 0.0
     private var phaseInc3 = 0.0
+    private val adsr = Adsr().apply {
+        setup(attackSeconds = 0.004, decayRate = 3.0, releaseRate = 14.0, maxSeconds = 2.8)
+    }
 
-    override fun isAudible(): Boolean = active
+    override fun isAudible(): Boolean = adsr.isActive
 
     override fun noteOn(freqHz: Float, velocity: Float) {
         freq = freqHz.toDouble()
-        peak = velocity.coerceIn(0.1f, 1f).toDouble()
-        age = 0L
-        env = 0.0
-        active = true
-        releasing = false
+        adsr.trigger(velocity.coerceIn(0.1f, 1f).toDouble())
+        burstAge = 0L
         noise = Random((freqHz * 100).toInt())
         phase1 = 0.0
         phase2 = 0.0
@@ -423,45 +418,26 @@ class PluckGuitarVoice : SynthVoice {
         cachedSr = 0
     }
 
-    override fun noteOff() {
-        if (active && !releasing) releasing = true
-    }
+    override fun noteOff() = adsr.release()
 
     private fun ensureSr(sampleRate: Int) {
         if (sampleRate == cachedSr) return
         cachedSr = sampleRate
         invSr = 1.0 / sampleRate
-        attackSamples = (0.004 * sampleRate).toInt().coerceAtLeast(1)
         burstSamples = (0.008 * sampleRate).toInt().coerceAtLeast(1)
-        decayMul = EnvMath.decayMul(3.0, sampleRate)
-        releaseMul = EnvMath.decayMul(14.0, sampleRate)
-        maxAge = (2.8 * sampleRate).toLong()
         phaseInc1 = 2.0 * PI * freq * invSr
         phaseInc2 = 2.0 * PI * freq * 2.0 * invSr
         phaseInc3 = 2.0 * PI * freq * 3.0 * invSr
     }
 
     override fun render(sampleIndex: Long, sampleRate: Int): Float {
-        if (!active) return 0f
+        if (!adsr.isActive) return 0f
         ensureSr(sampleRate)
-        age++
-        if (releasing) {
-            env *= releaseMul
-            if (env < 1e-4) {
-                active = false
-                return 0f
-            }
-        } else if (age <= attackSamples) {
-            env = peak * age.toDouble() / attackSamples
-        } else {
-            env *= decayMul
-            if (age > maxAge || env < 1e-4) {
-                active = false
-                return 0f
-            }
-        }
-        val burst = if (age <= burstSamples) {
-            val w = 1.0 - age.toDouble() / burstSamples
+        val env = adsr.next(sampleRate)
+        if (!adsr.isActive) return 0f
+        burstAge++
+        val burst = if (burstAge <= burstSamples) {
+            val w = 1.0 - burstAge.toDouble() / burstSamples
             (noise.nextFloat() * 2f - 1f) * 0.18f * w.toFloat()
         } else {
             0f
@@ -475,11 +451,7 @@ class PluckGuitarVoice : SynthVoice {
         return burst + ((h1 + h2 + h3) * 0.4f * env).toFloat()
     }
 
-    override fun reset() {
-        active = false
-        releasing = false
-        env = 0.0
-    }
+    override fun reset() = adsr.reset()
 }
 
 class BowlVoice : SynthVoice {
@@ -853,72 +825,42 @@ class KalimbaPluckVoice : SynthVoice {
     private var phase2 = 0.0
     private var phase3 = 0.0
     private var freq = 0.0
-    private var age = 0L
-    private var env = 0.0
-    private var peak = 0.0
-    private var active = false
-    private var releasing = false
     private var invSr = 1.0 / 44_100
     private var cachedSr = 0
-    private var attackSamples = 1
-    private var decayMul = 0.999
-    private var releaseMul = 0.99
-    private var maxAge = 0L
     private var phaseInc1 = 0.0
     private var phaseInc2 = 0.0
     private var phaseInc3 = 0.0
+    private val adsr = Adsr().apply {
+        setup(attackSeconds = 0.003, decayRate = 4.5, releaseRate = 16.0, maxSeconds = 1.8)
+    }
 
-    override fun isAudible(): Boolean = active
+    override fun isAudible(): Boolean = adsr.isActive
 
     override fun noteOn(freqHz: Float, velocity: Float) {
         freq = freqHz.toDouble()
-        peak = velocity.coerceIn(0.1f, 1f).toDouble()
-        age = 0L
-        env = 0.0
-        active = true
-        releasing = false
+        adsr.trigger(velocity.coerceIn(0.1f, 1f).toDouble())
         phase1 = 0.0
         phase2 = 0.0
         phase3 = 0.0
         cachedSr = 0
     }
 
-    override fun noteOff() {
-        if (active && !releasing) releasing = true
-    }
+    override fun noteOff() = adsr.release()
 
     private fun ensureSr(sampleRate: Int) {
         if (sampleRate == cachedSr) return
         cachedSr = sampleRate
         invSr = 1.0 / sampleRate
-        attackSamples = (0.003 * sampleRate).toInt().coerceAtLeast(1)
-        decayMul = EnvMath.decayMul(4.5, sampleRate)
-        releaseMul = EnvMath.decayMul(16.0, sampleRate)
-        maxAge = (1.8 * sampleRate).toLong()
         phaseInc1 = 2.0 * PI * freq * invSr
         phaseInc2 = 2.0 * PI * freq * 2.01 * invSr
         phaseInc3 = 2.0 * PI * freq * 4.2 * invSr
     }
 
     override fun render(sampleIndex: Long, sampleRate: Int): Float {
-        if (!active) return 0f
+        if (!adsr.isActive) return 0f
         ensureSr(sampleRate)
-        age++
-        if (releasing) {
-            env *= releaseMul
-            if (env < 1e-4) {
-                active = false
-                return 0f
-            }
-        } else if (age <= attackSamples) {
-            env = peak * age.toDouble() / attackSamples
-        } else {
-            env *= decayMul
-            if (age > maxAge || env < 1e-4) {
-                active = false
-                return 0f
-            }
-        }
+        val env = adsr.next(sampleRate)
+        if (!adsr.isActive) return 0f
         phase1 = SinLut.wrapPhase(phase1 + phaseInc1)
         phase2 = SinLut.wrapPhase(phase2 + phaseInc2)
         phase3 = SinLut.wrapPhase(phase3 + phaseInc3)
@@ -928,11 +870,7 @@ class KalimbaPluckVoice : SynthVoice {
         return ((h1 + h2 + h3) * 0.5f * env).toFloat()
     }
 
-    override fun reset() {
-        active = false
-        releasing = false
-        env = 0.0
-    }
+    override fun reset() = adsr.reset()
 }
 
 /** Dense high-filtered noise rain bed (brighter / denser than wave swell). */
@@ -1150,7 +1088,9 @@ class BowedVoice : SynthVoice {
             }
         }
         vibPhase = SinLut.wrapPhase(vibPhase + 2.0 * PI * 5.2 * invSr)
-        val vib = 1.0 + 0.008 * SinLut.sin(vibPhase)
+        // Vibrato blooms in after ~0.35 s like a real bowed note.
+        val vibDepth = 0.009 * (age.toDouble() / (0.35 * sampleRate)).coerceAtMost(1.0)
+        val vib = 1.0 + vibDepth * SinLut.sin(vibPhase)
         phase = SinLut.wrapPhase(phase + 2.0 * PI * freq * vib * invSr)
         // Cheap soft saw via phase
         val saw = (2.0 * (phase / (2.0 * PI)) - 1.0).toFloat()

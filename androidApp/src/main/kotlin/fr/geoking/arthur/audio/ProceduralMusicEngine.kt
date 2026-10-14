@@ -7,6 +7,7 @@ import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
 import android.os.Build
+import android.os.Process
 import fr.geoking.arthur.audio.banks.TextureCueKind
 import fr.geoking.arthur.audio.fx.PingPongDelay
 import fr.geoking.arthur.audio.fx.Pan
@@ -23,6 +24,7 @@ import fr.geoking.arthur.audio.voices.ChimeClusterVoice
 import fr.geoking.arthur.audio.voices.FireplaceVoice
 import fr.geoking.arthur.audio.voices.KalimbaPluckVoice
 import fr.geoking.arthur.audio.voices.PluckGuitarVoice
+import fr.geoking.arthur.audio.voices.PolyVoicePool
 import fr.geoking.arthur.audio.voices.RainNoiseVoice
 import fr.geoking.arthur.audio.voices.SinePadVoice
 import fr.geoking.arthur.audio.voices.SoftBassVoice
@@ -44,6 +46,7 @@ import fr.geoking.arthur.source.AmbientAudioSettings
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
@@ -53,6 +56,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.koin.core.context.GlobalContext
+import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.pow
 import kotlin.random.Random
@@ -130,7 +134,7 @@ class ProceduralMusicEngine(
     private val padB = SinePadVoice(3f, glideSeconds = 0.06f)
     private val softPiano = SoftPianoPool(4)
     private val wavePiano = WavetablePianoPool(6)
-    private val guitar = PluckGuitarVoice()
+    private val guitar = PolyVoicePool(4) { PluckGuitarVoice() }
     private val bass = SoftBassVoice()
     private val bowl = BowlVoice()
     private val waves = WaveNoiseVoice(11L)
@@ -138,10 +142,10 @@ class ProceduralMusicEngine(
     private val rain = RainNoiseVoice(91L)
     private val fireplace = FireplaceVoice(55L)
     private val birds = BirdChirpVoice(77L)
-    private val bowed = BowedVoice()
+    private val bowed = PolyVoicePool(3) { BowedVoice() }
     private val pulse = SoftPulseVoice()
     private val chimes = ChimeClusterVoice()
-    private val kalimba = KalimbaPluckVoice()
+    private val kalimba = PolyVoicePool(4) { KalimbaPluckVoice() }
     private val squareLead = SquareLeadVoice(duty = 0.35f)
     private val chipPulse = SquareLeadVoice(duty = 0.18f, decayPerSec = 9.0)
     private val roomBus = RoomBus()
@@ -292,7 +296,23 @@ class ProceduralMusicEngine(
         stopAfterFade = false
         pendingDestroy = false
         audioTrack?.play()
-        synthesisJob = scope.launch(Dispatchers.Default) { renderAudioLoop() }
+        // Dedicated audio-priority thread: Dispatchers.Default threads get preempted -> underruns.
+        val renderExecutor = Executors.newSingleThreadExecutor { r ->
+            Thread(
+                {
+                    try {
+                        Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO)
+                    } catch (_: Throwable) {
+                        // Not fatal (e.g. JVM unit tests).
+                    }
+                    r.run()
+                },
+                "arthur-audio-render",
+            )
+        }
+        val renderDispatcher = renderExecutor.asCoroutineDispatcher()
+        synthesisJob = scope.launch(renderDispatcher) { renderAudioLoop() }
+        synthesisJob?.invokeOnCompletion { renderDispatcher.close() }
     }
 
     /**

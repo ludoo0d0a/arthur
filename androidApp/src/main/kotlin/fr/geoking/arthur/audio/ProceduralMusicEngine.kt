@@ -959,9 +959,10 @@ class ProceduralMusicEngine(
         if (key != lastChordKey || cachedPartials.isEmpty()) {
             lastChordKey = key
             cachedPartials = partials
-            padA.setChord(partials.ifEmpty { listOf(p.rootHz) })
+            val voiced = seq.voicedPartialsHz()
+            padA.setChord(voiced.ifEmpty { listOf(p.rootHz) })
             if (atmosphere && quality == SynthQuality.Full) {
-                padB.setChord(partials.ifEmpty { listOf(p.rootHz) })
+                padB.setChord(voiced.ifEmpty { listOf(p.rootHz) })
             }
             if (isJazzCompingStyle(p.style) && !atmosphere) {
                 fireJazzComping(partials, quality)

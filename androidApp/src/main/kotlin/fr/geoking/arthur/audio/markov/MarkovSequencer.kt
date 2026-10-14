@@ -77,6 +77,20 @@ class MarkovSequencer(
 
     private var motifCursor = 0
     private var activeMotif: MelodyMotif = motifs[pitchChain.current]
+
+    // Phrase planner: theme (A) → variation (A') → contrast (B) → cadence on the theme.
+    private var activeDegrees: IntArray = activeMotif.degrees
+    private var themeDegrees: IntArray = activeMotif.degrees
+    private var phraseStep = 1
+
+    /** Key shift in semitones (occasional modulation to the 4th/5th on melodic styles). */
+    private var keyOffset = 0
+    private val modulationAllowed: Boolean = !atmosphere && preset.style in setOf(
+        MusicStyle.JazzPiano, MusicStyle.BarAmbience, MusicStyle.NightLounge,
+        MusicStyle.ClassicalPiano, MusicStyle.PianoBallad, MusicStyle.SoftGuitar,
+        MusicStyle.RockBallad, MusicStyle.ViolinLead, MusicStyle.HawaiianUkulele,
+    )
+    private var leadCenter = 5f
     private var samplesUntilNextNote = 0
     private var samplesUntilHarmony = 0
     private var samplesUntilBass = 0
@@ -87,6 +101,7 @@ class MarkovSequencer(
     private var bassStepCursor = 0
     private var currentBassHz: Float? = null
     private var lastHarmonyPartials: List<Float> = emptyList()
+    private var lastVoicedPartials: List<Float> = emptyList()
     private var lastHarmonyState: HarmonyState? = null
 
     // Groove-clock state (jazz/lounge only).
@@ -166,6 +181,9 @@ class MarkovSequencer(
         rhythmChain.reset()
         groovePatternChain.reset()
         activeMotif = motifs[pitchChain.current]
+        activeDegrees = activeMotif.degrees
+        themeDegrees = activeDegrees
+        phraseStep = 1
         motifCursor = 0
         samplesUntilNextNote = 0
         currentDegree = 0
@@ -225,6 +243,10 @@ class MarkovSequencer(
                 progressionIndex = random.nextInt(harmonyPattern.progression.size)
             } else {
                 progressionIndex = (progressionIndex + 1) % harmonyPattern.progression.size
+                // After a full cycle, occasionally modulate up a 4th/5th, then come home.
+                if (progressionIndex == 0 && modulationAllowed && random.nextFloat() < 0.2f) {
+                    keyOffset = if (keyOffset == 0) (if (random.nextBoolean()) 5 else 7) else 0
+                }
             }
             currentHarmony = harmonyPattern.progression[progressionIndex]
         } else {
@@ -250,8 +272,8 @@ class MarkovSequencer(
         val step = bassPattern.steps[bassStepCursor % bassPattern.steps.size]
         bassStepCursor++
         val walk = 1 + random.nextInt(2)
-        val chordRootSemi = HarmonyBank.stateSemitones(currentHarmony)
-        val stepSemi = BassBank.stepSemitones(step, walk)
+        val chordRootSemi = keyedRootSemis()
+        val stepSemi = BassBank.stepSemitones(embellishBassStep(step), walk)
         // One octave below root (or pedal at root/2).
         val octaveDown = if (step == BassStep.Pedal && atmosphere) -24 else -12
         val semis = chordRootSemi + stepSemi + octaveDown
@@ -268,6 +290,10 @@ class MarkovSequencer(
         return true
     }
 
+    /** Occasionally answer a root with the fifth so the bass line isn't a static pulse. */
+    private fun embellishBassStep(step: BassStep): BassStep =
+        if (!atmosphere && step == BassStep.Root && random.nextFloat() < 0.2f) BassStep.Fifth else step
+
     private fun tickGrooveBass(sampleRate: Int): Boolean {
         val t = ensureTransport(sampleRate)
         if (samplesUntilBass > 0) {
@@ -276,13 +302,13 @@ class MarkovSequencer(
         }
         val step = bassPattern.steps[bassStepCursor % bassPattern.steps.size]
         bassStepCursor++
-        val chordRootSemi = HarmonyBank.stateSemitones(currentHarmony)
+        val chordRootSemi = keyedRootSemis()
         val octaveDown = if (atmosphere && step == BassStep.Pedal) -24 else -12
         val oneBar = t.barsDuration(grooveBarIndex, 1)
         val approachingChange = !atmosphere && samplesUntilHarmony in 1 until oneBar
         val semis = when {
             approachingChange && (step == BassStep.WalkUp || step == BassStep.WalkDown) -> {
-                val nextRoot = HarmonyBank.stateSemitones(peekNextHarmonyState())
+                val nextRoot = HarmonyBank.stateSemitones(peekNextHarmonyState()) + keyOffset
                 val approach = when {
                     nextRoot > chordRootSemi -> nextRoot - 1
                     nextRoot < chordRootSemi -> nextRoot + 1
@@ -292,7 +318,7 @@ class MarkovSequencer(
             }
             else -> {
                 val walk = 1 + random.nextInt(2)
-                chordRootSemi + BassBank.stepSemitones(step, walk) + octaveDown
+                chordRootSemi + BassBank.stepSemitones(embellishBassStep(step), walk) + octaveDown
             }
         }
         currentBassHz = (preset.rootHz * 2.0.pow(semis / 12.0).toFloat())
@@ -318,11 +344,8 @@ class MarkovSequencer(
             samplesUntilNextNote--
             return false
         }
-        if (motifCursor >= activeMotif.degrees.size) {
-            activeMotif = motifs[pitchChain.next()]
-            motifCursor = 0
-        }
-        var degree = activeMotif.degrees[motifCursor++]
+        if (motifCursor >= activeDegrees.size) startNextPhrase()
+        var degree = activeDegrees[motifCursor++]
         val token = rhythm.tokens[rhythmChain.next()]
         val rawQuarters = kotlin.math.abs(token).coerceAtLeast(0.25f)
         val quarters = when {
@@ -342,8 +365,7 @@ class MarkovSequencer(
 
         // Keep motifs in a mid register (avoid high scale degrees that pierce).
         if (!isRestToken && degree != MelodyMotif.REST) {
-            val maxDegree = (preset.scaleSemitones.size - 1).coerceAtLeast(0).coerceAtMost(4)
-            degree = degree.coerceIn(0, maxDegree)
+            degree = degree.coerceIn(0, maxMelodyDegree())
         }
 
         // Bias toward current-chord tones for melodic cohesion.
@@ -405,11 +427,8 @@ class MarkovSequencer(
 
     /** Selects a melody degree for a groove onset; returns false if treated as rest. */
     private fun pickGrooveDegree(): Boolean {
-        if (motifCursor >= activeMotif.degrees.size) {
-            activeMotif = motifs[pitchChain.next()]
-            motifCursor = 0
-        }
-        var degree = activeMotif.degrees[motifCursor++]
+        if (motifCursor >= activeDegrees.size) startNextPhrase()
+        var degree = activeDegrees[motifCursor++]
         if (degree == MelodyMotif.REST) {
             currentDegree = null
             return false
@@ -420,8 +439,7 @@ class MarkovSequencer(
                 degree = lastDegree + if (degree > lastDegree) 1 else -1
             }
         }
-        val maxDegree = (preset.scaleSemitones.size - 1).coerceAtLeast(0).coerceAtMost(4)
-        degree = degree.coerceIn(0, maxDegree)
+        degree = degree.coerceIn(0, maxMelodyDegree())
         if (random.nextFloat() < 0.78f) {
             degree = snapToChordTone(degree)
         }
@@ -457,6 +475,9 @@ class MarkovSequencer(
     fun transitionCue(): TextureCueKind =
         TextureBank.transitionCue(preset.style, random.nextInt(8))
 
+    /** Pad voicing of the current chord: inversion closest to the previous chord. */
+    fun voicedPartialsHz(): List<Float> = lastVoicedPartials.ifEmpty { lastHarmonyPartials }
+
     fun harmonyPartialsHz(): List<Float> {
         if (!harmonyChanged && lastHarmonyPartials.isNotEmpty() && lastHarmonyState == currentHarmony) {
             return lastHarmonyPartials
@@ -464,13 +485,24 @@ class MarkovSequencer(
         val quality = harmonyPattern.qualities[
             Math.floorMod(currentHarmony.ordinal + preset.harmonyBankIndex, harmonyPattern.qualities.size),
         ]
-        val rootShift = HarmonyBank.stateSemitones(currentHarmony)
-        val partials = quality.intervals.map { interval ->
-            preset.rootHz * 2.0.pow((rootShift + interval) / 12.0).toFloat()
-        }
+        val rootShift = keyedRootSemis()
+        val rootPosition = quality.intervals.map { rootShift + it }
+        val partials = rootPosition.map { preset.rootHz * 2.0.pow(it / 12.0).toFloat() }
+        lastVoicedPartials = voiceLead(rootPosition).map { preset.rootHz * 2.0.pow(it / 12.0).toFloat() }
         lastHarmonyPartials = partials
         lastHarmonyState = currentHarmony
         return partials
+    }
+
+    /**
+     * Re-voices a chord with the smallest movement from the previous one (inversions),
+     * so pads glide a step instead of jumping. Drone/atmosphere keeps root position.
+     */
+    private fun voiceLead(semis: List<Int>): List<Int> {
+        if (atmosphere || semis.size < 2) return semis
+        val moved = semis.map { s -> s + 12 * Math.round((leadCenter - s) / 12f) }.sorted()
+        leadCenter = moved.average().toFloat()
+        return moved
     }
 
     /** Shared groove transport when active (for arrangement bar alignment). */
@@ -488,46 +520,107 @@ class MarkovSequencer(
         return created
     }
 
+    private fun keyedRootSemis(): Int = HarmonyBank.stateSemitones(currentHarmony) + keyOffset
+
     private fun snapToChordTone(degree: Int): Int {
         val scale = preset.scaleSemitones
         if (scale.isEmpty()) return degree
+        val size = scale.size
         val chordRootSemi = HarmonyBank.stateSemitones(currentHarmony)
         // Triad / soft-7th tones of the *current* chord (semitones from key root).
         val chordTonePcs = intArrayOf(0, 3, 4, 7, 10)
             .map { Math.floorMod(chordRootSemi + it, 12) }
             .toSet()
-        val wrapped = Math.floorMod(degree, scale.size)
-        var best = wrapped
+        // Voice leading: nearest chord tone in absolute scale steps; ties go closer to the last note.
+        var best = Int.MIN_VALUE
         var bestDist = Int.MAX_VALUE
-        for (i in scale.indices) {
-            val pc = Math.floorMod(scale[i], 12)
+        var bestLead = Int.MAX_VALUE
+        for (cand in (degree - size)..(degree + size)) {
+            if (cand < 0 || cand > maxMelodyDegree()) continue
+            val pc = Math.floorMod(scale[Math.floorMod(cand, size)], 12)
             if (pc !in chordTonePcs) continue
-            val d = kotlin.math.min(
-                kotlin.math.abs(wrapped - i),
-                scale.size - kotlin.math.abs(wrapped - i),
-            )
-            if (d < bestDist) {
+            val d = kotlin.math.abs(cand - degree)
+            val lead = kotlin.math.abs(cand - lastDegree)
+            if (d < bestDist || (d == bestDist && lead < bestLead)) {
+                best = cand
                 bestDist = d
-                best = i
+                bestLead = lead
             }
         }
-        if (bestDist == Int.MAX_VALUE) {
+        if (best == Int.MIN_VALUE) {
             // Fallback: tonic triad degrees in scale space.
-            val fallback = intArrayOf(0, 2, 4).firstOrNull { it < scale.size } ?: 0
-            best = fallback
+            best = intArrayOf(0, 2, 4).firstOrNull { it < size } ?: 0
         }
         return best
+    }
+
+    /** Highest absolute scale step: two octaves for melodic styles, one for calm/atmosphere. */
+    private fun maxMelodyDegree(): Int {
+        val size = preset.scaleSemitones.size.coerceAtLeast(1)
+        return if (atmosphere || !melodicStyle) (size - 1).coerceAtMost(4) else size * 2 - 1
+    }
+
+    /** Picks the next 4-part phrase unit: A, A' (varied), B (contrast, higher), A cadence. */
+    private fun startNextPhrase() {
+        motifCursor = 0
+        val shifted = melodicStyle && !atmosphere
+        when (phraseStep % 4) {
+            0 -> {
+                activeMotif = motifs[pitchChain.next()]
+                themeDegrees = activeMotif.degrees
+                activeDegrees = themeDegrees
+            }
+            1 -> activeDegrees = varyPhrase(themeDegrees)
+            2 -> {
+                activeMotif = motifs[pitchChain.next()]
+                val lift = if (shifted) 2 + random.nextInt(2) else 0
+                activeDegrees = transposeDegrees(activeMotif.degrees, lift)
+            }
+            else -> activeDegrees = cadencePhrase(themeDegrees)
+        }
+        phraseStep++
+    }
+
+    private fun transposeDegrees(src: IntArray, by: Int): IntArray =
+        IntArray(src.size) { i -> if (src[i] == MelodyMotif.REST) src[i] else src[i] + by }
+
+    private fun varyPhrase(src: IntArray): IntArray = when (random.nextInt(3)) {
+        0 -> transposeDegrees(src, 1 + random.nextInt(2))
+        1 -> {
+            // Inversion around the first sounding degree.
+            val pivot = src.firstOrNull { it != MelodyMotif.REST } ?: 0
+            IntArray(src.size) { i -> if (src[i] == MelodyMotif.REST) src[i] else 2 * pivot - src[i] }
+        }
+        else -> {
+            // Echo: same contour, last third reversed.
+            val out = src.copyOf()
+            val from = out.size * 2 / 3
+            out.reverse(from, out.size)
+            out
+        }
+    }
+
+    /** Same theme, but the final sounding notes resolve down to the tonic. */
+    private fun cadencePhrase(src: IntArray): IntArray {
+        val out = src.copyOf()
+        val sounding = out.indices.filter { out[it] != MelodyMotif.REST }
+        if (sounding.size >= 2) {
+            out[sounding[sounding.size - 1]] = 0
+            out[sounding[sounding.size - 2]] = if (random.nextBoolean()) 1 else 2
+        }
+        return out
     }
 
     private fun degreeToHz(degreeIndex: Int): Float {
         val scale = preset.scaleSemitones
         if (scale.isEmpty()) return preset.rootHz.coerceIn(MELODY_MIN_HZ, MELODY_MAX_HZ)
-        val capped = degreeIndex.coerceIn(0, (scale.size - 1).coerceAtMost(4))
-        val idx = Math.floorMod(capped, scale.size)
+        val d = degreeIndex.coerceIn(0, maxMelodyDegree())
+        val octave = Math.floorDiv(d, scale.size)
+        val idx = Math.floorMod(d, scale.size)
         // Melody sits one octave above root for clarity over bass.
-        val semis = scale[idx] + HarmonyBank.stateSemitones(currentHarmony) + 12
+        val semis = scale[idx] + 12 * octave + keyedRootSemis() + 12
         var hz = preset.rootHz * 2.0.pow(semis / 12.0).toFloat()
-        // Fold piercing highs into a warm mid register (~C4–E5).
+        // Fold piercing highs into a warm mid register.
         while (hz > MELODY_MAX_HZ) hz *= 0.5f
         return hz.coerceIn(MELODY_MIN_HZ, MELODY_MAX_HZ)
     }
@@ -535,8 +628,8 @@ class MarkovSequencer(
     companion object {
         /** Soft floor so melody stays above muddy bass. */
         const val MELODY_MIN_HZ = 180f
-        /** Cap bright tops — above ~E5 ambient piano/chimes get harsh in-car. */
-        const val MELODY_MAX_HZ = 660f
+        /** Cap bright tops — above ~G5 ambient piano/chimes get harsh in-car. */
+        const val MELODY_MAX_HZ = 784f
 
         val GROOVE_STYLES: Set<MusicStyle> = setOf(
             MusicStyle.JazzPiano,

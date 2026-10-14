@@ -25,6 +25,7 @@ import fr.geoking.arthur.audio.voices.FireplaceVoice
 import fr.geoking.arthur.audio.voices.KalimbaPluckVoice
 import fr.geoking.arthur.audio.voices.PluckGuitarVoice
 import fr.geoking.arthur.audio.voices.PolyVoicePool
+import fr.geoking.arthur.audio.voices.SoftKitVoice
 import fr.geoking.arthur.audio.voices.RainNoiseVoice
 import fr.geoking.arthur.audio.voices.SinePadVoice
 import fr.geoking.arthur.audio.voices.SoftBassVoice
@@ -162,6 +163,23 @@ class ProceduralMusicEngine(
     private val panChip = Pan(0.2f)
     private val panChime = Pan(0.35f)
     private val panPadB = Pan(0.3f)
+    private val kit = SoftKitVoice()
+    private val panKit = Pan(-0.15f)
+    private var toneLpL = 0f
+    private var toneLpR = 0f
+
+    // Live mood (0..1). Defaults suit a neutral, slightly airy mix; see [setVisualMood].
+    @Volatile private var moodBrightness = 0.75f
+    @Volatile private var moodEnergy = 0.5f
+
+    /**
+     * Couples the music to what is on screen: [brightness] opens/closes the master tone filter,
+     * [energy] raises/lowers melodic density. Both 0..1; safe to call from any thread.
+     */
+    fun setVisualMood(brightness: Float, energy: Float) {
+        moodBrightness = brightness.coerceIn(0f, 1f)
+        moodEnergy = energy.coerceIn(0f, 1f)
+    }
 
     private val cpuLoad = CpuLoadTracker()
 
@@ -595,6 +613,13 @@ class ProceduralMusicEngine(
                 val delaySend = if (fullFx && !atmosphere) 0.16f else 0f
                 pingPong.configure(sr, (60f / activePreset.tempoBpm) * 0.75f)
                 val vol = masterVolume
+                // Slow ~75 s "breathing" so even a static scene keeps evolving.
+                val macro = kotlin.math.sin(2.0 * Math.PI * (sampleIndex.toDouble() / (75.0 * sr))).toFloat()
+                val toneCutoff = 2400f + (moodBrightness + 0.12f * macro).coerceIn(0f, 1f) * 7600f
+                val toneCoeff = 1f - kotlin.math.exp(-2f * Math.PI.toFloat() * toneCutoff / sr)
+                val textureEvo = 0.85f + 0.15f * macro
+                seq.moodDensity = (moodEnergy - 0.5f) * 0.4f
+                val kitOn = fullFx && !atmosphere && activePreset.style in KIT_STYLES
                 val samplesPerPulse = if (pulseGain > 0.05f) {
                     (60.0 / activePreset.tempoBpm * sr).toInt().coerceAtLeast(1)
                 } else {
@@ -679,7 +704,10 @@ class ProceduralMusicEngine(
                         seq.advanceHarmonyClock(sr)
                         if (seq.harmonyChanged) {
                             applyBedVoices(activePreset, seq, atmosphere, quality)
+                            fireCounterMelody(activePreset, seq, arrangement.counterMul, atmosphere, quality)
                         }
+                        val eighth = seq.consumeEighth()
+                        if (eighth >= 0 && kitOn) fireKit(eighth, arrangement.percMul)
                         humanizer.tick(sampleIndex)
                         if (seq.tickMelody(sr)) {
                             val hz = seq.currentMelodyHz
@@ -741,7 +769,7 @@ class ProceduralMusicEngine(
                     // Single pad for Melody/Balanced; dual only for Atmosphere Full.
                     var padMono = 0f
                     if (padGain > 0.02f) {
-                        padMono = padA.render(sampleIndex, sr) * padGain
+                        padMono = padA.render(sampleIndex, sr) * padGain * arrangement.padMul
                     } else {
                         padA.render(sampleIndex, sr)
                     }
@@ -763,7 +791,7 @@ class ProceduralMusicEngine(
                     }
 
                     if (bassAudibleStem && bass.isAudible()) {
-                        val b = bass.render(sampleIndex, sr) * bassGain
+                        val b = bass.render(sampleIndex, sr) * bassGain * arrangement.bassMul
                         dl += b
                         dr += b
                     }
@@ -805,7 +833,7 @@ class ProceduralMusicEngine(
                     }
 
                     if (textureKind != TextureKind.None) {
-                        val texMul = textureGain * arrangement.textureMul
+                        val texMul = textureGain * arrangement.textureMul * textureEvo
                         if (textureKind == TextureKind.Birds) birds.tickTexture(sr)
                         val tex = when (textureKind) {
                             TextureKind.Waves -> waves.render(sampleIndex, sr) * texMul
@@ -829,6 +857,12 @@ class ProceduralMusicEngine(
                         val bb = bowl.render(sampleIndex, sr) * bedGain * 0.45f
                         dl += bb
                         dr += bb
+                    }
+
+                    if (kit.isAudible()) {
+                        val k = kit.render(sampleIndex, sr)
+                        dl += k * panKit.l
+                        dr += k * panKit.r
                     }
 
                     if (pulseAudibleStem && pulse.isAudible()) {
@@ -881,9 +915,11 @@ class ProceduralMusicEngine(
                         dl += reverb.outL * reverbWet
                         dr += reverb.outR * reverbWet
                     }
+                    toneLpL += toneCoeff * (dl - toneLpL)
+                    toneLpR += toneCoeff * (dr - toneLpR)
                     val outGain = duckGain() * vol * env
-                    val outL = softLimit(dl * outGain)
-                    val outR = softLimit(dr * outGain)
+                    val outL = softLimit(toneLpL * outGain)
+                    val outR = softLimit(toneLpR * outGain)
                     advanceEnvelope()
 
                     if (useFloatPcm) {
@@ -1007,6 +1043,38 @@ class ProceduralMusicEngine(
         }
     }
 
+    /** Sparse brush pattern on the swung eighth grid (0..7 per bar). */
+    private fun fireKit(eighth: Int, mul: Float) {
+        if (mul <= 0.01f) return
+        val odd = eighth % 2 == 1
+        when (eighth) {
+            2, 6 -> kit.swish(humanizer.velocity(0.24f * mul, 0.2f))
+            else -> if (humanizer.chance(if (odd) 0.7f else 0.4f)) {
+                kit.hat(humanizer.velocity((if (odd) 0.16f else 0.10f) * mul, 0.25f))
+            }
+        }
+        if (eighth == 0 && humanizer.chance(0.7f)) kit.kick(humanizer.velocity(0.34f * mul, 0.2f))
+        if (eighth == 4 && humanizer.chance(0.25f)) kit.kick(humanizer.velocity(0.22f * mul, 0.2f))
+    }
+
+    /** One quiet sustained chord tone an octave up in the contrast sections (B / bridge). */
+    private fun fireCounterMelody(
+        p: MusicPreset,
+        seq: MarkovSequencer,
+        counterMul: Float,
+        atmosphere: Boolean,
+        quality: SynthQuality,
+    ) {
+        if (atmosphere || quality != SynthQuality.Full || counterMul < 0.05f) return
+        if (p.style in NO_COUNTER_STYLES) return
+        val tones = seq.harmonyPartialsHz()
+        if (tones.size < 2) return
+        var hz = tones[if (tones.size >= 3) 2 else 1] * 2f
+        while (hz > MarkovSequencer.MELODY_MAX_HZ) hz *= 0.5f
+        while (hz < MarkovSequencer.MELODY_MIN_HZ) hz *= 2f
+        bowed.noteOn(hz, humanizer.velocity(0.2f * counterMul))
+    }
+
     private fun fireMelodyNote(
         p: MusicPreset,
         hz: Float,
@@ -1061,6 +1129,22 @@ class ProceduralMusicEngine(
         private const val FADE_OUT_SEC = 1.1f
         private const val TRACK_FADE_OUT_SEC = 0.9f
         private const val TRACK_FADE_IN_SEC = 1.1f
+
+        private val KIT_STYLES = setOf(
+            MusicStyle.JazzPiano,
+            MusicStyle.BarAmbience,
+            MusicStyle.NightLounge,
+            MusicStyle.PianoBallad,
+        )
+
+        private val NO_COUNTER_STYLES = setOf(
+            MusicStyle.ViolinLead,
+            MusicStyle.BassOnly,
+            MusicStyle.Chiptune,
+            MusicStyle.ChipArp,
+            MusicStyle.ArcadeGlow,
+            MusicStyle.TibetanBowl,
+        )
 
         private val PIANO_ROOM_STYLES = setOf(
             MusicStyle.JazzPiano,

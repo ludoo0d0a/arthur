@@ -91,6 +91,18 @@ class MarkovSequencer(
         MusicStyle.RockBallad, MusicStyle.ViolinLead, MusicStyle.HawaiianUkulele,
     )
     private var leadCenter = 5f
+
+    /** Extra note density from the live mood (-0.15..+0.2); set by the engine. */
+    @Volatile var moodDensity: Float = 0f
+
+    private var pendingEighth = -1
+
+    /** Eighth-note position within the bar (0..7) for each new groove eighth, else -1. */
+    fun consumeEighth(): Int {
+        val e = pendingEighth
+        pendingEighth = -1
+        return e
+    }
     private var samplesUntilNextNote = 0
     private var samplesUntilHarmony = 0
     private var samplesUntilBass = 0
@@ -380,7 +392,7 @@ class MarkovSequencer(
             melodicStyle -> 0.72f
             else -> 0.35f
         }
-        val densityBoost = if (atmosphere) preset.density * 0.12f else preset.density * 0.28f
+        val densityBoost = (if (atmosphere) preset.density * 0.12f else preset.density * 0.28f) + moodDensity
         val forceRest = random.nextFloat() > (activityFloor + densityBoost)
         val treatAsRest = when {
             degree == MelodyMotif.REST -> true
@@ -419,6 +431,7 @@ class MarkovSequencer(
             grooveCellCursor = 0
         }
         val cellOnset = pattern.cells[grooveCellCursor++]
+        pendingEighth = Math.floorMod(grooveEighthIndex, 8L).toInt()
         val fire = cellOnset && pickGrooveDegree()
         samplesUntilNextNote = (t.eighthDuration(grooveEighthIndex) - 1).coerceAtLeast(0)
         grooveEighthIndex++
@@ -454,7 +467,7 @@ class MarkovSequencer(
             preset.style in TEXTURE_GROOVE_STYLES -> preset.density * 0.14f
             preset.style in AMBIENT_GROOVE_STYLES -> preset.density * 0.18f
             else -> preset.density * 0.28f
-        }
+        } + moodDensity
         if (random.nextFloat() > (activityFloor + densityBoost)) {
             currentDegree = null
             return false

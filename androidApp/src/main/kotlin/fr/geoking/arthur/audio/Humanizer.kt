@@ -16,6 +16,8 @@ internal class Humanizer(private val rng: Random) {
     fun velocity(base: Float, spread: Float = 0.14f): Float =
         (base * (1f + (rng.nextFloat() * 2f - 1f) * spread)).coerceIn(0.05f, 1f)
 
+    fun chance(p: Float): Boolean = rng.nextFloat() < p
+
     /** Onset delay in samples, 0..[maxMs]; skewed small so most notes stay tight. */
     fun delaySamples(sampleRate: Int, maxMs: Float = 24f): Int {
         val r = rng.nextFloat()

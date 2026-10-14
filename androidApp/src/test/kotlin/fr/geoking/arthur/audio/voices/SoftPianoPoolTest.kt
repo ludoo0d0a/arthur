@@ -60,28 +60,12 @@ class SoftPianoPoolTest {
     }
 
     @Test
-    fun roomBusLpAttenuatesAndReverbAddsTail() {
+    fun roomBusLpPassesLowEnergy() {
         val bus = RoomBus()
-        bus.configure(44_100, reverb = true, wetAmount = 0.2f)
-        // Impulse through LP then room — expect non-zero tail after impulse ends.
+        bus.configure(44_100)
         var lpOut = 0f
         repeat(8) { lpOut = bus.processPianoLp(1f) }
         assertTrue("LP should pass energy, out=$lpOut", abs(lpOut) > 0.1f)
-        var impulseOut = 0f
-        repeat(32) { impulseOut = maxOf(impulseOut, abs(bus.processRoom(1f))) }
-        assertTrue("reverb wet path should be audible, peak=$impulseOut", impulseOut > 0.05f)
-        var tail = 0f
-        repeat(8_000) { i ->
-            if (i > 2_000) tail = maxOf(tail, abs(bus.processRoom(0f)))
-        }
-        assertTrue("short reverb should leave a tail, tail=$tail", tail > 1e-4f)
-    }
-
-    @Test
-    fun roomBusMinimalSkipsReverb() {
-        val bus = RoomBus()
-        bus.configure(44_100, reverb = false, wetAmount = 0.2f)
-        assertEquals(0.5f, bus.processRoom(0.5f), 1e-6f)
     }
 
     @Test

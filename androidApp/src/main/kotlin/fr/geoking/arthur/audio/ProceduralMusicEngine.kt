@@ -8,7 +8,11 @@ import android.media.AudioManager
 import android.media.AudioTrack
 import android.os.Build
 import fr.geoking.arthur.audio.banks.TextureCueKind
+import fr.geoking.arthur.audio.fx.PingPongDelay
+import fr.geoking.arthur.audio.fx.Pan
 import fr.geoking.arthur.audio.fx.RoomBus
+import fr.geoking.arthur.audio.fx.StereoChorus
+import fr.geoking.arthur.audio.fx.StereoReverb
 import fr.geoking.arthur.audio.markov.ArrangementForm
 import fr.geoking.arthur.audio.markov.MarkovSequencer
 import fr.geoking.arthur.audio.markov.OrnamentKind
@@ -114,6 +118,7 @@ class ProceduralMusicEngine(
 
     private val sessionSalt = System.nanoTime()
     private val pulseRng = Random(sessionSalt)
+    private val humanizer = Humanizer(Random(sessionSalt xor 0x5EEDL))
 
     private var sequencer: MarkovSequencer? = null
     private var form: ArrangementForm? = null
@@ -140,6 +145,19 @@ class ProceduralMusicEngine(
     private val squareLead = SquareLeadVoice(duty = 0.35f)
     private val chipPulse = SquareLeadVoice(duty = 0.18f, decayPerSec = 9.0)
     private val roomBus = RoomBus()
+    private val reverb = StereoReverb()
+    private val padChorus = StereoChorus()
+    private val pingPong = PingPongDelay()
+    private val texDelay = FloatArray(1024)
+    private var texDelayIdx = 0
+    private val panPiano = Pan(0.12f)
+    private val panGuitar = Pan(-0.25f)
+    private val panKalimba = Pan(0.3f)
+    private val panBowed = Pan(0.1f)
+    private val panSquare = Pan(-0.2f)
+    private val panChip = Pan(0.2f)
+    private val panChime = Pan(0.35f)
+    private val panPadB = Pan(0.3f)
 
     private val cpuLoad = CpuLoadTracker()
 
@@ -388,7 +406,7 @@ class ProceduralMusicEngine(
         var encoding = AudioFormat.ENCODING_PCM_FLOAT
         var minBuf = AudioTrack.getMinBufferSize(
             sampleRate,
-            AudioFormat.CHANNEL_OUT_MONO,
+            AudioFormat.CHANNEL_OUT_STEREO,
             encoding,
         )
         if (minBuf <= 0) {
@@ -396,16 +414,16 @@ class ProceduralMusicEngine(
             encoding = AudioFormat.ENCODING_PCM_16BIT
             minBuf = AudioTrack.getMinBufferSize(
                 sampleRate,
-                AudioFormat.CHANNEL_OUT_MONO,
+                AudioFormat.CHANNEL_OUT_STEREO,
                 encoding,
             )
         }
-        bufferSizeBytes = minBuf.coerceAtLeast(if (useFloatPcm) 8192 else 4096)
+        bufferSizeBytes = minBuf.coerceAtLeast(if (useFloatPcm) 16384 else 8192)
 
         val audioFormat = AudioFormat.Builder()
             .setSampleRate(sampleRate)
             .setEncoding(encoding)
-            .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+            .setChannelMask(AudioFormat.CHANNEL_OUT_STEREO)
             .build()
         val builder = AudioTrack.Builder()
             .setAudioAttributes(audioAttributes)
@@ -463,6 +481,7 @@ class ProceduralMusicEngine(
 
     private fun releaseLeadVoices() {
         // Soft-release event voices; pads glide to the new chord instead of cutting.
+        humanizer.clear()
         softPiano.noteOff()
         wavePiano.noteOff()
         guitar.noteOff()
@@ -474,8 +493,9 @@ class ProceduralMusicEngine(
     private suspend fun renderAudioLoop() = coroutineScope {
         val chunk = 2048
         // Ping-pong buffers: render into one while the previous is written.
-        val floatBufs = arrayOf(FloatArray(chunk), FloatArray(chunk))
-        val shortBufs = arrayOf(ShortArray(chunk), ShortArray(chunk))
+        // Interleaved stereo: 2 samples per frame.
+        val floatBufs = arrayOf(FloatArray(chunk * 2), FloatArray(chunk * 2))
+        val shortBufs = arrayOf(ShortArray(chunk * 2), ShortArray(chunk * 2))
         var sampleIndex = 0L
         var pulseClock = 0
         var bufIdx = 0
@@ -547,15 +567,13 @@ class ProceduralMusicEngine(
                 val root = activePreset.rootHz
                 waves.setRootHz(root)
                 wind.setRootHz(root)
-                roomBus.configure(
-                    sampleRate = sr,
-                    reverb = pianoRoomStyle && quality != SynthQuality.Minimal,
-                    wetAmount = when (quality) {
-                        SynthQuality.Full -> 0.16f
-                        SynthQuality.Reduced -> 0.11f
-                        SynthQuality.Minimal -> 0f
-                    },
-                )
+                roomBus.configure(sr)
+                val reverbWet = reverbWetFor(activePreset.style, quality)
+                reverb.configure(sr, roomSizeFor(activePreset.style), 0.35f)
+                val fullFx = quality == SynthQuality.Full
+                padChorus.configure(sr)
+                val delaySend = if (fullFx && !atmosphere) 0.16f else 0f
+                pingPong.configure(sr, (60f / activePreset.tempoBpm) * 0.75f)
                 val vol = masterVolume
                 val samplesPerPulse = if (pulseGain > 0.05f) {
                     (60.0 / activePreset.tempoBpm * sr).toInt().coerceAtLeast(1)
@@ -582,7 +600,7 @@ class ProceduralMusicEngine(
                 val renderIdx = if (!prefilled) 0 else 1 - bufIdx
                 val writeJob = if (prefilled) {
                     async(Dispatchers.IO) {
-                        writePcm(track, floatBufs[bufIdx], shortBufs[bufIdx], chunk)
+                        writePcm(track, floatBufs[bufIdx], shortBufs[bufIdx], chunk * 2)
                     }
                 } else {
                     null
@@ -608,6 +626,7 @@ class ProceduralMusicEngine(
                             melWait,
                             bassWait,
                             harmWait,
+                            humanizer.samplesUntilNext(sampleIndex),
                             samplesPerPulse - pulseClock,
                             if (crossfadePhase != CrossfadePhase.Idle) {
                                 crossfadeSamples.coerceAtLeast(1)
@@ -641,25 +660,29 @@ class ProceduralMusicEngine(
                         if (seq.harmonyChanged) {
                             applyBedVoices(activePreset, seq, atmosphere, quality)
                         }
+                        humanizer.tick(sampleIndex)
                         if (seq.tickMelody(sr)) {
-                            fireMelodyNote(activePreset, seq, atmosphere, quality)
-                            if (allowOrnaments) {
-                                when (seq.nextOrnament()) {
-                                    OrnamentKind.Grace ->
-                                        seq.currentMelodyHz?.let {
+                            val hz = seq.currentMelodyHz
+                            if (hz != null) {
+                                val ornament = if (allowOrnaments) seq.nextOrnament() else OrnamentKind.None
+                                val preset = activePreset
+                                humanizer.schedule(sampleIndex, humanizer.delaySamples(sr)) {
+                                    fireMelodyNote(preset, hz, atmosphere, quality)
+                                    when (ornament) {
+                                        OrnamentKind.Grace -> {
                                             // Soft fifth above, still under the melody ceiling.
-                                            val grace = (it * 1.5f)
+                                            val grace = (hz * 1.5f)
                                                 .coerceAtMost(MarkovSequencer.MELODY_MAX_HZ)
-                                            chimes.noteOn(grace, 0.22f)
+                                            chimes.noteOn(grace, humanizer.velocity(0.22f))
                                         }
-                                    OrnamentKind.Roll ->
-                                        seq.currentMelodyHz?.let { kalimba.noteOn(it, 0.35f) }
-                                    OrnamentKind.DoubleStrike -> seq.currentMelodyHz?.let {
-                                        leadPiano(quality).noteOn(it, 0.30f)
-                                        // Same register echo — avoid octave-up chime glare.
-                                        chimes.noteOn(it, 0.16f)
+                                        OrnamentKind.Roll -> kalimba.noteOn(hz, humanizer.velocity(0.35f))
+                                        OrnamentKind.DoubleStrike -> {
+                                            leadPiano(quality).noteOn(hz, humanizer.velocity(0.30f))
+                                            // Same register echo — avoid octave-up chime glare.
+                                            chimes.noteOn(hz, humanizer.velocity(0.16f))
+                                        }
+                                        OrnamentKind.None -> Unit
                                     }
-                                    OrnamentKind.None -> Unit
                                 }
                             }
                         }
@@ -667,7 +690,7 @@ class ProceduralMusicEngine(
                         if (seq.tickBass(sr) && bassAudibleStem) {
                             seq.currentBassFrequencyHz?.let { hz ->
                                 val vel = if (atmosphere) 0.35f else 0.55f
-                                bass.noteOn(hz, vel * bassGain.coerceAtMost(1f))
+                                bass.noteOn(hz, humanizer.velocity(vel, 0.10f) * bassGain.coerceAtMost(1f))
                             }
                         }
                         if (pulseAudibleStem) {
@@ -691,23 +714,38 @@ class ProceduralMusicEngine(
                         pulseClock++
                     }
 
-                    var mixed = 0f
+                    var dl = 0f
+                    var dr = 0f
+                    var leadSend = 0f
 
                     // Single pad for Melody/Balanced; dual only for Atmosphere Full.
+                    var padMono = 0f
                     if (padGain > 0.02f) {
-                        mixed += padA.render(sampleIndex, sr) * padGain
+                        padMono = padA.render(sampleIndex, sr) * padGain
                     } else {
                         padA.render(sampleIndex, sr)
                     }
+                    if (fullFx || quality == SynthQuality.Reduced) {
+                        padChorus.process(padMono)
+                        dl += padChorus.outL
+                        dr += padChorus.outR
+                    } else {
+                        dl += padMono
+                        dr += padMono
+                    }
                     if (useDualPad && harmonyGain > 0.02f) {
-                        mixed += padB.render(sampleIndex, sr) * harmonyGain
+                        val pb = padB.render(sampleIndex, sr) * harmonyGain
+                        dl += pb * panPadB.l
+                        dr += pb * panPadB.r
                     } else {
                         // Keep padB warm cheaply only when dual-pad may return.
                         if (atmosphere) padB.render(sampleIndex, sr)
                     }
 
                     if (bassAudibleStem && bass.isAudible()) {
-                        mixed += bass.render(sampleIndex, sr) * bassGain
+                        val b = bass.render(sampleIndex, sr) * bassGain
+                        dl += b
+                        dr += b
                     }
 
                     val leadMul = melodyGain * arrangement.melodyMul
@@ -719,24 +757,28 @@ class ProceduralMusicEngine(
                         if (pianoRoomStyle) {
                             pianoSample = roomBus.processPianoLp(pianoSample)
                         }
-                        mixed += pianoSample
+                        dl += pianoSample * panPiano.l
+                        dr += pianoSample * panPiano.r
+                        leadSend += pianoSample
                     }
                     if (pianoAudible &&
                         (guitar.isAudible() || kalimba.isAudible() || bowed.isAudible())
                     ) {
-                        mixed += (
-                            guitar.render(sampleIndex, sr) +
-                                kalimba.render(sampleIndex, sr) +
-                                bowed.render(sampleIndex, sr)
-                            ) * leadMul
+                        val g = guitar.render(sampleIndex, sr) * leadMul
+                        val kl = kalimba.render(sampleIndex, sr) * leadMul
+                        val bw = bowed.render(sampleIndex, sr) * leadMul
+                        dl += g * panGuitar.l + kl * panKalimba.l + bw * panBowed.l
+                        dr += g * panGuitar.r + kl * panKalimba.r + bw * panBowed.r
+                        leadSend += g + kl + bw
                     } else if (bowed.isAudible()) {
                         bowed.render(sampleIndex, sr)
                     }
                     if (pianoAudible && (squareLead.isAudible() || chipPulse.isAudible())) {
-                        mixed += (
-                            squareLead.render(sampleIndex, sr) +
-                                chipPulse.render(sampleIndex, sr)
-                            ) * leadMul
+                        val sq = squareLead.render(sampleIndex, sr) * leadMul
+                        val cp = chipPulse.render(sampleIndex, sr) * leadMul
+                        dl += sq * panSquare.l + cp * panChip.l
+                        dr += sq * panSquare.r + cp * panChip.r
+                        leadSend += sq + cp
                     } else {
                         if (squareLead.isAudible()) squareLead.render(sampleIndex, sr)
                         if (chipPulse.isAudible()) chipPulse.render(sampleIndex, sr)
@@ -745,7 +787,7 @@ class ProceduralMusicEngine(
                     if (textureKind != TextureKind.None) {
                         val texMul = textureGain * arrangement.textureMul
                         if (textureKind == TextureKind.Birds) birds.tickTexture(sr)
-                        mixed += when (textureKind) {
+                        val tex = when (textureKind) {
                             TextureKind.Waves -> waves.render(sampleIndex, sr) * texMul
                             TextureKind.Wind -> wind.render(sampleIndex, sr) * texMul
                             TextureKind.Rain -> rain.render(sampleIndex, sr) * texMul
@@ -753,22 +795,35 @@ class ProceduralMusicEngine(
                             TextureKind.Birds -> birds.render(sampleIndex, sr) * texMul
                             TextureKind.None -> 0f
                         }
+                        // Decorrelate right channel (~12 ms) so noise textures sound wide.
+                        val tdLen = texDelay.size
+                        texDelay[texDelayIdx] = tex
+                        val tdOff = (0.012f * sr).toInt().coerceIn(1, tdLen - 1)
+                        val delayed = texDelay[Math.floorMod(texDelayIdx - tdOff, tdLen)]
+                        texDelayIdx = if (texDelayIdx + 1 >= tdLen) 0 else texDelayIdx + 1
+                        dl += tex
+                        dr += delayed
                     }
 
                     if (bowlBed && bowl.isAudible()) {
-                        mixed += bowl.render(sampleIndex, sr) * bedGain * 0.45f
+                        val bb = bowl.render(sampleIndex, sr) * bedGain * 0.45f
+                        dl += bb
+                        dr += bb
                     }
 
                     if (pulseAudibleStem && pulse.isAudible()) {
-                        mixed += pulse.render(sampleIndex, sr) * pulseGain
+                        val pu = pulse.render(sampleIndex, sr) * pulseGain
+                        dl += pu
+                        dr += pu
                     }
 
                     if (transAudibleStem) {
                         if (chimes.isAudible() || bowl.isAudible()) {
-                            mixed += (
-                                chimes.render(sampleIndex, sr) +
-                                    bowl.render(sampleIndex, sr) * 0.25f
-                                ) * transitionGain
+                            val ch = chimes.render(sampleIndex, sr) * transitionGain
+                            val bt = bowl.render(sampleIndex, sr) * 0.25f * transitionGain
+                            dl += ch * panChime.l + bt
+                            dr += ch * panChime.r + bt
+                            leadSend += ch * 0.5f
                         }
                     } else if (chimes.isAudible()) {
                         chimes.render(sampleIndex, sr)
@@ -778,11 +833,14 @@ class ProceduralMusicEngine(
                         val t = 1f - crossfadeSamples.toFloat() / crossfadeTotal.toFloat()
                         val shaped =
                             (0.5f - 0.5f * kotlin.math.cos(Math.PI.toFloat() * t)).coerceIn(0f, 1f)
-                        mixed *= when (crossfadePhase) {
+                        val xf = when (crossfadePhase) {
                             CrossfadePhase.Out -> 1f - shaped
                             CrossfadePhase.In -> shaped
                             CrossfadePhase.Idle -> 1f
                         }
+                        dl *= xf
+                        dr *= xf
+                        leadSend *= xf
                         crossfadeSamples--
                         // Out→swap is handled at the top of the outer loop when samples hit 0.
                         if (crossfadePhase == CrossfadePhase.In && crossfadeSamples == 0) {
@@ -792,16 +850,28 @@ class ProceduralMusicEngine(
 
                     advanceDuck()
                     val env = envelopeGain()
-                    if (pianoRoomStyle) {
-                        mixed = roomBus.processRoom(mixed)
+
+                    if (delaySend > 0f) {
+                        pingPong.process(leadSend * delaySend)
+                        dl += pingPong.outL
+                        dr += pingPong.outR
                     }
-                    mixed = softLimit(mixed * duckGain() * vol * env)
+                    if (reverbWet > 0f) {
+                        reverb.process((dl + dr) * 0.5f)
+                        dl += reverb.outL * reverbWet
+                        dr += reverb.outR * reverbWet
+                    }
+                    val outGain = duckGain() * vol * env
+                    val outL = softLimit(dl * outGain)
+                    val outR = softLimit(dr * outGain)
                     advanceEnvelope()
 
                     if (useFloatPcm) {
-                        floatBufs[renderIdx][i] = mixed
+                        floatBufs[renderIdx][i * 2] = outL
+                        floatBufs[renderIdx][i * 2 + 1] = outR
                     } else {
-                        shortBufs[renderIdx][i] = (mixed * 32767f).toInt().toShort()
+                        shortBufs[renderIdx][i * 2] = (outL * 32767f).toInt().toShort()
+                        shortBufs[renderIdx][i * 2 + 1] = (outR * 32767f).toInt().toShort()
                     }
                     i++
                     k++
@@ -912,18 +982,17 @@ class ProceduralMusicEngine(
         }.distinct().take(if (quality == SynthQuality.Minimal) 2 else 3)
         val pianoVoice = leadPiano(quality)
         shell.forEachIndexed { i, hz ->
-            pianoVoice.noteOn(hz, (0.32f - i * 0.04f).coerceAtLeast(0.18f))
+            pianoVoice.noteOn(hz, humanizer.velocity((0.32f - i * 0.04f).coerceAtLeast(0.18f)))
         }
     }
 
     private fun fireMelodyNote(
         p: MusicPreset,
-        seq: MarkovSequencer,
+        hz: Float,
         atmosphere: Boolean,
         quality: SynthQuality = SynthQuality.Full,
     ) {
-        val hz = seq.currentMelodyHz ?: return
-        val vel = if (atmosphere) 0.32f else 0.55f
+        val vel = humanizer.velocity(if (atmosphere) 0.32f else 0.55f)
         val pianoVoice = leadPiano(quality)
         when (p.style) {
             MusicStyle.JazzPiano, MusicStyle.BarAmbience, MusicStyle.NightLounge,
@@ -986,6 +1055,37 @@ class ProceduralMusicEngine(
             MusicStyle.BarAmbience,
             MusicStyle.NightLounge,
         )
+
+        /** Reverb send per style; Reduced trims it, Minimal keeps a light tail. */
+        internal fun reverbWetFor(style: MusicStyle, quality: SynthQuality): Float {
+            val base = when (style) {
+                MusicStyle.JazzPiano, MusicStyle.BarAmbience, MusicStyle.NightLounge,
+                MusicStyle.ClassicalPiano, MusicStyle.PianoBallad, MusicStyle.Zen,
+                -> 0.22f
+                MusicStyle.TibetanBowl, MusicStyle.CosmicDrone, MusicStyle.OrchestraPads,
+                MusicStyle.OrchestraSwell, MusicStyle.WindChimes,
+                -> 0.42f
+                MusicStyle.SoftGuitar, MusicStyle.RockBallad, MusicStyle.HawaiianUkulele,
+                MusicStyle.ViolinLead,
+                -> 0.26f
+                MusicStyle.Chiptune, MusicStyle.ChipArp, MusicStyle.ArcadeGlow -> 0.08f
+                else -> 0.2f
+            }
+            return when (quality) {
+                SynthQuality.Full -> base
+                SynthQuality.Reduced -> base * 0.8f
+                SynthQuality.Minimal -> base * 0.5f
+            }
+        }
+
+        internal fun roomSizeFor(style: MusicStyle): Float = when (style) {
+            MusicStyle.TibetanBowl, MusicStyle.CosmicDrone, MusicStyle.OrchestraPads,
+            MusicStyle.OrchestraSwell,
+            -> 0.8f
+            MusicStyle.Chiptune, MusicStyle.ChipArp, MusicStyle.ArcadeGlow -> 0.25f
+            MusicStyle.JazzPiano, MusicStyle.BarAmbience -> 0.4f
+            else -> 0.55f
+        }
 
         internal fun isPianoRoomStyle(style: MusicStyle): Boolean = style in PIANO_ROOM_STYLES
 

@@ -15,7 +15,13 @@ import androidx.annotation.RequiresApi
  */
 object FractalAgslShaders {
 
-    /** Unified escape-time fractal shader. Uses float (not half) for edge precision. */
+    /**
+     * Unified escape-time fractal shader. Uses float (not half) for edge precision.
+     *
+     * Loop bound is capped at 256 — SkSL counts worst-case instructions as
+     * iterations × body size; 512 blew past "program is too large" on device.
+     * App quality only requests up to 240 iters. Newton is CPU-only (see canvas).
+     */
     const val ESCAPE_TIME_AGSL = """
         uniform float2 iResolution;
         uniform float2 iCenter;
@@ -59,64 +65,44 @@ object FractalAgslShaders {
             float zi = 0.0;
             float pr = 0.0;
             float pi = 0.0;
-            float power = 2.0;
             int kind = int(iType + 0.5);
 
-            // Julia / Phoenix / Newton seed z0 from pixel; others seed c from pixel
-            if (kind == 1 || kind == 7 || kind == 9) {
+            // Julia / Phoenix seed z0 from pixel; others seed c from pixel.
+            // Newton (kind 9) is CPU-only — its loop body blew AGSL size limits.
+            if (kind == 1 || kind == 7) {
                 zr = cr;
                 zi = ci;
                 if (kind == 1) {
                     cr = iJuliaC.x;
                     ci = iJuliaC.y;
-                } else if (kind == 7) {
+                } else {
                     cr = 0.5667;
                     ci = -0.5;
                 }
             }
 
-            float continuous = -1.0;
-            float maxIter = min(iMaxIter, 512.0);
+            // Power is constant per type — keep it out of the hot loop body.
+            float power = 2.0;
+            if (kind == 4) power = 3.0;
+            else if (kind == 8) power = 4.0;
 
-            for (int n = 0; n < 512; n++) {
-                if (float(n) >= maxIter) break;
+            float continuous = -1.0;
+            float maxIter = min(iMaxIter, 256.0);
+
+            for (float n = 0.0; n < 256.0; n++) {
+                if (n >= maxIter) break;
                 float zr2 = zr * zr;
                 float zi2 = zi * zi;
 
-                if (kind == 9) {
-                    // Newton for z^3 - 1 = 0:  z := (2/3)z + 1/(3 z^2)
-                    float z2r = zr2 - zi2;
-                    float z2i = 2.0 * zr * zi;
-                    float invDen = 1.0 / max(z2r * z2r + z2i * z2i, 1e-12);
-                    float invR = z2r * invDen;
-                    float invI = -z2i * invDen;
-                    float nextZr = (2.0 / 3.0) * zr + (1.0 / 3.0) * invR;
-                    float nextZi = (2.0 / 3.0) * zi + (1.0 / 3.0) * invI;
-                    float dr = nextZr - zr;
-                    float di = nextZi - zi;
-                    zr = nextZr;
-                    zi = nextZi;
-                    if (dr * dr + di * di < 1e-10) {
-                        float angle = atan(zi, zr);
-                        continuous = (angle / 6.2831853 + 0.5 + float(n) * 0.002) * maxIter * 0.15;
-                        break;
-                    }
-                    continue;
-                }
-
                 if (zr2 + zi2 > 4.0) {
-                    continuous = smoothEscape(float(n), zr2, zi2, power);
+                    continuous = smoothEscape(n, zr2, zi2, power);
                     break;
                 }
 
                 float nextZr;
                 float nextZi;
-                if (kind == 0) {
-                    // Mandelbrot
-                    nextZi = 2.0 * zr * zi + ci;
-                    nextZr = zr2 - zi2 + cr;
-                } else if (kind == 1) {
-                    // Julia
+                // Mandelbrot (0) and Julia (1) share z² + c
+                if (kind <= 1) {
                     nextZi = 2.0 * zr * zi + ci;
                     nextZr = zr2 - zi2 + cr;
                 } else if (kind == 2) {
@@ -129,7 +115,6 @@ object FractalAgslShaders {
                     nextZi = -2.0 * zr * zi + ci;
                 } else if (kind == 4) {
                     // Multibrot z^3 + c
-                    power = 3.0;
                     nextZr = zr * (zr2 - 3.0 * zi2) + cr;
                     nextZi = zi * (3.0 * zr2 - zi2) + ci;
                 } else if (kind == 5) {
@@ -148,7 +133,6 @@ object FractalAgslShaders {
                     pi = zi;
                 } else if (kind == 8) {
                     // Nova — quartic multibrot z^4 + c
-                    power = 4.0;
                     float z3r = zr * (zr2 - 3.0 * zi2);
                     float z3i = zi * (3.0 * zr2 - zi2);
                     nextZr = z3r * zr - z3i * zi + cr;
@@ -180,6 +164,17 @@ object FractalAgslShaders {
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     fun createEscapeShader(): RuntimeShader = RuntimeShader(ESCAPE_TIME_AGSL)
+
+    /**
+     * Creates the unified escape shader, or null if SkSL rejects it
+     * (e.g. "program is too large" on some GPU/driver stacks).
+     */
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    fun createEscapeShaderOrNull(): RuntimeShader? = try {
+        RuntimeShader(ESCAPE_TIME_AGSL)
+    } catch (_: IllegalArgumentException) {
+        null
+    }
 
     /**
      * Mandelbrot AGSL from [tbahlai/agsl](https://github.com/tbahlai/agsl) MandelbrotScreen —

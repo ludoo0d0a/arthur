@@ -1,6 +1,7 @@
 package fr.geoking.arthur.fractal
 
 import android.graphics.Bitmap
+import android.graphics.RuntimeShader
 import android.os.Build
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -220,8 +221,24 @@ fun FractalEffectCanvas(
         Modifier
     }
 
-    if (FractalAgslShaders.supportsAgsl() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+    // Newton stays on CPU: its AGSL loop body pushed past SkSL program-size limits.
+    val useEscapeAgsl = fractalType != FractalType.Newton
+    val escapeShader = remember {
+        if (FractalAgslShaders.supportsAgsl() &&
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+        ) {
+            FractalAgslShaders.createEscapeShaderOrNull()
+        } else {
+            null
+        }
+    }
+
+    if (useEscapeAgsl &&
+        escapeShader != null &&
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+    ) {
         FractalAgslCanvas(
+            shader = escapeShader,
             fractalType = fractalType,
             zoom = zoom,
             phase = phase,
@@ -251,6 +268,7 @@ fun FractalEffectCanvas(
 
 @Composable
 private fun FractalAgslCanvas(
+    shader: RuntimeShader,
     fractalType: FractalType,
     zoom: Float,
     phase: Float,
@@ -263,7 +281,6 @@ private fun FractalAgslCanvas(
 ) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
 
-    val shader = remember { FractalAgslShaders.createEscapeShader() }
     val stops = remember(colorSeed) { FractalCoherentPalette.fourStops(colorSeed) }
     val maxIter = when (quality) {
         FractalQuality.Low -> 120f

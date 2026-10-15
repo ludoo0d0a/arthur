@@ -25,7 +25,15 @@ import fr.geoking.arthur.ui.components.PackGrid
 import fr.geoking.arthur.ui.components.PackSelection
 import fr.geoking.arthur.ui.components.PackTile
 import fr.geoking.arthur.ui.components.homeTile
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import fr.geoking.arthur.ui.components.GenartListItem
+import fr.geoking.arthur.ui.components.GenartTopic
+import fr.geoking.arthur.ui.components.GenartTopicFilterRow
+import fr.geoking.arthur.ui.components.genartTopicOrNull
 import fr.geoking.arthur.ui.components.opensSoundPlayer
+import fr.geoking.arthur.ui.components.resolvePackPool
 import fr.geoking.arthur.ui.components.subPackTiles
 
 /**
@@ -40,6 +48,7 @@ fun TvControlPlaneContent(
     onSelectSubPack: (PackSelection) -> Unit,
     onBackToHome: () -> Unit,
     onStartAmbient: () -> Unit,
+    onStartAmbientArtwork: (Artwork) -> Unit = {},
     modifier: Modifier = Modifier,
     catalog: List<Artwork> = emptyList(),
     onOpenSettings: (() -> Unit)? = null,
@@ -107,6 +116,39 @@ fun TvControlPlaneContent(
                     firstTileFocusRequester = firstTileFocus,
                     selectedTileFocusRequester = selectedTileFocus,
                 )
+            } else if (openedFamily == PackFamily.Genart) {
+                Text(
+                    text = stringResource(openedFamily.titleRes),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = scheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+                val activeTopic = selection.genartTopicOrNull() ?: GenartTopic.All
+                GenartTopicFilterRow(
+                    genartTopic = activeTopic,
+                    onGenartTopicChange = { topic ->
+                        onSelectSubPack(PackSelection(PackFamily.Genart, topic.testTagSuffix))
+                    },
+                    contentPadding = PaddingValues(bottom = 8.dp),
+                )
+
+                val genarts = remember(catalog, selection) { resolvePackPool(catalog, selection) }
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .testTag("genart_all_list"),
+                    contentPadding = PaddingValues(bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    items(genarts, key = { it.id }) { artwork ->
+                        GenartListItem(
+                            artwork = artwork,
+                            selected = false,
+                            onClick = { onStartAmbientArtwork(artwork) },
+                        )
+                    }
+                }
             } else {
                 Text(
                     text = stringResource(openedFamily.titleRes),

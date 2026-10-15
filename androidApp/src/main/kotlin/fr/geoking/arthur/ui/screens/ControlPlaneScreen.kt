@@ -80,7 +80,8 @@ import fr.geoking.arthur.source.ScreensaverSettings
 import fr.geoking.arthur.source.StillImagePrefetcher
 import fr.geoking.arthur.source.StockPhotoSettings
 import fr.geoking.arthur.source.rememberArtworkImageCache
-import fr.geoking.arthur.ui.components.ArtworkCard
+import fr.geoking.arthur.ui.components.GenartListItem
+import fr.geoking.arthur.ui.components.GenartTopicFilterRow
 import fr.geoking.arthur.ui.components.ControlPlaneHeader
 import org.koin.core.context.GlobalContext
 import fr.geoking.arthur.ui.components.GenartTopic
@@ -462,6 +463,7 @@ fun ControlPlaneContent(
                 onSelectSubPack = onSelectSubPack,
                 onBackToHome = onBackToHome,
                 onStartAmbient = onStartAmbient,
+                onStartAmbientArtwork = onStartAmbientArtwork,
                 modifier = Modifier.fillMaxSize(),
                 catalog = catalog,
                 onOpenSettings = onOpenSettings,
@@ -604,6 +606,8 @@ private fun PhoneControlPlaneContent(
                     ),
                 )
             } else {
+                val isGenartFamily = openedFamily == PackFamily.Genart
+
                 if (onCreateCustomFractal != null && selection.isGenartCustom()) {
                     TextButton(
                         onClick = onCreateCustomFractal,
@@ -614,34 +618,16 @@ private fun PhoneControlPlaneContent(
                         Text(stringResource(R.string.custom_fractal_create))
                     }
                 }
-                val isGenartFamily = openedFamily == PackFamily.Genart
-
-                PackGrid(
-                    tiles = openedFamily.subPackTiles(catalog),
-                    selected = selection,
-                    onTileClick = { tile: PackTile ->
-                        if (tile.isLocked(packOwnership)) {
-                            onOpenMarketplace?.invoke(tile.sellablePackId)
-                        } else if (tile.selection.opensSoundPlayer()) {
-                            onSelectSubPack(tile.selection)
-                        } else if (tile.selection == selection) {
-                            onStartAmbient()
-                        } else {
-                            onSelectSubPack(tile.selection)
-                        }
-                    },
-                    isLocked = { it.isLocked(packOwnership) },
-                    startingSelection = startingSelection,
-                    modifier = Modifier.weight(if (isGenartFamily) 0.38f else 1f),
-                    contentPadding = PaddingValues(
-                        start = 20.dp,
-                        end = 20.dp,
-                        top = 8.dp,
-                        bottom = if (isGenartFamily) 8.dp else 24.dp,
-                    ),
-                )
 
                 if (isGenartFamily) {
+                    val activeTopic = selection.genartTopicOrNull() ?: GenartTopic.All
+                    GenartTopicFilterRow(
+                        genartTopic = activeTopic,
+                        onGenartTopicChange = { topic ->
+                            onSelectSubPack(PackSelection(PackFamily.Genart, topic.testTagSuffix))
+                        },
+                    )
+
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
@@ -684,20 +670,45 @@ private fun PhoneControlPlaneContent(
 
                     LazyColumn(
                         modifier = Modifier
-                            .weight(0.62f)
+                            .weight(1f)
                             .fillMaxWidth()
                             .testTag("genart_all_list"),
                         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         items(filteredGenarts, key = { it.id }) { artwork ->
-                            ArtworkCard(
+                            GenartListItem(
                                 artwork = artwork,
                                 selected = false,
                                 onClick = { onStartAmbientArtwork(artwork) },
                             )
                         }
                     }
+                } else {
+                    PackGrid(
+                        tiles = openedFamily.subPackTiles(catalog),
+                        selected = selection,
+                        onTileClick = { tile: PackTile ->
+                            if (tile.isLocked(packOwnership)) {
+                                onOpenMarketplace?.invoke(tile.sellablePackId)
+                            } else if (tile.selection.opensSoundPlayer()) {
+                                onSelectSubPack(tile.selection)
+                            } else if (tile.selection == selection) {
+                                onStartAmbient()
+                            } else {
+                                onSelectSubPack(tile.selection)
+                            }
+                        },
+                        isLocked = { it.isLocked(packOwnership) },
+                        startingSelection = startingSelection,
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(
+                            start = 20.dp,
+                            end = 20.dp,
+                            top = 8.dp,
+                            bottom = 24.dp,
+                        ),
+                    )
                 }
             }
         }

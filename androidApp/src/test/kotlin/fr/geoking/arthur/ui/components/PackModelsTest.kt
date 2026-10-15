@@ -346,6 +346,30 @@ class PackModelsTest {
     }
 
     @Test
+    fun sortedByGenartNumber_ordersByLeadingNumber() {
+        val unorganized = listOf(
+            Artwork(id = "150", title = "#150 - Milky Way Galaxy", sourceId = "genart", kind = ArtworkKind.Genart),
+            Artwork(id = "2", title = "#2 - Wire Lattice", sourceId = "genart", kind = ArtworkKind.Genart),
+            Artwork(id = "10", title = "#10 - Grass in Wind", sourceId = "genart", kind = ArtworkKind.Genart),
+            Artwork(id = "1", title = "#1 - Drifting Particles", sourceId = "genart", kind = ArtworkKind.Genart),
+        )
+        val sorted = unorganized.sortedByGenartNumber()
+        assertEquals(listOf("#1 - Drifting Particles", "#2 - Wire Lattice", "#10 - Grass in Wind", "#150 - Milky Way Galaxy"), sorted.map { art -> art.title })
+    }
+
+    @Test
+    fun sampleRotationPool_sequentialRotatedOrder_whenSeedProvided() {
+        val genartList = (1..5).map { i ->
+            Artwork(id = "art-$i", title = "#$i - Item $i", sourceId = "genart", kind = ArtworkKind.Genart)
+        }
+        val sampled = fr.geoking.arthur.auto.AmbientAlbumArt.sampleRotationPool(
+            pool = genartList,
+            seed = genartList[2], // art-3 (#3)
+        )
+        assertEquals(listOf("art-3", "art-4", "art-5", "art-1", "art-2"), sampled.map { it.id })
+    }
+
+    @Test
     fun isGenartCustom() {
         assertTrue(
             PackSelection(PackFamily.Genart, GenartTopic.Custom.testTagSuffix).isGenartCustom(),

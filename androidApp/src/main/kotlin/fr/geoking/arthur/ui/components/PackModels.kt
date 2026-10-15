@@ -79,6 +79,24 @@ data class PackTile(
 }
 
 /** Genart sub-pack order for the grid ([GenartTopic.All] leads). */
+private val genartNumberRegex = Regex("^#(\\d+)")
+
+fun List<Artwork>.sortedByGenartNumber(): List<Artwork> = sortedWith(
+    Comparator { a, b ->
+        val numA = genartNumberRegex.find(a.title.trim())?.groupValues?.get(1)?.toIntOrNull()
+        val numB = genartNumberRegex.find(b.title.trim())?.groupValues?.get(1)?.toIntOrNull()
+        if (numA != null && numB != null) {
+            numA.compareTo(numB)
+        } else if (numA != null) {
+            -1
+        } else if (numB != null) {
+            1
+        } else {
+            0
+        }
+    },
+)
+
 private val GenartSubTopics = listOf(
     GenartTopic.All,
     GenartTopic.Random,
@@ -324,7 +342,7 @@ fun resolvePackPool(catalog: List<Artwork>, selection: PackSelection): List<Artw
             catalog.filterByCategoryAndSources(
                 category = CategoryFilter.GENART,
                 genartTopic = topic,
-            )
+            ).sortedByGenartNumber()
         }
         PackFamily.VintageGames -> catalog.filterByCategoryAndSources(
             category = CategoryFilter.GENART,
@@ -381,7 +399,7 @@ fun resolvePackPool(catalog: List<Artwork>, selection: PackSelection): List<Artw
         PackFamily.Personal -> true
         PackFamily.Sound -> true
         PackFamily.VintageGames -> true
-        PackFamily.Genart -> (selection.genartTopicOrNull() ?: GenartTopic.Random) == GenartTopic.Random
+        PackFamily.Genart -> false
         PackFamily.Photo ->
             selection.photoSourceOrNull() != null ||
                 (selection.stockCategoryOrNull() ?: StockPhotoCategory.Random) == StockPhotoCategory.Random

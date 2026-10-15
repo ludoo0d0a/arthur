@@ -462,11 +462,11 @@ fun ContextualSubFilterRow(
 }
 
 @Composable
-private fun GenartTopicFilterRow(
+fun GenartTopicFilterRow(
     genartTopic: GenartTopic,
     onGenartTopicChange: (GenartTopic) -> Unit,
-    contentPadding: PaddingValues,
-    horizontalSpacing: Dp,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 20.dp),
+    horizontalSpacing: Dp = 8.dp,
 ) {
     LazyRow(
         modifier = Modifier

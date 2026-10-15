@@ -51,10 +51,17 @@ object AmbientAlbumArt {
         val ordered = ArrayList<Artwork>(effectiveMaxSize.coerceAtMost(pool.size))
         val seedInPool = seed?.takeIf { candidate -> pool.any { it.id == candidate.id } }
         if (seedInPool != null) {
-            ordered.add(seedInPool)
-        } else {
-            (preferred.firstOrNull() ?: others.firstOrNull())?.let { ordered.add(it) }
+            val seedIndex = pool.indexOfFirst { it.id == seedInPool.id }
+            if (seedIndex >= 0) {
+                val rotated = pool.subList(seedIndex, pool.size) + pool.subList(0, seedIndex)
+                for (art in rotated) {
+                    if (ordered.size >= effectiveMaxSize) break
+                    if (ordered.none { it.id == art.id }) ordered.add(art)
+                }
+                return ordered
+            }
         }
+        (preferred.firstOrNull() ?: others.firstOrNull())?.let { ordered.add(it) }
         for (art in preferred + others) {
             if (ordered.size >= effectiveMaxSize) break
             if (ordered.none { it.id == art.id }) ordered.add(art)

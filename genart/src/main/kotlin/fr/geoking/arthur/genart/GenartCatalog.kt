@@ -152,6 +152,8 @@ enum class GenartEngineId {
     ShadyWarpSpeed,
     ShadyMarbledPaper,
     MilkyWay,
+    PlasmaFlow,
+    RoboticEye,
 }
 
 enum class GenartQuality { Low, Medium, High }

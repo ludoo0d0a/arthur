@@ -235,6 +235,8 @@ object GenartPackTopics {
         GenartSource.SHADY_NOODLE_ZOOM,
         GenartSource.SHADY_WARP_SPEED,
         GenartSource.MILKY_WAY,
+        GenartSource.PLASMA_FLOW,
+        GenartSource.ROBOTIC_EYE,
     )
 
     val VINTAGE_IDS: Set<String> = setOf(
@@ -261,6 +263,7 @@ object GenartPackTopics {
     )
 
     val ABSTRACT_IDS: Set<String> = setOf(
+        GenartSource.PLASMA_FLOW,
         GenartSource.BREATH_CIRCLES,
         GenartSource.RIBBONS,
         GenartSource.BLOBS,
@@ -318,6 +321,7 @@ object GenartPackTopics {
     )
 
     val GEOMETRY_IDS: Set<String> = setOf(
+        GenartSource.ROBOTIC_EYE,
         GenartSource.PARTICLES,
         GenartSource.PSEUDO3D,
         GenartSource.SOFT_SHADOWS,

@@ -170,6 +170,8 @@ class GenartSource(
         const val SHADY_WARP_SPEED = "genart.warpspeed"
         const val SHADY_MARBLED_PAPER = "genart.marbledpaper"
         const val MILKY_WAY = "genart.milkyway"
+        const val PLASMA_FLOW = "genart.plasmaflow"
+        const val ROBOTIC_EYE = "genart.roboticeye"
 
         fun defaultCatalog(): List<Artwork> = listOf(
             entry(PARTICLES, "#1 - Drifting Particles"),
@@ -323,6 +325,8 @@ class GenartSource(
             entry(SHADY_WARP_SPEED, "#148 - Shady Warp Speed"),
             entry(SHADY_MARBLED_PAPER, "#149 - Shady Marbled Paper"),
             entry(MILKY_WAY, "#150 - Milky Way Galaxy"),
+            entry(PLASMA_FLOW, "#151 - Plasma Flow Streamlines"),
+            entry(ROBOTIC_EYE, "#152 - Cybernetic Robotic Eye"),
         )
 
         private fun entry(id: String, title: String) = Artwork(

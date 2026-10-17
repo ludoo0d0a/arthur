@@ -85,6 +85,8 @@ class LanPairingScreensTest {
         }
         composeTestRule.onNodeWithTag("tv_lan_pairing_screen").assertIsDisplayed()
         composeTestRule.onNodeWithTag("tv_lan_pairing_qr").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("tv_lan_pairing_url").assertExists()
+        composeTestRule.onNodeWithTag("tv_lan_pairing_endpoint").assertExists()
     }
 
     @Test

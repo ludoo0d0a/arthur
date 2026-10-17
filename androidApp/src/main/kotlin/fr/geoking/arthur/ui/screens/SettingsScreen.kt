@@ -437,13 +437,23 @@ private fun MainMenu(
         }
 
         if (onOpenPairing != null) {
+            val isTelevision = LocalConfiguration.current.uiMode and Configuration.UI_MODE_TYPE_MASK ==
+                Configuration.UI_MODE_TYPE_TELEVISION
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
             ) {
                 SettingsItem(
-                    label = stringResource(R.string.pairing_open),
-                    value = stringResource(R.string.pairing_open_subtitle),
+                    label = if (isTelevision) {
+                        stringResource(R.string.pairing_tv_title)
+                    } else {
+                        stringResource(R.string.pairing_open)
+                    },
+                    value = if (isTelevision) {
+                        stringResource(R.string.pairing_tv_subtitle)
+                    } else {
+                        stringResource(R.string.pairing_open_subtitle)
+                    },
                     onClick = onOpenPairing,
                     modifier = Modifier.testTag("settings_open_pairing"),
                 )

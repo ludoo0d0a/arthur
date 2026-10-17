@@ -7,15 +7,20 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,6 +45,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.R
@@ -70,10 +76,10 @@ fun TvLanPairingHostScreen(
     val context = LocalContext.current
     val hostIp = remember(hostOverride) { hostOverride?.takeIf { it.isNotBlank() } ?: preferredLanIpv4() }
     val pairingUrl = remember(hostIp, port) {
-        hostIp?.let { PairingDeepLink.build(host = it, port = port) }
+        PairingDeepLink.build(host = hostIp, port = port)
     }
     val qrBitmap: Bitmap? = remember(pairingUrl) {
-        pairingUrl?.let { PairingQrEncoder.encodeOrNull(it, sizePx = 720) }
+        PairingQrEncoder.encodeOrNull(pairingUrl, sizePx = 720)
     }
     val server = remember {
         LanPairingServer(port = port, deviceName = "Arthur TV")
@@ -154,28 +160,60 @@ fun TvLanPairingHostScreen(
 
             when {
                 qrBitmap != null -> {
-                    Box(
-                        modifier = Modifier
-                            .background(Color.White)
-                            .padding(20.dp)
-                            .testTag("tv_lan_pairing_qr"),
-                        contentAlignment = Alignment.Center,
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
-                        Image(
-                            bitmap = qrBitmap.asImageBitmap(),
-                            contentDescription = stringResource(R.string.pairing_tv_qr_cd),
-                            contentScale = ContentScale.Fit,
-                            modifier = Modifier.size(320.dp),
-                        )
+                        Box(
+                            modifier = Modifier
+                                .background(Color.White, shape = RoundedCornerShape(12.dp))
+                                .padding(20.dp)
+                                .testTag("tv_lan_pairing_qr"),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Image(
+                                bitmap = qrBitmap.asImageBitmap(),
+                                contentDescription = stringResource(R.string.pairing_tv_qr_cd),
+                                contentScale = ContentScale.Fit,
+                                modifier = Modifier.size(320.dp),
+                            )
+                        }
+
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("tv_lan_pairing_url_card"),
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                Text(
+                                    text = pairingUrl,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.testTag("tv_lan_pairing_url"),
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "http://$hostIp:$port",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontFamily = FontFamily.Monospace,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.testTag("tv_lan_pairing_endpoint"),
+                                )
+                            }
+                        }
                     }
-                }
-                hostIp == null -> {
-                    Text(
-                        text = stringResource(R.string.pairing_tv_no_ip),
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Center,
-                    )
                 }
                 else -> {
                     Text(
@@ -210,16 +248,6 @@ fun TvLanPairingHostScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
-
-            if (hostIp != null) {
-                Text(
-                    text = "$hostIp:$port",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontFamily = FontFamily.Monospace,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
-                    modifier = Modifier.testTag("tv_lan_pairing_endpoint"),
-                )
-            }
 
             if (received != null) {
                 Text(

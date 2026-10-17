@@ -41,6 +41,10 @@ import fr.geoking.arthur.shared.source.RijksmuseumSource
 import fr.geoking.arthur.shared.source.SmithsonianSource
 import fr.geoking.arthur.shared.source.UnsplashSource
 import fr.geoking.arthur.shared.source.WikimediaStreetArtSource
+import fr.geoking.arthur.audio.ProceduralMusicEngine
+import fr.geoking.arthur.audio.engines.AudioCacheManager
+import fr.geoking.arthur.audio.engines.NeuralModelDownloader
+import fr.geoking.arthur.audio.engines.NeuralMusicPlayer
 import fr.geoking.arthur.source.ArtworkImageCache
 import fr.geoking.arthur.source.AmbientAudioSettings
 import fr.geoking.arthur.source.DeveloperSettings
@@ -147,6 +151,10 @@ val appModule = module {
     single { ScreensaverSettings(androidContext()) }
     single { QuoteSettings(androidContext()) }
     single { AmbientAudioSettings(androidContext()) }
+    single { ProceduralMusicEngine(androidContext(), get(), get()) }
+    single { NeuralModelDownloader(androidContext(), errorLogger = get()) }
+    single { AudioCacheManager(androidContext()) }
+    single { NeuralMusicPlayer(androidContext(), get(), get(), get()) }
     single { LanPairingPrefs(androidContext()) }
     single { InvalidArtworkStore(androidContext()) }
     single { RemoteStillNetworkGate(androidContext(), get()) }

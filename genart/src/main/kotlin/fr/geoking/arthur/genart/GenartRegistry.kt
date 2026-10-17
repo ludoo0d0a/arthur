@@ -60,6 +60,8 @@ import fr.geoking.arthur.genart.engines.ShadyNoodleZoomEngine
 import fr.geoking.arthur.genart.engines.ShadyWarpSpeedEngine
 import fr.geoking.arthur.genart.engines.ShadyMarbledPaperEngine
 import fr.geoking.arthur.genart.engines.MilkyWayEngine
+import fr.geoking.arthur.genart.engines.PlasmaFlowEngine
+import fr.geoking.arthur.genart.engines.RoboticEyeEngine
 import fr.geoking.arthur.genart.engines.DriftingHalosEngine
 import fr.geoking.arthur.genart.engines.AntTrailsEngine
 import fr.geoking.arthur.genart.engines.AuroraWashEngine
@@ -211,6 +213,8 @@ import fr.geoking.arthur.genart.stills.ShadyNoodleZoomStill
 import fr.geoking.arthur.genart.stills.ShadyWarpSpeedStill
 import fr.geoking.arthur.genart.stills.ShadyMarbledPaperStill
 import fr.geoking.arthur.genart.stills.MilkyWayStill
+import fr.geoking.arthur.genart.stills.PlasmaFlowStill
+import fr.geoking.arthur.genart.stills.RoboticEyeStill
 import fr.geoking.arthur.genart.stills.DriftingHalosStill
 import fr.geoking.arthur.genart.stills.AntTrailsStill
 import fr.geoking.arthur.genart.stills.AuroraWashStill
@@ -2004,6 +2008,28 @@ object GenartRegistry {
             },
             renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
                 MilkyWayStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.PlasmaFlow,
+            stableId = "genart.plasmaflow",
+            title = "#151 - Plasma Flow Streamlines",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                PlasmaFlowEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                PlasmaFlowStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.RoboticEye,
+            stableId = "genart.roboticeye",
+            title = "#152 - Cybernetic Robotic Eye",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                RoboticEyeEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                RoboticEyeStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
             },
         ),
     )

@@ -1,11 +1,14 @@
 package fr.geoking.arthur.source
 
 import android.content.Context
+import fr.geoking.arthur.db.ArtworkCacheDao
+import fr.geoking.arthur.db.ArtworkCacheEntity
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.source.GenartSource
 import fr.geoking.arthur.shared.source.MuseumSearchKind
 import fr.geoking.arthur.shared.source.StockPhotoCategory
+import kotlinx.coroutines.runBlocking
 import java.io.File
 
 /** Persists selected stock-photo topic for Pexels / Unsplash queries. */
@@ -59,14 +62,42 @@ class MuseumSearchSettings {
 /**
  * Disk cache of stock stills + baked genart frames.
  * Stock entries are keyed by photo topic; genart is capped at [MAX_GENART] (LRU).
+ * Backed by Room 3 [ArtworkCacheDao] with coroutine-first operations.
  */
 class ArtworkImageCache(
     context: Context,
     private val invalidStore: InvalidArtworkStore? = null,
+    private val artworkCacheDao: ArtworkCacheDao? = null,
 ) {
     private val appContext = context.applicationContext
     private val dir = File(appContext.cacheDir, "artwork").also { it.mkdirs() }
     private val prefs = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+
+    init {
+        if (artworkCacheDao != null) {
+            runBlocking {
+                val dbEntries = artworkCacheDao.getAll()
+                if (dbEntries.isEmpty()) {
+                    val spEntries = decodeEntries()
+                    if (spEntries.isNotEmpty()) {
+                        val entities = spEntries.map { entry ->
+                            ArtworkCacheEntity(
+                                id = entry.id,
+                                title = entry.title,
+                                attribution = entry.attribution,
+                                sourceId = entry.sourceId,
+                                kind = entry.kind,
+                                remoteUrl = entry.remoteUrl,
+                                category = entry.category,
+                                lastAccess = entry.lastAccess,
+                            )
+                        }
+                        artworkCacheDao.insertOrUpdateAll(entities)
+                    }
+                }
+            }
+        }
+    }
 
     fun imageFile(artworkId: String): File = File(dir, "${sanitize(artworkId)}.img")
 
@@ -115,7 +146,6 @@ class ArtworkImageCache(
         allowNetwork: Boolean = true,
     ): File {
         validCachedFileOrNull(artworkId)?.let { return it }
-        // Stale oversized non-image: drop before download / cache-only miss.
         imageFile(artworkId).takeIf { it.exists() }?.delete()
 
         if (!allowNetwork) {
@@ -153,49 +183,124 @@ class ArtworkImageCache(
     }
 
     fun remember(artworks: List<Artwork>, category: String) {
+        val timestamp = now()
         val byId = readLines().associateBy { it.substringBefore(SEP) }.toMutableMap()
         for (art in artworks) {
-            byId[art.id] = encode(art, category = category, lastAccess = now())
+            byId[art.id] = encode(art, category = category, lastAccess = timestamp)
         }
         writeAll(byId.values)
+
+        if (artworkCacheDao != null) {
+            runBlocking {
+                val entities = artworks.map { art ->
+                    ArtworkCacheEntity(
+                        id = art.id,
+                        title = art.title,
+                        attribution = art.attribution,
+                        sourceId = art.sourceId,
+                        kind = art.kind.name,
+                        remoteUrl = art.remoteUrl,
+                        category = category,
+                        lastAccess = timestamp,
+                    )
+                }
+                artworkCacheDao.insertOrUpdateAll(entities)
+            }
+        }
     }
 
     fun rememberArtworks(artworks: List<Artwork>) {
+        val timestamp = now()
         val byId = readLines().associateBy { it.substringBefore(SEP) }.toMutableMap()
         for (art in artworks) {
-            byId[art.id] = encode(art, category = art.sourceId, lastAccess = now())
+            byId[art.id] = encode(art, category = art.sourceId, lastAccess = timestamp)
         }
         writeAll(byId.values)
+
+        if (artworkCacheDao != null) {
+            runBlocking {
+                val entities = artworks.map { art ->
+                    ArtworkCacheEntity(
+                        id = art.id,
+                        title = art.title,
+                        attribution = art.attribution,
+                        sourceId = art.sourceId,
+                        kind = art.kind.name,
+                        remoteUrl = art.remoteUrl,
+                        category = art.sourceId,
+                        lastAccess = timestamp,
+                    )
+                }
+                artworkCacheDao.insertOrUpdateAll(entities)
+            }
+        }
     }
 
     /** Bake / touch a genart still; keeps at most [MAX_GENART] genart entries (LRU). */
     fun rememberGenart(artwork: Artwork) {
         require(artwork.kind == ArtworkKind.Genart || artwork.sourceId == GenartSource.ID)
+        val timestamp = now()
         val byId = readLines().associateBy { it.substringBefore(SEP) }.toMutableMap()
         byId[artwork.id] = encode(
             artwork.copy(kind = ArtworkKind.Genart, sourceId = GenartSource.ID),
             category = CATEGORY_GENART,
-            lastAccess = now(),
+            lastAccess = timestamp,
         )
         trimGenartLocked(byId)
         writeAll(byId.values)
+
+        if (artworkCacheDao != null) {
+            runBlocking {
+                artworkCacheDao.insertOrUpdate(
+                    ArtworkCacheEntity(
+                        id = artwork.id,
+                        title = artwork.title,
+                        attribution = artwork.attribution,
+                        sourceId = GenartSource.ID,
+                        kind = ArtworkKind.Genart.name,
+                        remoteUrl = artwork.remoteUrl,
+                        category = CATEGORY_GENART,
+                        lastAccess = timestamp,
+                    ),
+                )
+                trimGenartDbLocked()
+            }
+        }
     }
 
     fun touchGenart(artworkId: String) {
+        val timestamp = now()
         val byId = readLines().associateBy { it.substringBefore(SEP) }.toMutableMap()
-        val line = byId[artworkId] ?: return
-        val parts = line.split(SEP)
-        if (parts.size < 8 || parts[6] != CATEGORY_GENART) return
-        byId[artworkId] = parts.toMutableList().also { it[7] = now().toString() }.joinToString(SEP)
-        writeAll(byId.values)
+        val line = byId[artworkId]
+        if (line != null) {
+            val parts = line.split(SEP)
+            if (parts.size >= 8 && parts[6] == CATEGORY_GENART) {
+                byId[artworkId] = parts.toMutableList().also { it[7] = timestamp.toString() }.joinToString(SEP)
+                writeAll(byId.values)
+            }
+        }
+
+        if (artworkCacheDao != null) {
+            runBlocking {
+                val existing = artworkCacheDao.getById(artworkId)
+                if (existing != null && existing.category == CATEGORY_GENART) {
+                    artworkCacheDao.insertOrUpdate(existing.copy(lastAccess = timestamp))
+                }
+            }
+        }
     }
 
     /** Offline photos for [category] + [sourceId] that already have bytes on disk. */
-    fun loadCached(category: String, sourceId: String): List<Artwork> =
-        decodeEntries()
+    fun loadCached(category: String, sourceId: String): List<Artwork> {
+        if (artworkCacheDao != null) {
+            val entities = runBlocking { artworkCacheDao.getByCategoryAndSource(category, sourceId) }
+            return entities.mapNotNull { it.toArtworkOrNull() }
+        }
+        return decodeEntries()
             .filter { it.category.equals(category, ignoreCase = true) }
             .filter { it.sourceId == sourceId }
             .mapNotNull { it.toArtworkOrNull() }
+    }
 
     /**
      * Offline stock for a UX topic. [StockPhotoCategory.Random] merges every remote
@@ -211,25 +316,43 @@ class ArtworkImageCache(
     }
 
     /** Cached genart stills with [localPath] set (max [MAX_GENART]). */
-    fun loadCachedGenart(): List<Artwork> =
-        decodeEntries()
+    fun loadCachedGenart(): List<Artwork> {
+        if (artworkCacheDao != null) {
+            val entities = runBlocking { artworkCacheDao.getGenartStills(MAX_GENART) }
+            return entities.mapNotNull { it.toArtworkOrNull() }
+        }
+        return decodeEntries()
             .filter { it.category == CATEGORY_GENART }
             .sortedByDescending { it.lastAccess }
             .take(MAX_GENART)
             .mapNotNull { it.toArtworkOrNull() }
+    }
 
     /**
      * Retrieve cached items that already have bytes on disk matching optional [sourceIds] and [kind].
      */
-    fun loadCachedArtworks(sourceIds: List<String>? = null, kind: ArtworkKind? = null): List<Artwork> =
-        decodeEntries()
+    fun loadCachedArtworks(sourceIds: List<String>? = null, kind: ArtworkKind? = null): List<Artwork> {
+        if (artworkCacheDao != null) {
+            val entities = runBlocking { artworkCacheDao.getAll() }
+            return entities
+                .filter { entry -> sourceIds.isNullOrEmpty() || entry.sourceId in sourceIds }
+                .mapNotNull { it.toArtworkOrNull() }
+                .filter { art -> kind == null || art.kind == kind }
+        }
+        return decodeEntries()
             .filter { entry -> sourceIds.isNullOrEmpty() || entry.sourceId in sourceIds }
             .mapNotNull { it.toArtworkOrNull() }
             .filter { art -> kind == null || art.kind == kind }
+    }
 
     /** Number of index entries that still have image bytes on disk. */
-    fun entryCount(): Int =
-        decodeEntries().count { hasImage(it.id) }
+    fun entryCount(): Int {
+        if (artworkCacheDao != null) {
+            val entities = runBlocking { artworkCacheDao.getAll() }
+            return entities.count { hasImage(it.id) }
+        }
+        return decodeEntries().count { hasImage(it.id) }
+    }
 
     /** Total bytes of files under the artwork cache directory. */
     fun totalBytes(): Long {
@@ -243,6 +366,20 @@ class ArtworkImageCache(
             dir.listFiles()?.forEach { it.delete() }
         }
         prefs.edit().remove(KEY_CATALOG).apply()
+        if (artworkCacheDao != null) {
+            runBlocking { artworkCacheDao.deleteAll() }
+        }
+    }
+
+    private suspend fun trimGenartDbLocked() {
+        if (artworkCacheDao == null) return
+        val genartEntries = artworkCacheDao.getAllGenartLru()
+        val overflow = genartEntries.size - MAX_GENART
+        if (overflow <= 0) return
+        for (entry in genartEntries.take(overflow)) {
+            artworkCacheDao.deleteById(entry.id)
+            imageFile(entry.id).delete()
+        }
     }
 
     private fun trimGenartLocked(byId: MutableMap<String, String>) {
@@ -291,6 +428,20 @@ class ArtworkImageCache(
         }
 
     private fun CacheEntry.toArtworkOrNull(): Artwork? {
+        val path = localPathOrNull(id) ?: return null
+        val kind = runCatching { ArtworkKind.valueOf(kind) }.getOrDefault(ArtworkKind.Photo)
+        return Artwork(
+            id = id,
+            title = title,
+            attribution = attribution,
+            sourceId = sourceId,
+            kind = kind,
+            remoteUrl = remoteUrl,
+            localPath = path,
+        )
+    }
+
+    private fun ArtworkCacheEntity.toArtworkOrNull(): Artwork? {
         val path = localPathOrNull(id) ?: return null
         val kind = runCatching { ArtworkKind.valueOf(kind) }.getOrDefault(ArtworkKind.Photo)
         return Artwork(

@@ -1,6 +1,9 @@
 package fr.geoking.arthur.source
 
 import android.content.Context
+import fr.geoking.arthur.db.QuoteDao
+import fr.geoking.arthur.db.QuoteEntity
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
@@ -14,14 +17,14 @@ import kotlinx.serialization.json.put
 
 /**
  * Fetches quotes from the selected [QuoteProvider], caches them (TTL), and assigns
- * one quote per artwork when an Ambient pool loads. Failures are soft: assignment
- * returns an empty map so Ambient can omit the overlay line.
+ * one quote per artwork when an Ambient pool loads. Backed by Room 3 [QuoteDao] with coroutines.
  */
 class QuoteRepository(
     context: Context,
     private val httpGet: suspend (url: String) -> String,
     private val provider: () -> QuoteProvider,
     private val clock: () -> Long = { System.currentTimeMillis() },
+    private val quoteDao: QuoteDao? = null,
 ) {
     private val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     private val mutex = Mutex()
@@ -40,8 +43,6 @@ class QuoteRepository(
      */
     suspend fun quotesForArtworks(artworkIds: List<String>): Map<String, Quote> = mutex.withLock {
         if (artworkIds.isEmpty()) return emptyMap()
-        // Need at least 2 distinct quotes when binding a multi-image pool, otherwise every
-        // slide shows the same line (e.g. HTTP cache collapsed lecog random into one entry).
         val minSize = if (artworkIds.distinct().size > 1) 2 else 1
         ensureLoadedLocked(minSize = minSize)
         if (quotes.isEmpty()) return emptyMap()
@@ -80,7 +81,6 @@ class QuoteRepository(
         }
         val fetched = runCatching { fetchBatch(wanted) }.getOrElse { emptyList() }
         if (fetched.isEmpty()) {
-            // Keep stale cache if network failed and we still have quotes for this provider.
             if (quotes.isNotEmpty() && cachedProviderId == wanted.id) return
             return
         }
@@ -88,12 +88,28 @@ class QuoteRepository(
         loadedAtMs = now
         nextIndex = 0
         cachedProviderId = wanted.id
+
         prefs.edit()
             .putString(KEY_CACHE_JSON, encodeQuotes(quotes))
             .putLong(KEY_CACHE_AT, loadedAtMs)
             .putInt(KEY_INDEX, nextIndex)
             .putString(KEY_CACHE_PROVIDER, wanted.id)
             .apply()
+
+        if (quoteDao != null) {
+            quoteDao.deleteForProvider(wanted.id)
+            quoteDao.insertAll(
+                quotes.mapIndexed { idx, q ->
+                    QuoteEntity(
+                        id = "${wanted.id}_$idx",
+                        text = q.text,
+                        author = q.author,
+                        providerId = wanted.id,
+                        cachedAtMs = now,
+                    )
+                },
+            )
+        }
     }
 
     private suspend fun fetchBatch(provider: QuoteProvider): List<Quote> = when (provider) {
@@ -108,8 +124,6 @@ class QuoteRepository(
         val out = ArrayList<Quote>(LECOG_BATCH_SIZE)
         val seen = HashSet<String>()
         repeat(LECOG_BATCH_SIZE) { index ->
-            // Unique URL per attempt so OkHttp disk cache (same path, max-age forced)
-            // cannot collapse every "random" fetch into a single cached body.
             val url = lecogRandomQuoteUrl(index, clock())
             val body = runCatching { httpGet(url) }.getOrNull() ?: return@repeat
             val quote = parseCitationLecog(body) ?: return@repeat
@@ -119,6 +133,20 @@ class QuoteRepository(
     }
 
     private fun restoreFromPrefs() {
+        val wantedProviderId = provider().id
+        if (quoteDao != null) {
+            runBlocking {
+                val dbEntities = quoteDao.getQuotesForProvider(wantedProviderId)
+                if (dbEntities.isNotEmpty()) {
+                    quotes = dbEntities.map { Quote(text = it.text, author = it.author) }
+                    loadedAtMs = dbEntities.firstOrNull()?.cachedAtMs ?: 0L
+                    nextIndex = prefs.getInt(KEY_INDEX, 0).coerceIn(0, quotes.lastIndex.coerceAtLeast(0))
+                    cachedProviderId = wantedProviderId
+                    return@runBlocking
+                }
+            }
+        }
+
         val raw = prefs.getString(KEY_CACHE_JSON, null) ?: return
         val at = prefs.getLong(KEY_CACHE_AT, 0L)
         val parsed = runCatching { parseCachedQuotes(raw) }.getOrElse { emptyList() }
@@ -132,12 +160,9 @@ class QuoteRepository(
     companion object {
         const val ZENQUOTES_API_URL = "https://zenquotes.io/api/quotes"
         const val LECOG_API_URL = "https://citation.lecog.fr/public/api/random-quote.php"
-        /** Prefetch size for Citation.lecog (no batch endpoint; stay well under 100 req/h). */
         const val LECOG_BATCH_SIZE = 15
-        /** Refresh the batch every 4 hours. */
         const val TTL_MS = 4L * 60L * 60L * 1000L
 
-        /** Cache-busted random endpoint (OkHttp keys the disk cache by full URL). */
         internal fun lecogRandomQuoteUrl(index: Int, timestampMs: Long): String =
             "$LECOG_API_URL?n=$index&t=$timestampMs"
 
@@ -187,7 +212,6 @@ class QuoteRepository(
                 )
             }
 
-        /** Strip HTML line breaks and collapse leftover whitespace from quote APIs. */
         internal fun sanitizeQuoteText(raw: String): String =
             raw
                 .replace(BR_TAG_REGEX, " ")

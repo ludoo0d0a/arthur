@@ -7,6 +7,12 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.aboutlibraries.android)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.androidx.room)
+}
+
+room {
+    schemaDirectory("$projectDir/schemas")
 }
 
 val localProps = Properties().apply {
@@ -180,6 +186,9 @@ dependencies {
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.cio)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.sqlite.bundled)
+    ksp(libs.androidx.room.compiler)
     implementation(libs.revenuecat.purchases)
     implementation(libs.play.app.update)
     implementation(libs.play.app.update.ktx)

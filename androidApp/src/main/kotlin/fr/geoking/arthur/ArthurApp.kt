@@ -7,8 +7,10 @@ import fr.geoking.arthur.billing.DevAwarePremiumEntitlement
 import fr.geoking.arthur.billing.FakePurchasesGateway
 import fr.geoking.arthur.billing.PurchasesGateway
 import fr.geoking.arthur.billing.RevenueCatPackOwnership
+import androidx.room.Room
 import fr.geoking.arthur.billing.RevenueCatPremiumEntitlement
 import fr.geoking.arthur.fractal.CustomFractalStore
+import fr.geoking.arthur.db.ArthurDatabase
 import fr.geoking.arthur.shared.debug.DebugLogger
 import fr.geoking.arthur.shared.domain.PremiumEntitlement
 import fr.geoking.arthur.shared.engine.ContentEngine
@@ -156,7 +158,19 @@ val appModule = module {
     single { AudioCacheManager(androidContext()) }
     single { NeuralMusicPlayer(androidContext(), get(), get(), get()) }
     single { LanPairingPrefs(androidContext()) }
-    single { InvalidArtworkStore(androidContext()) }
+    single {
+        Room.databaseBuilder(
+            androidContext(),
+            ArthurDatabase::class.java,
+            "arthur.db",
+        ).fallbackToDestructiveMigration(dropAllTables = true).build()
+    }
+    single { get<ArthurDatabase>().artworkCacheDao() }
+    single { get<ArthurDatabase>().invalidArtworkDao() }
+    single { get<ArthurDatabase>().customFractalDao() }
+    single { get<ArthurDatabase>().quoteDao() }
+
+    single { InvalidArtworkStore(androidContext(), invalidArtworkDao = get()) }
     single { RemoteStillNetworkGate(androidContext(), get()) }
     single {
         val client = get<HttpClient>()
@@ -168,6 +182,7 @@ val appModule = module {
                 safeHttpGet(client, url, quoteSettings.provider.value.id, errorLogger)
             },
             provider = { quoteSettings.provider.value },
+            quoteDao = get(),
         )
     }
     single<PremiumEntitlement> {
@@ -191,10 +206,10 @@ val appModule = module {
             },
         )
     }
-    single { CustomFractalStore(androidContext()) }
+    single { CustomFractalStore(androidContext(), customFractalDao = get()) }
     single { StockPhotoSettings(androidContext()) }
     single { MuseumSearchSettings() }
-    single { ArtworkImageCache(androidContext(), get()) }
+    single { ArtworkImageCache(androidContext(), invalidStore = get(), artworkCacheDao = get()) }
     single {
         val httpCacheDir = File(androidContext().cacheDir, "http_cache").also { it.mkdirs() }
         okhttp3.Cache(httpCacheDir, 50 * 1024 * 1024L)

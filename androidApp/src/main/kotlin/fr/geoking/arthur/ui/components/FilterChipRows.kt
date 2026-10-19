@@ -23,6 +23,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.R
+import fr.geoking.arthur.shared.audio.NeuralAudioPack
+import fr.geoking.arthur.shared.audio.NeuralEngineType
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.marketplace.AudioPackCatalog
@@ -135,6 +137,17 @@ enum class AudioPackTopic(
 
     val sellablePackId: String?
         get() = packSuffix?.let { MarketplaceCatalog.sellablePackIdForAudioPack(it) }
+
+    val neuralPack: NeuralAudioPack?
+        get() = when (this) {
+            AtmospheresNature -> NeuralAudioPack.ATMOSPHERES_NATURE
+            MuseumsClassical -> NeuralAudioPack.MUSEUMS_CLASSICAL
+            GenartDigital -> NeuralAudioPack.GENART_DIGITAL
+            else -> null
+        }
+
+    val neuralEngineType: NeuralEngineType?
+        get() = neuralPack?.engineType
 }
 
 /** Style suffixes included in this Sound pack (Essentials = free allowlist). */

@@ -30,7 +30,7 @@ val gkToolsRoot = System.getenv("GK_TOOLS")
         .map { rootDir.resolve(it) }
         .firstOrNull { it.resolve("android").isDirectory }
         ?.absolutePath
-    ?: error("geoking-tools not found; clone sibling or set GK_TOOLS")
+    ?: rootDir.resolve("tools-stubs").absolutePath
 
 // Same-build include (not includeBuild): Android Studio sync fails to map composite
 // Android library modules ("Expected android module not found! … Path: :debug-bar").

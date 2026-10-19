@@ -43,12 +43,33 @@ class NeuralModelDownloader(
         NeuralEngineType.STABLE_AUDIO_3_SMALL -> File(modelsDir, "stable_audio_3_small.bin")
     }
 
+    fun getDefaultDownloadUrl(engineType: NeuralEngineType): String = when (engineType) {
+        NeuralEngineType.SOUNDGEN -> "https://huggingface.co/facebook/soundgen-small/resolve/main/model.bin"
+        NeuralEngineType.MUSICGEN_SMALL -> "https://huggingface.co/facebook/musicgen-small/resolve/main/model.bin"
+        NeuralEngineType.STABLE_AUDIO_3_SMALL -> "https://huggingface.co/stabilityai/stable-audio-open-1.0/resolve/main/model.bin"
+    }
+
     fun isModelAvailable(engineType: NeuralEngineType): Boolean {
         val file = getModelFile(engineType)
         return file.exists() && file.length() > 0
     }
 
-    suspend fun downloadModel(engineType: NeuralEngineType, downloadUrl: String): Boolean = withContext(Dispatchers.IO) {
+    fun getModelSizeBytes(engineType: NeuralEngineType): Long {
+        val file = getModelFile(engineType)
+        return if (file.exists()) file.length() else 0L
+    }
+
+    fun deleteModel(engineType: NeuralEngineType): Boolean {
+        val file = getModelFile(engineType)
+        val deleted = if (file.exists()) file.delete() else true
+        updateState(engineType, ModelDownloadState.Idle)
+        return deleted
+    }
+
+    suspend fun downloadModel(
+        engineType: NeuralEngineType,
+        downloadUrl: String = getDefaultDownloadUrl(engineType),
+    ): Boolean = withContext(Dispatchers.IO) {
         val targetFile = getModelFile(engineType)
         if (isModelAvailable(engineType)) {
             updateState(engineType, ModelDownloadState.Ready(engineType, targetFile))

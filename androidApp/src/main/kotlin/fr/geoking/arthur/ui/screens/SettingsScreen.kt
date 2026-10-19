@@ -45,6 +45,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -58,6 +59,10 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.OutlinedTextField
 import fr.geoking.arthur.audio.MusicStyle
+import fr.geoking.arthur.audio.engines.ModelDownloadState
+import fr.geoking.arthur.audio.engines.NeuralModelDownloader
+import fr.geoking.arthur.shared.audio.NeuralEngineType
+import kotlinx.coroutines.flow.MutableStateFlow
 import fr.geoking.arthur.source.AmbientAudioCharacter
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -141,6 +146,7 @@ enum class SettingsScreenPage {
     AutoRotationInterval,
     QuoteProvider,
     AmbientSound,
+    NeuralModels,
     DeviantArtCredentials,
     About,
     Licenses,
@@ -233,6 +239,8 @@ fun SettingsScreen(
                                 stringResource(R.string.settings_quote_provider)
                             SettingsScreenPage.AmbientSound ->
                                 stringResource(R.string.settings_ambient_sound)
+                            SettingsScreenPage.NeuralModels ->
+                                stringResource(R.string.settings_neural_models)
                             SettingsScreenPage.DeviantArtCredentials -> "DeviantArt Credentials"
                             SettingsScreenPage.About -> stringResource(R.string.screen_about)
                             SettingsScreenPage.Licenses -> stringResource(R.string.screen_licenses)
@@ -332,6 +340,7 @@ fun SettingsScreen(
                         onOpenMarketplace = onOpenMarketplace,
                     )
                 }
+                SettingsScreenPage.NeuralModels -> NeuralModelsDownloadManagerContent()
                 SettingsScreenPage.DeviantArtCredentials -> DeviantArtCredentialsContent(
                     username = deviantArtUsername,
                     password = deviantArtPassword,
@@ -535,6 +544,12 @@ private fun MainMenu(
                 },
                 onClick = { onNavigate(SettingsScreenPage.AmbientSound) },
                 modifier = Modifier.testTag("settings_ambient_sound"),
+            )
+            SettingsItem(
+                label = stringResource(R.string.settings_neural_models),
+                value = stringResource(R.string.settings_neural_models_subtitle),
+                onClick = { onNavigate(SettingsScreenPage.NeuralModels) },
+                modifier = Modifier.testTag("settings_neural_models"),
             )
             SettingsItem(
                 label = "DeviantArt Credentials",
@@ -1310,6 +1325,186 @@ private fun SettingsItem(
         },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
     )
+}
+
+@Composable
+private fun NeuralModelsDownloadManagerContent(
+    downloader: NeuralModelDownloader? = remember {
+        runCatching { GlobalContext.get().get<NeuralModelDownloader>() }.getOrNull()
+    },
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val downloadStates by (downloader?.downloadStates ?: remember { MutableStateFlow(emptyMap()) })
+        .collectAsState()
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp)
+            .testTag("settings_neural_models_page"),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.settings_neural_models_subtitle),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        NeuralEngineType.entries.forEach { engineType ->
+            val state = downloadStates[engineType] ?: ModelDownloadState.Idle
+            val (title, packName) = when (engineType) {
+                NeuralEngineType.SOUNDGEN -> "SoundGen Small" to stringResource(R.string.audio_pack_atmospheres_nature)
+                NeuralEngineType.MUSICGEN_SMALL -> "MusicGen Small" to stringResource(R.string.audio_pack_museums_classical)
+                NeuralEngineType.STABLE_AUDIO_3_SMALL -> "Stable Audio 3 Small" to stringResource(R.string.audio_pack_genart_digital)
+            }
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("neural_model_card_${engineType.name.lowercase()}"),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = title,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Text(
+                                text = packName,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+
+                        Surface(
+                            color = when (state) {
+                                is ModelDownloadState.Ready -> Color(0xFF22C55E)
+                                is ModelDownloadState.Downloading -> MaterialTheme.colorScheme.primary
+                                is ModelDownloadState.Error -> MaterialTheme.colorScheme.error
+                                is ModelDownloadState.Idle -> MaterialTheme.colorScheme.outline
+                            },
+                            shape = RoundedCornerShape(4.dp),
+                        ) {
+                            Text(
+                                text = when (state) {
+                                    is ModelDownloadState.Ready -> stringResource(R.string.neural_model_ready)
+                                    is ModelDownloadState.Downloading -> "${state.progressPercent}%"
+                                    is ModelDownloadState.Error -> "Error"
+                                    is ModelDownloadState.Idle -> stringResource(R.string.neural_model_not_downloaded)
+                                },
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+
+                    when (state) {
+                        is ModelDownloadState.Ready -> {
+                            val sizeBytes = downloader?.getModelSizeBytes(engineType) ?: state.modelFile.length()
+                            val formattedSize = remember(sizeBytes) {
+                                Formatter.formatShortFileSize(context, sizeBytes)
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = formattedSize,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Button(
+                                    onClick = { downloader?.deleteModel(engineType) },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                                    ),
+                                    modifier = Modifier.testTag("btn_delete_model_${engineType.name.lowercase()}"),
+                                ) {
+                                    Icon(Icons.Filled.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(Modifier.width(6.dp))
+                                    Text(stringResource(R.string.neural_model_delete))
+                                }
+                            }
+                        }
+                        is ModelDownloadState.Downloading -> {
+                            val downloadedStr = Formatter.formatShortFileSize(context, state.bytesDownloaded)
+                            val totalStr = if (state.totalBytes > 0) Formatter.formatShortFileSize(context, state.totalBytes) else "?"
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                LinearProgressIndicator(
+                                    progress = { if (state.totalBytes > 0) state.progressPercent / 100f else 0f },
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text = stringResource(
+                                        R.string.neural_model_downloading_progress,
+                                        state.progressPercent,
+                                        downloadedStr,
+                                        totalStr,
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                        is ModelDownloadState.Error -> {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Text(
+                                    text = state.message,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                Button(
+                                    onClick = {
+                                        downloader?.let { d ->
+                                            scope.launch { d.downloadModel(engineType) }
+                                        }
+                                    },
+                                    modifier = Modifier.testTag("btn_retry_download_${engineType.name.lowercase()}"),
+                                ) {
+                                    Text(stringResource(R.string.retry))
+                                }
+                            }
+                        }
+                        is ModelDownloadState.Idle -> {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End,
+                            ) {
+                                Button(
+                                    onClick = {
+                                        downloader?.let { d ->
+                                            scope.launch { d.downloadModel(engineType) }
+                                        }
+                                    },
+                                    modifier = Modifier.testTag("btn_download_model_${engineType.name.lowercase()}"),
+                                ) {
+                                    Text(stringResource(R.string.neural_model_download))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable

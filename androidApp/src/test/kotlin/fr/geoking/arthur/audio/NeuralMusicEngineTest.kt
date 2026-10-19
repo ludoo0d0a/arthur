@@ -72,6 +72,33 @@ class NeuralMusicEngineTest {
     }
 
     @Test
+    fun modelDownloader_providesDefaultUrlsForEngines() {
+        val sgUrl = downloader.getDefaultDownloadUrl(NeuralEngineType.SOUNDGEN)
+        val mgUrl = downloader.getDefaultDownloadUrl(NeuralEngineType.MUSICGEN_SMALL)
+        val saUrl = downloader.getDefaultDownloadUrl(NeuralEngineType.STABLE_AUDIO_3_SMALL)
+
+        assertTrue(sgUrl.contains("soundgen"))
+        assertTrue(mgUrl.contains("musicgen"))
+        assertTrue(saUrl.contains("stable-audio"))
+    }
+
+    @Test
+    fun modelDownloader_managesDeletionAndSizes() {
+        val engine = NeuralEngineType.SOUNDGEN
+        val file = downloader.getModelFile(engine)
+        file.writeBytes(ByteArray(100))
+
+        assertTrue(downloader.isModelAvailable(engine))
+        assertEquals(100L, downloader.getModelSizeBytes(engine))
+
+        val deleted = downloader.deleteModel(engine)
+        assertTrue(deleted)
+        assertEquals(false, downloader.isModelAvailable(engine))
+        assertEquals(0L, downloader.getModelSizeBytes(engine))
+        assertEquals(ModelDownloadState.Idle, downloader.downloadStates.value[engine])
+    }
+
+    @Test
     fun audioCacheManager_generatesFallbackSampleWavFile() = runBlocking {
         val prompt = NeuralPromptCatalog.soundGenPrompts.first()
         val seed = 12345L

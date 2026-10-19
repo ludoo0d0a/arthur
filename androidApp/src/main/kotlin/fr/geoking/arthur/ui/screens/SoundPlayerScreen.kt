@@ -32,9 +32,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -200,20 +204,58 @@ fun SoundPlayerScreen(
             }
 
             if (neuralPack != null) {
+                val downloader = remember {
+                    runCatching { GlobalContext.get().get<fr.geoking.arthur.audio.engines.NeuralModelDownloader>() }.getOrNull()
+                }
+                val downloadStates by (downloader?.downloadStates ?: remember { MutableStateFlow(emptyMap()) }).collectAsState()
+                val scope = rememberCoroutineScope()
+                val modelState = downloadStates[neuralPack.engineType] ?: fr.geoking.arthur.audio.engines.ModelDownloadState.Idle
+
                 val prompts = remember(neuralPack) {
                     fr.geoking.arthur.shared.audio.NeuralPromptCatalog.promptsForPack(neuralPack)
                 }
                 var selectedPromptIndex by remember { mutableStateOf(0) }
                 val currentPrompt = prompts.getOrElse(selectedPromptIndex) { prompts.first() }
 
-                Text(
-                    text = stringResource(R.string.neural_model_ready),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color(0xFF81C784),
-                    modifier = Modifier
-                        .padding(top = 4.dp)
-                        .testTag("sound_player_model_status"),
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(top = 4.dp),
+                ) {
+                    Text(
+                        text = when (modelState) {
+                            is fr.geoking.arthur.audio.engines.ModelDownloadState.Ready -> stringResource(R.string.neural_model_ready)
+                            is fr.geoking.arthur.audio.engines.ModelDownloadState.Downloading -> stringResource(R.string.neural_model_downloading, modelState.progressPercent)
+                            else -> stringResource(R.string.neural_procedural_fallback)
+                        },
+                        style = MaterialTheme.typography.labelMedium,
+                        color = when (modelState) {
+                            is fr.geoking.arthur.audio.engines.ModelDownloadState.Ready -> Color(0xFF81C784)
+                            is fr.geoking.arthur.audio.engines.ModelDownloadState.Downloading -> Color(0xFFFFB74D)
+                            else -> Color(0xFFE0E0E0)
+                        },
+                        modifier = Modifier.testTag("sound_player_model_status"),
+                    )
+
+                    if (modelState !is fr.geoking.arthur.audio.engines.ModelDownloadState.Ready &&
+                        modelState !is fr.geoking.arthur.audio.engines.ModelDownloadState.Downloading
+                    ) {
+                        TextButton(
+                            onClick = {
+                                downloader?.let { d ->
+                                    scope.launch { d.downloadModel(neuralPack.engineType) }
+                                }
+                            },
+                            modifier = Modifier.testTag("sound_player_download_model"),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.neural_model_download),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Color(0xFF81D4FA),
+                            )
+                        }
+                    }
+                }
 
                 Text(
                     text = "${currentPrompt.title} — ${currentPrompt.promptText}",

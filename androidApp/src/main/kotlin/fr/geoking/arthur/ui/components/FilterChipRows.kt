@@ -128,6 +128,9 @@ enum class AudioPackTopic(
     MidnightBallad(R.string.audio_pack_midnight_ballad, "midnight_ballad", "midnight_ballad"),
     HawaiianBreeze(R.string.audio_pack_hawaiian_breeze, "hawaiian_breeze", "hawaiian_breeze"),
     ArcadeChips(R.string.audio_pack_arcade_chips, "arcade_chips", "arcade_chips"),
+    AtmospheresNature(R.string.audio_pack_atmospheres_nature, "atmospheres_nature", "atmospheres_nature"),
+    MuseumsClassical(R.string.audio_pack_museums_classical, "museums_classical", "museums_classical"),
+    GenartDigital(R.string.audio_pack_genart_digital, "genart_digital", "genart_digital"),
     ;
 
     val sellablePackId: String?

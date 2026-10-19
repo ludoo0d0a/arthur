@@ -67,4 +67,24 @@ class SoundPlayerScreenTest {
         composeRule.onNodeWithTag("sound_player_done").performClick()
         assertTrue(dismissed)
     }
+
+    @Test
+    fun soundPlayerScreen_showsNeuralPackModelStatusAndPrompts() {
+        composeRule.setContent {
+            ArthurTheme {
+                SoundPlayerScreen(
+                    selection = PackSelection(
+                        PackFamily.Neural,
+                        AudioPackTopic.AtmospheresNature.testTagSuffix,
+                    ),
+                    onDismiss = {},
+                    audioSettings = null,
+                )
+            }
+        }
+        composeRule.onNodeWithTag("sound_player_screen").assertIsDisplayed()
+        composeRule.onNodeWithTag("sound_player_model_status").assertIsDisplayed()
+        composeRule.onNodeWithTag("sound_player_prompts_row").assertIsDisplayed()
+        composeRule.onNodeWithTag("sound_player_prompt_0").assertIsDisplayed()
+    }
 }

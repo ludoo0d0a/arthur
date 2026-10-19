@@ -26,6 +26,7 @@ enum class PackFamily(
     Photo(R.string.kind_photo, R.drawable.pack_photo, "photo"),
     Personal(R.string.pack_personal, R.drawable.pack_photo, "personal"),
     Sound(R.string.pack_sound, R.drawable.pack_sound, "sound"),
+    Neural(R.string.pack_neural, R.drawable.pack_neural, "neural"),
     Video(R.string.kind_video, R.drawable.pack_video, "video"),
     Sculpture(R.string.kind_sculpture, R.drawable.pack_sculpture, "sculpture"),
     Painting(R.string.kind_painting, R.drawable.pack_painting, "painting"),
@@ -122,6 +123,7 @@ fun PackFamily.defaultSubId(): String = when (this) {
     PackFamily.Museum -> MuseumTopic.Random.testTagSuffix
     PackFamily.Personal -> "all"
     PackFamily.Sound -> AudioPackTopic.Essentials.testTagSuffix
+    PackFamily.Neural -> AudioPackTopic.AtmospheresNature.testTagSuffix
     PackFamily.Photo,
     PackFamily.Video,
     PackFamily.Sculpture,
@@ -275,6 +277,20 @@ fun PackFamily.subPackTiles(catalog: List<Artwork> = emptyList()): List<PackTile
             sellablePackId = topic.sellablePackId,
         )
     }
+    PackFamily.Neural -> listOf(
+        AudioPackTopic.AtmospheresNature,
+        AudioPackTopic.MuseumsClassical,
+        AudioPackTopic.GenartDigital,
+    ).map { topic ->
+        PackTile(
+            id = "sub_neural_${topic.testTagSuffix}",
+            titleRes = topic.labelRes,
+            coverRes = PackCovers.audio(topic),
+            selection = PackSelection(PackFamily.Neural, topic.testTagSuffix),
+            testTagSuffix = "neural_${topic.testTagSuffix}",
+            sellablePackId = topic.sellablePackId,
+        )
+    }
     PackFamily.VintageGames -> listOf(
         PackTile(
             id = "sub_vintage_${VintageGamesSub.AMBIENT}",
@@ -392,12 +408,14 @@ fun resolvePackPool(catalog: List<Artwork>, selection: PackSelection): List<Artw
             )
         }
         PackFamily.Sound -> emptyList()
+        PackFamily.Neural -> emptyList()
     }
 
     val isRandom = when (selection.family) {
         PackFamily.Museum -> (selection.museumTopicOrNull() ?: MuseumTopic.Random) == MuseumTopic.Random
         PackFamily.Personal -> true
         PackFamily.Sound -> true
+        PackFamily.Neural -> true
         PackFamily.VintageGames -> true
         PackFamily.Genart -> false
         PackFamily.Photo ->
@@ -453,7 +471,7 @@ fun PackSelection.genartTopicOrNull(): GenartTopic? =
 
 fun PackSelection.audioPackTopicOrNull(): AudioPackTopic? =
     when {
-        family == PackFamily.Sound && subId != null ->
+        (family == PackFamily.Sound || family == PackFamily.Neural) && subId != null ->
             AudioPackTopic.entries.firstOrNull { it.testTagSuffix == subId }
         family == PackFamily.VintageGames && subId == VintageGamesSub.MUSIC ->
             AudioPackTopic.ArcadeChips
@@ -462,7 +480,7 @@ fun PackSelection.audioPackTopicOrNull(): AudioPackTopic? =
 
 /** True when this selection opens Sound Player instead of Ambient. */
 fun PackSelection.opensSoundPlayer(): Boolean =
-    family == PackFamily.Sound ||
+    family == PackFamily.Sound || family == PackFamily.Neural ||
         (family == PackFamily.VintageGames && subId == VintageGamesSub.MUSIC)
 
 /** True when Ambient start should enable the Arcade Chips chiptune pack. */
@@ -479,7 +497,7 @@ fun PackSelection.applySoundPack(
     styleOverride: MusicStyle? = null,
 ) {
     val topic = when {
-        family == PackFamily.Sound -> audioPackTopicOrNull()
+        family == PackFamily.Sound || family == PackFamily.Neural -> audioPackTopicOrNull()
         family == PackFamily.VintageGames && appliesArcadeChipsOnAmbientStart() ->
             AudioPackTopic.ArcadeChips
         family == PackFamily.VintageGames && subId == VintageGamesSub.MUSIC ->
@@ -585,6 +603,7 @@ fun PackSelection.sourceIdsForAmbientLoad(): List<String>? = when (family) {
     PackFamily.VintageGames -> null
     PackFamily.Personal -> null
     PackFamily.Sound -> null
+    PackFamily.Neural -> null
 }
 
 /** Painting / Sculpture pack: Random → museums without Louvre. */

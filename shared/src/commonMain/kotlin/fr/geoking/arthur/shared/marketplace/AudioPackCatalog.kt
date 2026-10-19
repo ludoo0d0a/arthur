@@ -20,6 +20,9 @@ object AudioPackCatalog {
     const val MIDNIGHT_BALLAD = "midnight_ballad"
     const val HAWAIIAN_BREEZE = "hawaiian_breeze"
     const val ARCADE_CHIPS = "arcade_chips"
+    const val ATMOSPHERES_NATURE = "atmospheres_nature"
+    const val MUSEUMS_CLASSICAL = "museums_classical"
+    const val GENART_DIGITAL = "genart_digital"
 
     /** Free styles always playable without a pack purchase. */
     val freeStyleSuffixes: Set<String> = setOf(
@@ -62,6 +65,21 @@ object AudioPackCatalog {
             ARCADE_CHIPS,
             listOf("chiptune", "chip_arp", "arcade_glow"),
             "chiptune",
+        ),
+        PackDef(
+            ATMOSPHERES_NATURE,
+            listOf("ocean_waves", "wind_ambience", "soft_rain"),
+            "ocean_waves",
+        ),
+        PackDef(
+            MUSEUMS_CLASSICAL,
+            listOf("classical_piano", "orchestra_pads"),
+            "classical_piano",
+        ),
+        PackDef(
+            GENART_DIGITAL,
+            listOf("cosmic_drone", "chiptune"),
+            "cosmic_drone",
         ),
     )
 

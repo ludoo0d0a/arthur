@@ -192,33 +192,84 @@ fun SoundPlayerScreen(
                 color = Color.White,
                 modifier = Modifier.testTag("sound_player_title"),
             )
-            val stylesLine = styles.joinToString(" · ") { style ->
-                context.getString(style.labelRes())
+            val neuralPack = when (topic) {
+                AudioPackTopic.AtmospheresNature -> fr.geoking.arthur.shared.audio.NeuralAudioPack.ATMOSPHERES_NATURE
+                AudioPackTopic.MuseumsClassical -> fr.geoking.arthur.shared.audio.NeuralAudioPack.MUSEUMS_CLASSICAL
+                AudioPackTopic.GenartDigital -> fr.geoking.arthur.shared.audio.NeuralAudioPack.GENART_DIGITAL
+                else -> null
             }
-            Text(
-                text = stylesLine,
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.8f),
-                modifier = Modifier
-                    .padding(top = 6.dp)
-                    .testTag("sound_player_styles_line"),
-            )
 
-            if (styles.size > 1) {
+            if (neuralPack != null) {
+                val prompts = remember(neuralPack) {
+                    fr.geoking.arthur.shared.audio.NeuralPromptCatalog.promptsForPack(neuralPack)
+                }
+                var selectedPromptIndex by remember { mutableStateOf(0) }
+                val currentPrompt = prompts.getOrElse(selectedPromptIndex) { prompts.first() }
+
+                Text(
+                    text = stringResource(R.string.neural_model_ready),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color(0xFF81C784),
+                    modifier = Modifier
+                        .padding(top = 4.dp)
+                        .testTag("sound_player_model_status"),
+                )
+
+                Text(
+                    text = "${currentPrompt.title} — ${currentPrompt.promptText}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.85f),
+                    modifier = Modifier
+                        .padding(top = 6.dp)
+                        .testTag("sound_player_styles_line"),
+                )
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 16.dp)
-                        .horizontalScroll(rememberScrollState()),
+                        .padding(top = 14.dp)
+                        .horizontalScroll(rememberScrollState())
+                        .testTag("sound_player_prompts_row"),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    styles.forEach { style ->
+                    prompts.forEachIndexed { idx, prompt ->
                         FilterChip(
-                            selected = selectedStyle == style,
-                            onClick = { selectedStyle = style },
-                            label = { Text(stringResource(style.labelRes())) },
-                            modifier = Modifier.testTag("sound_player_style_${style.name}"),
+                            selected = selectedPromptIndex == idx,
+                            onClick = { selectedPromptIndex = idx },
+                            label = { Text(prompt.title) },
+                            modifier = Modifier.testTag("sound_player_prompt_$idx"),
                         )
+                    }
+                }
+            } else {
+                val stylesLine = styles.joinToString(" · ") { style ->
+                    context.getString(style.labelRes())
+                }
+                Text(
+                    text = stylesLine,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.8f),
+                    modifier = Modifier
+                        .padding(top = 6.dp)
+                        .testTag("sound_player_styles_line"),
+                )
+
+                if (styles.size > 1) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp)
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        styles.forEach { style ->
+                            FilterChip(
+                                selected = selectedStyle == style,
+                                onClick = { selectedStyle = style },
+                                label = { Text(stringResource(style.labelRes())) },
+                                modifier = Modifier.testTag("sound_player_style_${style.name}"),
+                            )
+                        }
                     }
                 }
             }

@@ -213,4 +213,21 @@ class SettingsScreenTest {
         assertEquals(0.55f, nearestAmbientComplexityLevel(0.5f), 0.001f)
         assertEquals(0.9f, nearestAmbientComplexityLevel(0.8f), 0.001f)
     }
+
+    @Test
+    fun settingsScreen_rendersNeuralModelsDownloadManager() {
+        composeTestRule.setContent {
+            ArthurTheme {
+                SettingsScreen(
+                    onDismiss = {},
+                    initialScreenStack = listOf(SettingsScreenPage.NeuralModels),
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithTag("settings_neural_models_page").assertExists()
+        composeTestRule.onNodeWithTag("neural_model_card_soundgen").assertExists()
+        composeTestRule.onNodeWithTag("neural_model_card_musicgen_small").assertExists()
+        composeTestRule.onNodeWithTag("neural_model_card_stable_audio_3_small").assertExists()
+    }
 }

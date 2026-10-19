@@ -176,6 +176,14 @@
     <string name="settings_quote_provider_subtitle">Language of Ambient quotes</string>
     <string name="settings_quote_provider_zenquotes">ZenQuotes (English)</string>
     <string name="settings_quote_provider_lecog">Citation.lecog.fr (French)</string>
+    <string name="settings_neural_models">AI Music Models</string>
+    <string name="settings_neural_models_subtitle">Download &amp; manage neural music engine weights</string>
+    <string name="neural_model_download">Download Model</string>
+    <string name="neural_model_delete">Delete Model</string>
+    <string name="neural_model_not_downloaded">Not downloaded</string>
+    <string name="neural_model_downloading_progress">Downloading %1$d%% (%2$s / %3$s)</string>
+    <string name="neural_model_downloading_unknown">Downloading %1$s…</string>
+    <string name="neural_model_delete_confirm">Delete this model file?</string>
     <string name="settings_ambient_sound">Ambient sound</string>
     <string name="settings_ambient_sound_subtitle">Procedural piano &amp; melodies during Ambient slideshows</string>
     <string name="settings_ambient_sound_enable">Enable ambient sound</string>

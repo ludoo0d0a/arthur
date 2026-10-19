@@ -231,6 +231,18 @@ class PackModelsTest {
     }
 
     @Test
+    fun neuralSubPacks_includeThreeNeuralTopics() {
+        val tiles = PackFamily.Neural.subPackTiles()
+        assertEquals(3, tiles.size)
+        assertEquals("neural_atmospheres_nature", tiles[0].testTagSuffix)
+        assertEquals("neural_museums_classical", tiles[1].testTagSuffix)
+        assertEquals("neural_genart_digital", tiles[2].testTagSuffix)
+        assertTrue(PackSelection(PackFamily.Neural, "atmospheres_nature").opensSoundPlayer())
+        val pool = resolvePackPool(catalog, PackSelection(PackFamily.Neural, "atmospheres_nature"))
+        assertTrue(pool.isEmpty())
+    }
+
+    @Test
     fun genartItemCounts_computedWhenCatalogProvided() {
         val homeTile = PackFamily.Genart.homeTile(catalog)
         assertEquals(5, homeTile.itemCount)

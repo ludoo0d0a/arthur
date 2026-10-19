@@ -85,6 +85,7 @@
     <string name="marketplace_subtitle">Acheter des packs Photos personnelles, Genart et Son</string>
     <string name="marketplace_audio_pack">Son · %1$s</string>
     <string name="pack_sound">Son</string>
+    <string name="pack_neural">IA Neurale</string>
     <string name="sound_player_use_in_ambient">Utiliser dans Ambient</string>
     <string name="sound_player_done">Terminé</string>
     <string name="audio_pack_essentials">Essentiels acoustiques</string>
@@ -103,6 +104,13 @@
     <string name="audio_pack_midnight_ballad">Ballade de minuit</string>
     <string name="audio_pack_hawaiian_breeze">Brise hawaïenne</string>
     <string name="audio_pack_arcade_chips">Puces arcade</string>
+    <string name="audio_pack_atmospheres_nature">Atmosphères &amp; Nature</string>
+    <string name="audio_pack_museums_classical">Musées &amp; Art Classique</string>
+    <string name="audio_pack_genart_digital">Genart &amp; Art Numérique</string>
+    <string name="neural_model_downloading">Téléchargement du modèle (%1$d%%)…</string>
+    <string name="neural_model_ready">Modèle Prêt</string>
+    <string name="neural_procedural_fallback">Musique Procédurale de Secours</string>
+    <string name="neural_prompts_title">Catalogue de Prompts</string>
     <string name="premium_ux_subtitle">Sans pubs et favoris (bientôt)</string>
     <string name="genart_topic_fractal">Fractale</string>
     <string name="genart_topic_custom">Perso</string>

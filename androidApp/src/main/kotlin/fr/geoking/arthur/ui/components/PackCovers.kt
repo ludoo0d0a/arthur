@@ -91,5 +91,8 @@ object PackCovers {
         AudioPackTopic.MidnightBallad -> R.drawable.pack_audio_midnight_ballad
         AudioPackTopic.HawaiianBreeze -> R.drawable.pack_audio_hawaiian_breeze
         AudioPackTopic.ArcadeChips -> R.drawable.pack_audio_arcade_chips
+        AudioPackTopic.AtmospheresNature -> R.drawable.pack_audio_atmospheres_nature
+        AudioPackTopic.MuseumsClassical -> R.drawable.pack_audio_museums_classical
+        AudioPackTopic.GenartDigital -> R.drawable.pack_audio_genart_digital
     }
 }

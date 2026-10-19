@@ -4,6 +4,7 @@
 /local.properties
 *.iml
 .idea/
+!.idea/vcs.xml
 .DS_Store
 captures/
 .cxx/

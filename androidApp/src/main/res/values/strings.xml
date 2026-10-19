@@ -145,6 +145,7 @@
     <string name="car_error_generic">Unable to show ambient art</string>
     <string name="update_available_title">Update available</string>
     <string name="update_available_message">A new version of Arthur is available. Update now to get the latest features and improvements.</string>
+    <string name="update_available_tv_message">A new version of Arthur is available. Open the Play Store on this TV to install it.</string>
     <string name="update_available_car_title">Update available</string>
     <string name="update_available_car_subtitle">Update Arthur on Play Store via your phone</string>
     <string name="update_in_progress">Update in progress</string>
@@ -153,6 +154,7 @@
     <string name="update_check_error_title">Update check</string>
     <string name="update_check_ok">OK</string>
     <string name="action_update">Update</string>
+    <string name="action_open_play_store">Open Play Store</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_back">Back</string>
     <string name="action_media_player">Media Player</string>

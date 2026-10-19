@@ -13,14 +13,16 @@ import fr.geoking.arthur.phone.theme.ArthurTheme
 fun UpdateAvailableDialog(
     onCancel: () -> Unit,
     onUpdate: () -> Unit,
+    messageResId: Int = R.string.update_available_message,
+    confirmLabelResId: Int = R.string.action_update,
 ) {
     AlertDialog(
         onDismissRequest = onCancel,
         title = { Text(stringResource(R.string.update_available_title)) },
-        text = { Text(stringResource(R.string.update_available_message)) },
+        text = { Text(stringResource(messageResId)) },
         confirmButton = {
             TextButton(onClick = onUpdate) {
-                Text(stringResource(R.string.action_update))
+                Text(stringResource(confirmLabelResId))
             }
         },
         dismissButton = {

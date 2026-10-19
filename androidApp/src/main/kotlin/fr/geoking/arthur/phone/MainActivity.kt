@@ -62,6 +62,8 @@ import fr.geoking.arthur.ui.screens.SettingsScreen
 import fr.geoking.arthur.ui.screens.SoundPlayerScreen
 import fr.geoking.arthur.ui.screens.TvLanPairingHostScreen
 import fr.geoking.arthur.update.InAppUpdateHelper
+import fr.geoking.arthur.update.PlayStoreUpdates
+import fr.geoking.arthur.update.TvUpdateChecker
 import fr.geoking.tools.inappupdate.CheckFeedback
 import fr.geoking.tools.inappupdate.UpdateNotificationSpec
 import org.koin.android.ext.android.inject
@@ -83,19 +85,30 @@ class MainActivity : ComponentActivity() {
     private val ambientAudioSettings: AmbientAudioSettings by inject()
     private val lanPairingPrefs: LanPairingPrefs by inject()
 
+    private val isTelevision: Boolean
+        get() = resources.configuration.uiMode and Configuration.UI_MODE_TYPE_MASK ==
+            Configuration.UI_MODE_TYPE_TELEVISION
+
+    /** Phone-only flexible Play Core flow. Null on TV (API unsupported). */
     private val inAppUpdateHelper by lazy {
-        InAppUpdateHelper(
-            context = applicationContext,
-            notificationSpec = UpdateNotificationSpec(
-                channelId = "arthur_updates",
-                channelName = getString(R.string.update_available_title),
-                smallIcon = R.drawable.ic_sparkle,
-                title = getString(R.string.update_available_title),
-                message = getString(R.string.update_available_message),
-                launchActivityClass = MainActivity::class.java,
-            ),
-        )
+        if (isTelevision) {
+            null
+        } else {
+            InAppUpdateHelper(
+                context = applicationContext,
+                notificationSpec = UpdateNotificationSpec(
+                    channelId = "arthur_updates",
+                    channelName = getString(R.string.update_available_title),
+                    smallIcon = R.drawable.ic_sparkle,
+                    title = getString(R.string.update_available_title),
+                    message = getString(R.string.update_available_message),
+                    launchActivityClass = MainActivity::class.java,
+                ),
+            )
+        }
     }
+
+    private val tvUpdateChecker by lazy { TvUpdateChecker(applicationContext) }
 
     private val updateResultLauncher = registerForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult(),
@@ -112,12 +125,15 @@ class MainActivity : ComponentActivity() {
             statusBarStyle = SystemBarStyle.dark(AndroidColor.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(AndroidColor.TRANSPARENT),
         )
-        val isTelevision = resources.configuration.uiMode and Configuration.UI_MODE_TYPE_MASK ==
-            Configuration.UI_MODE_TYPE_TELEVISION
+        val isTelevision = this.isTelevision
 
-        inAppUpdateHelper.consumeLaunchIntent(intent)
         if (BuildConfig.IS_PLAYSTORE_DISTRIBUTION) {
-            inAppUpdateHelper.checkForUpdate()
+            if (isTelevision) {
+                tvUpdateChecker.check()
+            } else {
+                inAppUpdateHelper?.consumeLaunchIntent(intent)
+                inAppUpdateHelper?.checkForUpdate()
+            }
         }
         handleDeepLinkIntent(intent)
         maybeOpenPairingFromIntent(intent)
@@ -125,18 +141,25 @@ class MainActivity : ComponentActivity() {
         setContent {
             ArthurTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    val updateAvailable by inAppUpdateHelper.updateAvailable.collectAsState()
-                    val autoStartUpdate by inAppUpdateHelper.autoStartUpdate.collectAsState()
-                    val installStatus by inAppUpdateHelper.installStatus.collectAsState()
-                    val checkFeedback by inAppUpdateHelper.checkFeedback.collectAsState()
-                    val isUpdateInProgress = installStatus == InstallStatus.PENDING ||
-                        installStatus == InstallStatus.DOWNLOADING ||
-                        installStatus == InstallStatus.INSTALLING
+                    val phoneHelper = inAppUpdateHelper
+                    val tvUpdateAvailable by tvUpdateChecker.available.collectAsState()
+                    val phoneInstallFlow = remember(phoneHelper) {
+                        phoneHelper?.installStatus
+                            ?: kotlinx.coroutines.flow.MutableStateFlow(InstallStatus.UNKNOWN)
+                    }
+                    val phoneInstallStatus by phoneInstallFlow.collectAsState()
+                    val isPhoneUpdateInProgress =
+                        phoneHelper != null && (
+                            phoneInstallStatus == InstallStatus.PENDING ||
+                                phoneInstallStatus == InstallStatus.DOWNLOADING ||
+                                phoneInstallStatus == InstallStatus.INSTALLING
+                            )
 
-                    LaunchedEffect(updateAvailable, autoStartUpdate) {
-                        if (autoStartUpdate && updateAvailable != null) {
-                            inAppUpdateHelper.maybeAutoStartUpdate(updateResultLauncher)
-                        }
+                    if (phoneHelper != null) {
+                        PhoneInAppUpdateEffects(
+                            helper = phoneHelper,
+                            updateResultLauncher = updateResultLauncher,
+                        )
                     }
 
                     Box(modifier = Modifier.fillMaxSize()) {
@@ -249,7 +272,11 @@ class MainActivity : ComponentActivity() {
                                     deviantArtPassword = stockPhotoSettings.deviantArtPassword,
                                     onDeviantArtPasswordChange = { stockPhotoSettings.deviantArtPassword = it },
                                     onCheckForUpdate = {
-                                        inAppUpdateHelper.checkForUpdate(manual = true)
+                                        if (isTelevision) {
+                                            PlayStoreUpdates.openAppListing(this@MainActivity)
+                                        } else {
+                                            inAppUpdateHelper?.checkForUpdate(manual = true)
+                                        }
                                     },
                                     onOpenMarketplace = { highlight ->
                                         showSettings = false
@@ -316,7 +343,7 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        if (isUpdateInProgress) {
+                        if (isPhoneUpdateInProgress) {
                             UpdateInProgressBanner(
                                 modifier = Modifier
                                     .align(Alignment.TopCenter)
@@ -335,32 +362,16 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    // Notification tap auto-starts; skip the confirm dialog in that path.
-                    val dialogUpdate = updateAvailable?.takeUnless { autoStartUpdate }
-                    dialogUpdate?.let { info ->
+                    if (isTelevision && tvUpdateAvailable) {
                         UpdateAvailableDialog(
-                            onCancel = { inAppUpdateHelper.dismissUpdate() },
+                            onCancel = { tvUpdateChecker.dismiss() },
                             onUpdate = {
-                                inAppUpdateHelper.startUpdate(info, updateResultLauncher)
+                                tvUpdateChecker.dismiss()
+                                PlayStoreUpdates.openAppListing(this@MainActivity)
                             },
+                            messageResId = R.string.update_available_tv_message,
+                            confirmLabelResId = R.string.action_open_play_store,
                         )
-                    }
-
-                    when (val feedback = checkFeedback) {
-                        is CheckFeedback.UpToDate -> {
-                            UpdateCheckFeedbackDialog(
-                                isError = false,
-                                onDismiss = { inAppUpdateHelper.resetCheckFeedback() },
-                            )
-                        }
-                        is CheckFeedback.Error -> {
-                            UpdateCheckFeedbackDialog(
-                                isError = true,
-                                errorMessage = feedback.message,
-                                onDismiss = { inAppUpdateHelper.resetCheckFeedback() },
-                            )
-                        }
-                        CheckFeedback.None -> Unit
                     }
                 }
             }
@@ -370,7 +381,7 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        inAppUpdateHelper.consumeLaunchIntent(intent)
+        inAppUpdateHelper?.consumeLaunchIntent(intent)
         handleDeepLinkIntent(intent)
         maybeOpenPairingFromIntent(intent)
     }
@@ -418,14 +429,61 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (inAppUpdateHelper.installStatus.value == InstallStatus.DOWNLOADED) {
-            inAppUpdateHelper.completeUpdate()
+        val helper = inAppUpdateHelper ?: return
+        if (helper.installStatus.value == InstallStatus.DOWNLOADED) {
+            helper.completeUpdate()
         }
     }
 
     override fun onDestroy() {
-        inAppUpdateHelper.unregister()
+        inAppUpdateHelper?.unregister()
         super.onDestroy()
+    }
+}
+
+/**
+ * Phone-only flexible in-app update dialogs + auto-start. Banner lives in [MainActivity]'s
+ * main [Box] so this composable never covers the control plane.
+ */
+@androidx.compose.runtime.Composable
+private fun PhoneInAppUpdateEffects(
+    helper: InAppUpdateHelper,
+    updateResultLauncher: androidx.activity.result.ActivityResultLauncher<androidx.activity.result.IntentSenderRequest>,
+) {
+    val updateAvailable by helper.updateAvailable.collectAsState()
+    val autoStartUpdate by helper.autoStartUpdate.collectAsState()
+    val checkFeedback by helper.checkFeedback.collectAsState()
+
+    LaunchedEffect(updateAvailable, autoStartUpdate) {
+        if (autoStartUpdate && updateAvailable != null) {
+            helper.maybeAutoStartUpdate(updateResultLauncher)
+        }
+    }
+
+    // Notification tap auto-starts; skip the confirm dialog in that path.
+    val dialogUpdate = updateAvailable?.takeUnless { autoStartUpdate }
+    dialogUpdate?.let { info ->
+        UpdateAvailableDialog(
+            onCancel = { helper.dismissUpdate() },
+            onUpdate = { helper.startUpdate(info, updateResultLauncher) },
+        )
+    }
+
+    when (val feedback = checkFeedback) {
+        is CheckFeedback.UpToDate -> {
+            UpdateCheckFeedbackDialog(
+                isError = false,
+                onDismiss = { helper.resetCheckFeedback() },
+            )
+        }
+        is CheckFeedback.Error -> {
+            UpdateCheckFeedbackDialog(
+                isError = true,
+                errorMessage = feedback.message,
+                onDismiss = { helper.resetCheckFeedback() },
+            )
+        }
+        CheckFeedback.None -> Unit
     }
 }
 

@@ -26,6 +26,7 @@ import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import fr.geoking.arthur.BuildConfig
 import fr.geoking.arthur.R
 import fr.geoking.arthur.phone.theme.ArthurTheme
 import fr.geoking.arthur.shared.domain.Artwork
@@ -35,12 +36,15 @@ import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
 import fr.geoking.arthur.shared.engine.ContentEngine
 import fr.geoking.arthur.source.RotationSettings
 import fr.geoking.arthur.source.ScreensaverSettings
+import fr.geoking.arthur.ui.UpdateAvailableDialog
 import fr.geoking.arthur.ui.components.PackSelection
 import fr.geoking.arthur.ui.components.allowsGenerativeAmbientFallback
 import fr.geoking.arthur.ui.components.resolvePackPool
 import fr.geoking.arthur.ui.components.sourceIdsForAmbientLoad
 import fr.geoking.arthur.ui.screens.AmbientScreenContent
 import fr.geoking.arthur.auto.AmbientAlbumArt
+import fr.geoking.arthur.update.PlayStoreUpdates
+import fr.geoking.arthur.update.TvUpdateChecker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -50,6 +54,7 @@ import org.koin.android.ext.android.inject
 class AmbientActivity : ComponentActivity() {
     private val contentEngine: ContentEngine by inject()
     private val rotationSettings: RotationSettings by inject()
+    private val tvUpdateChecker by lazy { TvUpdateChecker(applicationContext) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,6 +63,9 @@ class AmbientActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
         )
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        if (BuildConfig.IS_PLAYSTORE_DISTRIBUTION) {
+            tvUpdateChecker.check()
+        }
         val requested = intentArtwork()
         val rotate = intent.getBooleanExtra(EXTRA_ROTATE, false) ||
             intent.data?.getQueryParameter("rotate")?.toBooleanStrictOrNull() == true
@@ -69,6 +77,7 @@ class AmbientActivity : ComponentActivity() {
                 var rotationPool by remember { mutableStateOf(stashedPool) }
                 var isLoading by remember { mutableStateOf(false) }
                 val intervalMs by rotationSettings.tvIntervalMs.collectAsState()
+                val tvUpdateAvailable by tvUpdateChecker.available.collectAsState()
                 val scope = rememberCoroutineScope()
                 LaunchedEffect(requested?.id, rotate) {
                     if (!rotate) {
@@ -151,6 +160,18 @@ class AmbientActivity : ComponentActivity() {
                         null
                     },
                 )
+                // Play Core in-app updates are unsupported on TV; open the store listing.
+                if (tvUpdateAvailable) {
+                    UpdateAvailableDialog(
+                        onCancel = { tvUpdateChecker.dismiss() },
+                        onUpdate = {
+                            tvUpdateChecker.dismiss()
+                            PlayStoreUpdates.openAppListing(this@AmbientActivity)
+                        },
+                        messageResId = R.string.update_available_tv_message,
+                        confirmLabelResId = R.string.action_open_play_store,
+                    )
+                }
             }
         }
     }

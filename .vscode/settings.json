@@ -1,0 +1,10 @@
+{
+  "git.autoRepositoryDetection": true,
+  "git.repositoryScanMaxDepth": 1,
+  "git.ignoredRepositories": [
+    "${workspaceFolder}/geoking-tools"
+  ],
+  "git.scanRepositories": [
+    "${workspaceFolder}/../geoking-tools"
+  ]
+}

@@ -25,8 +25,9 @@ include(":fractal")
 include(":genart")
 include(":androidApp")
 
+// Prefer sibling ../geoking-tools over an in-app path so Cursor/IDE see one Git root.
 val gkToolsRoot = System.getenv("GK_TOOLS")
-    ?: listOf("geoking-tools", "../geoking-tools", "../../geoking-tools")
+    ?: listOf("../geoking-tools", "../../geoking-tools", "geoking-tools")
         .map { rootDir.resolve(it) }
         .firstOrNull { it.resolve("android").isDirectory }
         ?.absolutePath

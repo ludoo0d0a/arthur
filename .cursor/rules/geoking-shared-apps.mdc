@@ -16,7 +16,7 @@ These three product apps share the same Android CI/CD and tooling stack:
 ## Shared infrastructure
 
 - **geoking-ci** (`~/dev/android/geoking-ci`) — reusable GitHub Actions (`gk-release-play`, `gk-setup-gradle`, scripts). App workflows call these; secrets stay in each app’s `.github/workflows/*.yml` `env:`.
-- **geoking-tools** (`~/dev/android/geoking-tools`) — **one** checkout only. Shared Gradle libs, templates, listing/release scripts, Cursor skills (`gk-*`). Apps consume via sibling path / optional `geoking-tools` symlink / `GK_TOOLS` / CI checkout. IDE VCS must map the sibling once — never both the symlink and `../geoking-tools`.
+- **geoking-tools** (`~/dev/android/geoking-tools`) — **one** checkout only. Shared Gradle libs, templates, listing/release scripts, Cursor skills (`gk-*`). Apps consume via sibling path / `GK_TOOLS` / CI in-app checkout. Do **not** create an in-app `geoking-tools` symlink (duplicates the Git root in Cursor Source Control). IDE VCS / `.vscode` map the sibling once.
 
 ## When changing shared behavior
 

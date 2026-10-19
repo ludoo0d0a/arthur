@@ -33,5 +33,5 @@ playstore/whatsnew/
 .firebase/
 .wrangler/
 
-# Local symlink to shared tools (link-scripts.sh; CI checks out the repo here)
+# In-app tools tree: CI checkout only (no local symlink — duplicates Cursor Git roots)
 /geoking-tools

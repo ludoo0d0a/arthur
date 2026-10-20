@@ -1,0 +1,53 @@
+{
+  "id": "arr_ambient_jazz_pack",
+  "title": "Arthur Ambient Jazz Generator",
+  "bpm": 90,
+  "key": "C Major",
+  "loopDurationSeconds": 8.0,
+  "tracks": [
+    {
+      "id": "nature_fx",
+      "name": "Rain & Wind",
+      "category": "NATURE_FX",
+      "filename": "nature_fx.opus",
+      "defaultGain": 0.6,
+      "defaultPan": 0.0,
+      "isOptional": true,
+      "activationProbability": 0.7,
+      "dynamicRule": "AMBIENT_BACKGROUND"
+    },
+    {
+      "id": "scifi_fx",
+      "name": "Cosmic Sub Drone",
+      "category": "SCIFI_FX",
+      "filename": "scifi_fx.opus",
+      "defaultGain": 0.5,
+      "defaultPan": -0.2,
+      "isOptional": true,
+      "activationProbability": 0.5,
+      "dynamicRule": "DEEP_DRONE"
+    },
+    {
+      "id": "jazz_chords",
+      "name": "Lo-Fi Jazz Keys",
+      "category": "JAZZ_MUSIC",
+      "filename": "jazz_chords.opus",
+      "defaultGain": 0.8,
+      "defaultPan": 0.1,
+      "isOptional": false,
+      "activationProbability": 1.0,
+      "dynamicRule": "HARMONY_LEAD"
+    },
+    {
+      "id": "percussion",
+      "name": "Soft Beat",
+      "category": "PERCUSSION",
+      "filename": "percussion.opus",
+      "defaultGain": 0.7,
+      "defaultPan": 0.0,
+      "isOptional": true,
+      "activationProbability": 0.8,
+      "dynamicRule": "RHYTHM_FOUNDATION"
+    }
+  ]
+}

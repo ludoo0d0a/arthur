@@ -23,6 +23,7 @@ object AudioPackCatalog {
     const val ATMOSPHERES_NATURE = "atmospheres_nature"
     const val MUSEUMS_CLASSICAL = "museums_classical"
     const val GENART_DIGITAL = "genart_digital"
+    const val STEM = "stem"
     const val WAVETABLE = "wavetable"
 
     /** Free styles always playable without a pack purchase. */
@@ -81,6 +82,11 @@ object AudioPackCatalog {
             GENART_DIGITAL,
             listOf("cosmic_drone", "chiptune"),
             "cosmic_drone",
+        ),
+        PackDef(
+            STEM,
+            listOf("zen", "bar_ambience"),
+            "zen",
         ),
         PackDef(
             WAVETABLE,

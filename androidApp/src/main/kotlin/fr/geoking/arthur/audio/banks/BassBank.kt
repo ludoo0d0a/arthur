@@ -53,8 +53,9 @@ object BassBank {
             MusicStyle.Fireplace, MusicStyle.Songbirds, MusicStyle.OrchestraPads,
             MusicStyle.OrchestraSwell,
             -> listOf(drone, balladPedal)
-            MusicStyle.Chiptune, MusicStyle.ChipArp, MusicStyle.ArcadeGlow ->
-                listOf(bluesRoot5, jazzWalk, classical)
+            MusicStyle.Chiptune, MusicStyle.ChipArp, MusicStyle.ArcadeGlow,
+            MusicStyle.Wavetable,
+            -> listOf(bluesRoot5, jazzWalk, classical)
         }
         return list[Math.floorMod(index, list.size)]
     }

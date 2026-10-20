@@ -551,6 +551,7 @@ fun MusicStyle.labelRes(): Int = when (this) {
     MusicStyle.Chiptune -> R.string.settings_ambient_sound_style_chiptune
     MusicStyle.ChipArp -> R.string.settings_ambient_sound_style_chip_arp
     MusicStyle.ArcadeGlow -> R.string.settings_ambient_sound_style_arcade_glow
+    MusicStyle.Wavetable -> R.string.settings_ambient_sound_style_wavetable
 }
 
 fun PackSelection.museumTopicOrNull(): MuseumTopic? =

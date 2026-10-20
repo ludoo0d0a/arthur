@@ -31,9 +31,11 @@ import fr.geoking.arthur.audio.voices.SinePadVoice
 import fr.geoking.arthur.audio.voices.SoftBassVoice
 import fr.geoking.arthur.audio.voices.SoftPianoPool
 import fr.geoking.arthur.audio.voices.SoftPulseVoice
+import fr.geoking.arthur.audio.voices.GranularSynthVoice
 import fr.geoking.arthur.audio.voices.SquareLeadVoice
 import fr.geoking.arthur.audio.voices.SynthVoice
 import fr.geoking.arthur.audio.voices.WaveNoiseVoice
+import fr.geoking.arthur.audio.voices.WavetablePool
 import fr.geoking.arthur.audio.voices.WavetablePianoPool
 import fr.geoking.arthur.audio.voices.WindTextureVoice
 import fr.geoking.arthur.audio.voices.softLimit
@@ -149,6 +151,8 @@ class ProceduralMusicEngine(
     private val kalimba = PolyVoicePool(4) { KalimbaPluckVoice() }
     private val squareLead = SquareLeadVoice(duty = 0.35f)
     private val chipPulse = SquareLeadVoice(duty = 0.18f, decayPerSec = 9.0)
+    private val wavetableSynth = WavetablePool(6)
+    private val granularCloud = GranularSynthVoice(16)
     private val roomBus = RoomBus()
     private val reverb = StereoReverb()
     private val padChorus = StereoChorus()
@@ -526,6 +530,8 @@ class ProceduralMusicEngine(
         kalimba.noteOff()
         chimes.noteOff()
         bass.noteOff()
+        wavetableSynth.noteOff()
+        granularCloud.noteOff()
     }
 
     private suspend fun renderAudioLoop() = coroutineScope {
@@ -831,6 +837,16 @@ class ProceduralMusicEngine(
                         if (squareLead.isAudible()) squareLead.render(sampleIndex, sr)
                         if (chipPulse.isAudible()) chipPulse.render(sampleIndex, sr)
                     }
+                    if (pianoAudible && (wavetableSynth.isAudible() || granularCloud.isAudible())) {
+                        val wt = wavetableSynth.render(sampleIndex, sr) * leadMul
+                        val gr = granularCloud.render(sampleIndex, sr) * leadMul
+                        dl += wt * panSquare.l + granularCloud.outPanL * leadMul
+                        dr += wt * panSquare.r + granularCloud.outPanR * leadMul
+                        leadSend += wt + gr
+                    } else {
+                        if (wavetableSynth.isAudible()) wavetableSynth.render(sampleIndex, sr)
+                        if (granularCloud.isAudible()) granularCloud.render(sampleIndex, sr)
+                    }
 
                     if (textureKind != TextureKind.None) {
                         val texMul = textureGain * arrangement.textureMul * textureEvo
@@ -1119,6 +1135,12 @@ class ProceduralMusicEngine(
                     pianoVoice.noteOn(hz, vel * 0.35f)
                 }
             }
+            MusicStyle.Wavetable -> {
+                wavetableSynth.noteOn(hz, vel)
+                if (quality == SynthQuality.Full) {
+                    granularCloud.noteOn(hz * 0.5f, vel * 0.65f)
+                }
+            }
         }
     }
 
@@ -1174,6 +1196,7 @@ class ProceduralMusicEngine(
                 MusicStyle.ViolinLead,
                 -> 0.26f
                 MusicStyle.Chiptune, MusicStyle.ChipArp, MusicStyle.ArcadeGlow -> 0.08f
+                MusicStyle.Wavetable -> 0.48f
                 else -> 0.2f
             }
             return when (quality) {
@@ -1187,6 +1210,7 @@ class ProceduralMusicEngine(
             MusicStyle.TibetanBowl, MusicStyle.CosmicDrone, MusicStyle.OrchestraPads,
             MusicStyle.OrchestraSwell,
             -> 0.8f
+            MusicStyle.Wavetable -> 0.95f
             MusicStyle.Chiptune, MusicStyle.ChipArp, MusicStyle.ArcadeGlow -> 0.25f
             MusicStyle.JazzPiano, MusicStyle.BarAmbience -> 0.4f
             else -> 0.55f

@@ -23,6 +23,7 @@ object AudioPackCatalog {
     const val ATMOSPHERES_NATURE = "atmospheres_nature"
     const val MUSEUMS_CLASSICAL = "museums_classical"
     const val GENART_DIGITAL = "genart_digital"
+    const val WAVETABLE = "wavetable"
 
     /** Free styles always playable without a pack purchase. */
     val freeStyleSuffixes: Set<String> = setOf(
@@ -80,6 +81,11 @@ object AudioPackCatalog {
             GENART_DIGITAL,
             listOf("cosmic_drone", "chiptune"),
             "cosmic_drone",
+        ),
+        PackDef(
+            WAVETABLE,
+            listOf("wavetable"),
+            "wavetable",
         ),
     )
 

@@ -100,7 +100,8 @@ object TextureBank {
             fr.geoking.arthur.audio.MusicStyle.Chiptune,
             fr.geoking.arthur.audio.MusicStyle.ChipArp,
             fr.geoking.arthur.audio.MusicStyle.ArcadeGlow,
-            -> listOf(african, jazz, zen)
+            fr.geoking.arthur.audio.MusicStyle.Wavetable,
+            -> listOf(african, jazz, zen, cosmic)
         }
 
     fun pick(style: fr.geoking.arthur.audio.MusicStyle, index: Int): TexturePattern {

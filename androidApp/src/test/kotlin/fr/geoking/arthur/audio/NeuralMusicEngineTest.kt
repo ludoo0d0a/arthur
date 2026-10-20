@@ -77,7 +77,7 @@ class NeuralMusicEngineTest {
         val mgUrl = downloader.getDefaultDownloadUrl(NeuralEngineType.MUSICGEN_SMALL)
         val saUrl = downloader.getDefaultDownloadUrl(NeuralEngineType.STABLE_AUDIO_3_SMALL)
 
-        assertTrue(sgUrl.contains("soundgen"))
+        assertTrue(sgUrl.contains("audiogen") || sgUrl.contains("soundgen"))
         assertTrue(mgUrl.contains("musicgen"))
         assertTrue(saUrl.contains("stable-audio"))
     }

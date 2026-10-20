@@ -9,6 +9,7 @@ plugins {
     alias(libs.plugins.aboutlibraries.android)
     alias(libs.plugins.ksp)
     alias(libs.plugins.androidx.room)
+    alias(libs.plugins.kotlinSerialization)
 }
 
 room {

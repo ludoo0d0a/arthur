@@ -95,5 +95,6 @@ object PackCovers {
         AudioPackTopic.MuseumsClassical -> R.drawable.pack_audio_museums_classical
         AudioPackTopic.GenartDigital -> R.drawable.pack_audio_genart_digital
         AudioPackTopic.Stem -> R.drawable.pack_audio_essentials
+        AudioPackTopic.Wavetable -> R.drawable.pack_audio_wavetable
     }
 }

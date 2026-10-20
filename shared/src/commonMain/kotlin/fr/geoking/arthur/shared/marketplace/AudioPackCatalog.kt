@@ -24,6 +24,7 @@ object AudioPackCatalog {
     const val MUSEUMS_CLASSICAL = "museums_classical"
     const val GENART_DIGITAL = "genart_digital"
     const val STEM = "stem"
+    const val WAVETABLE = "wavetable"
 
     /** Free styles always playable without a pack purchase. */
     val freeStyleSuffixes: Set<String> = setOf(
@@ -86,6 +87,11 @@ object AudioPackCatalog {
             STEM,
             listOf("zen", "bar_ambience"),
             "zen",
+        ),
+        PackDef(
+            WAVETABLE,
+            listOf("wavetable"),
+            "wavetable",
         ),
     )
 

@@ -1355,9 +1355,9 @@ private fun NeuralModelsDownloadManagerContent(
         NeuralEngineType.entries.forEach { engineType ->
             val state = downloadStates[engineType] ?: ModelDownloadState.Idle
             val (title, packName) = when (engineType) {
-                NeuralEngineType.SOUNDGEN -> "SoundGen Small" to stringResource(R.string.audio_pack_atmospheres_nature)
-                NeuralEngineType.MUSICGEN_SMALL -> "MusicGen Small" to stringResource(R.string.audio_pack_museums_classical)
-                NeuralEngineType.STABLE_AUDIO_3_SMALL -> "Stable Audio 3 Small" to stringResource(R.string.audio_pack_genart_digital)
+                NeuralEngineType.SOUNDGEN -> "SoundGen Small (3.4 GB)" to stringResource(R.string.audio_pack_atmospheres_nature)
+                NeuralEngineType.MUSICGEN_SMALL -> "MusicGen Small (2.2 GB)" to stringResource(R.string.audio_pack_museums_classical)
+                NeuralEngineType.STABLE_AUDIO_3_SMALL -> "Stable Audio 3 Small (4.5 GB)" to stringResource(R.string.audio_pack_genart_digital)
             }
 
             Card(

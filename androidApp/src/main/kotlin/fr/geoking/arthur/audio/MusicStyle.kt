@@ -27,6 +27,7 @@ enum class MusicStyle {
     Chiptune,
     ChipArp,
     ArcadeGlow,
+    Wavetable,
 }
 
 /** Snake_case ids shared with [fr.geoking.arthur.shared.marketplace.AudioPackCatalog]. */
@@ -57,6 +58,7 @@ object MusicStyleIds {
         MusicStyle.Chiptune -> "chiptune"
         MusicStyle.ChipArp -> "chip_arp"
         MusicStyle.ArcadeGlow -> "arcade_glow"
+        MusicStyle.Wavetable -> "wavetable"
     }
 
     fun fromSuffix(suffix: String): MusicStyle? = MusicStyle.entries.firstOrNull {

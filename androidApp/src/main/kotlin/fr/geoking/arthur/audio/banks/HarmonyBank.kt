@@ -94,6 +94,16 @@ object HarmonyBank {
         listOf(ChordQuality.Sus2, ChordQuality.RootFifth, ChordQuality.Add9),
         listOf(HarmonyState.Pedal, HarmonyState.IV, HarmonyState.I, HarmonyState.Pedal),
     )
+    private val wavetableModal = HarmonyPattern(
+        "wavetable_modal",
+        listOf(ChordQuality.Maj7, ChordQuality.Min9, ChordQuality.Add9, ChordQuality.Sus2, ChordQuality.JazzDrop),
+        listOf(HarmonyState.I, HarmonyState.BVII, HarmonyState.IV, HarmonyState.V, HarmonyState.Vi, HarmonyState.Ii),
+    )
+    private val wavetableAmbient = HarmonyPattern(
+        "wavetable_ambient",
+        listOf(ChordQuality.Sus2, ChordQuality.Add9, ChordQuality.RootFifth, ChordQuality.Maj7),
+        listOf(HarmonyState.Pedal, HarmonyState.I, HarmonyState.BVII, HarmonyState.IV),
+    )
 
     fun patternsFor(style: fr.geoking.arthur.audio.MusicStyle): List<HarmonyPattern> =
         when (style) {
@@ -127,6 +137,8 @@ object HarmonyBank {
             fr.geoking.arthur.audio.MusicStyle.ChipArp,
             fr.geoking.arthur.audio.MusicStyle.ArcadeGlow,
             -> listOf(balladPop, classicalCadence, africanPar, blues12)
+            fr.geoking.arthur.audio.MusicStyle.Wavetable ->
+                listOf(wavetableModal, wavetableAmbient, cosmic, zenPads)
         }
 
     fun pick(style: fr.geoking.arthur.audio.MusicStyle, index: Int): HarmonyPattern {

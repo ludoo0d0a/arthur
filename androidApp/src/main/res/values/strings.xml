@@ -108,6 +108,7 @@
     <string name="audio_pack_atmospheres_nature">Atmospheres &amp; Nature</string>
     <string name="audio_pack_museums_classical">Museums &amp; Classical Art</string>
     <string name="audio_pack_genart_digital">Genart &amp; Digital Art</string>
+    <string name="audio_pack_wavetable">Wavetable Synth</string>
     <string name="neural_model_downloading">Downloading model weights (%1$d%%)…</string>
     <string name="neural_model_ready">Model Ready</string>
     <string name="neural_procedural_fallback">Procedural Music Fallback</string>
@@ -221,6 +222,7 @@
     <string name="settings_ambient_sound_style_chiptune">Chiptune</string>
     <string name="settings_ambient_sound_style_chip_arp">Chip arpeggio</string>
     <string name="settings_ambient_sound_style_arcade_glow">Arcade glow</string>
+    <string name="settings_ambient_sound_style_wavetable">Wavetable synth</string>
     <string name="settings_ambient_sound_complexity">Complexity</string>
     <string name="settings_ambient_sound_complexity_hint">More notes and ornaments</string>
     <string name="settings_ambient_sound_complexity_low">Low</string>

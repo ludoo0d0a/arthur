@@ -115,6 +115,7 @@ object RhythmBank {
             fr.geoking.arthur.audio.MusicStyle.Chiptune,
             fr.geoking.arthur.audio.MusicStyle.ChipArp,
             fr.geoking.arthur.audio.MusicStyle.ArcadeGlow,
+            fr.geoking.arthur.audio.MusicStyle.Wavetable,
             -> listOf(pulseSteady, flowing, medium, swing)
         }
 
@@ -143,6 +144,7 @@ object RhythmBank {
             fr.geoking.arthur.audio.MusicStyle.CosmicDrone,
             fr.geoking.arthur.audio.MusicStyle.OrchestraPads,
             fr.geoking.arthur.audio.MusicStyle.OrchestraSwell,
+            fr.geoking.arthur.audio.MusicStyle.Wavetable,
             -> textureGroovePatterns
             else -> emptyList()
         }

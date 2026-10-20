@@ -107,6 +107,7 @@
     <string name="audio_pack_atmospheres_nature">Atmosphères &amp; Nature</string>
     <string name="audio_pack_museums_classical">Musées &amp; Art Classique</string>
     <string name="audio_pack_genart_digital">Genart &amp; Art Numérique</string>
+    <string name="audio_pack_stem">Mélangeur Dynamique de Stems</string>
     <string name="neural_model_downloading">Téléchargement du modèle (%1$d%%)…</string>
     <string name="neural_model_ready">Modèle Prêt</string>
     <string name="neural_procedural_fallback">Musique Procédurale de Secours</string>

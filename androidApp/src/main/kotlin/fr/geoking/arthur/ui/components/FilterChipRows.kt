@@ -133,6 +133,7 @@ enum class AudioPackTopic(
     AtmospheresNature(R.string.audio_pack_atmospheres_nature, "atmospheres_nature", "atmospheres_nature"),
     MuseumsClassical(R.string.audio_pack_museums_classical, "museums_classical", "museums_classical"),
     GenartDigital(R.string.audio_pack_genart_digital, "genart_digital", "genart_digital"),
+    Stem(R.string.audio_pack_stem, "stem", "stem"),
     ;
 
     val sellablePackId: String?

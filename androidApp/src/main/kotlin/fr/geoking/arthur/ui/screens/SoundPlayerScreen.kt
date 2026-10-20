@@ -96,6 +96,14 @@ fun SoundPlayerScreen(
     val previousStyle = remember(settings) { settings?.stylePreference?.value }
     val previousCharacter = remember(settings) { settings?.character?.value }
 
+    val musicDirector = remember(topic) {
+        if (topic == AudioPackTopic.Stem) {
+            fr.geoking.arthur.audio.stem.MusicDirector(context).apply {
+                loadDefaultArrangement()
+            }
+        } else null
+    }
+
     val zenAudio = remember(settings) {
         settings?.let { ZenAudioEngine(context, it) }
     }
@@ -110,8 +118,9 @@ fun SoundPlayerScreen(
         )
     }
 
-    DisposableEffect(zenAudio, settings) {
+    DisposableEffect(zenAudio, musicDirector, settings) {
         onDispose {
+            musicDirector?.release()
             zenAudio?.stop()
             zenAudio?.destroy()
             if (settings != null && !keepPrefsOnDismiss.get()) {
@@ -122,7 +131,16 @@ fun SoundPlayerScreen(
         }
     }
 
-    LaunchedEffect(settings, selectedStyle, isPlaying, zenAudio) {
+    LaunchedEffect(settings, selectedStyle, isPlaying, zenAudio, musicDirector, topic) {
+        if (topic == AudioPackTopic.Stem && musicDirector != null) {
+            if (isPlaying) {
+                musicDirector.play()
+            } else {
+                musicDirector.pause()
+            }
+            return@LaunchedEffect
+        }
+
         if (settings == null || zenAudio == null) return@LaunchedEffect
         settings.setEnabled(true)
         settings.setStylePreference(selectedStyle)

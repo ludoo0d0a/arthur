@@ -108,6 +108,7 @@
     <string name="audio_pack_atmospheres_nature">Atmospheres &amp; Nature</string>
     <string name="audio_pack_museums_classical">Museums &amp; Classical Art</string>
     <string name="audio_pack_genart_digital">Genart &amp; Digital Art</string>
+    <string name="audio_pack_stem">Dynamic Stem Mixer</string>
     <string name="neural_model_downloading">Downloading model weights (%1$d%%)…</string>
     <string name="neural_model_ready">Model Ready</string>
     <string name="neural_procedural_fallback">Procedural Music Fallback</string>

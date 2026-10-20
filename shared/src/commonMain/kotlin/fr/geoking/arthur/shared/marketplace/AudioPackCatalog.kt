@@ -25,6 +25,7 @@ object AudioPackCatalog {
     const val GENART_DIGITAL = "genart_digital"
     const val STEM = "stem"
     const val WAVETABLE = "wavetable"
+    const val EXECUTORCH = "executorch"
 
     /** Free styles always playable without a pack purchase. */
     val freeStyleSuffixes: Set<String> = setOf(
@@ -92,6 +93,11 @@ object AudioPackCatalog {
             WAVETABLE,
             listOf("wavetable"),
             "wavetable",
+        ),
+        PackDef(
+            EXECUTORCH,
+            listOf("zen"),
+            "zen",
         ),
     )
 

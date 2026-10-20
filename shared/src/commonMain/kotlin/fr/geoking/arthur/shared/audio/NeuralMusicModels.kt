@@ -8,6 +8,14 @@ enum class NeuralEngineType {
     EXECUTORCH_MIDI,
 }
 
+/**
+ * Public FluidR3 GM SoundFont (no auth). Used until dedicated GeoKing soundfonts are published.
+ * Source: https://github.com/urish/cinto (FluidR3 GM).
+ */
+const val PUBLIC_FLUIDR3_GM_SF2_URL =
+    "https://raw.githubusercontent.com/urish/cinto/master/media/FluidR3%20GM.sf2"
+const val PUBLIC_FLUIDR3_GM_SF2_BYTES = 148_358_590L
+
 /** SoundFont and ExecuTorch model configuration presets for MIDI synthesis. */
 data class SoundFontPreset(
     val id: String,
@@ -16,40 +24,44 @@ data class SoundFontPreset(
     val downloadUrl: String,
     val expectedSizeBytes: Long,
     val modelFileName: String = "executorch_midi_gen.pte",
-    val modelDownloadUrl: String = "https://huggingface.co/geoking/arthur-executorch-midi/resolve/main/executorch_midi_gen.pte",
+    /** Optional on-device .pte; empty = procedural MIDI tokens (no remote ExecuTorch weights). */
+    val modelDownloadUrl: String = "",
 )
 
 object ExecuTorchMidiPresets {
     val AMBIENT_PIANO = SoundFontPreset(
         id = "ambient_piano",
-        displayName = "Ambient Piano",
+        displayName = "Ambient Piano (FluidR3 GM)",
         soundFontFileName = "ambient_piano.sf2",
-        downloadUrl = "https://huggingface.co/geoking/arthur-soundfonts/resolve/main/ambient_piano.sf2",
-        expectedSizeBytes = 45_000_000L,
+        downloadUrl = PUBLIC_FLUIDR3_GM_SF2_URL,
+        expectedSizeBytes = PUBLIC_FLUIDR3_GM_SF2_BYTES,
     )
     val CHAMBER_STRINGS = SoundFontPreset(
         id = "chamber_strings",
-        displayName = "Chamber Strings",
+        displayName = "Chamber Strings (FluidR3 GM)",
         soundFontFileName = "chamber_strings.sf2",
-        downloadUrl = "https://huggingface.co/geoking/arthur-soundfonts/resolve/main/chamber_strings.sf2",
-        expectedSizeBytes = 85_000_000L,
+        downloadUrl = PUBLIC_FLUIDR3_GM_SF2_URL,
+        expectedSizeBytes = PUBLIC_FLUIDR3_GM_SF2_BYTES,
     )
     val LOFI_SYNTH = SoundFontPreset(
         id = "lofi_synth",
-        displayName = "Lo-Fi / Synth Ambient",
+        displayName = "Lo-Fi / Synth Ambient (FluidR3 GM)",
         soundFontFileName = "lofi_synth.sf2",
-        downloadUrl = "https://huggingface.co/geoking/arthur-soundfonts/resolve/main/lofi_synth.sf2",
-        expectedSizeBytes = 35_000_000L,
+        downloadUrl = PUBLIC_FLUIDR3_GM_SF2_URL,
+        expectedSizeBytes = PUBLIC_FLUIDR3_GM_SF2_BYTES,
     )
     val NATURE_ATMOSPHERES = SoundFontPreset(
         id = "nature_atmospheres",
-        displayName = "Nature Atmospheres",
+        displayName = "Nature Atmospheres (FluidR3 GM)",
         soundFontFileName = "nature_atmospheres.sf2",
-        downloadUrl = "https://huggingface.co/geoking/arthur-soundfonts/resolve/main/nature_atmospheres.sf2",
-        expectedSizeBytes = 60_000_000L,
+        downloadUrl = PUBLIC_FLUIDR3_GM_SF2_URL,
+        expectedSizeBytes = PUBLIC_FLUIDR3_GM_SF2_BYTES,
     )
 
     val allPresets = listOf(AMBIENT_PIANO, CHAMBER_STRINGS, LOFI_SYNTH, NATURE_ATMOSPHERES)
+
+    /** Default SoundFont used by the ExecuTorch MIDI engine download path. */
+    val DEFAULT_SOUNDFONT = AMBIENT_PIANO
 }
 
 /** Specific pack mapping to local neural music engines. */
@@ -58,10 +70,10 @@ enum class NeuralAudioPack(
     val displayName: String,
     val engineType: NeuralEngineType,
 ) {
-    ATMOSPHERES_NATURE("pack_atmospheres_nature", "Atmosphères & Nature", NeuralEngineType.SOUNDGEN),
-    MUSEUMS_CLASSICAL("pack_museums_classical", "Musées & Art Classique", NeuralEngineType.MUSICGEN_SMALL),
-    GENART_DIGITAL("pack_genart_digital", "Genart & Art Numérique", NeuralEngineType.STABLE_AUDIO_3_SMALL),
-    EXECUTORCH_MIDI("pack_executorch_midi", "ExecuTorch MIDI & FluidSynth", NeuralEngineType.EXECUTORCH_MIDI),
+    ATMOSPHERES_NATURE("pack_atmospheres_nature", "SoundGen Small", NeuralEngineType.SOUNDGEN),
+    MUSEUMS_CLASSICAL("pack_museums_classical", "MusicGen Small", NeuralEngineType.MUSICGEN_SMALL),
+    GENART_DIGITAL("pack_genart_digital", "Stable Audio 3", NeuralEngineType.STABLE_AUDIO_3_SMALL),
+    EXECUTORCH_MIDI("pack_executorch_midi", "ExecuTorch MIDI", NeuralEngineType.EXECUTORCH_MIDI),
 }
 
 /** Prompt definition for local neural music generation (2 min max, no lyrics). */

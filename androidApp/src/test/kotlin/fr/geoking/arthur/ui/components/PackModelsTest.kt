@@ -231,15 +231,36 @@ class PackModelsTest {
     }
 
     @Test
-    fun neuralSubPacks_includeThreeNeuralTopics() {
+    fun neuralSubPacks_includeSixNeuralEnginePacks() {
         val tiles = PackFamily.Neural.subPackTiles()
-        assertEquals(3, tiles.size)
-        assertEquals("neural_atmospheres_nature", tiles[0].testTagSuffix)
-        assertEquals("neural_museums_classical", tiles[1].testTagSuffix)
-        assertEquals("neural_genart_digital", tiles[2].testTagSuffix)
+        assertEquals(6, tiles.size)
+        assertEquals(
+            listOf(
+                "neural_atmospheres_nature",
+                "neural_museums_classical",
+                "neural_genart_digital",
+                "neural_stem",
+                "neural_wavetable",
+                "neural_executorch",
+            ),
+            tiles.map { it.testTagSuffix },
+        )
+        assertEquals(R.string.audio_pack_atmospheres_nature, tiles[0].titleRes)
+        assertEquals(R.string.audio_pack_museums_classical, tiles[1].titleRes)
+        assertEquals(R.string.audio_pack_genart_digital, tiles[2].titleRes)
         assertTrue(PackSelection(PackFamily.Neural, "atmospheres_nature").opensSoundPlayer())
-        val pool = resolvePackPool(catalog, PackSelection(PackFamily.Neural, "atmospheres_nature"))
+        assertTrue(PackSelection(PackFamily.Neural, "museums_classical").opensSoundPlayer())
+        assertTrue(PackSelection(PackFamily.Neural, "genart_digital").opensSoundPlayer())
+        val pool = resolvePackPool(catalog, PackSelection(PackFamily.Neural, "stem"))
         assertTrue(pool.isEmpty())
+        // Dedicated neural engines are not listed under Sound.
+        val soundTags = PackFamily.Sound.subPackTiles().map { it.testTagSuffix }
+        assertFalse(soundTags.contains("sound_atmospheres_nature"))
+        assertFalse(soundTags.contains("sound_museums_classical"))
+        assertFalse(soundTags.contains("sound_genart_digital"))
+        assertFalse(soundTags.contains("sound_stem"))
+        assertFalse(soundTags.contains("sound_wavetable"))
+        assertFalse(soundTags.contains("sound_executorch"))
     }
 
     @Test

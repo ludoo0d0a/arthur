@@ -135,22 +135,46 @@ enum class AudioPackTopic(
     GenartDigital(R.string.audio_pack_genart_digital, "genart_digital", "genart_digital"),
     Stem(R.string.audio_pack_stem, "stem", "stem"),
     Wavetable(R.string.audio_pack_wavetable, "wavetable", "wavetable"),
+    ExecuTorch(R.string.audio_pack_executorch, "executorch", "executorch"),
     ;
 
     val sellablePackId: String?
         get() = packSuffix?.let { MarketplaceCatalog.sellablePackIdForAudioPack(it) }
+
+    /** Packs shown under Neural AI (IA neurale), each with a dedicated playback engine. */
+    val isNeuralDedicated: Boolean
+        get() = this == AtmospheresNature ||
+            this == MuseumsClassical ||
+            this == GenartDigital ||
+            this == Stem ||
+            this == Wavetable ||
+            this == ExecuTorch
 
     val neuralPack: NeuralAudioPack?
         get() = when (this) {
             AtmospheresNature -> NeuralAudioPack.ATMOSPHERES_NATURE
             MuseumsClassical -> NeuralAudioPack.MUSEUMS_CLASSICAL
             GenartDigital -> NeuralAudioPack.GENART_DIGITAL
+            ExecuTorch -> NeuralAudioPack.EXECUTORCH_MIDI
             else -> null
         }
 
     val neuralEngineType: NeuralEngineType?
         get() = neuralPack?.engineType
 }
+
+/**
+ * Neural AI (IA neurale) sub-packs:
+ * SoundGen Small, MusicGen Small, Stable Audio 3, Stem, Wavetable, ExecuTorch MIDI.
+ */
+val NeuralAudioPackTopics: List<AudioPackTopic> = listOf(
+    AudioPackTopic.AtmospheresNature,
+    AudioPackTopic.MuseumsClassical,
+    AudioPackTopic.GenartDigital,
+    AudioPackTopic.Stem,
+    AudioPackTopic.Wavetable,
+    AudioPackTopic.ExecuTorch,
+)
 
 /** Style suffixes included in this Sound pack (Essentials = free allowlist). */
 fun AudioPackTopic.styleSuffixes(): List<String> =

@@ -15,6 +15,7 @@ import fr.geoking.arthur.shared.audio.NeuralPromptCatalog
 import fr.geoking.arthur.source.AmbientAudioSettings
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -78,10 +79,14 @@ class NeuralMusicEngineTest {
         val sgUrl = downloader.getDefaultDownloadUrl(NeuralEngineType.SOUNDGEN)
         val mgUrl = downloader.getDefaultDownloadUrl(NeuralEngineType.MUSICGEN_SMALL)
         val saUrl = downloader.getDefaultDownloadUrl(NeuralEngineType.STABLE_AUDIO_3_SMALL)
+        val etUrl = downloader.getDefaultDownloadUrl(NeuralEngineType.EXECUTORCH_MIDI)
 
         assertTrue(sgUrl.contains("audiogen") || sgUrl.contains("soundgen"))
         assertTrue(mgUrl.contains("musicgen"))
         assertTrue(saUrl.contains("stable-audio"))
+        // Public FluidR3 SoundFont — must not point at private geoking HF (HTTP 401).
+        assertTrue(etUrl.contains("FluidR3") || etUrl.contains("urish/cinto"))
+        assertFalse(etUrl.contains("geoking/arthur-executorch-midi"))
     }
 
     @Test

@@ -3,6 +3,7 @@ package fr.geoking.arthur.audio.engines
 import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
+import fr.geoking.arthur.shared.audio.ExecuTorchMidiPresets
 import fr.geoking.arthur.shared.audio.NeuralAudioPack
 import fr.geoking.arthur.shared.audio.NeuralEngineType
 import fr.geoking.arthur.shared.audio.NeuralPromptDef
@@ -37,8 +38,11 @@ class ExecuTorchMidiEngine(
         val cachedFile = cacheManager.getCachedTrack(prompt.id, randomSeed)
         if (cachedFile != null) return@withContext cachedFile
 
-        val modelFile = if (isModelReady()) downloader.getModelFile(engineType) else null
-        val soundFontFile = downloader.getSoundFontFile("ambient_piano.sf2")
+        // Optional .pte when present; SoundFont is the downloaded artifact (public FluidR3).
+        val modelFile = downloader.getModelFile(engineType).takeIf { it.exists() && it.length() > 0 }
+        val soundFontFile = downloader.getSoundFontFile(
+            ExecuTorchMidiPresets.DEFAULT_SOUNDFONT.soundFontFileName,
+        )
 
         bridge.init(
             soundFontPath = if (soundFontFile.exists()) soundFontFile.absolutePath else null,

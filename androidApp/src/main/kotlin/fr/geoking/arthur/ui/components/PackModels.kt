@@ -267,21 +267,19 @@ fun PackFamily.subPackTiles(catalog: List<Artwork> = emptyList()): List<PackTile
         }
         listOf(random) + institutions
     }
-    PackFamily.Sound -> AudioPackTopic.entries.map { topic ->
-        PackTile(
-            id = "sub_sound_${topic.testTagSuffix}",
-            titleRes = topic.labelRes,
-            coverRes = PackCovers.audio(topic),
-            selection = PackSelection(PackFamily.Sound, topic.testTagSuffix),
-            testTagSuffix = "sound_${topic.testTagSuffix}",
-            sellablePackId = topic.sellablePackId,
-        )
-    }
-    PackFamily.Neural -> listOf(
-        AudioPackTopic.AtmospheresNature,
-        AudioPackTopic.MuseumsClassical,
-        AudioPackTopic.GenartDigital,
-    ).map { topic ->
+    PackFamily.Sound -> AudioPackTopic.entries
+        .filterNot { it.isNeuralDedicated }
+        .map { topic ->
+            PackTile(
+                id = "sub_sound_${topic.testTagSuffix}",
+                titleRes = topic.labelRes,
+                coverRes = PackCovers.audio(topic),
+                selection = PackSelection(PackFamily.Sound, topic.testTagSuffix),
+                testTagSuffix = "sound_${topic.testTagSuffix}",
+                sellablePackId = topic.sellablePackId,
+            )
+        }
+    PackFamily.Neural -> NeuralAudioPackTopics.map { topic ->
         PackTile(
             id = "sub_neural_${topic.testTagSuffix}",
             titleRes = topic.labelRes,

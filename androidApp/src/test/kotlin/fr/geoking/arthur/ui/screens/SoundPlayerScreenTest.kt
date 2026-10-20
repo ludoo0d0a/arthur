@@ -75,7 +75,7 @@ class SoundPlayerScreenTest {
                 SoundPlayerScreen(
                     selection = PackSelection(
                         PackFamily.Neural,
-                        AudioPackTopic.AtmospheresNature.testTagSuffix,
+                        AudioPackTopic.ExecuTorch.testTagSuffix,
                     ),
                     onDismiss = {},
                     audioSettings = null,

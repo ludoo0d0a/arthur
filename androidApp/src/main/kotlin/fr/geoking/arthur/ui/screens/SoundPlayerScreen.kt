@@ -53,6 +53,9 @@ import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.R
 import fr.geoking.arthur.audio.MusicStyle
 import fr.geoking.arthur.audio.ZenAudioEngine
+import fr.geoking.arthur.audio.engines.NeuralMusicPlayer
+import fr.geoking.arthur.shared.audio.NeuralAudioPack
+import fr.geoking.arthur.shared.audio.NeuralPromptCatalog
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.source.AmbientAudioCharacter
@@ -86,26 +89,44 @@ fun SoundPlayerScreen(
     val styles = remember(topic) { topic.stylesInPack() }
     var selectedStyle by remember(topic) { mutableStateOf(topic.primaryStyle()) }
     var isPlaying by remember { mutableStateOf(true) }
+    var selectedPromptIndex by remember(topic) { mutableStateOf(0) }
     val keepPrefsOnDismiss = remember { java.util.concurrent.atomic.AtomicBoolean(false) }
 
     val context = LocalContext.current
     val settings = audioSettings
+    val neuralPack: NeuralAudioPack? = topic.neuralPack
 
     // Snapshot prefs to restore unless the user chooses "Use in Ambient".
     val previousEnabled = remember(settings) { settings?.enabled?.value ?: false }
     val previousStyle = remember(settings) { settings?.stylePreference?.value }
     val previousCharacter = remember(settings) { settings?.character?.value }
 
+    // Dedicated engines: Stem → MusicDirector, ExecuTorch → NeuralMusicPlayer, Wavetable → Zen/procedural.
     val musicDirector = remember(topic) {
         if (topic == AudioPackTopic.Stem) {
             fr.geoking.arthur.audio.stem.MusicDirector(context).apply {
                 loadDefaultArrangement()
             }
-        } else null
+        } else {
+            null
+        }
     }
 
-    val zenAudio = remember(settings) {
-        settings?.let { ZenAudioEngine(context, it) }
+    val neuralPlayer = remember(topic) {
+        if (neuralPack != null) {
+            runCatching { GlobalContext.get().get<NeuralMusicPlayer>() }.getOrNull()
+        } else {
+            null
+        }
+    }
+
+    val zenAudio = remember(settings, topic) {
+        // Stem / ExecuTorch use dedicated engines; Wavetable uses procedural WavetableSynth.
+        if (topic == AudioPackTopic.Stem || neuralPack != null) {
+            null
+        } else {
+            settings?.let { ZenAudioEngine(context, it) }
+        }
     }
 
     fun syntheticArtwork(style: MusicStyle): Artwork {
@@ -118,9 +139,10 @@ fun SoundPlayerScreen(
         )
     }
 
-    DisposableEffect(zenAudio, musicDirector, settings) {
+    DisposableEffect(zenAudio, musicDirector, neuralPlayer, settings) {
         onDispose {
             musicDirector?.release()
+            neuralPlayer?.stop()
             zenAudio?.stop()
             zenAudio?.destroy()
             if (settings != null && !keepPrefsOnDismiss.get()) {
@@ -131,32 +153,46 @@ fun SoundPlayerScreen(
         }
     }
 
-    LaunchedEffect(settings, selectedStyle, isPlaying, zenAudio, musicDirector, topic) {
-        if (topic == AudioPackTopic.Stem && musicDirector != null) {
-            if (isPlaying) {
-                musicDirector.play()
-            } else {
-                musicDirector.pause()
+    LaunchedEffect(
+        settings,
+        selectedStyle,
+        selectedPromptIndex,
+        isPlaying,
+        zenAudio,
+        musicDirector,
+        neuralPlayer,
+        neuralPack,
+        topic,
+    ) {
+        when {
+            topic == AudioPackTopic.Stem && musicDirector != null -> {
+                if (isPlaying) musicDirector.play() else musicDirector.pause()
             }
-            return@LaunchedEffect
-        }
-
-        if (settings == null || zenAudio == null) return@LaunchedEffect
-        settings.setEnabled(true)
-        settings.setStylePreference(selectedStyle)
-        when (topic) {
-            AudioPackTopic.HearthWeather, AudioPackTopic.DawnChorus,
-            AudioPackTopic.TempleResonance, AudioPackTopic.WindGarden,
-            AudioPackTopic.CosmicDrift,
-            -> settings.setCharacter(AmbientAudioCharacter.Atmosphere)
-            else -> Unit
-        }
-        zenAudio.setArtwork(syntheticArtwork(selectedStyle))
-        if (isPlaying) {
-            zenAudio.start()
-            zenAudio.triggerTransition()
-        } else {
-            zenAudio.stop(abandonFocus = false)
+            neuralPack != null && neuralPlayer != null -> {
+                if (isPlaying) {
+                    neuralPlayer.playPackTrack(neuralPack, promptIndex = selectedPromptIndex)
+                } else {
+                    neuralPlayer.stop()
+                }
+            }
+            settings != null && zenAudio != null -> {
+                settings.setEnabled(true)
+                settings.setStylePreference(selectedStyle)
+                when (topic) {
+                    AudioPackTopic.HearthWeather, AudioPackTopic.DawnChorus,
+                    AudioPackTopic.TempleResonance, AudioPackTopic.WindGarden,
+                    AudioPackTopic.CosmicDrift,
+                    -> settings.setCharacter(AmbientAudioCharacter.Atmosphere)
+                    else -> Unit
+                }
+                zenAudio.setArtwork(syntheticArtwork(selectedStyle))
+                if (isPlaying) {
+                    zenAudio.start()
+                    zenAudio.triggerTransition()
+                } else {
+                    zenAudio.stop(abandonFocus = false)
+                }
+            }
         }
     }
 
@@ -214,13 +250,6 @@ fun SoundPlayerScreen(
                 color = Color.White,
                 modifier = Modifier.testTag("sound_player_title"),
             )
-            val neuralPack = when (topic) {
-                AudioPackTopic.AtmospheresNature -> fr.geoking.arthur.shared.audio.NeuralAudioPack.ATMOSPHERES_NATURE
-                AudioPackTopic.MuseumsClassical -> fr.geoking.arthur.shared.audio.NeuralAudioPack.MUSEUMS_CLASSICAL
-                AudioPackTopic.GenartDigital -> fr.geoking.arthur.shared.audio.NeuralAudioPack.GENART_DIGITAL
-                else -> null
-            }
-
             if (neuralPack != null) {
                 val downloader = remember {
                     runCatching { GlobalContext.get().get<fr.geoking.arthur.audio.engines.NeuralModelDownloader>() }.getOrNull()
@@ -230,9 +259,8 @@ fun SoundPlayerScreen(
                 val modelState = downloadStates[neuralPack.engineType] ?: fr.geoking.arthur.audio.engines.ModelDownloadState.Idle
 
                 val prompts = remember(neuralPack) {
-                    fr.geoking.arthur.shared.audio.NeuralPromptCatalog.promptsForPack(neuralPack)
+                    NeuralPromptCatalog.promptsForPack(neuralPack)
                 }
-                var selectedPromptIndex by remember { mutableStateOf(0) }
                 val currentPrompt = prompts.getOrElse(selectedPromptIndex) { prompts.first() }
 
                 Row(

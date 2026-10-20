@@ -48,11 +48,13 @@ class NeuralMusicEngineTest {
         val soundGenPrompts = NeuralPromptCatalog.promptsForPack(NeuralAudioPack.ATMOSPHERES_NATURE)
         val musicGenPrompts = NeuralPromptCatalog.promptsForPack(NeuralAudioPack.MUSEUMS_CLASSICAL)
         val stableAudioPrompts = NeuralPromptCatalog.promptsForPack(NeuralAudioPack.GENART_DIGITAL)
+        val executorchPrompts = NeuralPromptCatalog.promptsForPack(NeuralAudioPack.EXECUTORCH_MIDI)
 
         assertEquals(10, soundGenPrompts.size)
         assertEquals(10, musicGenPrompts.size)
         assertEquals(10, stableAudioPrompts.size)
-        assertEquals(30, NeuralPromptCatalog.allPrompts.size)
+        assertEquals(4, executorchPrompts.size)
+        assertEquals(34, NeuralPromptCatalog.allPrompts.size)
 
         for (prompt in NeuralPromptCatalog.allPrompts) {
             assertTrue("Duration exceeds 120s limit: ${prompt.targetDurationSeconds}", prompt.targetDurationSeconds <= 120)

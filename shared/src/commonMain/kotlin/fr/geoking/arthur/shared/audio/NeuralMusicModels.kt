@@ -5,6 +5,51 @@ enum class NeuralEngineType {
     SOUNDGEN,
     MUSICGEN_SMALL,
     STABLE_AUDIO_3_SMALL,
+    EXECUTORCH_MIDI,
+}
+
+/** SoundFont and ExecuTorch model configuration presets for MIDI synthesis. */
+data class SoundFontPreset(
+    val id: String,
+    val displayName: String,
+    val soundFontFileName: String,
+    val downloadUrl: String,
+    val expectedSizeBytes: Long,
+    val modelFileName: String = "executorch_midi_gen.pte",
+    val modelDownloadUrl: String = "https://huggingface.co/geoking/arthur-executorch-midi/resolve/main/executorch_midi_gen.pte",
+)
+
+object ExecuTorchMidiPresets {
+    val AMBIENT_PIANO = SoundFontPreset(
+        id = "ambient_piano",
+        displayName = "Ambient Piano",
+        soundFontFileName = "ambient_piano.sf2",
+        downloadUrl = "https://huggingface.co/geoking/arthur-soundfonts/resolve/main/ambient_piano.sf2",
+        expectedSizeBytes = 45_000_000L,
+    )
+    val CHAMBER_STRINGS = SoundFontPreset(
+        id = "chamber_strings",
+        displayName = "Chamber Strings",
+        soundFontFileName = "chamber_strings.sf2",
+        downloadUrl = "https://huggingface.co/geoking/arthur-soundfonts/resolve/main/chamber_strings.sf2",
+        expectedSizeBytes = 85_000_000L,
+    )
+    val LOFI_SYNTH = SoundFontPreset(
+        id = "lofi_synth",
+        displayName = "Lo-Fi / Synth Ambient",
+        soundFontFileName = "lofi_synth.sf2",
+        downloadUrl = "https://huggingface.co/geoking/arthur-soundfonts/resolve/main/lofi_synth.sf2",
+        expectedSizeBytes = 35_000_000L,
+    )
+    val NATURE_ATMOSPHERES = SoundFontPreset(
+        id = "nature_atmospheres",
+        displayName = "Nature Atmospheres",
+        soundFontFileName = "nature_atmospheres.sf2",
+        downloadUrl = "https://huggingface.co/geoking/arthur-soundfonts/resolve/main/nature_atmospheres.sf2",
+        expectedSizeBytes = 60_000_000L,
+    )
+
+    val allPresets = listOf(AMBIENT_PIANO, CHAMBER_STRINGS, LOFI_SYNTH, NATURE_ATMOSPHERES)
 }
 
 /** Specific pack mapping to local neural music engines. */
@@ -16,6 +61,7 @@ enum class NeuralAudioPack(
     ATMOSPHERES_NATURE("pack_atmospheres_nature", "Atmosphères & Nature", NeuralEngineType.SOUNDGEN),
     MUSEUMS_CLASSICAL("pack_museums_classical", "Musées & Art Classique", NeuralEngineType.MUSICGEN_SMALL),
     GENART_DIGITAL("pack_genart_digital", "Genart & Art Numérique", NeuralEngineType.STABLE_AUDIO_3_SMALL),
+    EXECUTORCH_MIDI("pack_executorch_midi", "ExecuTorch MIDI & FluidSynth", NeuralEngineType.EXECUTORCH_MIDI),
 }
 
 /** Prompt definition for local neural music generation (2 min max, no lyrics). */
@@ -188,12 +234,36 @@ object NeuralPromptCatalog {
         ),
     )
 
-    val allPrompts: List<NeuralPromptDef> = soundGenPrompts + musicGenPrompts + stableAudioPrompts
+    val executorchPrompts: List<NeuralPromptDef> = listOf(
+        NeuralPromptDef(
+            "em_01", NeuralAudioPack.EXECUTORCH_MIDI,
+            "Symphonie MIDI Ambient Piano",
+            "ExecuTorch generated MIDI sequence rendered with Ambient Piano SoundFont, gentle adagio tempo, peaceful harmonics",
+        ),
+        NeuralPromptDef(
+            "em_02", NeuralAudioPack.EXECUTORCH_MIDI,
+            "Quatuor MIDI Cordes Célestes",
+            "ExecuTorch neural MIDI composition synthesized through Chamber Strings SoundFont, warm legato strings",
+        ),
+        NeuralPromptDef(
+            "em_03", NeuralAudioPack.EXECUTORCH_MIDI,
+            "Lo-Fi Neural Wave",
+            "Generative MIDI arpeggios rendered with Lo-Fi Synth SoundFont, relaxing ambient chillout",
+        ),
+        NeuralPromptDef(
+            "em_04", NeuralAudioPack.EXECUTORCH_MIDI,
+            "Brise de Nature Synthétisée",
+            "ExecuTorch algorithmic MIDI texture rendered with Nature Atmospheres SoundFont, organic serene soundscape",
+        ),
+    )
+
+    val allPrompts: List<NeuralPromptDef> = soundGenPrompts + musicGenPrompts + stableAudioPrompts + executorchPrompts
 
     fun promptsForPack(pack: NeuralAudioPack): List<NeuralPromptDef> = when (pack) {
         NeuralAudioPack.ATMOSPHERES_NATURE -> soundGenPrompts
         NeuralAudioPack.MUSEUMS_CLASSICAL -> musicGenPrompts
         NeuralAudioPack.GENART_DIGITAL -> stableAudioPrompts
+        NeuralAudioPack.EXECUTORCH_MIDI -> executorchPrompts
     }
 
     fun promptById(id: String): NeuralPromptDef? = allPrompts.firstOrNull { it.id == id }

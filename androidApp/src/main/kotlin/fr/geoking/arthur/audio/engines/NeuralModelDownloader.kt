@@ -37,16 +37,27 @@ class NeuralModelDownloader(
     )
     val downloadStates: StateFlow<Map<NeuralEngineType, ModelDownloadState>> = _downloadStates.asStateFlow()
 
+    private val soundFontsDir = File(context.filesDir, "soundfonts").apply { mkdirs() }
+
     fun getModelFile(engineType: NeuralEngineType): File = when (engineType) {
         NeuralEngineType.SOUNDGEN -> File(modelsDir, "soundgen_small.bin")
         NeuralEngineType.MUSICGEN_SMALL -> File(modelsDir, "musicgen_small.bin")
         NeuralEngineType.STABLE_AUDIO_3_SMALL -> File(modelsDir, "stable_audio_3_small.bin")
+        NeuralEngineType.EXECUTORCH_MIDI -> File(modelsDir, "executorch_midi_gen.pte")
+    }
+
+    fun getSoundFontFile(presetFileName: String): File = File(soundFontsDir, presetFileName)
+
+    fun isSoundFontAvailable(presetFileName: String): Boolean {
+        val sf = getSoundFontFile(presetFileName)
+        return sf.exists() && sf.length() > 0
     }
 
     fun getDefaultDownloadUrl(engineType: NeuralEngineType): String = when (engineType) {
         NeuralEngineType.SOUNDGEN -> "https://huggingface.co/facebook/audiogen-medium/resolve/main/state_dict.bin"
         NeuralEngineType.MUSICGEN_SMALL -> "https://huggingface.co/facebook/musicgen-small/resolve/main/pytorch_model.bin"
         NeuralEngineType.STABLE_AUDIO_3_SMALL -> "https://huggingface.co/Comfy-Org/stable-audio-open-1.0_repackaged/resolve/main/stable-audio-open-1.0.safetensors"
+        NeuralEngineType.EXECUTORCH_MIDI -> "https://huggingface.co/geoking/arthur-executorch-midi/resolve/main/executorch_midi_gen.pte"
     }
 
     fun isModelAvailable(engineType: NeuralEngineType): Boolean {

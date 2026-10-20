@@ -1358,6 +1358,7 @@ private fun NeuralModelsDownloadManagerContent(
                 NeuralEngineType.SOUNDGEN -> "SoundGen Small" to stringResource(R.string.audio_pack_atmospheres_nature)
                 NeuralEngineType.MUSICGEN_SMALL -> "MusicGen Small" to stringResource(R.string.audio_pack_museums_classical)
                 NeuralEngineType.STABLE_AUDIO_3_SMALL -> "Stable Audio 3 Small" to stringResource(R.string.audio_pack_genart_digital)
+                NeuralEngineType.EXECUTORCH_MIDI -> "ExecuTorch MIDI" to "ExecuTorch MIDI & FluidSynth"
             }
 
             Card(

@@ -37,11 +37,13 @@ class NeuralMusicPlayer(
     val soundGenEngine = SoundGenEngine(downloader, cacheManager)
     val musicGenSmallEngine = MusicGenSmallEngine(downloader, cacheManager)
     val stableAudio3Engine = StableAudio3Engine(downloader, cacheManager)
+    val execuTorchMidiEngine = ExecuTorchMidiEngine(downloader, cacheManager)
 
     private val engines: Map<NeuralAudioPack, NeuralMusicEngine> = mapOf(
         NeuralAudioPack.ATMOSPHERES_NATURE to soundGenEngine,
         NeuralAudioPack.MUSEUMS_CLASSICAL to musicGenSmallEngine,
         NeuralAudioPack.GENART_DIGITAL to stableAudio3Engine,
+        NeuralAudioPack.EXECUTORCH_MIDI to execuTorchMidiEngine,
     )
 
     private var activePlayer: MediaPlayer? = null

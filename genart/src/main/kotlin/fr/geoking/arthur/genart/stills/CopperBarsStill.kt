@@ -85,7 +85,7 @@ internal object CopperBarsStill {
             val hr = (hue shr 16) and 0xFF
             val hg = (hue shr 8) and 0xFF
             val hb = hue and 0xFF
-            val alpha = ((0.35f + 0.35f * sin(raw * PI.toFloat()).toFloat()) * dim).coerceIn(0.15f, 0.7f)
+            val alpha = ((0.35f + 0.35f * sin(raw * PI.toFloat())) * dim).coerceIn(0.15f, 0.7f)
             paint.shader = LinearGradient(
                 0f, y - thickness, 0f, y + thickness,
                 intArrayOf(

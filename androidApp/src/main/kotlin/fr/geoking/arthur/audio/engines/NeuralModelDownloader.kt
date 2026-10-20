@@ -44,9 +44,9 @@ class NeuralModelDownloader(
     }
 
     fun getDefaultDownloadUrl(engineType: NeuralEngineType): String = when (engineType) {
-        NeuralEngineType.SOUNDGEN -> "https://huggingface.co/facebook/audiogen-medium/resolve/main/state_dict.bin"
-        NeuralEngineType.MUSICGEN_SMALL -> "https://huggingface.co/facebook/musicgen-small/resolve/main/pytorch_model.bin"
-        NeuralEngineType.STABLE_AUDIO_3_SMALL -> "https://huggingface.co/Comfy-Org/stable-audio-open-1.0_repackaged/resolve/main/stable-audio-open-1.0.safetensors"
+        NeuralEngineType.SOUNDGEN -> "https://huggingface.co/facebook/audiogen-medium/resolve/main/state_dict.bin?download=true"
+        NeuralEngineType.MUSICGEN_SMALL -> "https://huggingface.co/facebook/musicgen-small/resolve/main/pytorch_model.bin?download=true"
+        NeuralEngineType.STABLE_AUDIO_3_SMALL -> "https://huggingface.co/Comfy-Org/stable-audio-open-1.0_repackaged/resolve/main/stable-audio-open-1.0.safetensors?download=true"
     }
 
     fun isModelAvailable(engineType: NeuralEngineType): Boolean {

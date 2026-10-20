@@ -2,17 +2,20 @@ name: Release to Play Store
 
 on:
   push:
-    branches: [ main ]
-    tags: [ 'v*' ]
+    branches: [main]
+    tags: ['v*']
+    paths-ignore:
+      - 'docs/**'
+      - 'README.md'
   workflow_dispatch:
     inputs:
       track:
         description: 'Play Store track'
         default: internal
         type: choice
-        options: [ internal, alpha, beta, production ]
+        options: [internal, alpha, beta, production]
       changesNotSentForReview:
-        description: 'Skip auto-review (only for brand-new apps before first Console review)'
+        description: 'Skip auto-review (managed publishing / draft-style)'
         default: false
         type: boolean
 
@@ -52,17 +55,19 @@ jobs:
         uses: ludoo0d0a/geoking-ci/actions/gk-release-play@main
         with:
           package_name: fr.geoking.arthur
-          gradle_version: wrapper
           gradle_module: ':androidApp'
           bundle_task: bundlePlaystoreRelease
           aab_glob: 'androidApp/build/outputs/bundle/playstoreRelease/*.aab'
           google_services_path: 'androidApp/google-services.json'
+          whatsnew_script: geoking-tools/bin/whatsnew.py
           unit_test_tasks: >-
             :shared:testAndroidHostTest
             :fractal:testDebugUnitTest
             :genart:testDebugUnitTest
             :androidApp:testFullDebugUnitTest
+          gradle_version: wrapper
+          java_version: '21'
+          version_name_override: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
           is_workflow_dispatch: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
           workflow_dispatch_track: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.track || '' }}
           workflow_dispatch_skip_review: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.changesNotSentForReview == 'true' && 'true' || 'false' }}
-          version_name_override: ${{ github.ref_type == 'tag' && github.ref_name || '' }}

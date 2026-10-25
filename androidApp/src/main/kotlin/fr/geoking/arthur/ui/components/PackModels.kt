@@ -476,9 +476,17 @@ fun PackSelection.audioPackTopicOrNull(): AudioPackTopic? =
         else -> null
     }
 
+/**
+ * True when this selection opens the Neural Music stack (phone).
+ * Stem / Wavetable stay on Sound Player (no [NeuralAudioPack]).
+ */
+fun PackSelection.opensNeuralMusic(): Boolean =
+    family == PackFamily.Neural && audioPackTopicOrNull()?.neuralPack != null
+
 /** True when this selection opens Sound Player instead of Ambient. */
 fun PackSelection.opensSoundPlayer(): Boolean =
-    family == PackFamily.Sound || family == PackFamily.Neural ||
+    family == PackFamily.Sound ||
+        (family == PackFamily.Neural && audioPackTopicOrNull()?.neuralPack == null) ||
         (family == PackFamily.VintageGames && subId == VintageGamesSub.MUSIC)
 
 /** True when Ambient start should enable the Arcade Chips chiptune pack. */

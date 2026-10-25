@@ -97,6 +97,7 @@ import fr.geoking.arthur.ui.components.genartTopicOrNull
 import fr.geoking.arthur.ui.components.homeTile
 import fr.geoking.arthur.ui.components.isGenartCustom
 import fr.geoking.arthur.ui.components.museumTopicOrNull
+import fr.geoking.arthur.ui.components.opensNeuralMusic
 import fr.geoking.arthur.ui.components.opensSoundPlayer
 import fr.geoking.arthur.ui.components.resolvePackPool
 import fr.geoking.arthur.ui.components.sourceIdsForAmbientLoad
@@ -121,6 +122,7 @@ fun ControlPlaneScreen(
     packOwnership: PackOwnership = PackOwnership.NONE,
     onOpenMarketplace: ((highlightPackId: String?) -> Unit)? = null,
     onOpenSoundPlayer: ((PackSelection) -> Unit)? = null,
+    onOpenNeuralMusic: ((PackSelection) -> Unit)? = null,
 ) {
     var catalog by remember { mutableStateOf(initialCatalog.orEmpty()) }
     var openedFamily by remember { mutableStateOf<PackFamily?>(null) }
@@ -282,13 +284,15 @@ fun ControlPlaneScreen(
 
     fun openMediaPack(forSelection: PackSelection, resumeIfPossible: Boolean = true) {
         lastMediaPack = forSelection
-        if (forSelection.opensSoundPlayer()) {
-            onOpenSoundPlayer?.invoke(forSelection)
-        } else {
-            if (forSelection.appliesArcadeChipsOnAmbientStart()) {
-                ambientAudioSettings?.let { forSelection.applySoundPack(it) }
+        when {
+            forSelection.opensNeuralMusic() -> onOpenNeuralMusic?.invoke(forSelection)
+            forSelection.opensSoundPlayer() -> onOpenSoundPlayer?.invoke(forSelection)
+            else -> {
+                if (forSelection.appliesArcadeChipsOnAmbientStart()) {
+                    ambientAudioSettings?.let { forSelection.applySoundPack(it) }
+                }
+                launchAmbient(forSelection, resumeIfPossible = resumeIfPossible)
             }
-            launchAmbient(forSelection, resumeIfPossible = resumeIfPossible)
         }
     }
 
@@ -347,7 +351,7 @@ fun ControlPlaneScreen(
         },
         onSelectSubPack = { sel ->
             selection = sel
-            if (sel.opensSoundPlayer()) {
+            if (sel.opensNeuralMusic() || sel.opensSoundPlayer()) {
                 openMediaPack(sel)
             }
         },
@@ -691,7 +695,10 @@ private fun PhoneControlPlaneContent(
                         onTileClick = { tile: PackTile ->
                             if (tile.isLocked(packOwnership)) {
                                 onOpenMarketplace?.invoke(tile.sellablePackId)
-                            } else if (tile.selection.opensSoundPlayer()) {
+                            } else if (
+                                tile.selection.opensNeuralMusic() ||
+                                tile.selection.opensSoundPlayer()
+                            ) {
                                 onSelectSubPack(tile.selection)
                             } else if (tile.selection == selection) {
                                 onStartAmbient()

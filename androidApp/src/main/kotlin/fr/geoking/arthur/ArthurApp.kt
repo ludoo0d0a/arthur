@@ -157,6 +157,9 @@ val appModule = module {
     single { NeuralModelDownloader(androidContext(), errorLogger = get()) }
     single { AudioCacheManager(androidContext()) }
     single { NeuralMusicPlayer(androidContext(), get(), get(), get()) }
+    single<fr.geoking.arthur.shared.neural.NeuralTakeLibrary> {
+        fr.geoking.arthur.audio.neural.FileNeuralTakeLibrary(androidContext())
+    }
     single { LanPairingPrefs(androidContext()) }
     single {
         Room.databaseBuilder(

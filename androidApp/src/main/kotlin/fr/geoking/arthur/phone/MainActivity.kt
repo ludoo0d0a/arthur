@@ -61,6 +61,9 @@ import fr.geoking.arthur.ui.screens.PhoneLanPairingScreen
 import fr.geoking.arthur.ui.screens.SettingsScreen
 import fr.geoking.arthur.ui.screens.SoundPlayerScreen
 import fr.geoking.arthur.ui.screens.TvLanPairingHostScreen
+import fr.geoking.arthur.ui.screens.neural.NeuralMusicHost
+import fr.geoking.arthur.ui.screens.neural.neuralPackIdOrNull
+import fr.geoking.arthur.shared.neural.NeuralMusicRoute
 import fr.geoking.arthur.update.InAppUpdateHelper
 import fr.geoking.arthur.update.PlayStoreUpdates
 import fr.geoking.arthur.update.TvUpdateChecker
@@ -171,6 +174,9 @@ class MainActivity : ComponentActivity() {
                         var soundPlayerSelection by remember {
                             mutableStateOf<PackSelection?>(null)
                         }
+                        var neuralRoute by remember {
+                            mutableStateOf<NeuralMusicRoute?>(null)
+                        }
                         var catalogEpoch by remember { mutableStateOf(0) }
                         val simulatePremium by developerSettings.simulatePremium.collectAsState()
                         val simulateAllPacks by developerSettings.simulateAllPacks.collectAsState()
@@ -213,6 +219,13 @@ class MainActivity : ComponentActivity() {
                                         },
                                     )
                                 }
+                            }
+                            neuralRoute != null && !isTelevision -> {
+                                NeuralMusicHost(
+                                    route = neuralRoute!!,
+                                    onRouteChange = { neuralRoute = it },
+                                    audioSettings = ambientAudioSettings,
+                                )
                             }
                             soundPlayerSelection != null -> {
                                 SoundPlayerScreen(
@@ -321,6 +334,15 @@ class MainActivity : ComponentActivity() {
                                         },
                                         onOpenSoundPlayer = { selection ->
                                             soundPlayerSelection = selection
+                                        },
+                                        onOpenNeuralMusic = if (isTelevision) {
+                                            null
+                                        } else {
+                                            { selection ->
+                                                selection.neuralPackIdOrNull()?.let { packId ->
+                                                    neuralRoute = NeuralMusicRoute.Hub(packId)
+                                                }
+                                            }
                                         },
                                         onStartAmbient = { artwork, pool, renewSourceIds ->
                                             AmbientRotationLaunch.prepare(pool, renewSourceIds)

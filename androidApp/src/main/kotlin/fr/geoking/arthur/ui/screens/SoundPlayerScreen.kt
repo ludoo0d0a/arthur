@@ -32,13 +32,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -53,9 +49,6 @@ import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.R
 import fr.geoking.arthur.audio.MusicStyle
 import fr.geoking.arthur.audio.ZenAudioEngine
-import fr.geoking.arthur.audio.engines.NeuralMusicPlayer
-import fr.geoking.arthur.shared.audio.NeuralAudioPack
-import fr.geoking.arthur.shared.audio.NeuralPromptCatalog
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.source.AmbientAudioCharacter
@@ -71,8 +64,8 @@ import fr.geoking.arthur.ui.components.stylesInPack
 import org.koin.core.context.GlobalContext
 
 /**
- * Dedicated listen surface for a Sound pack: full-bleed cover + procedural playback.
- * Does not start Ambient slideshow or change the artwork pool.
+ * Dedicated listen surface for a Sound pack: full-bleed cover + procedural / stem playback.
+ * Neural AI packs use [fr.geoking.arthur.ui.screens.neural.NeuralMusicHost] (phone only).
  * Volume is left to the system (phone/TV hardware); no in-app slider.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -89,19 +82,15 @@ fun SoundPlayerScreen(
     val styles = remember(topic) { topic.stylesInPack() }
     var selectedStyle by remember(topic) { mutableStateOf(topic.primaryStyle()) }
     var isPlaying by remember { mutableStateOf(true) }
-    var selectedPromptIndex by remember(topic) { mutableStateOf(0) }
     val keepPrefsOnDismiss = remember { java.util.concurrent.atomic.AtomicBoolean(false) }
 
     val context = LocalContext.current
     val settings = audioSettings
-    val neuralPack: NeuralAudioPack? = topic.neuralPack
 
-    // Snapshot prefs to restore unless the user chooses "Use in Ambient".
     val previousEnabled = remember(settings) { settings?.enabled?.value ?: false }
     val previousStyle = remember(settings) { settings?.stylePreference?.value }
     val previousCharacter = remember(settings) { settings?.character?.value }
 
-    // Dedicated engines: Stem → MusicDirector, ExecuTorch → NeuralMusicPlayer, Wavetable → Zen/procedural.
     val musicDirector = remember(topic) {
         if (topic == AudioPackTopic.Stem) {
             fr.geoking.arthur.audio.stem.MusicDirector(context).apply {
@@ -112,17 +101,8 @@ fun SoundPlayerScreen(
         }
     }
 
-    val neuralPlayer = remember(topic) {
-        if (neuralPack != null) {
-            runCatching { GlobalContext.get().get<NeuralMusicPlayer>() }.getOrNull()
-        } else {
-            null
-        }
-    }
-
     val zenAudio = remember(settings, topic) {
-        // Stem / ExecuTorch use dedicated engines; Wavetable uses procedural WavetableSynth.
-        if (topic == AudioPackTopic.Stem || neuralPack != null) {
+        if (topic == AudioPackTopic.Stem) {
             null
         } else {
             settings?.let { ZenAudioEngine(context, it) }
@@ -139,10 +119,9 @@ fun SoundPlayerScreen(
         )
     }
 
-    DisposableEffect(zenAudio, musicDirector, neuralPlayer, settings) {
+    DisposableEffect(zenAudio, musicDirector, settings) {
         onDispose {
             musicDirector?.release()
-            neuralPlayer?.stop()
             zenAudio?.stop()
             zenAudio?.destroy()
             if (settings != null && !keepPrefsOnDismiss.get()) {
@@ -156,24 +135,14 @@ fun SoundPlayerScreen(
     LaunchedEffect(
         settings,
         selectedStyle,
-        selectedPromptIndex,
         isPlaying,
         zenAudio,
         musicDirector,
-        neuralPlayer,
-        neuralPack,
         topic,
     ) {
         when {
             topic == AudioPackTopic.Stem && musicDirector != null -> {
                 if (isPlaying) musicDirector.play() else musicDirector.pause()
-            }
-            neuralPack != null && neuralPlayer != null -> {
-                if (isPlaying) {
-                    neuralPlayer.playPackTrack(neuralPack, promptIndex = selectedPromptIndex)
-                } else {
-                    neuralPlayer.stop()
-                }
             }
             settings != null && zenAudio != null -> {
                 settings.setEnabled(true)
@@ -250,114 +219,34 @@ fun SoundPlayerScreen(
                 color = Color.White,
                 modifier = Modifier.testTag("sound_player_title"),
             )
-            if (neuralPack != null) {
-                val downloader = remember {
-                    runCatching { GlobalContext.get().get<fr.geoking.arthur.audio.engines.NeuralModelDownloader>() }.getOrNull()
-                }
-                val downloadStates by (downloader?.downloadStates ?: remember { MutableStateFlow(emptyMap()) }).collectAsState()
-                val scope = rememberCoroutineScope()
-                val modelState = downloadStates[neuralPack.engineType] ?: fr.geoking.arthur.audio.engines.ModelDownloadState.Idle
 
-                val prompts = remember(neuralPack) {
-                    NeuralPromptCatalog.promptsForPack(neuralPack)
-                }
-                val currentPrompt = prompts.getOrElse(selectedPromptIndex) { prompts.first() }
+            val stylesLine = styles.joinToString(" · ") { style ->
+                context.getString(style.labelRes())
+            }
+            Text(
+                text = stylesLine,
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White.copy(alpha = 0.8f),
+                modifier = Modifier
+                    .padding(top = 6.dp)
+                    .testTag("sound_player_styles_line"),
+            )
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(top = 4.dp),
-                ) {
-                    Text(
-                        text = when (modelState) {
-                            is fr.geoking.arthur.audio.engines.ModelDownloadState.Ready -> stringResource(R.string.neural_model_ready)
-                            is fr.geoking.arthur.audio.engines.ModelDownloadState.Downloading -> stringResource(R.string.neural_model_downloading, modelState.progressPercent)
-                            else -> stringResource(R.string.neural_procedural_fallback)
-                        },
-                        style = MaterialTheme.typography.labelMedium,
-                        color = when (modelState) {
-                            is fr.geoking.arthur.audio.engines.ModelDownloadState.Ready -> Color(0xFF81C784)
-                            is fr.geoking.arthur.audio.engines.ModelDownloadState.Downloading -> Color(0xFFFFB74D)
-                            else -> Color(0xFFE0E0E0)
-                        },
-                        modifier = Modifier.testTag("sound_player_model_status"),
-                    )
-
-                    if (modelState !is fr.geoking.arthur.audio.engines.ModelDownloadState.Ready &&
-                        modelState !is fr.geoking.arthur.audio.engines.ModelDownloadState.Downloading
-                    ) {
-                        TextButton(
-                            onClick = {
-                                downloader?.let { d ->
-                                    scope.launch { d.downloadModel(neuralPack.engineType) }
-                                }
-                            },
-                            modifier = Modifier.testTag("sound_player_download_model"),
-                        ) {
-                            Text(
-                                text = stringResource(R.string.neural_model_download),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = Color(0xFF81D4FA),
-                            )
-                        }
-                    }
-                }
-
-                Text(
-                    text = "${currentPrompt.title} — ${currentPrompt.promptText}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.85f),
-                    modifier = Modifier
-                        .padding(top = 6.dp)
-                        .testTag("sound_player_styles_line"),
-                )
-
+            if (styles.size > 1) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 14.dp)
-                        .horizontalScroll(rememberScrollState())
-                        .testTag("sound_player_prompts_row"),
+                        .padding(top = 16.dp)
+                        .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    prompts.forEachIndexed { idx, prompt ->
+                    styles.forEach { style ->
                         FilterChip(
-                            selected = selectedPromptIndex == idx,
-                            onClick = { selectedPromptIndex = idx },
-                            label = { Text(prompt.title) },
-                            modifier = Modifier.testTag("sound_player_prompt_$idx"),
+                            selected = selectedStyle == style,
+                            onClick = { selectedStyle = style },
+                            label = { Text(stringResource(style.labelRes())) },
+                            modifier = Modifier.testTag("sound_player_style_${style.name}"),
                         )
-                    }
-                }
-            } else {
-                val stylesLine = styles.joinToString(" · ") { style ->
-                    context.getString(style.labelRes())
-                }
-                Text(
-                    text = stylesLine,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.8f),
-                    modifier = Modifier
-                        .padding(top = 6.dp)
-                        .testTag("sound_player_styles_line"),
-                )
-
-                if (styles.size > 1) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 16.dp)
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        styles.forEach { style ->
-                            FilterChip(
-                                selected = selectedStyle == style,
-                                onClick = { selectedStyle = style },
-                                label = { Text(stringResource(style.labelRes())) },
-                                modifier = Modifier.testTag("sound_player_style_${style.name}"),
-                            )
-                        }
                     }
                 }
             }

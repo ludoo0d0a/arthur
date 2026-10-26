@@ -97,6 +97,7 @@ import fr.geoking.arthur.UsedApisList
 import fr.geoking.arthur.auto.AmbientAlbumArt
 import fr.geoking.arthur.phone.theme.ArthurTheme
 import fr.geoking.arthur.shared.error.ErrorCategory
+import fr.geoking.arthur.ui.screens.sandbox.MusicLlmSandboxScreen
 import fr.geoking.arthur.shared.error.ErrorItem
 import fr.geoking.arthur.shared.error.ErrorLogger
 import fr.geoking.arthur.source.ArtworkImageCache
@@ -152,6 +153,7 @@ enum class SettingsScreenPage {
     Licenses,
     Developer,
     DeveloperErrorLog,
+    MusicSandbox,
 }
 
 @Composable
@@ -246,6 +248,7 @@ fun SettingsScreen(
                             SettingsScreenPage.Licenses -> stringResource(R.string.screen_licenses)
                             SettingsScreenPage.Developer -> stringResource(R.string.screen_developer)
                             SettingsScreenPage.DeveloperErrorLog -> stringResource(R.string.dev_errors_list)
+                            SettingsScreenPage.MusicSandbox -> "AI Music Sandbox (POC)"
                         },
                     )
                 },
@@ -359,6 +362,16 @@ fun SettingsScreen(
                     verbose = verbose,
                     onVerboseChange = onVerboseChange,
                     onOpenErrorLog = { screenStack = screenStack + SettingsScreenPage.DeveloperErrorLog },
+                    onOpenSandbox = { screenStack = screenStack + SettingsScreenPage.MusicSandbox },
+                )
+                SettingsScreenPage.MusicSandbox -> MusicLlmSandboxScreen(
+                    onBack = {
+                        if (screenStack.size > 1) {
+                            screenStack = screenStack.dropLast(1)
+                        } else {
+                            onDismiss()
+                        }
+                    },
                 )
                 SettingsScreenPage.DeveloperErrorLog -> DeveloperErrorLogScreen(
                     errorLogger = activeErrorLogger,
@@ -748,6 +761,7 @@ private fun DeveloperContent(
     verbose: Boolean = false,
     onVerboseChange: (Boolean) -> Unit = {},
     onOpenErrorLog: () -> Unit = {},
+    onOpenSandbox: () -> Unit = {},
 ) {
     Column(
         modifier = Modifier
@@ -840,6 +854,13 @@ private fun DeveloperContent(
                 label = stringResource(R.string.dev_errors_list),
                 value = stringResource(R.string.dev_errors_list_subtitle),
                 onClick = onOpenErrorLog,
+            )
+
+            SettingsItem(
+                label = "AI Music Generation Sandbox (POC)",
+                value = "Test downloading models, custom prompts, stems & mini player",
+                onClick = onOpenSandbox,
+                modifier = Modifier.testTag("dev_open_music_sandbox"),
             )
         }
     }

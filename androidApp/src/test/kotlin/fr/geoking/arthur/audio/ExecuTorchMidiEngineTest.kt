@@ -15,6 +15,7 @@ import fr.geoking.arthur.source.AmbientAudioSettings
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -82,14 +83,43 @@ class ExecuTorchMidiEngineTest {
     }
 
     @Test
-    fun generateTrack_createsValidAudioFile() = runBlocking {
+    fun generateTrack_withoutSoundFont_returnsNull() = runBlocking {
+        val prompt = NeuralPromptCatalog.executorchPrompts.first()
+        assertNull(engine.generateTrack(prompt, randomSeed = 42L, durationSeconds = 5))
+    }
+
+    @Test
+    fun generateTrack_withSoundFont_createsAudibleFile() = runBlocking {
         val prompt = NeuralPromptCatalog.executorchPrompts.first()
         val seed = 42L
+        val sf = downloader.getSoundFontFile(ExecuTorchMidiPresets.DEFAULT_SOUNDFONT.soundFontFileName)
+        sf.parentFile?.mkdirs()
+        sf.writeBytes(ByteArray(256))
+
         val trackFile = engine.generateTrack(prompt, seed, durationSeconds = 5)
 
         assertNotNull(trackFile)
         assertTrue("Generated track file should exist", trackFile?.exists() == true)
         assertTrue("WAV track file should have size > 44 bytes header", (trackFile?.length() ?: 0) > 44)
+        val peak = AudioCacheManager.wavPeakAbsolute(trackFile!!)
+        assertTrue("ExecuTorch track must contain audible PCM (peak=$peak)", peak >= 500)
+    }
+
+    @Test
+    fun bridge_fallbackRender_keepsPhaseAcrossChunks() {
+        val bridge = ExecuTorchMidiBridge()
+        bridge.init(null, null)
+        val chunk = ShortArray(2048)
+        bridge.renderPcmShorts(chunk, 1024)
+        val firstEnd = chunk[2046].toInt()
+        bridge.renderPcmShorts(chunk, 1024)
+        val secondStart = chunk[0].toInt()
+        // Continuous 440 Hz phase: adjacent chunk boundary should not both be ~0
+        // (old bug reset phase every chunk → silence-like clicks / null energy perception).
+        assertTrue(kotlin.math.abs(firstEnd) > 0 || kotlin.math.abs(secondStart) > 0)
+        val peak = chunk.maxOf { kotlin.math.abs(it.toInt()) }
+        assertTrue(peak >= 500)
+        bridge.release()
     }
 
     @Test

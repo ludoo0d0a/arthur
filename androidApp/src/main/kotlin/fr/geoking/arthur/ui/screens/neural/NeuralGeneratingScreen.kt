@@ -28,6 +28,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.R
+import fr.geoking.arthur.audio.engines.AudioCacheManager
 import fr.geoking.arthur.audio.engines.NeuralMusicPlayer
 import fr.geoking.arthur.shared.audio.NeuralPromptCatalog
 import fr.geoking.arthur.shared.neural.NeuralTake
@@ -53,6 +54,9 @@ fun NeuralGeneratingScreen(
     modifier: Modifier = Modifier,
     player: NeuralMusicPlayer? = remember {
         runCatching { GlobalContext.get().get<NeuralMusicPlayer>() }.getOrNull()
+    },
+    cacheManager: AudioCacheManager? = remember {
+        runCatching { GlobalContext.get().get<AudioCacheManager>() }.getOrNull()
     },
 ) {
     val pack = remember(packId) { neuralAudioPackFromId(packId) }
@@ -80,11 +84,18 @@ fun NeuralGeneratingScreen(
             }
         }
         try {
+            val takeId = UUID.randomUUID().toString()
             val file = withContext(Dispatchers.IO) {
-                player.getEngineForPack(pack).generateTrack(
+                val generated = player.getEngineForPack(pack).generateTrack(
                     prompt = prompt,
                     durationSeconds = durationSec.coerceIn(30, 120),
-                )
+                ) ?: return@withContext null
+                if (!generated.exists() || generated.length() <= 44L) return@withContext null
+                if (AudioCacheManager.wavPeakAbsolute(generated) < AudioCacheManager.MIN_AUDIBLE_PEAK) {
+                    return@withContext null
+                }
+                // Persist out of cacheDir so playback survives cache eviction.
+                cacheManager?.persistTakeAudio(generated, takeId) ?: generated
             }
             ticker.cancel()
             if (cancelled || !isActive) return@LaunchedEffect
@@ -95,7 +106,7 @@ fun NeuralGeneratingScreen(
             }
             progress = 1f
             val take = NeuralTake(
-                id = UUID.randomUUID().toString(),
+                id = takeId,
                 packId = packId,
                 promptId = promptId,
                 durationSec = durationSec,

@@ -1,17 +1,19 @@
 package fr.geoking.arthur.audio.engines
 
+import fr.geoking.arthur.audio.engines.llm.LocalNeuralInference
 import fr.geoking.arthur.shared.audio.NeuralAudioPack
 import fr.geoking.arthur.shared.audio.NeuralEngineType
 import fr.geoking.arthur.shared.audio.NeuralPromptDef
 import java.io.File
 
 /**
- * SoundGen engine implementation (Pack 1: Atmospheres & Nature).
- * Generates fast environmental & nature soundscapes up to 2 minutes.
+ * SoundGen engine (Pack 1: Atmospheres & Nature).
+ * Prompt-conditioned local neural decode → nature / atmosphere PCM.
  */
 class SoundGenEngine(
     private val downloader: NeuralModelDownloader,
     private val cacheManager: AudioCacheManager,
+    private val inference: LocalNeuralInference = LocalNeuralInference(cacheManager),
 ) : NeuralMusicEngine {
     override val engineType: NeuralEngineType = NeuralEngineType.SOUNDGEN
     override val pack: NeuralAudioPack = NeuralAudioPack.ATMOSPHERES_NATURE
@@ -23,17 +25,13 @@ class SoundGenEngine(
         randomSeed: Long,
         durationSeconds: Int,
     ): File? {
-        val clampedDuration = durationSeconds.coerceIn(10, 120)
-        val cached = cacheManager.getCachedTrack(prompt.id, randomSeed)
-        if (cached != null) return cached
-
-        // If local neural model weights are present, perform inference; otherwise generate cached sample fallback
-        return if (isModelReady()) {
-            val modelFile = downloader.getModelFile(engineType)
-            // Model inference pipeline: write rendered WAV into cache
-            cacheManager.generateFallbackSampleWav(prompt, randomSeed, clampedDuration)
-        } else {
-            cacheManager.generateFallbackSampleWav(prompt, randomSeed, clampedDuration)
-        }
+        if (!isModelReady()) return null
+        return inference.generate(
+            engineType = engineType,
+            modelFile = downloader.getModelFile(engineType),
+            prompt = prompt,
+            seed = randomSeed,
+            durationSeconds = durationSeconds.coerceIn(10, 120),
+        )
     }
 }

@@ -1,6 +1,7 @@
 package fr.geoking.arthur.audio.engines
 
 import android.content.Context
+import android.media.AudioAttributes
 import android.media.MediaPlayer
 import fr.geoking.arthur.audio.ProceduralMusicEngine
 import fr.geoking.arthur.shared.audio.NeuralAudioPack
@@ -18,13 +19,17 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 sealed class MusicPlaybackState {
-    object Stopped : MusicPlaybackState()
-    data class Playing(val pack: NeuralAudioPack, val prompt: NeuralPromptDef, val isFallbackProcedural: Boolean) : MusicPlaybackState()
+    data object Stopped : MusicPlaybackState()
+    data object Failed : MusicPlaybackState()
+    data class Playing(
+        val pack: NeuralAudioPack,
+        val prompt: NeuralPromptDef,
+    ) : MusicPlaybackState()
 }
 
 /**
- * Controller orchestrating local neural AI music playback, crossfading,
- * and seamless fallback to procedural music when model weights are unavailable or downloading.
+ * Controller orchestrating local neural AI music playback.
+ * Generation failures surface as [MusicPlaybackState.Failed] — no procedural/sample substitute.
  */
 class NeuralMusicPlayer(
     private val context: Context,
@@ -54,8 +59,8 @@ class NeuralMusicPlayer(
     fun getEngineForPack(pack: NeuralAudioPack): NeuralMusicEngine = engines.getValue(pack)
 
     /**
-     * Plays a 2-minute track variation for the given pack.
-     * Uses the neural engine if ready, or falls back seamlessly to procedural ambient music.
+     * Plays a generated track for the given pack.
+     * On missing model / failed generation, sets [MusicPlaybackState.Failed] (no substitute audio).
      */
     fun playPackTrack(
         pack: NeuralAudioPack,
@@ -68,20 +73,12 @@ class NeuralMusicPlayer(
             val selectedPrompt = prompts.getOrElse(promptIndex % prompts.size) { prompts.first() }
             val engine = getEngineForPack(pack)
 
-            if (engine.isModelReady()) {
-                val trackFile = engine.generateTrack(selectedPrompt, randomSeed, durationSeconds = 120)
-                if (trackFile != null && trackFile.exists()) {
-                    playAudioFileWithCrossfade(trackFile, pack, selectedPrompt, isProcedural = false, crossfadeMs = crossfadeMs)
-                } else {
-                    playProceduralFallback(pack, selectedPrompt)
-                }
+            val trackFile = engine.generateTrack(selectedPrompt, randomSeed, durationSeconds = 120)
+            if (trackFile != null && trackFile.exists()) {
+                playAudioFileWithCrossfade(trackFile, pack, selectedPrompt, crossfadeMs = crossfadeMs)
             } else {
-                val sampleFile = engine.generateTrack(selectedPrompt, randomSeed, durationSeconds = 120)
-                if (sampleFile != null && sampleFile.exists()) {
-                    playAudioFileWithCrossfade(sampleFile, pack, selectedPrompt, isProcedural = false, crossfadeMs = crossfadeMs)
-                } else {
-                    playProceduralFallback(pack, selectedPrompt)
-                }
+                stopActivePlayer()
+                _playbackState.value = MusicPlaybackState.Failed
             }
         }
     }
@@ -90,13 +87,18 @@ class NeuralMusicPlayer(
         audioFile: File,
         pack: NeuralAudioPack,
         prompt: NeuralPromptDef,
-        isProcedural: Boolean,
         crossfadeMs: Long,
     ) = withContext(Dispatchers.Main) {
         try {
             proceduralFallbackEngine.stop(abandonFocus = false)
 
             val newMp = MediaPlayer().apply {
+                setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .build(),
+                )
                 setDataSource(audioFile.absolutePath)
                 isLooping = true
                 setVolume(0f, 0f)
@@ -122,26 +124,22 @@ class NeuralMusicPlayer(
             oldMp?.stop()
             oldMp?.release()
 
-            _playbackState.value = MusicPlaybackState.Playing(pack, prompt, isProcedural)
-        } catch (e: Exception) {
-            playProceduralFallback(pack, prompt)
+            _playbackState.value = MusicPlaybackState.Playing(pack, prompt)
+        } catch (_: Exception) {
+            stopActivePlayer()
+            _playbackState.value = MusicPlaybackState.Failed
         }
     }
 
-    private fun playProceduralFallback(pack: NeuralAudioPack, prompt: NeuralPromptDef) {
+    private fun stopActivePlayer() {
         activePlayer?.stop()
         activePlayer?.release()
         activePlayer = null
-
-        proceduralFallbackEngine.start()
-        _playbackState.value = MusicPlaybackState.Playing(pack, prompt, isFallbackProcedural = true)
     }
 
     fun stop() {
         scope.launch(Dispatchers.Main) {
-            activePlayer?.stop()
-            activePlayer?.release()
-            activePlayer = null
+            stopActivePlayer()
             proceduralFallbackEngine.stop()
             _playbackState.value = MusicPlaybackState.Stopped
         }

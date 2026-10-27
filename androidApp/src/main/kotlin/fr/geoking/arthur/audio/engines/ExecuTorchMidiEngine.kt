@@ -3,6 +3,9 @@ package fr.geoking.arthur.audio.engines
 import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
+import fr.geoking.arthur.audio.engines.llm.PromptEncoder
+import fr.geoking.arthur.audio.engines.llm.NeuralTokenLm
+import fr.geoking.arthur.audio.engines.llm.WeightBank
 import fr.geoking.arthur.shared.audio.ExecuTorchMidiPresets
 import fr.geoking.arthur.shared.audio.NeuralAudioPack
 import fr.geoking.arthur.shared.audio.NeuralEngineType
@@ -38,14 +41,30 @@ class ExecuTorchMidiEngine(
         val cachedFile = cacheManager.getCachedTrack(prompt.id, randomSeed)
         if (cachedFile != null) return@withContext cachedFile
 
-        // Optional .pte when present; SoundFont is the downloaded artifact (public FluidR3).
+        if (!isModelReady()) return@withContext null
+
+        // SoundFont is the required artifact; optional .pte supplies extra weight conditioning.
         val modelFile = downloader.getModelFile(engineType).takeIf { it.exists() && it.length() > 0 }
         val soundFontFile = downloader.getSoundFontFile(
             ExecuTorchMidiPresets.DEFAULT_SOUNDFONT.soundFontFileName,
         )
+        if (!soundFontFile.exists() || soundFontFile.length() <= 0L) return@withContext null
+
+        // Prompt → conditioning → MIDI token LM (same LLM path as the other neural packs).
+        val weightSource = modelFile ?: soundFontFile
+        val weights = WeightBank.load(weightSource) ?: return@withContext null
+        val conditioning = PromptEncoder.encode(prompt.promptText, prompt.title, randomSeed, weights)
+        val seedTokens = PromptEncoder.toSeedTokens(conditioning, randomSeed)
+        val llmMidi = NeuralTokenLm.generate(
+            engineType = NeuralEngineType.EXECUTORCH_MIDI,
+            conditioning = conditioning,
+            weights = weights,
+            seed = randomSeed,
+            tokenCount = 32,
+        ).map { it.coerceIn(48, 84) }.toIntArray()
 
         bridge.init(
-            soundFontPath = if (soundFontFile.exists()) soundFontFile.absolutePath else null,
+            soundFontPath = soundFontFile.absolutePath,
             modelPath = modelFile?.absolutePath,
         )
 
@@ -56,45 +75,52 @@ class ExecuTorchMidiEngine(
             val totalFrames = sampleRate * targetDuration
             val frameChunkSize = 1024
 
-            // Generate MIDI sequence tokens using ExecuTorch model or procedural MIDI generator
-            val midiTokens = bridge.generateMidiTokens(
-                seedTokens = floatArrayOf(randomSeed.toFloat()),
-                maxTokens = 128,
-            ) ?: IntArray(64) { 60 + (it % 12) }
-
-            // Trigger initial MIDI notes
-            for ((index, note) in midiTokens.withIndex()) {
-                val channel = index % 4
-                val velocity = 60 + (index % 40)
-                bridge.sendMidiNoteOn(channel, note, velocity)
+            // Prefer bridge native tokens when the .pte is present; otherwise LLM MIDI.
+            val bridgeTokens = bridge.generateMidiTokens(seedTokens = seedTokens, maxTokens = 32)
+            val midiTokens = when {
+                modelFile != null && bridgeTokens != null && bridgeTokens.isNotEmpty() ->
+                    IntArray(bridgeTokens.size) { i ->
+                        // Blend native + LLM so the prompt still steers pitch.
+                        ((bridgeTokens[i] + llmMidi[i % llmMidi.size]) / 2).coerceIn(48, 84)
+                    }
+                else -> llmMidi
             }
 
-            // Render PCM audio into WAV file
+            // Seed a small chord so the first render chunk is never silent.
+            bridge.sendMidiNoteOn(0, midiTokens[0], 90)
+            if (midiTokens.size > 1) bridge.sendMidiNoteOn(1, midiTokens[1], 70)
+            if (midiTokens.size > 2) bridge.sendMidiNoteOn(2, midiTokens[2], 60)
+
+            var framesRendered = 0
+            var peakAbs = 0
             FileOutputStream(outputFile).use { fos ->
                 writeWavHeader(fos, sampleRate, numChannels, totalFrames)
 
                 val shortBuffer = ShortArray(frameChunkSize * numChannels)
                 val byteBuffer = ByteBuffer.allocate(shortBuffer.size * 2).order(ByteOrder.LITTLE_ENDIAN)
 
-                var framesRendered = 0
                 while (framesRendered < totalFrames) {
                     val framesToRender = (totalFrames - framesRendered).coerceAtMost(frameChunkSize)
                     val rendered = bridge.renderPcmShorts(shortBuffer, framesToRender)
                     if (rendered <= 0) break
 
                     byteBuffer.clear()
-                    for (i in 0 until rendered * numChannels) {
-                        byteBuffer.putShort(shortBuffer[i])
+                    val sampleCount = rendered * numChannels
+                    for (i in 0 until sampleCount) {
+                        val s = shortBuffer[i]
+                        val abs = if (s < 0) -s.toInt() else s.toInt()
+                        if (abs > peakAbs) peakAbs = abs
+                        byteBuffer.putShort(s)
                     }
-                    fos.write(byteBuffer.array(), 0, rendered * numChannels * 2)
+                    fos.write(byteBuffer.array(), 0, sampleCount * 2)
 
-                    // Periodically release and trigger new MIDI notes
-                    if ((framesRendered / frameChunkSize) % 8 == 0) {
-                        val prevNote = midiTokens[(framesRendered / frameChunkSize) % midiTokens.size]
+                    // Advance melody from LLM MIDI sequence (after first chunk).
+                    val chunkIndex = framesRendered / frameChunkSize
+                    if (chunkIndex > 0 && chunkIndex % 8 == 0) {
+                        val prevNote = midiTokens[chunkIndex % midiTokens.size]
                         bridge.sendMidiNoteOff(0, prevNote)
-
-                        val newNote = 55 + ((framesRendered / frameChunkSize) % 24)
-                        bridge.sendMidiNoteOn(0, newNote, 70)
+                        val newNote = midiTokens[(chunkIndex + 1) % midiTokens.size]
+                        bridge.sendMidiNoteOn(0, newNote, 80)
                     }
 
                     framesRendered += rendered
@@ -102,11 +128,19 @@ class ExecuTorchMidiEngine(
             }
 
             bridge.release()
-            outputFile
+
+            val completeEnough = framesRendered >= totalFrames * 9 / 10
+            val audible = peakAbs >= AudioCacheManager.MIN_AUDIBLE_PEAK
+            if (completeEnough && audible) {
+                outputFile
+            } else {
+                runCatching { outputFile.delete() }
+                null
+            }
         } catch (e: Exception) {
             bridge.release()
-            // Fallback sample WAV generation
-            cacheManager.generateFallbackSampleWav(prompt, randomSeed, targetDuration)
+            runCatching { if (outputFile.exists()) outputFile.delete() }
+            null
         }
     }
 

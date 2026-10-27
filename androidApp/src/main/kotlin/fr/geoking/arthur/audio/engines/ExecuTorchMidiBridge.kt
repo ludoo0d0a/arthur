@@ -12,31 +12,53 @@ class ExecuTorchMidiBridge {
         false
     }
 
+    /** Continuous oscillator phase for the JVM fallback renderer (must not reset per chunk). */
+    private var fallbackPhaseRadians = 0.0
+    private var fallbackNativeOk = false
+
     fun init(soundFontPath: String?, modelPath: String?): Boolean {
+        fallbackPhaseRadians = 0.0
+        fallbackNativeOk = false
         return if (hasNativeLib) {
-            try { nativeInit(soundFontPath, modelPath) } catch (e: UnsatisfiedLinkError) { true }
+            try {
+                fallbackNativeOk = nativeInit(soundFontPath, modelPath)
+                fallbackNativeOk
+            } catch (e: UnsatisfiedLinkError) {
+                fallbackNativeOk = false
+                true
+            }
         } else {
             true
         }
     }
 
     fun sendMidiNoteOn(channel: Int, key: Int, velocity: Int) {
-        if (hasNativeLib) {
-            try { nativeSendMidiNoteOn(channel, key, velocity) } catch (_: UnsatisfiedLinkError) {}
+        if (hasNativeLib && fallbackNativeOk) {
+            try {
+                nativeSendMidiNoteOn(channel, key, velocity)
+            } catch (_: UnsatisfiedLinkError) {
+                fallbackNativeOk = false
+            }
         }
     }
 
     fun sendMidiNoteOff(channel: Int, key: Int) {
-        if (hasNativeLib) {
-            try { nativeSendMidiNoteOff(channel, key) } catch (_: UnsatisfiedLinkError) {}
+        if (hasNativeLib && fallbackNativeOk) {
+            try {
+                nativeSendMidiNoteOff(channel, key)
+            } catch (_: UnsatisfiedLinkError) {
+                fallbackNativeOk = false
+            }
         }
     }
 
     fun renderPcmShorts(outBuffer: ShortArray, frameCount: Int): Int {
-        if (hasNativeLib) {
+        if (hasNativeLib && fallbackNativeOk) {
             return try {
-                nativeRenderPcmShorts(outBuffer, frameCount)
+                val rendered = nativeRenderPcmShorts(outBuffer, frameCount)
+                if (rendered > 0) rendered else fallbackRenderPcmShorts(outBuffer, frameCount)
             } catch (e: UnsatisfiedLinkError) {
+                fallbackNativeOk = false
                 fallbackRenderPcmShorts(outBuffer, frameCount)
             }
         }
@@ -44,10 +66,11 @@ class ExecuTorchMidiBridge {
     }
 
     fun generateMidiTokens(seedTokens: FloatArray?, maxTokens: Int): IntArray? {
-        if (hasNativeLib) {
+        if (hasNativeLib && fallbackNativeOk) {
             return try {
                 nativeGenerateMidiTokens(seedTokens, maxTokens)
             } catch (e: UnsatisfiedLinkError) {
+                fallbackNativeOk = false
                 fallbackGenerateMidiTokens(maxTokens)
             }
         }
@@ -56,17 +79,27 @@ class ExecuTorchMidiBridge {
 
     fun release() {
         if (hasNativeLib) {
-            try { nativeRelease() } catch (_: UnsatisfiedLinkError) {}
+            try {
+                nativeRelease()
+            } catch (_: UnsatisfiedLinkError) {
+            }
         }
+        fallbackNativeOk = false
+        fallbackPhaseRadians = 0.0
     }
 
     private fun fallbackRenderPcmShorts(outBuffer: ShortArray, frameCount: Int): Int {
-        val samples = (frameCount * 2).coerceAtMost(outBuffer.size)
-        for (i in 0 until samples) {
-            val t = i.toDouble() / 44100.0
-            outBuffer[i] = (kotlin.math.sin(2.0 * Math.PI * 440.0 * t) * 16384.0).toInt().toShort()
+        val frames = frameCount.coerceAtMost(outBuffer.size / 2)
+        val twoPi = 2.0 * Math.PI
+        val phaseStep = twoPi * 440.0 / 44100.0
+        for (frame in 0 until frames) {
+            val sample = (kotlin.math.sin(fallbackPhaseRadians) * 16384.0).toInt().toShort()
+            outBuffer[frame * 2] = sample
+            outBuffer[frame * 2 + 1] = sample
+            fallbackPhaseRadians += phaseStep
+            if (fallbackPhaseRadians >= twoPi) fallbackPhaseRadians -= twoPi
         }
-        return frameCount
+        return frames
     }
 
     private fun fallbackGenerateMidiTokens(maxTokens: Int): IntArray {

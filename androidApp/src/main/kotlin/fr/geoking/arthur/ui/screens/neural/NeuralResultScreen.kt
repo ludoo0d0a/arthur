@@ -1,6 +1,11 @@
 package fr.geoking.arthur.ui.screens.neural
 
+import android.content.Context
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.media.MediaPlayer
+import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -11,7 +16,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -36,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -62,6 +67,7 @@ fun NeuralResultScreen(
     modifier: Modifier = Modifier,
     audioSettings: AmbientAudioSettings? = null,
 ) {
+    val context = LocalContext.current
     val pack = remember(packId) { neuralAudioPackFromId(packId) }
     val take = remember(takeId, takeLibrary) { takeLibrary.get(takeId) }
     val prompt = remember(take) { take?.let { NeuralPromptCatalog.promptById(it.promptId) } }
@@ -71,24 +77,64 @@ fun NeuralResultScreen(
     val otherTake = siblingTakes.firstOrNull()
 
     var isPlaying by remember(takeId) { mutableStateOf(true) }
-    val mediaPlayer = remember(takeId) {
+    val mediaPlayer = remember(takeId, take?.localPath) {
         val path = take?.localPath ?: return@remember null
         val file = File(path)
-        if (!file.exists()) return@remember null
+        if (!file.exists() || file.length() <= 44L) return@remember null
         runCatching {
             MediaPlayer().apply {
+                setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .build(),
+                )
                 setDataSource(path)
                 isLooping = true
+                setVolume(1f, 1f)
                 prepare()
                 start()
             }
         }.getOrNull()
     }
 
-    DisposableEffect(mediaPlayer) {
+    DisposableEffect(mediaPlayer, context) {
+        val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+        var focusRequest: AudioFocusRequest? = null
+        if (mediaPlayer != null && audioManager != null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                    .setAudioAttributes(
+                        AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_MEDIA)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                            .build(),
+                    )
+                    .setOnAudioFocusChangeListener { }
+                    .build()
+                audioManager.requestAudioFocus(focusRequest!!)
+            } else {
+                @Suppress("DEPRECATION")
+                audioManager.requestAudioFocus(
+                    null,
+                    AudioManager.STREAM_MUSIC,
+                    AudioManager.AUDIOFOCUS_GAIN,
+                )
+            }
+        }
         onDispose {
-            mediaPlayer?.stop()
-            mediaPlayer?.release()
+            runCatching {
+                mediaPlayer?.stop()
+                mediaPlayer?.release()
+            }
+            if (audioManager != null) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    focusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
+                } else {
+                    @Suppress("DEPRECATION")
+                    audioManager.abandonAudioFocus(null)
+                }
+            }
         }
     }
 

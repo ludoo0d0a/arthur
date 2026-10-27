@@ -62,13 +62,26 @@ class MusicLlmSandboxTest {
 
     @Test
     fun sandboxMiniPlayer_rendersResultAndStemControls() {
+        val wav = java.io.File.createTempFile("sandbox_test", ".wav")
+        // Minimal valid silent-header WAV is enough for UI; generator tests cover audible PCM.
+        wav.writeBytes(
+            byteArrayOf(
+                0x52, 0x49, 0x46, 0x46, 0x2C, 0x00, 0x00, 0x00,
+                0x57, 0x41, 0x56, 0x45, 0x66, 0x6D, 0x74, 0x20,
+                0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00,
+                0x44, 0xAC.toByte(), 0x00, 0x00, 0x88.toByte(), 0x58, 0x01, 0x00,
+                0x02, 0x00, 0x10, 0x00, 0x64, 0x61, 0x74, 0x61,
+                0x08, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x10,
+                0x00, 0x10, 0x00, 0x10,
+            ),
+        )
         val dummyResult = GeneratedResult(
             id = "test-res-1",
             prompt = "Atmospheric Forest Rain",
             engineName = "MusicGen Small",
             format = MusicOutputFormat.MULTI_TRACK_STEMS,
             durationSeconds = 30,
-            filePath = "/tmp/test.wav",
+            filePath = wav.absolutePath,
             fileSizeMb = 4.2f,
             stems = listOf(
                 StemTrackState("s1", "Melody / Lead", isMuted = false, volume = 0.8f),
@@ -76,7 +89,6 @@ class MusicLlmSandboxTest {
             ),
         )
 
-        var isPlaying = false
         var playToggled = false
         var mutedStemId: String? = null
 
@@ -84,7 +96,7 @@ class MusicLlmSandboxTest {
             ArthurTheme {
                 SandboxMiniPlayer(
                     result = dummyResult,
-                    isPlaying = isPlaying,
+                    isPlaying = false,
                     playbackPositionSec = 5f,
                     onPlayPauseToggle = { playToggled = true },
                     onStop = {},
@@ -103,6 +115,7 @@ class MusicLlmSandboxTest {
         composeRule.onNodeWithTag("sandbox_stem_row_s1").assertIsDisplayed()
         composeRule.onNodeWithTag("sandbox_stem_mute_s1").performClick()
         assertEquals("s1", mutedStemId)
+        wav.delete()
     }
 
     @Test

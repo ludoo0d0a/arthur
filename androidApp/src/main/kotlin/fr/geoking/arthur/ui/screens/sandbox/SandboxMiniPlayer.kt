@@ -1,5 +1,11 @@
 package fr.geoking.arthur.ui.screens.sandbox
 
+import android.content.Context
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
+import android.media.MediaPlayer
+import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,9 +29,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -33,13 +40,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fr.geoking.arthur.R
+import java.io.File
+import kotlin.math.max
 
 data class StemTrackState(
     val id: String,
@@ -69,10 +78,109 @@ fun SandboxMiniPlayer(
     onSeek: (Float) -> Unit,
     onStemMuteToggle: (stemId: String) -> Unit = {},
     onStemVolumeChange: (stemId: String, volume: Float) -> Unit = { _, _ -> },
+    onPlaybackPositionTick: (Float) -> Unit = {},
+    onPlaybackEnded: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    var isLooping by remember { mutableStateOf(true) }
-    var masterVolume by remember { mutableFloatStateOf(0.9f) }
+    val context = LocalContext.current
+    var isLooping by remember(result.id) { mutableStateOf(true) }
+    var masterVolume by remember(result.id) { mutableFloatStateOf(0.9f) }
+
+    val audioFile = remember(result.filePath) { File(result.filePath) }
+    val mediaPlayerResult = remember(result.id, result.filePath) {
+        if (!audioFile.exists() || audioFile.length() <= 44L) {
+            Result.failure(IllegalStateException("Audio file missing"))
+        } else {
+            runCatching {
+                MediaPlayer().apply {
+                    setAudioAttributes(
+                        AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_MEDIA)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                            .build(),
+                    )
+                    setDataSource(audioFile.absolutePath)
+                    isLooping = true
+                    setVolume(0.9f, 0.9f)
+                    prepare()
+                }
+            }
+        }
+    }
+    val mediaPlayer = mediaPlayerResult.getOrNull()
+    val playbackError = mediaPlayerResult.exceptionOrNull()?.message
+
+    DisposableEffect(mediaPlayer, context) {
+        val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+        var focusRequest: AudioFocusRequest? = null
+        if (mediaPlayer != null && audioManager != null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                    .setAudioAttributes(
+                        AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_MEDIA)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                            .build(),
+                    )
+                    .setOnAudioFocusChangeListener { }
+                    .build()
+                audioManager.requestAudioFocus(focusRequest!!)
+            } else {
+                @Suppress("DEPRECATION")
+                audioManager.requestAudioFocus(
+                    null,
+                    AudioManager.STREAM_MUSIC,
+                    AudioManager.AUDIOFOCUS_GAIN,
+                )
+            }
+        }
+        onDispose {
+            runCatching {
+                mediaPlayer?.stop()
+                mediaPlayer?.release()
+            }
+            if (audioManager != null) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    focusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
+                } else {
+                    @Suppress("DEPRECATION")
+                    audioManager.abandonAudioFocus(null)
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(isLooping, mediaPlayer) {
+        mediaPlayer?.isLooping = isLooping
+    }
+
+    LaunchedEffect(masterVolume, mediaPlayer) {
+        mediaPlayer?.setVolume(masterVolume, masterVolume)
+    }
+
+    LaunchedEffect(isPlaying, mediaPlayer) {
+        val mp = mediaPlayer ?: return@LaunchedEffect
+        if (isPlaying) {
+            if (!mp.isPlaying) runCatching { mp.start() }
+        } else if (mp.isPlaying) {
+            runCatching { mp.pause() }
+        }
+    }
+
+    // Sync UI seek position from MediaPlayer while playing.
+    LaunchedEffect(isPlaying, mediaPlayer, isLooping) {
+        val mp = mediaPlayer ?: return@LaunchedEffect
+        while (isPlaying) {
+            kotlinx.coroutines.delay(200)
+            val durMs = mp.duration.coerceAtLeast(1)
+            val posMs = mp.currentPosition.coerceAtLeast(0)
+            onPlaybackPositionTick(posMs / 1000f)
+            if (!isLooping && posMs >= durMs - 200 && !mp.isPlaying) {
+                onPlaybackEnded()
+                break
+            }
+        }
+    }
 
     Card(
         modifier = modifier
@@ -89,7 +197,6 @@ fun SandboxMiniPlayer(
                 .fillMaxWidth()
                 .padding(16.dp),
         ) {
-            // Header Info
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -97,7 +204,7 @@ fun SandboxMiniPlayer(
             ) {
                 Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
                     Text(
-                        text = "Mini Player POC",
+                        text = "Mini Player",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold,
@@ -127,18 +234,32 @@ fun SandboxMiniPlayer(
 
             Spacer(Modifier.height(8.dp))
 
-            // Details subtitle
             Text(
-                text = "${result.engineName} · ${result.durationSeconds}s · ${String.format("%.1f MB", result.fileSizeMb)}",
+                text = "${result.engineName} · ${result.durationSeconds}s · ${
+                    String.format("%.1f MB", result.fileSizeMb)
+                }",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.testTag("sandbox_mini_player_details"),
             )
 
+            if (playbackError != null || mediaPlayer == null) {
+                Text(
+                    text = playbackError ?: "Cannot play generated file",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier
+                        .padding(top = 8.dp)
+                        .testTag("sandbox_mini_player_error"),
+                )
+            }
+
             Spacer(Modifier.height(12.dp))
 
-            // Seek bar and timestamps
-            val maxSec = result.durationSeconds.toFloat().coerceAtLeast(1f)
+            val maxSec = max(
+                result.durationSeconds.toFloat(),
+                ((mediaPlayer?.duration ?: 0) / 1000f),
+            ).coerceAtLeast(1f)
             val currentClamped = playbackPositionSec.coerceIn(0f, maxSec)
 
             Row(
@@ -154,7 +275,12 @@ fun SandboxMiniPlayer(
                 )
                 Slider(
                     value = currentClamped,
-                    onValueChange = onSeek,
+                    onValueChange = { sec ->
+                        onSeek(sec)
+                        mediaPlayer?.let { mp ->
+                            runCatching { mp.seekTo((sec * 1000).toInt().coerceAtLeast(0)) }
+                        }
+                    },
                     valueRange = 0f..maxSec,
                     modifier = Modifier
                         .weight(1f)
@@ -170,7 +296,6 @@ fun SandboxMiniPlayer(
                 )
             }
 
-            // Controls Row (Play/Pause, Stop, Loop, Master Volume)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -200,7 +325,13 @@ fun SandboxMiniPlayer(
                     }
 
                     IconButton(
-                        onClick = onStop,
+                        onClick = {
+                            runCatching {
+                                mediaPlayer?.pause()
+                                mediaPlayer?.seekTo(0)
+                            }
+                            onStop()
+                        },
                         modifier = Modifier.testTag("sandbox_mini_player_stop"),
                     ) {
                         Icon(
@@ -226,7 +357,6 @@ fun SandboxMiniPlayer(
                     }
                 }
 
-                // Volume slider
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.width(130.dp),
@@ -248,11 +378,10 @@ fun SandboxMiniPlayer(
                 }
             }
 
-            // Stems Multi-track Mixer Section (shown if format == STEMS or stems list non-empty)
             if (result.format == MusicOutputFormat.MULTI_TRACK_STEMS || result.stems.isNotEmpty()) {
                 Spacer(Modifier.height(16.dp))
                 Text(
-                    text = "Stem Mixer (Feasibility Control)",
+                    text = "Stem Mixer (mix preview uses master bus)",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,

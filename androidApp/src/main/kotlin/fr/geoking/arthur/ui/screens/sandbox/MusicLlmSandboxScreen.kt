@@ -51,13 +51,16 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import fr.geoking.arthur.R
 import fr.geoking.arthur.audio.engines.ModelDownloadState
 import fr.geoking.arthur.audio.engines.NeuralModelDownloader
 import fr.geoking.arthur.shared.audio.NeuralEngineType
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.core.context.GlobalContext
 import java.util.UUID
 
@@ -103,8 +106,12 @@ fun MusicLlmSandboxScreen(
         runCatching { GlobalContext.get().get<NeuralModelDownloader>() }.getOrNull()
     },
 ) {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var selectedModel by remember { mutableStateOf(SandboxModelList.first()) }
+    // Default to Custom Music LLM so Generate works offline without a multi‑GB download.
+    var selectedModel by remember {
+        mutableStateOf(SandboxModelList.first { it.id == "custom_llm" })
+    }
     var promptText by remember { mutableStateOf("Atmospheric Forest Rain with Soft Piano") }
     var selectedFormat by remember { mutableStateOf(MusicOutputFormat.FULL_TRACK) }
     var selectedDurationSec by remember { mutableIntStateOf(30) }
@@ -121,10 +128,15 @@ fun MusicLlmSandboxScreen(
     )
     val isModelReady = currentModelState is ModelDownloadState.Ready || selectedModel.engineType == null
 
+    val generator = remember(downloader) {
+        downloader?.let { SandboxAudioGenerator(context, it) }
+    }
+
     // Generation state
     var isGenerating by remember { mutableStateOf(false) }
     var generationStage by remember { mutableStateOf("") }
     var generationProgress by remember { mutableFloatStateOf(0f) }
+    var generationError by remember { mutableStateOf<String?>(null) }
     var generatedResult by remember { mutableStateOf<GeneratedResult?>(null) }
 
     // Mini Player State
@@ -132,20 +144,6 @@ fun MusicLlmSandboxScreen(
     var playbackPositionSec by remember { mutableFloatStateOf(0f) }
 
     BackHandler(onBack = onBack)
-
-    // Playback ticker simulation
-    LaunchedEffect(isPlaying, generatedResult) {
-        val totalSec = generatedResult?.durationSeconds ?: 30
-        while (isPlaying) {
-            delay(200)
-            val next = playbackPositionSec + 0.2f
-            if (next >= totalSec) {
-                playbackPositionSec = 0f
-            } else {
-                playbackPositionSec = next
-            }
-        }
-    }
 
     Scaffold(
         modifier = modifier
@@ -400,56 +398,71 @@ fun MusicLlmSandboxScreen(
                 }
             }
 
-            // 4. Generation Button & Feasibility Runner
+            // 4. Generation Button — real on-device inference (no fake path)
             Button(
                 onClick = {
-                    if (promptText.isNotBlank()) {
-                        scope.launch {
-                            isGenerating = true
-                            isPlaying = false
-                            playbackPositionSec = 0f
-                            generationProgress = 0.1f
+                    if (promptText.isBlank() || generator == null) return@Button
+                    if (!isModelReady && selectedModel.engineType != null) {
+                        generationError = "Download the model first"
+                        return@Button
+                    }
+                    scope.launch {
+                        isGenerating = true
+                        isPlaying = false
+                        playbackPositionSec = 0f
+                        generationError = null
+                        generatedResult = null
+                        generationProgress = 0.1f
+                        generationStage = "1/3 Encoding prompt..."
+                        delay(150)
+                        generationProgress = 0.35f
+                        generationStage = "2/3 Running LLM / neural decode..."
 
-                            generationStage = "1/4 Tokenizing text prompt..."
-                            delay(400)
-                            generationProgress = 0.35f
-
-                            generationStage = "2/4 Running LLM / neural model inference..."
-                            delay(600)
-                            generationProgress = 0.65f
-
-                            generationStage = "3/4 Synthesizing audio channels / stems..."
-                            delay(500)
-                            generationProgress = 0.85f
-
-                            generationStage = "4/4 Baking ${selectedFormat.displayName} output..."
-                            delay(400)
-                            generationProgress = 1f
-
-                            val dummyStems = if (selectedFormat == MusicOutputFormat.MULTI_TRACK_STEMS) {
-                                listOf(
-                                    StemTrackState("s1", "Melody / Lead", isMuted = false, volume = 0.9f),
-                                    StemTrackState("s2", "Harmony / Chords", isMuted = false, volume = 0.8f),
-                                    StemTrackState("s3", "Bass / Sub", isMuted = false, volume = 0.85f),
-                                    StemTrackState("s4", "Rhythm / Nature FX", isMuted = false, volume = 0.7f),
-                                )
-                            } else emptyList()
-
-                            generatedResult = GeneratedResult(
-                                id = UUID.randomUUID().toString(),
-                                prompt = promptText,
-                                engineName = selectedModel.name,
+                        val outcome = withContext(Dispatchers.IO) {
+                            generator.generate(
+                                model = selectedModel,
                                 format = selectedFormat,
+                                promptText = promptText,
                                 durationSeconds = selectedDurationSec,
-                                filePath = "/sdcard/arthur_cache/sandbox_take_${System.currentTimeMillis()}.wav",
-                                fileSizeMb = (selectedDurationSec * 0.18f).coerceAtLeast(0.5f),
-                                stems = dummyStems,
                             )
-                            isGenerating = false
                         }
+
+                        outcome.fold(
+                            onSuccess = { file ->
+                                generationStage = "3/3 Writing WAV..."
+                                generationProgress = 1f
+                                val stems = if (selectedFormat == MusicOutputFormat.MULTI_TRACK_STEMS) {
+                                    listOf(
+                                        StemTrackState("s1", "Melody / Lead", volume = 0.9f),
+                                        StemTrackState("s2", "Harmony / Chords", volume = 0.8f),
+                                        StemTrackState("s3", "Bass / Sub", volume = 0.85f),
+                                        StemTrackState("s4", "Rhythm / Nature FX", volume = 0.7f),
+                                    )
+                                } else {
+                                    emptyList()
+                                }
+                                generatedResult = GeneratedResult(
+                                    id = UUID.randomUUID().toString(),
+                                    prompt = promptText,
+                                    engineName = selectedModel.name,
+                                    format = selectedFormat,
+                                    durationSeconds = selectedDurationSec,
+                                    filePath = file.absolutePath,
+                                    fileSizeMb = (file.length() / (1024f * 1024f)).coerceAtLeast(0.01f),
+                                    stems = stems,
+                                )
+                                isPlaying = true
+                            },
+                            onFailure = { err ->
+                                generationError = err.message ?: "Generation failed"
+                                generationProgress = 0f
+                            },
+                        )
+                        isGenerating = false
                     }
                 },
-                enabled = promptText.isNotBlank() && !isGenerating,
+                enabled = promptText.isNotBlank() && !isGenerating && generator != null &&
+                    (isModelReady || selectedModel.engineType == null),
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("sandbox_generate_btn"),
@@ -463,7 +476,7 @@ fun MusicLlmSandboxScreen(
                     Spacer(Modifier.height(8.dp))
                     Text(" Generating...")
                 } else {
-                    Text("Generate Music / Stems (POC Feasibility)")
+                    Text("Generate Music / Stems")
                 }
             }
 
@@ -490,7 +503,16 @@ fun MusicLlmSandboxScreen(
                 }
             }
 
-            // 5. Result Display & Mini Player
+            generationError?.let { msg ->
+                Text(
+                    text = msg,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.testTag("sandbox_generation_error"),
+                )
+            }
+
+            // 5. Result Display & Mini Player (real MediaPlayer)
             val res = generatedResult
             if (res != null) {
                 Spacer(Modifier.height(8.dp))
@@ -504,6 +526,11 @@ fun MusicLlmSandboxScreen(
                         playbackPositionSec = 0f
                     },
                     onSeek = { pos -> playbackPositionSec = pos },
+                    onPlaybackPositionTick = { playbackPositionSec = it },
+                    onPlaybackEnded = {
+                        isPlaying = false
+                        playbackPositionSec = 0f
+                    },
                     onStemMuteToggle = { stemId ->
                         val updatedStems = res.stems.map {
                             if (it.id == stemId) it.copy(isMuted = !it.isMuted) else it

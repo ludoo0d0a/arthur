@@ -154,6 +154,7 @@ enum class SettingsScreenPage {
     Developer,
     DeveloperErrorLog,
     MusicSandbox,
+    RoyaltyFreeMusic,
 }
 
 @Composable
@@ -249,6 +250,7 @@ fun SettingsScreen(
                             SettingsScreenPage.Developer -> stringResource(R.string.screen_developer)
                             SettingsScreenPage.DeveloperErrorLog -> stringResource(R.string.dev_errors_list)
                             SettingsScreenPage.MusicSandbox -> "AI Music Sandbox (POC)"
+                            SettingsScreenPage.RoyaltyFreeMusic -> stringResource(R.string.screen_dev_royalty_free_music)
                         },
                     )
                 },
@@ -363,6 +365,7 @@ fun SettingsScreen(
                     onVerboseChange = onVerboseChange,
                     onOpenErrorLog = { screenStack = screenStack + SettingsScreenPage.DeveloperErrorLog },
                     onOpenSandbox = { screenStack = screenStack + SettingsScreenPage.MusicSandbox },
+                    onOpenRoyaltyFreeMusic = { screenStack = screenStack + SettingsScreenPage.RoyaltyFreeMusic },
                 )
                 SettingsScreenPage.MusicSandbox -> MusicLlmSandboxScreen(
                     onBack = {
@@ -373,6 +376,7 @@ fun SettingsScreen(
                         }
                     },
                 )
+                SettingsScreenPage.RoyaltyFreeMusic -> fr.geoking.arthur.ui.screens.sandbox.RoyaltyFreeMusicScreen()
                 SettingsScreenPage.DeveloperErrorLog -> DeveloperErrorLogScreen(
                     errorLogger = activeErrorLogger,
                 )
@@ -762,6 +766,7 @@ private fun DeveloperContent(
     onVerboseChange: (Boolean) -> Unit = {},
     onOpenErrorLog: () -> Unit = {},
     onOpenSandbox: () -> Unit = {},
+    onOpenRoyaltyFreeMusic: () -> Unit = {},
 ) {
     Column(
         modifier = Modifier

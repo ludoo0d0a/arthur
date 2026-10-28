@@ -97,5 +97,6 @@ object PackCovers {
         AudioPackTopic.Stem -> R.drawable.pack_audio_essentials
         AudioPackTopic.Wavetable -> R.drawable.pack_audio_wavetable
         AudioPackTopic.ExecuTorch -> R.drawable.pack_neural
+        AudioPackTopic.DownloadedMusic -> R.drawable.pack_sound
     }
 }

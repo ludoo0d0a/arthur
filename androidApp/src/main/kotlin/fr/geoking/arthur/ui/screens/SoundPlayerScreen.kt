@@ -91,6 +91,22 @@ fun SoundPlayerScreen(
     val previousStyle = remember(settings) { settings?.stylePreference?.value }
     val previousCharacter = remember(settings) { settings?.character?.value }
 
+    val downloadedManager = remember { fr.geoking.arthur.audio.remote.DownloadedMusicManager(context) }
+    val downloadedTracks = remember(topic) {
+        if (topic == AudioPackTopic.DownloadedMusic) downloadedManager.getDownloadedTracks() else emptyList()
+    }
+    var selectedDownloadedTrackId by remember(downloadedTracks) {
+        mutableStateOf(downloadedTracks.firstOrNull()?.id)
+    }
+
+    val downloadedPlayer = remember(topic) {
+        if (topic == AudioPackTopic.DownloadedMusic) {
+            androidx.media3.exoplayer.ExoPlayer.Builder(context).build()
+        } else {
+            null
+        }
+    }
+
     val musicDirector = remember(topic) {
         if (topic == AudioPackTopic.Stem) {
             fr.geoking.arthur.audio.stem.MusicDirector(context).apply {
@@ -102,7 +118,7 @@ fun SoundPlayerScreen(
     }
 
     val zenAudio = remember(settings, topic) {
-        if (topic == AudioPackTopic.Stem) {
+        if (topic == AudioPackTopic.Stem || topic == AudioPackTopic.DownloadedMusic) {
             null
         } else {
             settings?.let { ZenAudioEngine(context, it) }
@@ -119,8 +135,9 @@ fun SoundPlayerScreen(
         )
     }
 
-    DisposableEffect(zenAudio, musicDirector, settings) {
+    DisposableEffect(zenAudio, musicDirector, downloadedPlayer, settings) {
         onDispose {
+            downloadedPlayer?.release()
             musicDirector?.release()
             zenAudio?.stop()
             zenAudio?.destroy()
@@ -138,9 +155,20 @@ fun SoundPlayerScreen(
         isPlaying,
         zenAudio,
         musicDirector,
+        downloadedPlayer,
+        selectedDownloadedTrackId,
         topic,
     ) {
         when {
+            topic == AudioPackTopic.DownloadedMusic && downloadedPlayer != null -> {
+                val file = selectedDownloadedTrackId?.let { downloadedManager.getTrackFile(it) }
+                if (file != null && file.exists()) {
+                    downloadedPlayer.stop()
+                    downloadedPlayer.setMediaItem(androidx.media3.common.MediaItem.fromUri(file.toURI().toString()))
+                    downloadedPlayer.prepare()
+                    if (isPlaying) downloadedPlayer.play() else downloadedPlayer.pause()
+                }
+            }
             topic == AudioPackTopic.Stem && musicDirector != null -> {
                 if (isPlaying) musicDirector.play() else musicDirector.pause()
             }
@@ -220,33 +248,65 @@ fun SoundPlayerScreen(
                 modifier = Modifier.testTag("sound_player_title"),
             )
 
-            val stylesLine = styles.joinToString(" · ") { style ->
-                context.getString(style.labelRes())
-            }
-            Text(
-                text = stylesLine,
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.8f),
-                modifier = Modifier
-                    .padding(top = 6.dp)
-                    .testTag("sound_player_styles_line"),
-            )
-
-            if (styles.size > 1) {
-                Row(
+            if (topic == AudioPackTopic.DownloadedMusic) {
+                val currentTrack = downloadedTracks.firstOrNull { it.id == selectedDownloadedTrackId }
+                val subline = if (currentTrack != null) "${currentTrack.title} · ${currentTrack.artist}" else "No downloaded tracks"
+                Text(
+                    text = subline,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.8f),
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp)
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    styles.forEach { style ->
-                        FilterChip(
-                            selected = selectedStyle == style,
-                            onClick = { selectedStyle = style },
-                            label = { Text(stringResource(style.labelRes())) },
-                            modifier = Modifier.testTag("sound_player_style_${style.name}"),
-                        )
+                        .padding(top = 6.dp)
+                        .testTag("sound_player_downloaded_track_info"),
+                )
+
+                if (downloadedTracks.size > 1) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp)
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        downloadedTracks.forEach { track ->
+                            FilterChip(
+                                selected = selectedDownloadedTrackId == track.id,
+                                onClick = { selectedDownloadedTrackId = track.id },
+                                label = { Text(track.title) },
+                                modifier = Modifier.testTag("sound_player_track_${track.id}"),
+                            )
+                        }
+                    }
+                }
+            } else {
+                val stylesLine = styles.joinToString(" · ") { style ->
+                    context.getString(style.labelRes())
+                }
+                Text(
+                    text = stylesLine,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.8f),
+                    modifier = Modifier
+                        .padding(top = 6.dp)
+                        .testTag("sound_player_styles_line"),
+                )
+
+                if (styles.size > 1) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp)
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        styles.forEach { style ->
+                            FilterChip(
+                                selected = selectedStyle == style,
+                                onClick = { selectedStyle = style },
+                                label = { Text(stringResource(style.labelRes())) },
+                                modifier = Modifier.testTag("sound_player_style_${style.name}"),
+                            )
+                        }
                     }
                 }
             }

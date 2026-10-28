@@ -136,6 +136,7 @@ enum class AudioPackTopic(
     Stem(R.string.audio_pack_stem, "stem", "stem"),
     Wavetable(R.string.audio_pack_wavetable, "wavetable", "wavetable"),
     ExecuTorch(R.string.audio_pack_executorch, "executorch", "executorch"),
+    DownloadedMusic(R.string.audio_pack_downloaded_music, "downloaded_music", "downloaded_music"),
     ;
 
     val sellablePackId: String?

@@ -867,6 +867,13 @@ private fun DeveloperContent(
                 onClick = onOpenSandbox,
                 modifier = Modifier.testTag("dev_open_music_sandbox"),
             )
+
+            SettingsItem(
+                label = stringResource(R.string.screen_dev_royalty_free_music),
+                value = stringResource(R.string.dev_royalty_free_music_desc),
+                onClick = onOpenRoyaltyFreeMusic,
+                modifier = Modifier.testTag("dev_open_royalty_free_music"),
+            )
         }
     }
 }

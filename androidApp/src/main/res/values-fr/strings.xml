@@ -125,6 +125,9 @@
     <string name="music_download_notification_title">Téléchargement musique</string>
     <string name="music_download_complete_title">Téléchargement terminé</string>
     <string name="music_download_failed_title">Échec du téléchargement</string>
+    <string name="dev_music_missing_api_keys">Clés API manquantes dans local.properties / BuildConfig : %1$s. Les fournisseurs concernés échoueront tant qu’elles ne sont pas définies.</string>
+    <string name="dev_music_provider_errors">Erreurs fournisseurs</string>
+    <string name="dev_music_download_errors">Erreurs de téléchargement</string>
     <string name="dev_sample_listen">Écouter</string>
     <string name="dev_sample_pause">Pause</string>
     <string name="neural_model_downloading">Téléchargement du modèle (%1$d%%)…</string>

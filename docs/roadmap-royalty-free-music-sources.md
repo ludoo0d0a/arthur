@@ -1,5 +1,7 @@
 # Royalty-Free Calm & Zen Music Remote Sources
 
+**API key signup links & `local.properties` wiring:** [royalty-free-music-api-keys.md](./royalty-free-music-api-keys.md)
+
 Backlog and evaluation for open, legal, royalty-free audio and music APIs behind the shared audio streaming subsystem in Arthur.
 Complements local procedural music generation (`ProceduralMusicEngine`) and local AI stem dynamic mixing (`MusicDirector`) by providing streamable, high-fidelity studio music tracks, ambient nature soundscapes, and calm/zen recordings.
 

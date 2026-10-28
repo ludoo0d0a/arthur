@@ -102,7 +102,7 @@ class MusicProvidersTest {
 
     @Test
     fun archiveOrgSourceParsesDocs() = runBlocking {
-        val json = """
+        val searchJson = """
             {
                 "response": {
                     "docs": [
@@ -116,8 +116,20 @@ class MusicProvidersTest {
                 }
             }
         """.trimIndent()
+        val metaJson = """
+            {
+                "files": [
+                    {"name": "zen_ambient_session_meta.xml"},
+                    {"name": "session_part_a.mp3"}
+                ]
+            }
+        """.trimIndent()
 
-        val source = ArchiveOrgMusicSource(httpGet = { json })
+        val source = ArchiveOrgMusicSource(
+            httpGet = { url ->
+                if ("metadata" in url) metaJson else searchJson
+            },
+        )
         val tracks = source.fetchZenTracks().getOrNull()
         assertNotNull(tracks)
         assertEquals(1, tracks.size)
@@ -126,7 +138,10 @@ class MusicProvidersTest {
         assertEquals("archive_org-zen_ambient_session", track.id)
         assertEquals("Zen Ambient Session", track.title)
         assertEquals("Netlabel Ambient", track.artist)
-        assertEquals("https://archive.org/download/zen_ambient_session/zen_ambient_session.mp3", track.streamUrl)
+        assertEquals(
+            "https://archive.org/download/zen_ambient_session/session_part_a.mp3",
+            track.streamUrl,
+        )
         assertEquals("archive_org", track.sourceId)
     }
 
@@ -205,9 +220,28 @@ class MusicProvidersTest {
         assertTrue(tracks.isNotEmpty())
 
         val first = tracks[0]
-        assertEquals("incompetech-calm", first.id)
-        assertEquals("Calm", first.title)
+        assertEquals("incompetech-meditation-impromptu-01", first.id)
+        assertEquals("Meditation Impromptu 01", first.title)
         assertEquals("Kevin MacLeod", first.artist)
         assertEquals("incompetech", first.sourceId)
+        assertTrue(first.streamUrl.endsWith(".mp3"))
+    }
+
+    @Test
+    fun jamendoFailsWhenClientIdMissing() = runBlocking {
+        val source = JamendoMusicSource(httpGet = { "{}" }, clientId = "")
+        val result = source.fetchZenTracks()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull()?.message?.contains("JAMENDO_CLIENT_ID") == true)
+    }
+
+    @Test
+    fun factoryReportsMissingApiKeys() {
+        val factory = MusicProviderFactory()
+        val missing = factory.missingApiKeys()
+        assertTrue(missing.contains("JAMENDO_CLIENT_ID"))
+        assertTrue(missing.contains("FREESOUND_API_KEY"))
+        assertTrue(missing.contains("PIXABAY_API_KEY"))
+        assertTrue(missing.contains("FMA_API_KEY"))
     }
 }

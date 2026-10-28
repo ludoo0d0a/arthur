@@ -96,8 +96,14 @@ class DebugInterceptor(
         "pexels.com" in url -> PexelsSource.ID
         "unsplash.com" in url -> UnsplashSource.ID
         "deviantart.com" in url -> DeviantArtSource.ID
+        "pixabay.com/api/audio" in url || "cdn.pixabay.com/audio" in url -> "pixabay_music"
         "pixabay.com" in url -> PixabayVideoSource.ID
         "coverr.co" in url -> CoverrSource.ID
+        "jamendo.com" in url -> "jamendo"
+        "freesound.org" in url -> "freesound"
+        "archive.org" in url -> "archive_org"
+        "freemusicarchive.org" in url -> "fma"
+        "incompetech.com" in url -> "incompetech"
         else -> "network"
     }
 }
@@ -120,12 +126,17 @@ class ForceCacheNetworkInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
         val response = chain.proceed(request)
-        val cacheControl = response.header("Cache-Control").orEmpty()
+        val responseCacheControl = response.header("Cache-Control").orEmpty()
+        val requestCacheControl = request.header("Cache-Control").orEmpty()
         // Random quote endpoints must not be force-cached: same path returns different bodies.
-        if (isNonCacheableGet(request.url.toString())) {
+        // Large music downloads / explicit no-cache requests must also stay uncached.
+        if (isNonCacheableGet(request.url.toString()) ||
+            "no-store" in requestCacheControl ||
+            "no-cache" in requestCacheControl
+        ) {
             return response
         }
-        if (response.isSuccessful && request.method == "GET" && "no-store" !in cacheControl) {
+        if (response.isSuccessful && request.method == "GET" && "no-store" !in responseCacheControl) {
             return response.newBuilder()
                 .header("Cache-Control", "public, max-age=3600")
                 .build()
@@ -135,7 +146,10 @@ class ForceCacheNetworkInterceptor : Interceptor {
 
     companion object {
         internal fun isNonCacheableGet(url: String): Boolean =
-            "random-quote" in url || "zenquotes.io/api/random" in url
+            "random-quote" in url ||
+                "zenquotes.io/api/random" in url ||
+                url.contains(".mp3", ignoreCase = true) ||
+                "incompetech.com" in url
     }
 }
 

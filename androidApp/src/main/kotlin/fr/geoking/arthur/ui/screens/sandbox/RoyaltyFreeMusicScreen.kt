@@ -65,11 +65,14 @@ import fr.geoking.arthur.audio.remote.MusicDownloadTracker
 import fr.geoking.arthur.shared.audio.remote.MusicProviderFactory
 import fr.geoking.arthur.shared.audio.remote.RemoteAudioSource
 import fr.geoking.arthur.shared.audio.remote.RemoteAudioTrack
-import java.net.HttpURLConnection
-import java.net.URL
+import io.ktor.client.HttpClient
+import io.ktor.client.request.get
+import io.ktor.client.request.header
+import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.koin.core.context.GlobalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,11 +82,15 @@ fun RoyaltyFreeMusicScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val downloadedManager = remember { DownloadedMusicManager(context) }
+    val httpClient = remember {
+        runCatching { GlobalContext.get().get<HttpClient>() }.getOrNull()
+    }
 
     var query by remember { mutableStateOf("zen calm ambient") }
     var selectedProviderId by remember { mutableStateOf("all") }
     var isSearching by remember { mutableStateOf(false) }
     var searchResults by remember { mutableStateOf<List<RemoteAudioTrack>>(emptyList()) }
+    var providerErrors by remember { mutableStateOf<List<String>>(emptyList()) }
     var downloadedTracks by remember { mutableStateOf(downloadedManager.getDownloadedTracks()) }
     val downloadStates by MusicDownloadTracker.states.collectAsState()
     var pendingDownloadTrack by remember { mutableStateOf<RemoteAudioTrack?>(null) }
@@ -147,16 +154,16 @@ fun RoyaltyFreeMusicScreen(
         }
     }
 
-    val factory = remember {
+    val factory = remember(httpClient) {
         MusicProviderFactory(
             httpGet = { urlStr ->
-                withContext(Dispatchers.IO) {
-                    val conn = URL(urlStr).openConnection() as HttpURLConnection
-                    conn.setRequestProperty("User-Agent", "Arthur-Ambient/1.0")
-                    conn.connectTimeout = 10000
-                    conn.readTimeout = 15000
-                    conn.inputStream.bufferedReader().use { it.readText() }
-                }
+                val client = httpClient
+                    ?: error("HttpClient unavailable — open debug bar after app restart")
+                val sourceId = sourceIdForMusicUrl(urlStr)
+                client.get(urlStr) {
+                    header("User-Agent", "Arthur-Ambient/1.0")
+                    header("X-Source-Id", sourceId)
+                }.bodyAsText()
             },
             jamendoClientId = BuildConfig.JAMENDO_CLIENT_ID,
             freesoundApiKey = BuildConfig.FREESOUND_API_KEY,
@@ -164,12 +171,14 @@ fun RoyaltyFreeMusicScreen(
             fmaApiKey = BuildConfig.FMA_API_KEY,
         )
     }
+    val missingApiKeys = remember(factory) { factory.missingApiKeys() }
 
     fun executeSearch() {
         if (query.isBlank()) return
         scope.launch {
             isSearching = true
             searchResults = emptyList()
+            providerErrors = emptyList()
             val providersToQuery: List<RemoteAudioSource> = if (selectedProviderId == "all") {
                 factory.createAll()
             } else {
@@ -177,14 +186,19 @@ fun RoyaltyFreeMusicScreen(
             }
 
             val tracks = mutableListOf<RemoteAudioTrack>()
+            val errors = mutableListOf<String>()
             withContext(Dispatchers.IO) {
                 providersToQuery.forEach { provider ->
-                    provider.fetchZenTracks(query, limit = 10).getOrNull()?.let {
-                        tracks.addAll(it)
-                    }
+                    provider.fetchZenTracks(query, limit = 10).fold(
+                        onSuccess = { tracks.addAll(it) },
+                        onFailure = { err ->
+                            errors += "${provider.displayName}: ${err.message ?: err::class.simpleName}"
+                        },
+                    )
                 }
             }
             searchResults = tracks
+            providerErrors = errors
             isSearching = false
         }
     }
@@ -213,6 +227,85 @@ fun RoyaltyFreeMusicScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
             )
+
+            if (missingApiKeys.isNotEmpty()) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                    ),
+                ) {
+                    Text(
+                        text = stringResource(
+                            R.string.dev_music_missing_api_keys,
+                            missingApiKeys.joinToString(", "),
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.padding(12.dp),
+                    )
+                }
+            }
+
+            if (providerErrors.isNotEmpty()) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    ),
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = stringResource(R.string.dev_music_provider_errors),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                        )
+                        providerErrors.forEach { msg ->
+                            Text(
+                                text = "• $msg",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                modifier = Modifier.padding(top = 4.dp),
+                            )
+                        }
+                    }
+                }
+            }
+
+            val downloadFailures = downloadStates
+                .mapNotNull { (id, state) ->
+                    (state as? MusicDownloadProgress.Failed)?.let { id to it.message }
+                }
+            if (downloadFailures.isNotEmpty()) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                    ),
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = stringResource(R.string.dev_music_download_errors),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                        )
+                        downloadFailures.forEach { (id, message) ->
+                            Text(
+                                text = "• $id: $message",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.padding(top = 4.dp),
+                            )
+                        }
+                    }
+                }
+            }
 
             // Search query field & button
             Row(
@@ -359,6 +452,16 @@ fun RoyaltyFreeMusicScreen(
             }
         }
     }
+}
+
+private fun sourceIdForMusicUrl(url: String): String = when {
+    "jamendo.com" in url -> "jamendo"
+    "freesound.org" in url -> "freesound"
+    "archive.org" in url -> "archive_org"
+    "pixabay.com" in url -> "pixabay_music"
+    "freemusicarchive.org" in url -> "fma"
+    "incompetech.com" in url -> "incompetech"
+    else -> "music_remote"
 }
 
 @Composable

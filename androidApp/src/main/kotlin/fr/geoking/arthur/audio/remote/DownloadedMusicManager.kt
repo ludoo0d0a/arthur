@@ -4,13 +4,14 @@ import android.content.Context
 import fr.geoking.arthur.shared.audio.remote.RemoteAudioTrack
 import java.io.File
 import java.io.FileOutputStream
-import java.net.HttpURLConnection
-import java.net.URL
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.koin.core.context.GlobalContext
 
 @Serializable
 data class DownloadedMusicTrack(
@@ -24,7 +25,10 @@ data class DownloadedMusicTrack(
     val downloadedAt: Long = System.currentTimeMillis(),
 )
 
-class DownloadedMusicManager(private val context: Context) {
+class DownloadedMusicManager(
+    private val context: Context,
+    private val httpClient: OkHttpClient = defaultHttpClient(),
+) {
     private val musicDir = File(context.filesDir, "downloaded_music").apply { mkdirs() }
     private val manifestFile = File(musicDir, "manifest.json")
     private val json = Json { ignoreUnknownKeys = true; prettyPrint = true }
@@ -55,13 +59,16 @@ class DownloadedMusicManager(private val context: Context) {
 
     /**
      * Downloads [track] to app files, resuming from any existing `.partial` via HTTP Range.
-     * Progress is reported as 0f..1f when Content-Length / Content-Range is known.
+     * Uses the shared OkHttp client so traffic appears in the network debug bar.
      */
     suspend fun downloadTrack(
         track: RemoteAudioTrack,
         onProgress: (Float) -> Unit = {},
     ): Result<DownloadedMusicTrack> = withContext(Dispatchers.IO) {
         runCatching {
+            if (track.streamUrl.isBlank()) {
+                error("Empty stream URL for track ${track.id}")
+            }
             musicDir.mkdirs()
             val cleanId = track.id.replace(Regex("[^a-zA-Z0-9_-]"), "_")
             val fileName = "$cleanId.mp3"
@@ -75,6 +82,7 @@ class DownloadedMusicManager(private val context: Context) {
 
             downloadResumable(
                 url = track.streamUrl,
+                sourceId = track.sourceId,
                 partialFile = partialFile,
                 onProgress = onProgress,
             )
@@ -104,58 +112,55 @@ class DownloadedMusicManager(private val context: Context) {
 
     private fun downloadResumable(
         url: String,
+        sourceId: String,
         partialFile: File,
         onProgress: (Float) -> Unit,
     ) {
         var existingBytes = if (partialFile.exists()) partialFile.length() else 0L
         if (existingBytes < 0L) existingBytes = 0L
 
-        var connection: HttpURLConnection? = null
-        try {
-            connection = (URL(url).openConnection() as HttpURLConnection).apply {
-                connectTimeout = 15_000
-                readTimeout = 60_000
-                instanceFollowRedirects = true
-                requestMethod = "GET"
-                setRequestProperty("User-Agent", "Arthur-Ambient/1.0")
-                if (existingBytes > 0L) {
-                    setRequestProperty("Range", "bytes=$existingBytes-")
-                }
-            }
+        val requestBuilder = Request.Builder()
+            .url(url)
+            .header("User-Agent", "Arthur-Ambient/1.0")
+            .header("X-Source-Id", sourceId)
+            .header("Cache-Control", "no-store")
+            .get()
+        if (existingBytes > 0L) {
+            requestBuilder.header("Range", "bytes=$existingBytes-")
+        }
 
-            val code = connection.responseCode
+        httpClient.newCall(requestBuilder.build()).execute().use { response ->
+            val code = response.code
             when {
-                code == HttpURLConnection.HTTP_PARTIAL -> {
+                code == 206 -> {
                     // Resume append
                 }
                 code in 200..299 -> {
-                    // Server ignored Range or full body — restart from scratch
                     if (existingBytes > 0L) {
                         partialFile.delete()
                         existingBytes = 0L
                     }
                 }
                 code == 416 -> {
-                    // Range not satisfiable: treat existing partial as complete
                     if (existingBytes > 0L) {
                         onProgress(1f)
                         return
                     }
-                    error("HTTP 416 Requested Range Not Satisfiable")
+                    error("HTTP 416 Requested Range Not Satisfiable for $url")
                 }
-                else -> error("HTTP Download error $code: ${connection.responseMessage}")
+                else -> error("HTTP Download error $code for $url: ${response.message}")
             }
 
-            val contentLength = connection.contentLengthLong
+            val body = response.body
+            val contentLength = body.contentLength()
             val totalBytes = when {
-                code == HttpURLConnection.HTTP_PARTIAL && contentLength > 0 ->
-                    existingBytes + contentLength
+                code == 206 && contentLength > 0 -> existingBytes + contentLength
                 contentLength > 0 -> contentLength
                 else -> -1L
             }
 
-            val append = code == HttpURLConnection.HTTP_PARTIAL && existingBytes > 0L
-            connection.inputStream.use { input ->
+            val append = code == 206 && existingBytes > 0L
+            body.byteStream().use { input ->
                 FileOutputStream(partialFile, append).use { output ->
                     val buffer = ByteArray(8192)
                     var read: Int
@@ -170,8 +175,6 @@ class DownloadedMusicManager(private val context: Context) {
                 }
             }
             if (totalBytes > 0) onProgress(1f)
-        } finally {
-            connection?.disconnect()
         }
     }
 
@@ -193,5 +196,15 @@ class DownloadedMusicManager(private val context: Context) {
         val current = getDownloadedTracks().filterNot { it.id == track.id }.toMutableList()
         current.add(0, track)
         manifestFile.writeText(json.encodeToString(current))
+    }
+
+    companion object {
+        private fun defaultHttpClient(): OkHttpClient =
+            runCatching { GlobalContext.get().get<OkHttpClient>() }
+                .getOrElse {
+                    OkHttpClient.Builder()
+                        .followRedirects(true)
+                        .build()
+                }
     }
 }

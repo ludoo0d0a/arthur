@@ -8,6 +8,7 @@ import kotlinx.coroutines.runBlocking
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import okhttp3.Headers
+import okhttp3.OkHttpClient
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -19,9 +20,16 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class DownloadedMusicManagerTest {
 
+    private val httpClient = OkHttpClient.Builder()
+        .followRedirects(true)
+        .build()
+
     @Test
     fun getDownloadedTracksReturnsEmptyOnNewStore() {
-        val manager = DownloadedMusicManager(ApplicationProvider.getApplicationContext())
+        val manager = DownloadedMusicManager(
+            ApplicationProvider.getApplicationContext(),
+            httpClient,
+        )
         val tracks = manager.getDownloadedTracks()
         assertEquals(0, tracks.size)
         assertFalse(manager.isDownloaded("unknown-id"))
@@ -30,7 +38,10 @@ class DownloadedMusicManagerTest {
 
     @Test
     fun deleteTrackRemovesTrackFromManifest() {
-        val manager = DownloadedMusicManager(ApplicationProvider.getApplicationContext())
+        val manager = DownloadedMusicManager(
+            ApplicationProvider.getApplicationContext(),
+            httpClient,
+        )
         manager.deleteTrack("non-existent-id")
         assertEquals(0, manager.getDownloadedTracks().size)
     }
@@ -49,7 +60,10 @@ class DownloadedMusicManagerTest {
                     .build(),
             )
 
-            val manager = DownloadedMusicManager(ApplicationProvider.getApplicationContext())
+            val manager = DownloadedMusicManager(
+                ApplicationProvider.getApplicationContext(),
+                httpClient,
+            )
             val track = RemoteAudioTrack(
                 id = "resume-test-track",
                 title = "Calm Test",
@@ -78,7 +92,10 @@ class DownloadedMusicManagerTest {
             val firstChunk = fullBody.copyOfRange(0, 5_000)
             val secondChunk = fullBody.copyOfRange(5_000, fullBody.size)
 
-            val manager = DownloadedMusicManager(ApplicationProvider.getApplicationContext())
+            val manager = DownloadedMusicManager(
+                ApplicationProvider.getApplicationContext(),
+                httpClient,
+            )
             val trackId = "partial-resume-track"
             val partial = manager.partialFileFor(trackId)
             partial.parentFile?.mkdirs()
@@ -117,5 +134,24 @@ class DownloadedMusicManagerTest {
         } finally {
             server.close()
         }
+    }
+
+    @Test
+    fun downloadTrackFailsOnEmptyStreamUrl() = runBlocking {
+        val manager = DownloadedMusicManager(
+            ApplicationProvider.getApplicationContext(),
+            httpClient,
+        )
+        val result = manager.downloadTrack(
+            RemoteAudioTrack(
+                id = "empty-url",
+                title = "Broken",
+                artist = "x",
+                streamUrl = "",
+                sourceId = "test",
+            ),
+        )
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull()?.message?.contains("Empty stream URL") == true)
     }
 }

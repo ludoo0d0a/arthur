@@ -67,6 +67,8 @@ import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
+import java.util.concurrent.TimeUnit
+import okhttp3.OkHttpClient
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
@@ -222,14 +224,21 @@ val appModule = module {
         val debugLogger = get<DebugLogger>()
         val cacheController = get<HttpCacheController>()
         val okHttpCache = get<okhttp3.Cache>()
+        OkHttpClient.Builder()
+            .cache(okHttpCache)
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(2, TimeUnit.MINUTES)
+            .followRedirects(true)
+            .addInterceptor(CacheBypassInterceptor(cacheController))
+            .addInterceptor(DebugInterceptor(debugLogger))
+            .addNetworkInterceptor(ForceCacheNetworkInterceptor())
+            .build()
+    }
+    single {
+        val okHttpClient = get<OkHttpClient>()
         HttpClient(OkHttp) {
             engine {
-                config {
-                    cache(okHttpCache)
-                    addInterceptor(CacheBypassInterceptor(cacheController))
-                    addInterceptor(DebugInterceptor(debugLogger))
-                    addNetworkInterceptor(ForceCacheNetworkInterceptor())
-                }
+                preconfigured = okHttpClient
             }
         }
     }

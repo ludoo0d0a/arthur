@@ -38,7 +38,7 @@ class JamendoMusicSource(
     override val displayName: String = "Jamendo Music"
 
     override suspend fun fetchZenTracks(query: String, limit: Int): Result<List<RemoteAudioTrack>> = runCatching {
-        if (clientId.isBlank()) return@runCatching emptyList()
+        if (clientId.isBlank()) error("Missing API key: JAMENDO_CLIENT_ID")
         val formattedQuery = query.replace(" ", "+")
         val url = "https://api.jamendo.com/v3.0/tracks/?client_id=$clientId&format=json&tags=$formattedQuery&limit=$limit&audioformat=mp32"
         val body = httpGet(url)
@@ -89,7 +89,7 @@ class FreesoundMusicSource(
     override val displayName: String = "Freesound"
 
     override suspend fun fetchZenTracks(query: String, limit: Int): Result<List<RemoteAudioTrack>> = runCatching {
-        if (apiKey.isBlank()) return@runCatching emptyList()
+        if (apiKey.isBlank()) error("Missing API key: FREESOUND_API_KEY")
         val formattedQuery = query.replace(" ", "+")
         val url = "https://freesound.org/apiv2/search/text/?token=$apiKey&query=$formattedQuery&page_size=$limit&fields=id,name,username,previews,duration,license"
         val body = httpGet(url)
@@ -151,17 +151,29 @@ class ArchiveOrgMusicSource(
         val response = json.decodeFromString<ArchiveOrgResponse>(body)
         response.response?.docs.orEmpty().mapNotNull { doc ->
             val identifier = doc.identifier?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            val mp3Name = resolveFirstMp3(identifier) ?: return@mapNotNull null
             RemoteAudioTrack(
                 id = "$ID-$identifier",
                 title = doc.title?.takeIf { it.isNotBlank() } ?: "Archive.org $identifier",
                 artist = doc.creator?.takeIf { it.isNotBlank() } ?: "Internet Archive",
-                streamUrl = "https://archive.org/download/$identifier/$identifier.mp3",
+                streamUrl = "https://archive.org/download/$identifier/${mp3Name.replace(" ", "%20")}",
                 durationSeconds = 180,
                 license = doc.licenseUrl?.takeIf { it.isNotBlank() } ?: "Public Domain / CC",
                 artworkUrl = "https://archive.org/services/img/$identifier",
                 sourceId = ID,
             )
         }
+    }
+
+    /** Resolve a real downloadable .mp3 from item metadata (guessing `$id/$id.mp3` is often wrong). */
+    private suspend fun resolveFirstMp3(identifier: String): String? {
+        val metaBody = httpGet("https://archive.org/metadata/$identifier")
+        val meta = runCatching { json.decodeFromString<ArchiveOrgMetadata>(metaBody) }.getOrNull()
+            ?: return null
+        return meta.files
+            .asSequence()
+            .mapNotNull { it.name?.takeIf { name -> name.endsWith(".mp3", ignoreCase = true) } }
+            .firstOrNull()
     }
 
     companion object {
@@ -187,6 +199,16 @@ private data class ArchiveOrgDoc(
     @SerialName("licenseurl") val licenseUrl: String? = null,
 )
 
+@Serializable
+private data class ArchiveOrgMetadata(
+    val files: List<ArchiveOrgFile> = emptyList(),
+)
+
+@Serializable
+private data class ArchiveOrgFile(
+    val name: String? = null,
+)
+
 // --- Pixabay Audio Provider ---
 
 class PixabayMusicSource(
@@ -197,7 +219,7 @@ class PixabayMusicSource(
     override val displayName: String = "Pixabay Music"
 
     override suspend fun fetchZenTracks(query: String, limit: Int): Result<List<RemoteAudioTrack>> = runCatching {
-        if (apiKey.isBlank()) return@runCatching emptyList()
+        if (apiKey.isBlank()) error("Missing API key: PIXABAY_API_KEY")
         val formattedQuery = query.replace(" ", "+")
         val url = "https://pixabay.com/api/audio/?key=$apiKey&q=$formattedQuery&per_page=$limit"
         val body = httpGet(url)
@@ -248,7 +270,7 @@ class FmaMusicSource(
     override val displayName: String = "Free Music Archive"
 
     override suspend fun fetchZenTracks(query: String, limit: Int): Result<List<RemoteAudioTrack>> = runCatching {
-        if (apiKey.isBlank()) return@runCatching emptyList()
+        if (apiKey.isBlank()) error("Missing API key: FMA_API_KEY")
         val url = "https://freemusicarchive.org/api/get/tracks.json?api_key=$apiKey&limit=$limit"
         val body = httpGet(url)
         val response = json.decodeFromString<FmaResponse>(body)
@@ -295,26 +317,8 @@ class IncompetechMusicSource(
     override val displayName: String = "Incompetech (Kevin MacLeod)"
 
     override suspend fun fetchZenTracks(query: String, limit: Int): Result<List<RemoteAudioTrack>> = runCatching {
-        // Static curated catalog of famous CC-BY 4.0 Kevin MacLeod zen/meditation compositions
+        // Curated CC-BY 4.0 Kevin MacLeod tracks with verified working direct MP3 URLs.
         val curated = listOf(
-            RemoteAudioTrack(
-                id = "$ID-calm",
-                title = "Calm",
-                artist = "Kevin MacLeod",
-                streamUrl = "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Calm.mp3",
-                durationSeconds = 210,
-                license = "CC BY 4.0 (incompetech.com)",
-                sourceId = ID,
-            ),
-            RemoteAudioTrack(
-                id = "$ID-peace-of-mind",
-                title = "Peace of Mind",
-                artist = "Kevin MacLeod",
-                streamUrl = "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Peace%20of%20Mind.mp3",
-                durationSeconds = 180,
-                license = "CC BY 4.0 (incompetech.com)",
-                sourceId = ID,
-            ),
             RemoteAudioTrack(
                 id = "$ID-meditation-impromptu-01",
                 title = "Meditation Impromptu 01",
@@ -325,11 +329,29 @@ class IncompetechMusicSource(
                 sourceId = ID,
             ),
             RemoteAudioTrack(
-                id = "$ID-soothing",
-                title = "Soothing",
+                id = "$ID-meditation-impromptu-02",
+                title = "Meditation Impromptu 02",
                 artist = "Kevin MacLeod",
-                streamUrl = "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Soothing.mp3",
-                durationSeconds = 240,
+                streamUrl = "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Meditation%20Impromptu%2002.mp3",
+                durationSeconds = 200,
+                license = "CC BY 4.0 (incompetech.com)",
+                sourceId = ID,
+            ),
+            RemoteAudioTrack(
+                id = "$ID-dreamy-flashback",
+                title = "Dreamy Flashback",
+                artist = "Kevin MacLeod",
+                streamUrl = "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Dreamy%20Flashback.mp3",
+                durationSeconds = 150,
+                license = "CC BY 4.0 (incompetech.com)",
+                sourceId = ID,
+            ),
+            RemoteAudioTrack(
+                id = "$ID-comfortable-mystery",
+                title = "Comfortable Mystery",
+                artist = "Kevin MacLeod",
+                streamUrl = "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Comfortable%20Mystery.mp3",
+                durationSeconds = 180,
                 license = "CC BY 4.0 (incompetech.com)",
                 sourceId = ID,
             ),
@@ -375,5 +397,13 @@ class MusicProviderFactory(
         FmaMusicSource.ID -> createFma()
         IncompetechMusicSource.ID -> createIncompetech()
         else -> null
+    }
+
+    /** BuildConfig / local.properties keys that are blank (providers will fail until set). */
+    fun missingApiKeys(): List<String> = buildList {
+        if (jamendoClientId.isBlank()) add("JAMENDO_CLIENT_ID")
+        if (freesoundApiKey.isBlank()) add("FREESOUND_API_KEY")
+        if (pixabayApiKey.isBlank()) add("PIXABAY_API_KEY")
+        if (fmaApiKey.isBlank()) add("FMA_API_KEY")
     }
 }

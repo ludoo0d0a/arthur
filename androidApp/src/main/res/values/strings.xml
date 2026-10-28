@@ -126,6 +126,9 @@
     <string name="music_download_notification_title">Downloading music</string>
     <string name="music_download_complete_title">Download complete</string>
     <string name="music_download_failed_title">Download failed</string>
+    <string name="dev_music_missing_api_keys">Missing API keys in local.properties / BuildConfig: %1$s. Providers that need them will fail until set.</string>
+    <string name="dev_music_provider_errors">Provider errors</string>
+    <string name="dev_music_download_errors">Download errors</string>
     <string name="dev_sample_listen">Preview</string>
     <string name="dev_sample_pause">Pause</string>
     <string name="neural_model_downloading">Downloading model weights (%1$d%%)…</string>

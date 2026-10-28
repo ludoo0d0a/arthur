@@ -26,6 +26,7 @@ object AudioPackCatalog {
     const val STEM = "stem"
     const val WAVETABLE = "wavetable"
     const val EXECUTORCH = "executorch"
+    const val DOWNLOADED_MUSIC = "downloaded_music"
 
     /** Free styles always playable without a pack purchase. */
     val freeStyleSuffixes: Set<String> = setOf(
@@ -96,6 +97,11 @@ object AudioPackCatalog {
         ),
         PackDef(
             EXECUTORCH,
+            listOf("zen"),
+            "zen",
+        ),
+        PackDef(
+            DOWNLOADED_MUSIC,
             listOf("zen"),
             "zen",
         ),

@@ -48,6 +48,15 @@ class DownloadedMusicManager(private val context: Context) {
         return if (file.exists() && file.length() > 0) file else null
     }
 
+    fun partialFileFor(trackId: String): File {
+        val cleanId = trackId.replace(Regex("[^a-zA-Z0-9_-]"), "_")
+        return File(musicDir, "$cleanId.mp3.partial")
+    }
+
+    /**
+     * Downloads [track] to app files, resuming from any existing `.partial` via HTTP Range.
+     * Progress is reported as 0f..1f when Content-Length / Content-Range is known.
+     */
     suspend fun downloadTrack(
         track: RemoteAudioTrack,
         onProgress: (Float) -> Unit = {},
@@ -57,33 +66,26 @@ class DownloadedMusicManager(private val context: Context) {
             val cleanId = track.id.replace(Regex("[^a-zA-Z0-9_-]"), "_")
             val fileName = "$cleanId.mp3"
             val targetFile = File(musicDir, fileName)
+            val partialFile = File(musicDir, "$fileName.partial")
 
-            val url = URL(track.streamUrl)
-            val connection = url.openConnection() as HttpURLConnection
-            connection.connectTimeout = 15000
-            connection.readTimeout = 30000
-            connection.requestMethod = "GET"
-            connection.setRequestProperty("User-Agent", "Arthur-Ambient/1.0")
-            connection.connect()
-
-            if (connection.responseCode !in 200..299) {
-                error("HTTP Download error ${connection.responseCode}: ${connection.responseMessage}")
+            if (targetFile.exists() && targetFile.length() > 0 && isDownloaded(track.id)) {
+                onProgress(1f)
+                return@runCatching getDownloadedTracks().first { it.id == track.id }
             }
 
-            val contentLength = connection.contentLengthLong
-            connection.inputStream.use { input ->
-                FileOutputStream(targetFile).use { output ->
-                    val buffer = ByteArray(8192)
-                    var read: Int
-                    var totalRead = 0L
-                    while (input.read(buffer).also { read = it } != -1) {
-                        output.write(buffer, 0, read)
-                        totalRead += read
-                        if (contentLength > 0) {
-                            onProgress((totalRead.toFloat() / contentLength).coerceIn(0f, 1f))
-                        }
-                    }
-                }
+            downloadResumable(
+                url = track.streamUrl,
+                partialFile = partialFile,
+                onProgress = onProgress,
+            )
+
+            if (!partialFile.exists() || partialFile.length() == 0L) {
+                error("Downloaded file is empty")
+            }
+            if (targetFile.exists()) targetFile.delete()
+            if (!partialFile.renameTo(targetFile)) {
+                partialFile.copyTo(targetFile, overwrite = true)
+                partialFile.delete()
             }
 
             val downloadedTrack = DownloadedMusicTrack(
@@ -95,9 +97,81 @@ class DownloadedMusicManager(private val context: Context) {
                 durationSeconds = track.durationSeconds,
                 license = track.license,
             )
-
             saveTrackToManifest(downloadedTrack)
             downloadedTrack
+        }
+    }
+
+    private fun downloadResumable(
+        url: String,
+        partialFile: File,
+        onProgress: (Float) -> Unit,
+    ) {
+        var existingBytes = if (partialFile.exists()) partialFile.length() else 0L
+        if (existingBytes < 0L) existingBytes = 0L
+
+        var connection: HttpURLConnection? = null
+        try {
+            connection = (URL(url).openConnection() as HttpURLConnection).apply {
+                connectTimeout = 15_000
+                readTimeout = 60_000
+                instanceFollowRedirects = true
+                requestMethod = "GET"
+                setRequestProperty("User-Agent", "Arthur-Ambient/1.0")
+                if (existingBytes > 0L) {
+                    setRequestProperty("Range", "bytes=$existingBytes-")
+                }
+            }
+
+            val code = connection.responseCode
+            when {
+                code == HttpURLConnection.HTTP_PARTIAL -> {
+                    // Resume append
+                }
+                code in 200..299 -> {
+                    // Server ignored Range or full body — restart from scratch
+                    if (existingBytes > 0L) {
+                        partialFile.delete()
+                        existingBytes = 0L
+                    }
+                }
+                code == 416 -> {
+                    // Range not satisfiable: treat existing partial as complete
+                    if (existingBytes > 0L) {
+                        onProgress(1f)
+                        return
+                    }
+                    error("HTTP 416 Requested Range Not Satisfiable")
+                }
+                else -> error("HTTP Download error $code: ${connection.responseMessage}")
+            }
+
+            val contentLength = connection.contentLengthLong
+            val totalBytes = when {
+                code == HttpURLConnection.HTTP_PARTIAL && contentLength > 0 ->
+                    existingBytes + contentLength
+                contentLength > 0 -> contentLength
+                else -> -1L
+            }
+
+            val append = code == HttpURLConnection.HTTP_PARTIAL && existingBytes > 0L
+            connection.inputStream.use { input ->
+                FileOutputStream(partialFile, append).use { output ->
+                    val buffer = ByteArray(8192)
+                    var read: Int
+                    var totalRead = existingBytes
+                    while (input.read(buffer).also { read = it } != -1) {
+                        output.write(buffer, 0, read)
+                        totalRead += read
+                        if (totalBytes > 0) {
+                            onProgress((totalRead.toFloat() / totalBytes).coerceIn(0f, 1f))
+                        }
+                    }
+                }
+            }
+            if (totalBytes > 0) onProgress(1f)
+        } finally {
+            connection?.disconnect()
         }
     }
 
@@ -108,6 +182,7 @@ class DownloadedMusicManager(private val context: Context) {
         current.removeAll { it.id == id }
         val file = File(musicDir, track.fileName)
         runCatching { file.delete() }
+        runCatching { partialFileFor(id).delete() }
         runCatching {
             manifestFile.writeText(json.encodeToString(current))
         }

@@ -1,5 +1,10 @@
 package fr.geoking.arthur.ui.screens.sandbox
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -34,8 +39,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -47,12 +52,16 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import fr.geoking.arthur.BuildConfig
 import fr.geoking.arthur.R
 import fr.geoking.arthur.audio.remote.DownloadedMusicManager
 import fr.geoking.arthur.audio.remote.DownloadedMusicTrack
+import fr.geoking.arthur.audio.remote.MusicDownloadProgress
+import fr.geoking.arthur.audio.remote.MusicDownloadService
+import fr.geoking.arthur.audio.remote.MusicDownloadTracker
 import fr.geoking.arthur.shared.audio.remote.MusicProviderFactory
 import fr.geoking.arthur.shared.audio.remote.RemoteAudioSource
 import fr.geoking.arthur.shared.audio.remote.RemoteAudioTrack
@@ -76,13 +85,45 @@ fun RoyaltyFreeMusicScreen(
     var isSearching by remember { mutableStateOf(false) }
     var searchResults by remember { mutableStateOf<List<RemoteAudioTrack>>(emptyList()) }
     var downloadedTracks by remember { mutableStateOf(downloadedManager.getDownloadedTracks()) }
+    val downloadStates by MusicDownloadTracker.states.collectAsState()
+    var pendingDownloadTrack by remember { mutableStateOf<RemoteAudioTrack?>(null) }
 
-    // Track download state: true = downloading, false = done
-    val downloadingState = remember { mutableStateMapOf<String, Boolean>() }
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) {
+        // Download proceeds regardless — notification is best-effort on API 33+.
+        pendingDownloadTrack?.let { track ->
+            MusicDownloadService.enqueue(context, track)
+            pendingDownloadTrack = null
+        }
+    }
+
+    fun enqueueDownload(track: RemoteAudioTrack) {
+        val needsNotificationPermission =
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS,
+                ) != PackageManager.PERMISSION_GRANTED
+
+        if (needsNotificationPermission) {
+            pendingDownloadTrack = track
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            MusicDownloadService.enqueue(context, track)
+        }
+    }
 
     // ExoPlayer for sample preview audio
     val exoPlayer = remember { ExoPlayer.Builder(context).build() }
     var playingUrl by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(downloadStates) {
+        val completedIds = downloadStates.filterValues { it is MusicDownloadProgress.Completed }.keys
+        if (completedIds.isNotEmpty()) {
+            downloadedTracks = downloadedManager.getDownloadedTracks()
+        }
+    }
 
     DisposableEffect(exoPlayer) {
         onDispose {
@@ -296,8 +337,12 @@ fun RoyaltyFreeMusicScreen(
                     }
                 } else {
                     items(searchResults, key = { "res-${it.id}" }) { track ->
-                        val isDownloaded = downloadedManager.isDownloaded(track.id)
-                        val isDownloading = downloadingState[track.id] == true
+                        val isDownloaded = downloadedManager.isDownloaded(track.id) ||
+                            downloadStates[track.id] is MusicDownloadProgress.Completed
+                        val downloadProgress = downloadStates[track.id]
+                        val isDownloading = downloadProgress is MusicDownloadProgress.Downloading
+                        val progressFraction =
+                            (downloadProgress as? MusicDownloadProgress.Downloading)?.progress
                         val isTrackPlaying = playingUrl == track.streamUrl && exoPlayer.isPlaying
 
                         SearchResultCard(
@@ -305,15 +350,9 @@ fun RoyaltyFreeMusicScreen(
                             isPlaying = isTrackPlaying,
                             isDownloaded = isDownloaded,
                             isDownloading = isDownloading,
+                            downloadProgress = progressFraction,
                             onPlayPause = { playPreview(track.streamUrl) },
-                            onDownload = {
-                                scope.launch {
-                                    downloadingState[track.id] = true
-                                    downloadedManager.downloadTrack(track)
-                                    downloadingState[track.id] = false
-                                    downloadedTracks = downloadedManager.getDownloadedTracks()
-                                }
-                            },
+                            onDownload = { enqueueDownload(track) },
                         )
                     }
                 }
@@ -328,6 +367,7 @@ private fun SearchResultCard(
     isPlaying: Boolean,
     isDownloaded: Boolean,
     isDownloading: Boolean,
+    downloadProgress: Float? = null,
     onPlayPause: () -> Unit,
     onDownload: () -> Unit,
 ) {
@@ -371,7 +411,14 @@ private fun SearchResultCard(
             }
 
             if (isDownloading) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                if (downloadProgress != null && downloadProgress > 0f) {
+                    CircularProgressIndicator(
+                        progress = { downloadProgress },
+                        modifier = Modifier.size(24.dp),
+                    )
+                } else {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                }
             } else if (isDownloaded) {
                 Icon(
                     Icons.Default.Check,

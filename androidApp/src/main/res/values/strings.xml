@@ -121,6 +121,11 @@
     <string name="dev_no_results">No tracks found for this search.</string>
     <string name="dev_downloaded_tracks_title">Downloaded Music Pack (%1$d tracks)</string>
     <string name="dev_delete">Delete</string>
+    <string name="music_download_channel_name">Music downloads</string>
+    <string name="music_download_channel_desc">Progress for royalty-free music downloads</string>
+    <string name="music_download_notification_title">Downloading music</string>
+    <string name="music_download_complete_title">Download complete</string>
+    <string name="music_download_failed_title">Download failed</string>
     <string name="dev_sample_listen">Preview</string>
     <string name="dev_sample_pause">Pause</string>
     <string name="neural_model_downloading">Downloading model weights (%1$d%%)…</string>

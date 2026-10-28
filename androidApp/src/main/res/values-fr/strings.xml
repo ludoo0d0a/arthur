@@ -120,6 +120,11 @@
     <string name="dev_no_results">Aucun morceau trouvé pour cette recherche.</string>
     <string name="dev_downloaded_tracks_title">Pack Musiques Téléchargées (%1$d morceaux)</string>
     <string name="dev_delete">Supprimer</string>
+    <string name="music_download_channel_name">Téléchargements musique</string>
+    <string name="music_download_channel_desc">Progression des téléchargements de musiques libres de droits</string>
+    <string name="music_download_notification_title">Téléchargement musique</string>
+    <string name="music_download_complete_title">Téléchargement terminé</string>
+    <string name="music_download_failed_title">Échec du téléchargement</string>
     <string name="dev_sample_listen">Écouter</string>
     <string name="dev_sample_pause">Pause</string>
     <string name="neural_model_downloading">Téléchargement du modèle (%1$d%%)…</string>

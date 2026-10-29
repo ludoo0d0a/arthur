@@ -7,11 +7,8 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
-import android.content.pm.ServiceInfo
-import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
-import androidx.core.app.ServiceCompat
 import fr.geoking.arthur.R
 import fr.geoking.arthur.phone.MainActivity
 import fr.geoking.arthur.shared.audio.remote.RemoteAudioTrack
@@ -24,8 +21,12 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 /**
- * Foreground service that downloads royalty-free tracks with HTTP Range resume.
- * Survives Activity destruction; partial files are kept under filesDir/downloaded_music.
+ * Started service that downloads royalty-free tracks with HTTP Range resume.
+ *
+ * Not a foreground service: Play Console must declare `FOREGROUND_SERVICE_DATA_SYNC`
+ * before shipping an FGS (see `doc/playstore/music-download-fgs.md`). Until then,
+ * downloads run as a normal service from the foreground UI; partial files are kept
+ * under filesDir/downloaded_music for resume.
  */
 class MusicDownloadService : Service() {
 
@@ -45,18 +46,13 @@ class MusicDownloadService : Service() {
             ACTION_ENQUEUE -> {
                 val track = trackFromIntent(intent)
                 if (track == null) {
-                    stopSelf()
+                    maybeStop()
                     return START_NOT_STICKY
                 }
-                // startForegroundService requires startForeground promptly
-                ensureForeground(track.title)
                 when {
                     manager.isDownloaded(track.id) -> {
                         MusicDownloadTracker.setCompleted(track.id)
-                        if (queue.isEmpty() && !workerRunning.get()) {
-                            stopForeground(STOP_FOREGROUND_REMOVE)
-                            stopSelf()
-                        }
+                        maybeStop()
                     }
                     MusicDownloadTracker.isActive(track.id) -> {
                         // Already queued/running — keep service alive
@@ -69,18 +65,19 @@ class MusicDownloadService : Service() {
                 }
             }
             ACTION_STOP -> {
-                stopForeground(STOP_FOREGROUND_REMOVE)
+                clearProgressNotification()
                 stopSelf()
             }
             else -> stopSelf()
         }
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
         scope.cancel()
+        clearProgressNotification()
         super.onDestroy()
     }
 
@@ -117,7 +114,7 @@ class MusicDownloadService : Service() {
             } finally {
                 workerRunning.set(false)
                 if (queue.isEmpty()) {
-                    stopForeground(STOP_FOREGROUND_REMOVE)
+                    clearProgressNotification()
                     stopSelf()
                 } else {
                     drainQueue()
@@ -126,18 +123,11 @@ class MusicDownloadService : Service() {
         }
     }
 
-    private fun ensureForeground(title: String) {
-        val notification = buildProgressNotification(title, progressPercent = 0, indeterminate = true)
-        ServiceCompat.startForeground(
-            this,
-            NOTIFICATION_ID,
-            notification,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-            } else {
-                0
-            },
-        )
+    private fun maybeStop() {
+        if (queue.isEmpty() && !workerRunning.get()) {
+            clearProgressNotification()
+            stopSelf()
+        }
     }
 
     private fun updateNotification(title: String, progressPercent: Int, indeterminate: Boolean) {
@@ -146,6 +136,11 @@ class MusicDownloadService : Service() {
             NOTIFICATION_ID,
             buildProgressNotification(title, progressPercent, indeterminate),
         )
+    }
+
+    private fun clearProgressNotification() {
+        val nm = getSystemService(NotificationManager::class.java) ?: return
+        nm.cancel(NOTIFICATION_ID)
     }
 
     private fun showCompletedNotification(title: String) {
@@ -244,7 +239,7 @@ class MusicDownloadService : Service() {
                 putExtra(EXTRA_SOURCE_ID, track.sourceId)
                 putExtra(EXTRA_ARTWORK, track.artworkUrl)
             }
-            context.startForegroundService(intent)
+            context.startService(intent)
         }
 
         private fun trackFromIntent(intent: Intent): RemoteAudioTrack? {

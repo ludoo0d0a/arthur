@@ -10,6 +10,9 @@ Play Console required an FGS declaration only because older builds declared
 using them. Those declarations were removed so store review is not blocked on a
 demo video for unused permissions.
 
+Royalty-free music downloads (`dataSync`) are also deferred until Console declaration —
+see `music-download-fgs.md`.
+
 ## When re-adding mediaPlayback FGS
 
 1. Manifest: `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MEDIA_PLAYBACK`, and

@@ -321,6 +321,13 @@ afterEvaluate {
                     ?: System.getenv("E2E_MUSEUM_SOURCES")
                     ?: "",
             )
+            // Live music e2e: -Pe2eMusicSources=true (Jamendo / Archive.org / Incompetech)
+            systemProperty(
+                "e2e.musicSources",
+                (findProperty("e2eMusicSources") as String?)
+                    ?: System.getenv("E2E_MUSIC_SOURCES")
+                    ?: "",
+            )
         }
     }
 }

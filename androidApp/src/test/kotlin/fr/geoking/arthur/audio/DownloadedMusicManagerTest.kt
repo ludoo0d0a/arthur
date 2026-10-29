@@ -154,4 +154,55 @@ class DownloadedMusicManagerTest {
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull()?.message?.contains("Empty stream URL") == true)
     }
+
+    @Test
+    fun probeContentLengthUsesHeadThenRange() {
+        val server = MockWebServer()
+        server.start()
+        try {
+            // Some stacks drop Content-Length on empty HEAD bodies — fall back to Range.
+            server.enqueue(
+                MockResponse.Builder()
+                    .code(200)
+                    .body("")
+                    .build(),
+            )
+            server.enqueue(
+                MockResponse.Builder()
+                    .code(206)
+                    .body(okio.Buffer().write(byteArrayOf(0)))
+                    .headers(
+                        Headers.headersOf(
+                            "Content-Length",
+                            "1",
+                            "Content-Range",
+                            "bytes 0-0/98765",
+                        ),
+                    )
+                    .build(),
+            )
+            val manager = DownloadedMusicManager(
+                ApplicationProvider.getApplicationContext(),
+                httpClient,
+            )
+            val size = manager.probeContentLength(
+                server.url("/track.mp3").toString(),
+                sourceId = "test",
+            )
+            assertEquals(98765L, size)
+            assertEquals("HEAD", server.takeRequest(5, TimeUnit.SECONDS)?.method)
+            assertEquals("GET", server.takeRequest(5, TimeUnit.SECONDS)?.method)
+        } finally {
+            server.close()
+        }
+    }
+
+    @Test
+    fun parseTotalFromContentRange() {
+        assertEquals(
+            12345L,
+            DownloadedMusicManager.parseTotalFromContentRange("bytes 0-0/12345"),
+        )
+        assertNull(DownloadedMusicManager.parseTotalFromContentRange(null))
+    }
 }

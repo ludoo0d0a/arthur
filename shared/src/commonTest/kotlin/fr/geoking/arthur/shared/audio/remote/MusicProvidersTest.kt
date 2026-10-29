@@ -16,9 +16,9 @@ class MusicProvidersTest {
             pixabayApiKey = "test-pixabay",
         )
         val all = factory.createAll()
-        assertEquals(5, all.size)
+        assertEquals(4, all.size)
 
-        val expectedIds = listOf("jamendo", "freesound", "archive_org", "pixabay_music", "incompetech")
+        val expectedIds = listOf("jamendo", "freesound", "archive_org", "incompetech")
         assertEquals(expectedIds, all.map { it.id })
 
         expectedIds.forEach { id ->
@@ -26,6 +26,8 @@ class MusicProvidersTest {
             assertNotNull(provider, "Provider for $id should not be null")
             assertEquals(id, provider.id)
         }
+        // Pixabay Music remains resolvable but is paused from createAll().
+        assertNotNull(factory.provider(PixabayMusicSource.ID))
     }
 
     @Test
@@ -64,7 +66,7 @@ class MusicProvidersTest {
     }
 
     @Test
-    fun freesoundSourceParsesSounds() = runBlocking {
+    fun freesoundSourceParsesSoundsWithFilesize() = runBlocking {
         val json = """
             {
                 "results": [
@@ -73,6 +75,7 @@ class MusicProvidersTest {
                         "name": "Tibetan Singing Bowl",
                         "username": "zenmaster",
                         "duration": 45.5,
+                        "filesize": 1234567,
                         "license": "http://creativecommons.org/publicdomain/zero/1.0/",
                         "previews": {
                             "preview-hq-mp3": "https://freesound.org/data/previews/88/8888.mp3"
@@ -96,11 +99,12 @@ class MusicProvidersTest {
         assertEquals("zenmaster", track.artist)
         assertEquals("https://freesound.org/data/previews/88/8888.mp3", track.streamUrl)
         assertEquals(45, track.durationSeconds)
+        assertEquals(1234567L, track.fileSizeBytes)
         assertEquals("freesound", track.sourceId)
     }
 
     @Test
-    fun archiveOrgSourceParsesDocs() = runBlocking {
+    fun archiveOrgSourceParsesDocsWithSize() = runBlocking {
         val searchJson = """
             {
                 "response": {
@@ -119,7 +123,7 @@ class MusicProvidersTest {
             {
                 "files": [
                     {"name": "zen_ambient_session_meta.xml"},
-                    {"name": "session_part_a.mp3"}
+                    {"name": "session part a.mp3", "size": "2048000", "length": "195.5"}
                 ]
             }
         """.trimIndent()
@@ -138,10 +142,30 @@ class MusicProvidersTest {
         assertEquals("Zen Ambient Session", track.title)
         assertEquals("Netlabel Ambient", track.artist)
         assertEquals(
-            "https://archive.org/download/zen_ambient_session/session_part_a.mp3",
+            "https://archive.org/download/zen_ambient_session/session%20part%20a.mp3",
             track.streamUrl,
         )
+        assertEquals(2048000L, track.fileSizeBytes)
+        assertEquals(195, track.durationSeconds)
         assertEquals("archive_org", track.sourceId)
+    }
+
+    @Test
+    fun archiveOrgSearchUrlPrefersOpenCollections() = runBlocking {
+        var requestedUrl = ""
+        val source = ArchiveOrgMusicSource(
+            httpGet = { url ->
+                requestedUrl = url
+                """{"response":{"docs":[]}}"""
+            },
+        )
+        source.fetchZenTracks("zen calm", limit = 3)
+        assertTrue(
+            "opensource_audio" in requestedUrl,
+            "Expected opensource_audio collection filter, got: $requestedUrl",
+        )
+        assertTrue("format:MP3" in requestedUrl, "Expected format:MP3 filter, got: $requestedUrl")
+        assertTrue("netlabels" in requestedUrl)
     }
 
     @Test
@@ -178,6 +202,29 @@ class MusicProvidersTest {
     }
 
     @Test
+    fun pixabayMusicSourceRejectsErrorBody() = runBlocking {
+        val source = PixabayMusicSource(
+            httpGet = { "[ERROR 403] Access denied." },
+            apiKey = "test-key",
+        )
+        val result = source.fetchZenTracks()
+        assertTrue(result.isFailure)
+        assertTrue(
+            result.exceptionOrNull()?.message?.contains("403") == true,
+            "Expected clear 403 message, got: ${result.exceptionOrNull()?.message}",
+        )
+    }
+
+    @Test
+    fun requireJsonObjectBodyRejectsHtml() {
+        val error = runCatching {
+            requireJsonObjectBody("<html>401 Authorization Required</html>", "archive_org")
+        }.exceptionOrNull()
+        assertNotNull(error)
+        assertTrue(error.message?.contains("expected JSON") == true)
+    }
+
+    @Test
     fun incompetechSourceReturnsCuratedTracks() = runBlocking {
         val source = IncompetechMusicSource()
         val tracks = source.fetchZenTracks().getOrNull()
@@ -206,7 +253,13 @@ class MusicProvidersTest {
         val missing = factory.missingApiKeys()
         assertTrue(missing.contains("JAMENDO_CLIENT_ID"))
         assertTrue(missing.contains("FREESOUND_API_KEY"))
-        assertTrue(missing.contains("PIXABAY_API_KEY"))
-        assertEquals(3, missing.size)
+        assertTrue(!missing.contains("PIXABAY_API_KEY"))
+        assertEquals(2, missing.size)
+    }
+
+    @Test
+    fun encodePathSegmentEncodesSpaces() {
+        assertEquals("session%20part%20a.mp3", encodePathSegment("session part a.mp3"))
+        assertEquals("plain.mp3", encodePathSegment("plain.mp3"))
     }
 }

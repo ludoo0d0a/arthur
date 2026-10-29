@@ -7,11 +7,16 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import fr.geoking.arthur.R
 import fr.geoking.arthur.phone.MainActivity
 import fr.geoking.arthur.shared.audio.remote.RemoteAudioTrack
+import fr.geoking.arthur.shared.error.ErrorClassifier
+import fr.geoking.arthur.shared.error.ErrorLogger
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CoroutineScope
@@ -19,6 +24,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import org.koin.core.context.GlobalContext
 
 /**
  * Started service that downloads royalty-free tracks with HTTP Range resume.
@@ -33,7 +39,11 @@ class MusicDownloadService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val queue = ConcurrentLinkedQueue<RemoteAudioTrack>()
     private val workerRunning = AtomicBoolean(false)
+    private val mainHandler = Handler(Looper.getMainLooper())
     private lateinit var manager: DownloadedMusicManager
+    private val errorLogger: ErrorLogger? by lazy {
+        runCatching { GlobalContext.get().get<ErrorLogger>() }.getOrNull()
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -103,11 +113,11 @@ class MusicDownloadService : Service() {
                             showCompletedNotification(track.title)
                         },
                         onFailure = { error ->
-                            MusicDownloadTracker.setFailed(
-                                track.id,
-                                error.message ?: "Download failed",
-                            )
-                            showFailedNotification(track.title, error.message)
+                            val message = error.message ?: "Download failed"
+                            MusicDownloadTracker.setFailed(track.id, message)
+                            logDownloadFailure(track, error)
+                            toastDownloadFailure(track.title)
+                            showFailedNotification(track.title, message)
                         },
                     )
                 }
@@ -127,6 +137,31 @@ class MusicDownloadService : Service() {
         if (queue.isEmpty() && !workerRunning.get()) {
             clearProgressNotification()
             stopSelf()
+        }
+    }
+
+    private fun logDownloadFailure(track: RemoteAudioTrack, error: Throwable) {
+        val statusCode = Regex("""HTTP Download error (\d+)""")
+            .find(error.message.orEmpty())
+            ?.groupValues
+            ?.getOrNull(1)
+            ?.toIntOrNull()
+        errorLogger?.log(
+            sourceId = track.sourceId.ifBlank { "music_download" },
+            category = ErrorClassifier.classify(statusCode, error),
+            message = "Music download failed: ${track.title}",
+            artworkId = track.id,
+            details = error.message,
+            url = track.streamUrl,
+            statusCode = statusCode,
+            throwable = error,
+        )
+    }
+
+    private fun toastDownloadFailure(title: String) {
+        val short = getString(R.string.music_download_failed_toast, title.take(40))
+        mainHandler.post {
+            Toast.makeText(applicationContext, short, Toast.LENGTH_SHORT).show()
         }
     }
 

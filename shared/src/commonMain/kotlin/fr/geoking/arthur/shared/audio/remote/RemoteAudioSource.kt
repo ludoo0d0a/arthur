@@ -14,6 +14,8 @@ data class RemoteAudioTrack(
     val license: String = "Royalty-Free",
     val artworkUrl: String? = null,
     val sourceId: String,
+    /** Best-effort remote size in bytes when the provider exposes it (or after HEAD probe). */
+    val fileSizeBytes: Long? = null,
 )
 
 interface RemoteAudioSource {
@@ -28,6 +30,33 @@ interface RemoteAudioSource {
 
 private val json = Json { ignoreUnknownKeys = true }
 
+/** Reject HTML / `[ERROR …]` bodies before kotlinx.serialization throws a cryptic token error. */
+internal fun requireJsonObjectBody(body: String, provider: String): String {
+    val trimmed = body.trimStart()
+    if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+        // Pixabay (and others) sometimes return `[ERROR 403] Access denied.` which starts with `[`.
+        if (trimmed.startsWith("[ERROR", ignoreCase = true) ||
+            trimmed.startsWith("[error", ignoreCase = true)
+        ) {
+            error("$provider: $trimmed")
+        }
+        return body
+    }
+    val preview = trimmed.take(120).replace('\n', ' ')
+    error("$provider: expected JSON, got: $preview")
+}
+
+/** Percent-encode a single URL path segment (archive.org filenames often contain spaces). */
+internal fun encodePathSegment(value: String): String = buildString(value.length + 8) {
+    for (ch in value) {
+        when {
+            ch.isLetterOrDigit() || ch in "-._~" -> append(ch)
+            ch == ' ' -> append("%20")
+            else -> append('%').append(ch.code.toString(16).uppercase().padStart(2, '0'))
+        }
+    }
+}
+
 // --- Jamendo Music Provider ---
 
 class JamendoMusicSource(
@@ -41,7 +70,7 @@ class JamendoMusicSource(
         if (clientId.isBlank()) error("Missing API key: JAMENDO_CLIENT_ID")
         val formattedQuery = query.replace(" ", "+")
         val url = "https://api.jamendo.com/v3.0/tracks/?client_id=$clientId&format=json&tags=$formattedQuery&limit=$limit&audioformat=mp32"
-        val body = httpGet(url)
+        val body = requireJsonObjectBody(httpGet(url), displayName)
         val response = json.decodeFromString<JamendoResponse>(body)
         response.results.mapNotNull { hit ->
             val streamUrl = hit.audio?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
@@ -91,8 +120,8 @@ class FreesoundMusicSource(
     override suspend fun fetchZenTracks(query: String, limit: Int): Result<List<RemoteAudioTrack>> = runCatching {
         if (apiKey.isBlank()) error("Missing API key: FREESOUND_API_KEY")
         val formattedQuery = query.replace(" ", "+")
-        val url = "https://freesound.org/apiv2/search/text/?token=$apiKey&query=$formattedQuery&page_size=$limit&fields=id,name,username,previews,duration,license"
-        val body = httpGet(url)
+        val url = "https://freesound.org/apiv2/search/text/?token=$apiKey&query=$formattedQuery&page_size=$limit&fields=id,name,username,previews,duration,license,filesize"
+        val body = requireJsonObjectBody(httpGet(url), displayName)
         val response = json.decodeFromString<FreesoundSearchResponse>(body)
         response.results.mapNotNull { sound ->
             val streamUrl = sound.previews?.previewHqMp3?.takeIf { it.isNotBlank() }
@@ -106,6 +135,7 @@ class FreesoundMusicSource(
                 durationSeconds = sound.duration?.toInt() ?: 0,
                 license = sound.license?.takeIf { it.isNotBlank() } ?: "Creative Commons",
                 sourceId = ID,
+                fileSizeBytes = sound.filesize?.takeIf { it > 0L },
             )
         }
     }
@@ -128,6 +158,7 @@ private data class FreesoundSound(
     val previews: FreesoundPreviews? = null,
     val duration: Double? = null,
     val license: String? = null,
+    val filesize: Long? = null,
 )
 
 @Serializable
@@ -146,40 +177,59 @@ class ArchiveOrgMusicSource(
 
     override suspend fun fetchZenTracks(query: String, limit: Int): Result<List<RemoteAudioTrack>> = runCatching {
         val formattedQuery = query.replace(" ", "+")
-        val url = "https://archive.org/advancedsearch.php?q=mediatype:audio+AND+subject:($formattedQuery)&fl[]=identifier,title,creator,licenseurl&rows=$limit&output=json"
-        val body = httpGet(url)
+        // Restrict to open collections: many podcast / dark-archive items 401 on CDN download.
+        val url =
+            "https://archive.org/advancedsearch.php?" +
+                "q=collection:(opensource_audio+OR+netlabels)+AND+format:MP3+AND+mediatype:audio+" +
+                "AND+(subject:($formattedQuery)+OR+title:($formattedQuery))&" +
+                "fl[]=identifier,title,creator,licenseurl&rows=$limit&output=json"
+        val body = requireJsonObjectBody(httpGet(url), displayName)
         val response = json.decodeFromString<ArchiveOrgResponse>(body)
         response.response?.docs.orEmpty().mapNotNull { doc ->
             val identifier = doc.identifier?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
-            val mp3Name = resolveFirstMp3(identifier) ?: return@mapNotNull null
+            val mp3 = resolveFirstMp3(identifier) ?: return@mapNotNull null
             RemoteAudioTrack(
                 id = "$ID-$identifier",
                 title = doc.title?.takeIf { it.isNotBlank() } ?: "Archive.org $identifier",
                 artist = doc.creator?.takeIf { it.isNotBlank() } ?: "Internet Archive",
-                streamUrl = "https://archive.org/download/$identifier/${mp3Name.replace(" ", "%20")}",
-                durationSeconds = 180,
+                streamUrl = "https://archive.org/download/$identifier/${encodePathSegment(mp3.name)}",
+                durationSeconds = mp3.durationSeconds ?: 180,
                 license = doc.licenseUrl?.takeIf { it.isNotBlank() } ?: "Public Domain / CC",
                 artworkUrl = "https://archive.org/services/img/$identifier",
                 sourceId = ID,
+                fileSizeBytes = mp3.sizeBytes,
             )
         }
     }
 
-    /** Resolve a real downloadable .mp3 from item metadata (guessing `$id/$id.mp3` is often wrong). */
-    private suspend fun resolveFirstMp3(identifier: String): String? {
+    /** Resolve a real downloadable .mp3 (+ size) from item metadata. */
+    private suspend fun resolveFirstMp3(identifier: String): ArchiveOrgMp3Ref? {
         val metaBody = httpGet("https://archive.org/metadata/$identifier")
-        val meta = runCatching { json.decodeFromString<ArchiveOrgMetadata>(metaBody) }.getOrNull()
-            ?: return null
-        return meta.files
+        if (metaBody.isBlank() || metaBody.trim() == "{}") return null
+        val meta = runCatching {
+            json.decodeFromString<ArchiveOrgMetadata>(requireJsonObjectBody(metaBody, displayName))
+        }.getOrNull() ?: return null
+        val file = meta.files
             .asSequence()
-            .mapNotNull { it.name?.takeIf { name -> name.endsWith(".mp3", ignoreCase = true) } }
+            .filter { it.name?.endsWith(".mp3", ignoreCase = true) == true }
             .firstOrNull()
+            ?: return null
+        val name = file.name ?: return null
+        val sizeBytes = file.size?.toLongOrNull()?.takeIf { it > 0L }
+        val durationSeconds = file.length?.toDoubleOrNull()?.toInt()?.takeIf { it > 0 }
+        return ArchiveOrgMp3Ref(name = name, sizeBytes = sizeBytes, durationSeconds = durationSeconds)
     }
 
     companion object {
         const val ID = "archive_org"
     }
 }
+
+private data class ArchiveOrgMp3Ref(
+    val name: String,
+    val sizeBytes: Long?,
+    val durationSeconds: Int?,
+)
 
 @Serializable
 private data class ArchiveOrgResponse(
@@ -207,9 +257,12 @@ private data class ArchiveOrgMetadata(
 @Serializable
 private data class ArchiveOrgFile(
     val name: String? = null,
+    /** Archive.org returns numeric size/length as JSON strings. */
+    val size: String? = null,
+    val length: String? = null,
 )
 
-// --- Pixabay Audio Provider ---
+// --- Pixabay Audio Provider (paused: /api/audio/ returns 403 for standard keys) ---
 
 class PixabayMusicSource(
     private val httpGet: suspend (url: String) -> String,
@@ -221,8 +274,9 @@ class PixabayMusicSource(
     override suspend fun fetchZenTracks(query: String, limit: Int): Result<List<RemoteAudioTrack>> = runCatching {
         if (apiKey.isBlank()) error("Missing API key: PIXABAY_API_KEY")
         val formattedQuery = query.replace(" ", "+")
+        // Official docs only cover images/videos; /api/audio/ returns plain-text "[ERROR 403] Access denied."
         val url = "https://pixabay.com/api/audio/?key=$apiKey&q=$formattedQuery&per_page=$limit"
-        val body = httpGet(url)
+        val body = requireJsonObjectBody(httpGet(url), displayName)
         val response = json.decodeFromString<PixabayAudioResponse>(body)
         response.hits.mapNotNull { hit ->
             val streamUrl = hit.audioUrl?.takeIf { it.isNotBlank() }
@@ -324,11 +378,14 @@ class MusicProviderFactory(
     private val freesoundApiKey: String = "",
     private val pixabayApiKey: String = "",
 ) {
+    /**
+     * Active providers for “All”. Pixabay Music is omitted: `/api/audio/` returns HTTP 403
+     * for standard keys (no public music API — same pause pattern as Free Music Archive).
+     */
     fun createAll(): List<RemoteAudioSource> = listOf(
         createJamendo(),
         createFreesound(),
         createArchiveOrg(),
-        createPixabay(),
         createIncompetech(),
     )
 
@@ -351,6 +408,6 @@ class MusicProviderFactory(
     fun missingApiKeys(): List<String> = buildList {
         if (jamendoClientId.isBlank()) add("JAMENDO_CLIENT_ID")
         if (freesoundApiKey.isBlank()) add("FREESOUND_API_KEY")
-        if (pixabayApiKey.isBlank()) add("PIXABAY_API_KEY")
+        // PIXABAY_API_KEY not required for music search while Pixabay Music API is paused.
     }
 }

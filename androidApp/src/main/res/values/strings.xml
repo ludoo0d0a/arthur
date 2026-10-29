@@ -126,6 +126,9 @@
     <string name="music_download_notification_title">Downloading music</string>
     <string name="music_download_complete_title">Download complete</string>
     <string name="music_download_failed_title">Download failed</string>
+    <string name="music_download_failed_toast">Download failed: %1$s</string>
+    <string name="music_playback_channel_name">Music playback</string>
+    <string name="music_playback_channel_desc">Media controls while listening to sound packs</string>
     <string name="dev_music_missing_api_keys">Missing API keys in local.properties / BuildConfig: %1$s. Providers that need them will fail until set.</string>
     <string name="dev_music_provider_errors">Provider errors</string>
     <string name="dev_music_download_errors">Download errors</string>

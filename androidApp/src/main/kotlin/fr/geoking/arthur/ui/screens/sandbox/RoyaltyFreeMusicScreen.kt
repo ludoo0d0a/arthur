@@ -3,6 +3,7 @@ package fr.geoking.arthur.ui.screens.sandbox
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
+import android.text.format.Formatter
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.horizontalScroll
@@ -17,11 +18,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -65,11 +66,18 @@ import fr.geoking.arthur.audio.remote.MusicDownloadTracker
 import fr.geoking.arthur.shared.audio.remote.MusicProviderFactory
 import fr.geoking.arthur.shared.audio.remote.RemoteAudioSource
 import fr.geoking.arthur.shared.audio.remote.RemoteAudioTrack
+import fr.geoking.arthur.shared.error.ErrorClassifier
+import fr.geoking.arthur.shared.error.ErrorLogger
+import fr.geoking.arthur.ui.screens.verticalScrollbar
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.isSuccess
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.core.context.GlobalContext
@@ -85,6 +93,9 @@ fun RoyaltyFreeMusicScreen(
     val httpClient = remember {
         runCatching { GlobalContext.get().get<HttpClient>() }.getOrNull()
     }
+    val errorLogger = remember {
+        runCatching { GlobalContext.get().get<ErrorLogger>() }.getOrNull()
+    }
 
     var query by remember { mutableStateOf("zen calm ambient") }
     var selectedProviderId by remember { mutableStateOf("all") }
@@ -94,6 +105,7 @@ fun RoyaltyFreeMusicScreen(
     var downloadedTracks by remember { mutableStateOf(downloadedManager.getDownloadedTracks()) }
     val downloadStates by MusicDownloadTracker.states.collectAsState()
     var pendingDownloadTrack by remember { mutableStateOf<RemoteAudioTrack?>(null) }
+    val listState = rememberLazyListState()
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -160,10 +172,15 @@ fun RoyaltyFreeMusicScreen(
                 val client = httpClient
                     ?: error("HttpClient unavailable — open debug bar after app restart")
                 val sourceId = sourceIdForMusicUrl(urlStr)
-                client.get(urlStr) {
-                    header("User-Agent", "Arthur-Ambient/1.0")
+                val response = client.get(urlStr) {
+                    header("User-Agent", "Arthur-Ambient/1.0 (fr.geoking.arthur)")
                     header("X-Source-Id", sourceId)
-                }.bodyAsText()
+                }
+                val body = response.bodyAsText()
+                if (!response.status.isSuccess()) {
+                    error("HTTP ${response.status.value}: ${body.take(160)}")
+                }
+                body
             },
             jamendoClientId = BuildConfig.JAMENDO_CLIENT_ID,
             freesoundApiKey = BuildConfig.FREESOUND_API_KEY,
@@ -191,12 +208,24 @@ fun RoyaltyFreeMusicScreen(
                     provider.fetchZenTracks(query, limit = 10).fold(
                         onSuccess = { tracks.addAll(it) },
                         onFailure = { err ->
-                            errors += "${provider.displayName}: ${err.message ?: err::class.simpleName}"
+                            val msg = err.message ?: err::class.simpleName ?: "error"
+                            errors += "${provider.displayName}: $msg"
+                            errorLogger?.log(
+                                sourceId = provider.id,
+                                category = ErrorClassifier.classify(null, err),
+                                message = "Music search failed: ${provider.displayName}",
+                                details = msg,
+                                throwable = err,
+                            )
                         },
                     )
                 }
             }
-            searchResults = tracks
+            // Best-effort file size for tracks that did not expose one in API metadata.
+            val withSizes = withContext(Dispatchers.IO) {
+                enrichFileSizes(tracks, downloadedManager)
+            }
+            searchResults = withSizes
             providerErrors = errors
             isSearching = false
         }
@@ -215,18 +244,6 @@ fun RoyaltyFreeMusicScreen(
                 .fillMaxSize()
                 .padding(16.dp),
         ) {
-            Text(
-                text = stringResource(R.string.screen_dev_royalty_free_music),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-            )
-            Text(
-                text = stringResource(R.string.dev_royalty_free_music_desc),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
-            )
-
             if (missingApiKeys.isNotEmpty()) {
                 Card(
                     modifier = Modifier
@@ -275,37 +292,6 @@ fun RoyaltyFreeMusicScreen(
                 }
             }
 
-            val downloadFailures = downloadStates
-                .mapNotNull { (id, state) ->
-                    (state as? MusicDownloadProgress.Failed)?.let { id to it.message }
-                }
-            if (downloadFailures.isNotEmpty()) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 12.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                    ),
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Text(
-                            text = stringResource(R.string.dev_music_download_errors),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                        )
-                        downloadFailures.forEach { (id, message) ->
-                            Text(
-                                text = "• $id: $message",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onErrorContainer,
-                                modifier = Modifier.padding(top = 4.dp),
-                            )
-                        }
-                    }
-                }
-            }
-
             // Search query field & button
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -333,7 +319,6 @@ fun RoyaltyFreeMusicScreen(
                 "jamendo" to "Jamendo",
                 "freesound" to "Freesound",
                 "archive_org" to "Archive.org",
-                "pixabay_music" to "Pixabay",
                 "incompetech" to "Incompetech",
             )
 
@@ -368,7 +353,13 @@ fun RoyaltyFreeMusicScreen(
             }
 
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
+                state = listState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScrollbar(
+                        listState,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    ),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 // Downloaded Music Pack Section Header
@@ -452,6 +443,22 @@ fun RoyaltyFreeMusicScreen(
     }
 }
 
+private suspend fun enrichFileSizes(
+    tracks: List<RemoteAudioTrack>,
+    manager: DownloadedMusicManager,
+): List<RemoteAudioTrack> = coroutineScope {
+    tracks.map { track ->
+        async(Dispatchers.IO) {
+            if (track.fileSizeBytes != null && track.fileSizeBytes!! > 0L) {
+                track
+            } else {
+                val size = manager.probeContentLength(track.streamUrl, track.sourceId)
+                if (size != null) track.copy(fileSizeBytes = size) else track
+            }
+        }
+    }.awaitAll()
+}
+
 private fun sourceIdForMusicUrl(url: String): String = when {
     "jamendo.com" in url -> "jamendo"
     "freesound.org" in url -> "freesound"
@@ -471,6 +478,10 @@ private fun SearchResultCard(
     onPlayPause: () -> Unit,
     onDownload: () -> Unit,
 ) {
+    val context = LocalContext.current
+    val sizeLabel = remember(track.fileSizeBytes) {
+        track.fileSizeBytes?.takeIf { it > 0L }?.let { Formatter.formatShortFileSize(context, it) }
+    }
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -504,7 +515,15 @@ private fun SearchResultCard(
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
-                    text = "${track.artist} · ${track.sourceId}",
+                    text = buildString {
+                        append(track.artist)
+                        append(" · ")
+                        append(track.sourceId)
+                        if (sizeLabel != null) {
+                            append(" · ")
+                            append(sizeLabel)
+                        }
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

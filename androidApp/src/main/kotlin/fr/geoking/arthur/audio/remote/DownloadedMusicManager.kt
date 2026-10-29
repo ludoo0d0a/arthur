@@ -58,6 +58,40 @@ class DownloadedMusicManager(
     }
 
     /**
+     * Best-effort remote Content-Length via HEAD (falls back to a 1-byte Range GET).
+     * Returns null when the server omits size or rejects the probe.
+     */
+    fun probeContentLength(url: String, sourceId: String): Long? {
+        if (url.isBlank()) return null
+        return runCatching {
+            val head = Request.Builder()
+                .url(url)
+                .head()
+                .header("User-Agent", USER_AGENT)
+                .header("X-Source-Id", sourceId)
+                .header("Cache-Control", "no-store")
+                .build()
+            httpClient.newCall(head).execute().use { response ->
+                val fromHead = response.header("Content-Length")?.toLongOrNull()?.takeIf { it > 0L }
+                if (response.isSuccessful && fromHead != null) return@use fromHead
+            }
+            val range = Request.Builder()
+                .url(url)
+                .get()
+                .header("User-Agent", USER_AGENT)
+                .header("X-Source-Id", sourceId)
+                .header("Cache-Control", "no-store")
+                .header("Range", "bytes=0-0")
+                .build()
+            httpClient.newCall(range).execute().use { response ->
+                if (response.code !in 200..299 && response.code != 206) return@use null
+                parseTotalFromContentRange(response.header("Content-Range"))
+                    ?: response.header("Content-Length")?.toLongOrNull()?.takeIf { it > 0L }
+            }
+        }.getOrNull()
+    }
+
+    /**
      * Downloads [track] to app files, resuming from any existing `.partial` via HTTP Range.
      * Uses the shared OkHttp client so traffic appears in the network debug bar.
      */
@@ -121,7 +155,7 @@ class DownloadedMusicManager(
 
         val requestBuilder = Request.Builder()
             .url(url)
-            .header("User-Agent", "Arthur-Ambient/1.0")
+            .header("User-Agent", USER_AGENT)
             .header("X-Source-Id", sourceId)
             .header("Cache-Control", "no-store")
             .get()
@@ -199,6 +233,15 @@ class DownloadedMusicManager(
     }
 
     companion object {
+        private const val USER_AGENT = "Arthur-Ambient/1.0 (fr.geoking.arthur)"
+
+        internal fun parseTotalFromContentRange(contentRange: String?): Long? {
+            // e.g. "bytes 0-0/12345"
+            if (contentRange.isNullOrBlank()) return null
+            val total = contentRange.substringAfterLast('/', missingDelimiterValue = "")
+            return total.toLongOrNull()?.takeIf { it > 0L }
+        }
+
         private fun defaultHttpClient(): OkHttpClient =
             runCatching { GlobalContext.get().get<OkHttpClient>() }
                 .getOrElse {

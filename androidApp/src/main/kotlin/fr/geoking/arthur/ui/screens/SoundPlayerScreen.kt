@@ -48,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.R
 import fr.geoking.arthur.audio.MusicStyle
+import fr.geoking.arthur.audio.PhoneListenNotification
 import fr.geoking.arthur.audio.ZenAudioEngine
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
@@ -86,6 +87,15 @@ fun SoundPlayerScreen(
 
     val context = LocalContext.current
     val settings = audioSettings
+
+    val mediaNotification = remember {
+        PhoneListenNotification(context) { playing ->
+            isPlaying = playing
+        }
+    }
+    DisposableEffect(mediaNotification) {
+        onDispose { mediaNotification.release() }
+    }
 
     val previousEnabled = remember(settings) { settings?.enabled?.value ?: false }
     val previousStyle = remember(settings) { settings?.stylePreference?.value }
@@ -147,6 +157,28 @@ fun SoundPlayerScreen(
                 previousCharacter?.let { settings.setCharacter(it) }
             }
         }
+    }
+
+    val notificationTitle = when {
+        topic == AudioPackTopic.DownloadedMusic -> {
+            downloadedTracks.firstOrNull { it.id == selectedDownloadedTrackId }?.title
+                ?: stringResource(topic.labelRes)
+        }
+        else -> stringResource(topic.labelRes)
+    }
+    val notificationSubtitle = when {
+        topic == AudioPackTopic.DownloadedMusic -> {
+            downloadedTracks.firstOrNull { it.id == selectedDownloadedTrackId }?.artist
+        }
+        else -> stringResource(selectedStyle.labelRes())
+    }
+
+    LaunchedEffect(notificationTitle, notificationSubtitle, isPlaying) {
+        mediaNotification.update(
+            title = notificationTitle,
+            subtitle = notificationSubtitle,
+            playing = isPlaying,
+        )
     }
 
     LaunchedEffect(

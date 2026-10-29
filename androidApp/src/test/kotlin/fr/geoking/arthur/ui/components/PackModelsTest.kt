@@ -194,11 +194,32 @@ class PackModelsTest {
         assertTrue(tiles.any { it.testTagSuffix == "sound_hearth_weather" })
         assertTrue(tiles.any { it.testTagSuffix == "sound_solo_violin" })
         assertTrue(tiles.any { it.testTagSuffix == "sound_arcade_chips" })
+        assertFalse(tiles.any { it.testTagSuffix == "sound_downloaded_music" })
         val hearth = tiles.first { it.testTagSuffix == "sound_hearth_weather" }
         assertEquals("audio_hearth_weather", hearth.sellablePackId)
         assertEquals(R.drawable.pack_audio_hearth_weather, hearth.coverRes)
         val chips = tiles.first { it.testTagSuffix == "sound_arcade_chips" }
         assertEquals("audio_arcade_chips", chips.sellablePackId)
+    }
+
+    @Test
+    fun downloadedMusic_isRootFamilyWithoutSubPacks() {
+        assertTrue(PackFamily.DownloadedMusic.subPackTiles().isEmpty())
+        assertEquals(
+            AudioPackTopic.DownloadedMusic.testTagSuffix,
+            PackFamily.DownloadedMusic.defaultSubId(),
+        )
+        val selection = PackSelection(
+            PackFamily.DownloadedMusic,
+            PackFamily.DownloadedMusic.defaultSubId(),
+        )
+        assertTrue(selection.opensSoundPlayer())
+        assertFalse(selection.opensNeuralMusic())
+        assertEquals(AudioPackTopic.DownloadedMusic, selection.audioPackTopicOrNull())
+        assertEquals(
+            AudioPackTopic.DownloadedMusic.sellablePackId,
+            PackFamily.DownloadedMusic.homeTile().sellablePackId,
+        )
     }
 
     @Test
@@ -258,7 +279,7 @@ class PackModelsTest {
         assertFalse(PackSelection(PackFamily.Neural, "stem").opensNeuralMusic())
         val pool = resolvePackPool(catalog, PackSelection(PackFamily.Neural, "stem"))
         assertTrue(pool.isEmpty())
-        // Dedicated neural engines are not listed under Sound.
+        // Dedicated neural engines and downloaded music are not listed under Procedural Music.
         val soundTags = PackFamily.Sound.subPackTiles().map { it.testTagSuffix }
         assertFalse(soundTags.contains("sound_atmospheres_nature"))
         assertFalse(soundTags.contains("sound_museums_classical"))
@@ -266,6 +287,7 @@ class PackModelsTest {
         assertFalse(soundTags.contains("sound_stem"))
         assertFalse(soundTags.contains("sound_wavetable"))
         assertFalse(soundTags.contains("sound_executorch"))
+        assertFalse(soundTags.contains("sound_downloaded_music"))
     }
 
     @Test

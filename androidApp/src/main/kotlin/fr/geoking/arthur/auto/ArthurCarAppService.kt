@@ -37,6 +37,7 @@ import fr.geoking.arthur.ui.components.PackFamily
 import fr.geoking.arthur.ui.components.PackSelection
 import fr.geoking.arthur.ui.components.appliesArcadeChipsOnAmbientStart
 import fr.geoking.arthur.ui.components.applySoundPack
+import fr.geoking.arthur.ui.components.defaultSubId
 import fr.geoking.arthur.ui.components.opensSoundPlayer
 import fr.geoking.arthur.ui.components.subPackTiles
 import fr.geoking.arthur.shared.marketplace.PackOwnership
@@ -205,7 +206,16 @@ class PackSelectionScreen(carContext: CarContext) : Screen(carContext) {
                 .setTitle(carContext.getString(family.titleRes))
                 .setImage(coverCarIcon(carContext, family.coverRes))
                 .setOnClickListener {
-                    screenManager.push(SubPackSelectionScreen(carContext, family))
+                    if (family == PackFamily.DownloadedMusic) {
+                        screenManager.push(
+                            SoundPlayerCarScreen(
+                                carContext,
+                                PackSelection(family, family.defaultSubId()),
+                            ),
+                        )
+                    } else {
+                        screenManager.push(SubPackSelectionScreen(carContext, family))
+                    }
                 }
                 .build()
             sectionBuilder.addItem(item)

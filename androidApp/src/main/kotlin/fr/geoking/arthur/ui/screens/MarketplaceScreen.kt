@@ -170,11 +170,16 @@ internal fun marketplacePackTiles(): List<PackTile> =
                 val topic = AudioPackTopic.entries.firstOrNull {
                     it.packSuffix == pack.audioPackSuffix
                 } ?: AudioPackTopic.HearthWeather
+                val family = when {
+                    topic == AudioPackTopic.DownloadedMusic -> PackFamily.DownloadedMusic
+                    topic.isNeuralDedicated -> PackFamily.Neural
+                    else -> PackFamily.Sound
+                }
                 PackTile(
                     id = "market_${pack.id}",
                     titleRes = topic.labelRes,
                     coverRes = PackCovers.audio(topic),
-                    selection = PackSelection(PackFamily.Sound, topic.testTagSuffix),
+                    selection = PackSelection(family, topic.testTagSuffix),
                     testTagSuffix = "market_${pack.id}",
                     sellablePackId = pack.id,
                 )

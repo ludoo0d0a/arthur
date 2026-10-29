@@ -106,8 +106,11 @@ enum class GenartTopic(
 }
 
 /**
- * Sound sub-packs on the Control Plane. Free [Essentials] has no SKU;
+ * Sound / music sub-packs on the Control Plane. Free [Essentials] has no SKU;
  * others map to [MarketplaceCatalog] audio pack ids.
+ *
+ * Shown under: Procedural Music ([isProceduralSoundPack]), AI Music ([isNeuralDedicated]),
+ * or the root Downloaded Music family ([DownloadedMusic]).
  */
 enum class AudioPackTopic(
     @get:StringRes val labelRes: Int,
@@ -142,7 +145,7 @@ enum class AudioPackTopic(
     val sellablePackId: String?
         get() = packSuffix?.let { MarketplaceCatalog.sellablePackIdForAudioPack(it) }
 
-    /** Packs shown under Neural AI (IA neurale), each with a dedicated playback engine. */
+    /** Packs shown under AI Music, each with a dedicated playback engine. */
     val isNeuralDedicated: Boolean
         get() = this == AtmospheresNature ||
             this == MuseumsClassical ||
@@ -150,6 +153,10 @@ enum class AudioPackTopic(
             this == Stem ||
             this == Wavetable ||
             this == ExecuTorch
+
+    /** Procedural Music grid: excludes AI engines and the root Downloaded Music family. */
+    val isProceduralSoundPack: Boolean
+        get() = !isNeuralDedicated && this != DownloadedMusic
 
     val neuralPack: NeuralAudioPack?
         get() = when (this) {
@@ -165,7 +172,7 @@ enum class AudioPackTopic(
 }
 
 /**
- * Neural AI (IA neurale) sub-packs:
+ * AI Music sub-packs:
  * SoundGen Small, MusicGen Small, Stable Audio 3, Stem, Wavetable, ExecuTorch MIDI.
  */
 val NeuralAudioPackTopics: List<AudioPackTopic> = listOf(

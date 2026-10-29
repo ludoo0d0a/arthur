@@ -83,10 +83,11 @@
     <string name="marketplace_buy_on_phone">Purchases may not be available on this TV. Unlock packs on your phone.</string>
     <string name="marketplace_genart_pack">Genart · %1$s</string>
     <string name="marketplace_open">Marketplace</string>
-    <string name="marketplace_subtitle">Buy packs for Personal Photos, Genart, and Sound</string>
-    <string name="marketplace_audio_pack">Sound · %1$s</string>
-    <string name="pack_sound">Sound</string>
-    <string name="pack_neural">Neural AI</string>
+    <string name="marketplace_subtitle">Buy packs for Personal Photos, Genart, and Music</string>
+    <string name="marketplace_audio_pack">Music · %1$s</string>
+    <string name="pack_sound">Procedural Music</string>
+    <string name="pack_neural">AI Music</string>
+    <string name="pack_downloaded_music">Downloaded Music</string>
     <string name="sound_player_use_in_ambient">Use in Ambient</string>
     <string name="sound_player_done">Done</string>
     <string name="audio_pack_essentials">Acoustic Essentials</string>

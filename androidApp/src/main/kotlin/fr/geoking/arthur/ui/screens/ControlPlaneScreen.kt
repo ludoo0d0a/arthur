@@ -344,6 +344,10 @@ fun ControlPlaneScreen(
             } else if (family == PackFamily.Personal) {
                 selection = PackSelection(PackFamily.Personal)
                 openedFamily = family
+            } else if (family == PackFamily.DownloadedMusic) {
+                val sel = PackSelection(family, family.defaultSubId())
+                selection = sel
+                openMediaPack(sel)
             } else {
                 openedFamily = family
                 selection = PackSelection(family, family.defaultSubId())

@@ -26,6 +26,7 @@ enum class PackFamily(
     Photo(R.string.kind_photo, R.drawable.pack_photo, "photo"),
     Personal(R.string.pack_personal, R.drawable.pack_photo, "personal"),
     Sound(R.string.pack_sound, R.drawable.pack_sound, "sound"),
+    DownloadedMusic(R.string.pack_downloaded_music, R.drawable.pack_sound, "downloaded_music"),
     Neural(R.string.pack_neural, R.drawable.pack_neural, "neural"),
     Video(R.string.kind_video, R.drawable.pack_video, "video"),
     Sculpture(R.string.kind_sculpture, R.drawable.pack_sculpture, "sculpture"),
@@ -124,6 +125,7 @@ fun PackFamily.defaultSubId(): String = when (this) {
     PackFamily.Personal -> "all"
     PackFamily.Sound -> AudioPackTopic.Essentials.testTagSuffix
     PackFamily.Neural -> AudioPackTopic.AtmospheresNature.testTagSuffix
+    PackFamily.DownloadedMusic -> AudioPackTopic.DownloadedMusic.testTagSuffix
     PackFamily.Photo,
     PackFamily.Video,
     PackFamily.Sculpture,
@@ -150,6 +152,7 @@ fun PackFamily.homeTile(catalog: List<Artwork> = emptyList()): PackTile = PackTi
     sellablePackId = when (this) {
         PackFamily.Personal -> MarketplaceCatalog.PERSONAL_PHOTOS_ID
         PackFamily.VintageGames -> MarketplaceCatalog.genartPackId(fr.geoking.arthur.shared.marketplace.GenartPackTopics.VINTAGE)
+        PackFamily.DownloadedMusic -> AudioPackTopic.DownloadedMusic.sellablePackId
         else -> null
     },
 )
@@ -268,7 +271,7 @@ fun PackFamily.subPackTiles(catalog: List<Artwork> = emptyList()): List<PackTile
         listOf(random) + institutions
     }
     PackFamily.Sound -> AudioPackTopic.entries
-        .filterNot { it.isNeuralDedicated }
+        .filter { it.isProceduralSoundPack }
         .map { topic ->
             PackTile(
                 id = "sub_sound_${topic.testTagSuffix}",
@@ -289,6 +292,7 @@ fun PackFamily.subPackTiles(catalog: List<Artwork> = emptyList()): List<PackTile
             sellablePackId = topic.sellablePackId,
         )
     }
+    PackFamily.DownloadedMusic -> emptyList()
     PackFamily.VintageGames -> listOf(
         PackTile(
             id = "sub_vintage_${VintageGamesSub.AMBIENT}",
@@ -407,6 +411,7 @@ fun resolvePackPool(catalog: List<Artwork>, selection: PackSelection): List<Artw
         }
         PackFamily.Sound -> emptyList()
         PackFamily.Neural -> emptyList()
+        PackFamily.DownloadedMusic -> emptyList()
     }
 
     val isRandom = when (selection.family) {
@@ -414,6 +419,7 @@ fun resolvePackPool(catalog: List<Artwork>, selection: PackSelection): List<Artw
         PackFamily.Personal -> true
         PackFamily.Sound -> true
         PackFamily.Neural -> true
+        PackFamily.DownloadedMusic -> true
         PackFamily.VintageGames -> true
         PackFamily.Genart -> false
         PackFamily.Photo ->
@@ -469,6 +475,7 @@ fun PackSelection.genartTopicOrNull(): GenartTopic? =
 
 fun PackSelection.audioPackTopicOrNull(): AudioPackTopic? =
     when {
+        family == PackFamily.DownloadedMusic -> AudioPackTopic.DownloadedMusic
         (family == PackFamily.Sound || family == PackFamily.Neural) && subId != null ->
             AudioPackTopic.entries.firstOrNull { it.testTagSuffix == subId }
         family == PackFamily.VintageGames && subId == VintageGamesSub.MUSIC ->
@@ -485,7 +492,8 @@ fun PackSelection.opensNeuralMusic(): Boolean =
 
 /** True when this selection opens Sound Player instead of Ambient. */
 fun PackSelection.opensSoundPlayer(): Boolean =
-    family == PackFamily.Sound ||
+    family == PackFamily.DownloadedMusic ||
+        family == PackFamily.Sound ||
         (family == PackFamily.Neural && audioPackTopicOrNull()?.neuralPack == null) ||
         (family == PackFamily.VintageGames && subId == VintageGamesSub.MUSIC)
 
@@ -503,7 +511,9 @@ fun PackSelection.applySoundPack(
     styleOverride: MusicStyle? = null,
 ) {
     val topic = when {
-        family == PackFamily.Sound || family == PackFamily.Neural -> audioPackTopicOrNull()
+        family == PackFamily.Sound ||
+            family == PackFamily.Neural ||
+            family == PackFamily.DownloadedMusic -> audioPackTopicOrNull()
         family == PackFamily.VintageGames && appliesArcadeChipsOnAmbientStart() ->
             AudioPackTopic.ArcadeChips
         family == PackFamily.VintageGames && subId == VintageGamesSub.MUSIC ->
@@ -611,6 +621,7 @@ fun PackSelection.sourceIdsForAmbientLoad(): List<String>? = when (family) {
     PackFamily.Personal -> null
     PackFamily.Sound -> null
     PackFamily.Neural -> null
+    PackFamily.DownloadedMusic -> null
 }
 
 /** Painting / Sculpture pack: Random → museums without Louvre. */

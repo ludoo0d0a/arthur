@@ -66,7 +66,7 @@ import org.koin.core.context.GlobalContext
 
 /**
  * Dedicated listen surface for a Sound pack: full-bleed cover + procedural / stem playback.
- * Neural AI packs use [fr.geoking.arthur.ui.screens.neural.NeuralMusicHost] (phone only).
+ * AI Music packs use [fr.geoking.arthur.ui.screens.neural.NeuralMusicHost] (phone only).
  * Volume is left to the system (phone/TV hardware); no in-app slider.
  */
 @OptIn(ExperimentalMaterial3Api::class)

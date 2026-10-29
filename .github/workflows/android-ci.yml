@@ -27,7 +27,6 @@ env:
   DEVIANTART_CLIENT_SECRET: ${{ secrets.DEVIANTART_CLIENT_SECRET }}
   JAMENDO_CLIENT_ID: ${{ secrets.JAMENDO_CLIENT_ID }}
   FREESOUND_API_KEY: ${{ secrets.FREESOUND_API_KEY }}
-  FMA_API_KEY: ${{ secrets.FMA_API_KEY }}
   DEBUG_DEV: ${{ secrets.DEBUG_DEV }}
 
 jobs:

@@ -14,12 +14,11 @@ class MusicProvidersTest {
             jamendoClientId = "test-jamendo",
             freesoundApiKey = "test-freesound",
             pixabayApiKey = "test-pixabay",
-            fmaApiKey = "test-fma",
         )
         val all = factory.createAll()
-        assertEquals(6, all.size)
+        assertEquals(5, all.size)
 
-        val expectedIds = listOf("jamendo", "freesound", "archive_org", "pixabay_music", "fma", "incompetech")
+        val expectedIds = listOf("jamendo", "freesound", "archive_org", "pixabay_music", "incompetech")
         assertEquals(expectedIds, all.map { it.id })
 
         expectedIds.forEach { id ->
@@ -179,40 +178,6 @@ class MusicProvidersTest {
     }
 
     @Test
-    fun fmaSourceParsesDataset() = runBlocking {
-        val json = """
-            {
-                "dataset": [
-                    {
-                        "track_id": 777,
-                        "track_title": "Quiet Forest Rain",
-                        "artist_name": "Nature Soundscapes",
-                        "track_file_url": "https://files.freemusicarchive.org/777.mp3",
-                        "track_duration": 300,
-                        "license_title": "Attribution 4.0 International"
-                    }
-                ]
-            }
-        """.trimIndent()
-
-        val source = FmaMusicSource(
-            httpGet = { json },
-            apiKey = "test-key",
-        )
-        val tracks = source.fetchZenTracks().getOrNull()
-        assertNotNull(tracks)
-        assertEquals(1, tracks.size)
-
-        val track = tracks[0]
-        assertEquals("fma-777", track.id)
-        assertEquals("Quiet Forest Rain", track.title)
-        assertEquals("Nature Soundscapes", track.artist)
-        assertEquals("https://files.freemusicarchive.org/777.mp3", track.streamUrl)
-        assertEquals(300, track.durationSeconds)
-        assertEquals("fma", track.sourceId)
-    }
-
-    @Test
     fun incompetechSourceReturnsCuratedTracks() = runBlocking {
         val source = IncompetechMusicSource()
         val tracks = source.fetchZenTracks().getOrNull()
@@ -242,6 +207,6 @@ class MusicProvidersTest {
         assertTrue(missing.contains("JAMENDO_CLIENT_ID"))
         assertTrue(missing.contains("FREESOUND_API_KEY"))
         assertTrue(missing.contains("PIXABAY_API_KEY"))
-        assertTrue(missing.contains("FMA_API_KEY"))
+        assertEquals(3, missing.size)
     }
 }

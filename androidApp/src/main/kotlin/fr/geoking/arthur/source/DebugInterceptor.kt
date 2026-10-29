@@ -102,7 +102,6 @@ class DebugInterceptor(
         "jamendo.com" in url -> "jamendo"
         "freesound.org" in url -> "freesound"
         "archive.org" in url -> "archive_org"
-        "freemusicarchive.org" in url -> "fma"
         "incompetech.com" in url -> "incompetech"
         else -> "network"
     }

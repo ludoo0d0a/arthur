@@ -168,7 +168,6 @@ fun RoyaltyFreeMusicScreen(
             jamendoClientId = BuildConfig.JAMENDO_CLIENT_ID,
             freesoundApiKey = BuildConfig.FREESOUND_API_KEY,
             pixabayApiKey = BuildConfig.PIXABAY_API_KEY,
-            fmaApiKey = BuildConfig.FMA_API_KEY,
         )
     }
     val missingApiKeys = remember(factory) { factory.missingApiKeys() }
@@ -335,7 +334,6 @@ fun RoyaltyFreeMusicScreen(
                 "freesound" to "Freesound",
                 "archive_org" to "Archive.org",
                 "pixabay_music" to "Pixabay",
-                "fma" to "FMA",
                 "incompetech" to "Incompetech",
             )
 
@@ -459,7 +457,6 @@ private fun sourceIdForMusicUrl(url: String): String = when {
     "freesound.org" in url -> "freesound"
     "archive.org" in url -> "archive_org"
     "pixabay.com" in url -> "pixabay_music"
-    "freemusicarchive.org" in url -> "fma"
     "incompetech.com" in url -> "incompetech"
     else -> "music_remote"
 }

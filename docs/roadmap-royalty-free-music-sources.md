@@ -17,7 +17,7 @@ Complements local procedural music generation (`ProceduralMusicEngine`) and loca
 | **Freesound API** | Free instant API key | Nature soundscapes, Tibetan singing bowls, rain, wind, ambient synth drones | CC0, CC-BY, CC-BY-NC | Direct HQ MP3 / OGG preview streams | 2,000 req/60 min | **Outstanding** (best for organic nature & zen soundscapes) |
 | **Archive.org (Internet Archive)** | **None** (Zero-Key public access) | Public Domain & CC Netlabels, meditation audio, field recordings | Public Domain, CC0, CC-BY | Direct HTTP MP3 streaming | Generous (open access with descriptive User-Agent) | **High** (vast public domain & CC ambient collections) |
 | **Pixabay Music API** | Free API key (shared with Pixabay Video/Photo) | Studio royalty-free relaxing, yoga, chill, meditation music | Pixabay Content License (free personal/commercial reuse) | Direct HTTP MP3 streams | 100 req/min | **High** (high production quality, simple license) |
-| **Free Music Archive (FMA)** | Free API key | Curated independent ambient, acoustic, and minimalist tracks | CC0, CC-BY, CC-BY-NC | Direct HTTP MP3 links | Standard developer tier | **High** (curated musical quality) |
+| **Free Music Archive (FMA)** | Free API key | Curated independent ambient, acoustic, and minimalist tracks | CC0, CC-BY, CC-BY-NC | Direct HTTP MP3 links | Standard developer tier | **Paused** (legacy API 404 — removed from app for now) |
 | **Incompetech (Kevin MacLeod)** | None / Direct CC catalog | Iconic calm, meditation, and atmospheric background music | Creative Commons BY 4.0 | Direct HTTP MP3 | Open access | **High** (well-known peaceful compositions) |
 
 ---
@@ -108,7 +108,8 @@ Complements local procedural music generation (`ProceduralMusicEngine`) and loca
 
 ---
 
-### 5. Free Music Archive (FMA) / Tribe of Noise API
+### 5. Free Music Archive (FMA) / Tribe of Noise API — paused
+* **Status**: Temporarily **removed from the app** (legacy `get/tracks.json` returns HTTP 404 as of Oct 2026). Revisit when FMA publishes a working API.
 * **Documentation**: [freemusicarchive.org/api](https://freemusicarchive.org/api)
 * **API Endpoint**: `GET https://freemusicarchive.org/api/get/tracks.json`
 * **Query Parameters**:
@@ -118,7 +119,7 @@ Complements local procedural music generation (`ProceduralMusicEngine`) and loca
 * **Audio Delivery**: Direct MP3 stream links.
 * **Licensing**: Creative Commons (CC0, CC-BY, CC-BY-NC).
 * **Pros**: Curated library of high-quality independent acoustic and ambient compositions.
-* **Cons**: Search indexing and tagging can be less dynamic than Jamendo or Freesound.
+* **Cons**: Search indexing and tagging can be less dynamic than Jamendo or Freesound; current public API unavailable.
 
 ---
 

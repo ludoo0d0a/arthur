@@ -69,7 +69,6 @@ android {
         buildConfigField("String", "DEVIANTART_CLIENT_SECRET", "\"${secret("DEVIANTART_CLIENT_SECRET")}\"")
         buildConfigField("String", "JAMENDO_CLIENT_ID", "\"${secret("JAMENDO_CLIENT_ID")}\"")
         buildConfigField("String", "FREESOUND_API_KEY", "\"${secret("FREESOUND_API_KEY")}\"")
-        buildConfigField("String", "FMA_API_KEY", "\"${secret("FMA_API_KEY")}\"")
         // TEMP: force developer UI on for all variants (including playstore). Revert before shipping.
         buildConfigField("boolean", "DEBUG_DEV", "true")
         val buildDate = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())

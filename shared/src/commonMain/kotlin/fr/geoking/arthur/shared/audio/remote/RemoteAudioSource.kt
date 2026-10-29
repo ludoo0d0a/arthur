@@ -260,54 +260,6 @@ private data class PixabayAudioHit(
     val duration: Int? = null,
 )
 
-// --- Free Music Archive (FMA) Provider ---
-
-class FmaMusicSource(
-    private val httpGet: suspend (url: String) -> String,
-    private val apiKey: String = "",
-) : RemoteAudioSource {
-    override val id: String = ID
-    override val displayName: String = "Free Music Archive"
-
-    override suspend fun fetchZenTracks(query: String, limit: Int): Result<List<RemoteAudioTrack>> = runCatching {
-        if (apiKey.isBlank()) error("Missing API key: FMA_API_KEY")
-        val url = "https://freemusicarchive.org/api/get/tracks.json?api_key=$apiKey&limit=$limit"
-        val body = httpGet(url)
-        val response = json.decodeFromString<FmaResponse>(body)
-        response.dataset.mapNotNull { track ->
-            val streamUrl = track.fileUrl?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
-            RemoteAudioTrack(
-                id = "$ID-${track.id}",
-                title = track.title?.takeIf { it.isNotBlank() } ?: "FMA Track ${track.id}",
-                artist = track.artistName?.takeIf { it.isNotBlank() } ?: "FMA Artist",
-                streamUrl = streamUrl,
-                durationSeconds = track.duration ?: 0,
-                license = track.licenseTitle?.takeIf { it.isNotBlank() } ?: "Creative Commons",
-                sourceId = ID,
-            )
-        }
-    }
-
-    companion object {
-        const val ID = "fma"
-    }
-}
-
-@Serializable
-private data class FmaResponse(
-    val dataset: List<FmaTrack> = emptyList(),
-)
-
-@Serializable
-private data class FmaTrack(
-    @SerialName("track_id") val id: Long,
-    @SerialName("track_title") val title: String? = null,
-    @SerialName("artist_name") val artistName: String? = null,
-    @SerialName("track_file_url") val fileUrl: String? = null,
-    @SerialName("track_duration") val duration: Int? = null,
-    @SerialName("license_title") val licenseTitle: String? = null,
-)
-
 // --- Incompetech (Kevin MacLeod) Provider ---
 
 class IncompetechMusicSource(
@@ -371,14 +323,12 @@ class MusicProviderFactory(
     private val jamendoClientId: String = "",
     private val freesoundApiKey: String = "",
     private val pixabayApiKey: String = "",
-    private val fmaApiKey: String = "",
 ) {
     fun createAll(): List<RemoteAudioSource> = listOf(
         createJamendo(),
         createFreesound(),
         createArchiveOrg(),
         createPixabay(),
-        createFma(),
         createIncompetech(),
     )
 
@@ -386,7 +336,6 @@ class MusicProviderFactory(
     fun createFreesound(): RemoteAudioSource = FreesoundMusicSource(httpGet, freesoundApiKey)
     fun createArchiveOrg(): RemoteAudioSource = ArchiveOrgMusicSource(httpGet)
     fun createPixabay(): RemoteAudioSource = PixabayMusicSource(httpGet, pixabayApiKey)
-    fun createFma(): RemoteAudioSource = FmaMusicSource(httpGet, fmaApiKey)
     fun createIncompetech(): RemoteAudioSource = IncompetechMusicSource(httpGet)
 
     fun provider(id: String): RemoteAudioSource? = when (id) {
@@ -394,7 +343,6 @@ class MusicProviderFactory(
         FreesoundMusicSource.ID -> createFreesound()
         ArchiveOrgMusicSource.ID -> createArchiveOrg()
         PixabayMusicSource.ID -> createPixabay()
-        FmaMusicSource.ID -> createFma()
         IncompetechMusicSource.ID -> createIncompetech()
         else -> null
     }
@@ -404,6 +352,5 @@ class MusicProviderFactory(
         if (jamendoClientId.isBlank()) add("JAMENDO_CLIENT_ID")
         if (freesoundApiKey.isBlank()) add("FREESOUND_API_KEY")
         if (pixabayApiKey.isBlank()) add("PIXABAY_API_KEY")
-        if (fmaApiKey.isBlank()) add("FMA_API_KEY")
     }
 }

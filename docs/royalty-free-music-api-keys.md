@@ -11,7 +11,6 @@ Wire secrets in **`local.properties`** (gitignored) or CI secrets. They are inje
 JAMENDO_CLIENT_ID=...
 FREESOUND_API_KEY=...
 PIXABAY_API_KEY=...
-FMA_API_KEY=...
 ```
 
 | BuildConfig field | Provider | Required? |
@@ -19,9 +18,10 @@ FMA_API_KEY=...
 | `JAMENDO_CLIENT_ID` | Jamendo | Yes for Jamendo |
 | `FREESOUND_API_KEY` | Freesound | Yes for Freesound |
 | `PIXABAY_API_KEY` | Pixabay Music | Yes for Pixabay (same key as photos/videos) |
-| `FMA_API_KEY` | Free Music Archive | Yes if FMA is used (API currently broken — see below) |
 | — | Archive.org | **No key** |
 | — | Incompetech | **No key** |
+
+**Temporarily removed:** Free Music Archive (legacy API returns HTTP 404).
 
 After changing `local.properties`, sync / rebuild the app so `BuildConfig` updates.
 Missing keys are shown as an error banner on the royalty-free music screen.
@@ -92,22 +92,7 @@ Rate limit: ~100 requests / minute.
 
 ---
 
-## 4. Free Music Archive (FMA) — `FMA_API_KEY`
-
-| | Link |
-|---|------|
-| **Site** | https://freemusicarchive.org/ |
-| **Legacy API docs** | https://freemusicarchive.org/api |
-
-**Status (Oct 2026):** the legacy endpoint  
-`https://freemusicarchive.org/api/get/tracks.json` returns **HTTP 404**.  
-Registration / key issuance may still exist on the site, but the provider will fail until FMA publishes a working API again. Prefer Jamendo / Freesound / Pixabay / Incompetech for now.
-
-If you obtain a key anyway: `FMA_API_KEY=<key>`.
-
----
-
-## 5. Internet Archive (Archive.org) — no key
+## 4. Internet Archive (Archive.org) — no key
 
 | | Link |
 |---|------|
@@ -119,7 +104,7 @@ No signup. Arthur uses a descriptive `User-Agent` (`Arthur-Ambient/1.0`) and res
 
 ---
 
-## 6. Incompetech (Kevin MacLeod) — no key
+## 5. Incompetech (Kevin MacLeod) — no key
 
 | | Link |
 |---|------|
@@ -140,7 +125,6 @@ GitHub Actions already map the same names (see `.github/workflows/android-ci.yml
 - `JAMENDO_CLIENT_ID`
 - `FREESOUND_API_KEY`
 - `PIXABAY_API_KEY`
-- `FMA_API_KEY`
 
 Add them under the repo **Settings → Secrets and variables → Actions** so CI builds match local.
 
@@ -151,9 +135,8 @@ Add them under the repo **Settings → Secrets and variables → Actions** so CI
 1. [ ] Jamendo Client ID → `JAMENDO_CLIENT_ID`  
 2. [ ] Freesound API token → `FREESOUND_API_KEY`  
 3. [ ] Pixabay key → `PIXABAY_API_KEY`  
-4. [ ] (Optional) FMA key → `FMA_API_KEY` — blocked until API is restored  
-5. [ ] Rebuild app  
-6. [ ] Open Developer → Recherche musiques libres de droits — missing-key banner should clear for configured providers  
-7. [ ] Use network debug bar to inspect search / download traffic  
+4. [ ] Rebuild app  
+5. [ ] Open Developer → Recherche musiques libres de droits — missing-key banner should clear for configured providers  
+6. [ ] Use network debug bar to inspect search / download traffic  
 
 Related: [roadmap-royalty-free-music-sources.md](./roadmap-royalty-free-music-sources.md)

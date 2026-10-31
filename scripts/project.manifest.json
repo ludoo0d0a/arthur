@@ -105,6 +105,8 @@
       ],
       "icon": "playstore/icon-512.png",
       "featureGraphic": "playstore/feature-graphic.png",
+      "tvBanner": "playstore/tv-banner.png",
+      "tvLauncherAssetsScript": "scripts/playstore/gen_tv_launcher_assets.py",
       "listingsDir": "doc/playstore/listings"
     },
     "distribution": {

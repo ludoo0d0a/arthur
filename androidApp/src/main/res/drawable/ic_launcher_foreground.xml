@@ -4,19 +4,19 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Material adaptive safe zone ~66dp; triangle A monogram on violet. -->
+    <!-- Full-bleed triangle — vertices on canvas edges (TV fill rule). -->
     <path
         android:fillColor="#5EEAD4"
-        android:fillAlpha="0.22"
-        android:pathData="M54,22 L86,86 L22,86 Z" />
+        android:fillAlpha="0.40"
+        android:pathData="M54,0 L108,108 L0,108 Z" />
     <path
         android:fillColor="#C4B5FD"
-        android:pathData="M54,28 L80,82 L28,82 Z" />
+        android:pathData="M54,1 L107,107 L1,107 Z" />
     <path
         android:fillColor="#2A1848"
-        android:pathData="M54,44 L68,76 L40,76 Z" />
+        android:pathData="M54,34 L82,100 L26,100 Z" />
     <path
         android:fillColor="#F9A8D4"
-        android:pathData="M54,28 L80,82 L68,82 L54,52 Z"
+        android:pathData="M54,1 L107,107 L82,107 L54,40 Z"
         android:fillAlpha="0.55" />
 </vector>

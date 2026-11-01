@@ -3,6 +3,9 @@
 Play rejects TV form-factor builds that lack a **bitmap** home-screen banner in
 `drawable-xhdpi` and/or ship a padded launcher icon.
 
+**Brand:** solid **blue triangle on violet** (`#2A1848`). Do not revive the old
+yellow-circle / blue-circle / yellow-square mark.
+
 ## Required in-APK resources
 
 | Asset | Path | Size | Notes |

@@ -4,19 +4,21 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Full-bleed triangle — vertices on canvas edges (TV fill rule). -->
+    <!-- Solid blue triangle filling the canvas (TV: no empty icon space). -->
     <path
-        android:fillColor="#5EEAD4"
-        android:fillAlpha="0.40"
-        android:pathData="M54,0 L108,108 L0,108 Z" />
+        android:fillColor="#304E76"
+        android:pathData="M54,0 L110,110 L-2,110 Z" />
+    <path
+        android:fillColor="#4876A8"
+        android:pathData="M54,2 L106,106 L2,106 Z" />
+    <path
+        android:fillColor="#8CAFD7"
+        android:pathData="M54,2 L54,70 L2,106 Z" />
+    <path
+        android:fillColor="#DCAAD2"
+        android:fillAlpha="0.85"
+        android:pathData="M54,2 L106,106 L70,90 Z" />
     <path
         android:fillColor="#C4B5FD"
-        android:pathData="M54,1 L107,107 L1,107 Z" />
-    <path
-        android:fillColor="#2A1848"
-        android:pathData="M54,34 L82,100 L26,100 Z" />
-    <path
-        android:fillColor="#F9A8D4"
-        android:pathData="M54,1 L107,107 L82,107 L54,40 Z"
-        android:fillAlpha="0.55" />
+        android:pathData="M54,2 L60,28 L48,28 Z" />
 </vector>

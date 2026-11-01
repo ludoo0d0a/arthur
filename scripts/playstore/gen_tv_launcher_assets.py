@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """Regenerate Android TV launcher banner + icons for Play TV quality (TV-LB / TV-BN).
 
+Brand: blue triangle on violet — never the old yellow/blue circle + yellow square mark.
+
 On demand:
+  ./scripts/gen-tv-assets.sh
   python3 scripts/playstore/gen_tv_launcher_assets.py
 
 Outputs (opaque RGB, edge-to-edge — no letterboxing / empty margins):
@@ -26,14 +29,18 @@ from PIL import Image, ImageDraw, ImageFont
 ROOT = Path(__file__).resolve().parents[2]
 RES = ROOT / "androidApp/src/main/res"
 PLAYSTORE = ROOT / "playstore"
+WEBSITE_BRAND = ROOT / "website/assets/brand"
 
-# Brand tokens (match ic_launcher_* / feature-graphic)
-BG = (42, 24, 72)  # #2A1848
-BG_BANNER = (11, 16, 32)  # #0B1020
-VIOLET = (196, 181, 253)  # #C4B5FD
-TEAL = (94, 234, 212)  # #5EEAD4
-PINK = (249, 168, 212)  # #F9A8D4
-INK = (42, 24, 72)
+# Brand tokens — violet field + blue triangle (feature-graphic / website brand)
+VIOLET = (42, 24, 72)  # #2A1848 full-bleed background
+VIOLET_ORB_A = (55, 35, 95)
+VIOLET_ORB_B = (38, 42, 88)
+VIOLET_ORB_C = (62, 40, 98)
+BLUE = (72, 118, 168)  # slate-blue triangle body
+BLUE_DEEP = (48, 78, 118)  # outer stroke
+BLUE_LIGHT = (140, 175, 215)  # left facet highlight
+LAVENDER = (196, 181, 253)  # soft rim (feature-graphic accent)
+PINK = (220, 170, 210)  # right facet (subtle, not yellow)
 WHITE = (255, 255, 255)
 
 APP_NAME = "Arthur"
@@ -69,76 +76,64 @@ def _font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
     return ImageFont.load_default()
 
 
-def _draw_triangle(
+def _triangle_points(
+    cx: float, cy: float, half_w: float, half_h: float
+) -> tuple[tuple[float, float], tuple[float, float], tuple[float, float]]:
+    return (
+        (cx, cy - half_h),
+        (cx - half_w, cy + half_h),
+        (cx + half_w, cy + half_h),
+    )
+
+
+def _draw_blue_triangle(
     draw: ImageDraw.ImageDraw,
     cx: float,
     cy: float,
     half_w: float,
     half_h: float,
 ) -> None:
-    """Folded triangle logo centered at (cx, cy), sized by half extents."""
-    top = (cx, cy - half_h)
-    bl = (cx - half_w, cy + half_h)
-    br = (cx + half_w, cy + half_h)
+    """Solid blue triangle on violet — fills its bbox (no hollow / no yellow)."""
+    top, bl, br = _triangle_points(cx, cy, half_w, half_h)
 
-    # Teal under-glow (slightly larger)
-    glow = 1.08
+    # Deep blue outer (slightly larger) so the mark reads full against violet
+    glow = 1.03
     draw.polygon(
-        [
-            (cx, cy - half_h * glow),
-            (cx - half_w * glow, cy + half_h * glow),
-            (cx + half_w * glow, cy + half_h * glow),
-        ],
-        fill=TEAL,
+        list(_triangle_points(cx, cy, half_w * glow, half_h * glow)),
+        fill=BLUE_DEEP,
     )
-    # Outer violet
-    draw.polygon([top, bl, br], fill=VIOLET)
-    # Inner cutout (hollow core)
-    inset = 0.38
-    draw.polygon(
-        [
-            (cx, cy - half_h * (1 - inset * 0.55)),
-            (cx - half_w * (1 - inset), cy + half_h * (1 - inset * 0.15)),
-            (cx + half_w * (1 - inset), cy + half_h * (1 - inset * 0.15)),
-        ],
-        fill=INK,
-    )
-    # Pink facet (right edge accent)
-    mid_r = (cx + half_w * 0.42, cy + half_h * 0.15)
+    # Solid blue body — reviewers reject hollow logos as “empty icon space”
+    draw.polygon([top, bl, br], fill=BLUE)
+    # Left facet highlight
+    mid_l = (cx - half_w * 0.18, cy + half_h * 0.15)
+    draw.polygon([top, bl, mid_l], fill=BLUE_LIGHT)
+    # Right facet (lavender/pink — brand, never yellow)
+    mid_r = (cx + half_w * 0.22, cy + half_h * 0.12)
     draw.polygon([top, br, mid_r], fill=PINK)
+    # Thin lavender rim (feature-graphic accent)
+    inset = 0.92
+    rim = list(_triangle_points(cx, cy, half_w * inset, half_h * inset))
+    # Draw as thick outline via nested fill of violet then rebuild? Keep simple rim strip:
+    # leave solid; soft lavender tip accent only
+    tip = (cx, cy - half_h * 0.55)
+    draw.polygon([top, (cx - half_w * 0.12, cy - half_h * 0.15), tip], fill=LAVENDER)
 
 
-def render_icon(size: int, *, fill_ratio: float = 1.0) -> Image.Image:
-    """Square launcher icon that fills the tile (TV: no empty icon margins).
-
-    Triangle vertices sit on the canvas edges (tiny inset only) so the mark
-    occupies the full icon space instead of floating in a padded safe-zone.
-    """
-    im = Image.new("RGB", (size, size), BG)
+def render_icon(size: int) -> Image.Image:
+    """Square launcher icon — violet full bleed, blue triangle fills the tile."""
+    im = Image.new("RGB", (size, size), VIOLET)
     draw = ImageDraw.Draw(im)
-    # Inset 1px so anti-alias soft edges stay inside the bitmap.
-    inset = max(1, size // 128)
-    # Tip touches top; base corners sit near bottom-left / bottom-right.
-    top = (size / 2, float(inset))
-    bl = (float(inset), float(size - 1 - inset))
-    br = (float(size - 1 - inset), float(size - 1 - inset))
-    cx = size / 2
-    cy = (top[1] + bl[1]) / 2
-    half_w = (br[0] - bl[0]) / 2
-    half_h = (bl[1] - top[1]) / 2
-    # Optional uniform scale-down from full-bleed (tests / store variants)
-    if fill_ratio < 1.0:
-        half_w *= fill_ratio
-        half_h *= fill_ratio
-    draw.polygon(
-        [
-            (cx, cy - half_h * 1.04),
-            (cx - half_w * 1.04, cy + half_h * 1.04),
-            (cx + half_w * 1.04, cy + half_h * 1.04),
-        ],
-        fill=(70, 180, 170),
-    )
-    _draw_triangle(draw, cx, cy, half_w, half_h)
+    # Vertices nearly on canvas edges → “fills the entire icon space”
+    inset = max(1, size // 64)
+    top_y = float(inset)
+    base_y = float(size - 1 - inset)
+    left_x = float(inset)
+    right_x = float(size - 1 - inset)
+    cx = size / 2.0
+    cy = (top_y + base_y) / 2.0
+    half_w = (right_x - left_x) / 2.0
+    half_h = (base_y - top_y) / 2.0
+    _draw_blue_triangle(draw, cx, cy, half_w, half_h)
     return im
 
 
@@ -146,64 +141,56 @@ def render_round_icon(size: int) -> Image.Image:
     base = render_icon(size)
     mask = Image.new("L", (size, size), 0)
     ImageDraw.Draw(mask).ellipse((0, 0, size - 1, size - 1), fill=255)
-    out = Image.new("RGB", (size, size), BG)
-    out.paste(base, (0, 0))
-    # Circular crop onto brand bg (opaque — no alpha for TV validators)
-    circle = Image.new("RGB", (size, size), BG)
-    circle.paste(out, mask=mask)
+    circle = Image.new("RGB", (size, size), VIOLET)
+    circle.paste(base, mask=mask)
     return circle
 
 
-def render_banner(width: int, height: int, *, title: str = APP_NAME) -> Image.Image:
-    """16:9 home-screen banner with localized app name (TV-BN)."""
-    im = Image.new("RGB", (width, height), BG_BANNER)
+def render_banner_hires(width: int, height: int, *, title: str = APP_NAME) -> Image.Image:
+    """16:9 home-screen banner — violet orbs, blue triangle, app name (TV-BN)."""
+    im = Image.new("RGB", (width, height), VIOLET)
     draw = ImageDraw.Draw(im)
 
-    # Soft orbs (atmosphere, still edge-to-edge fill)
+    # Soft violet orbs (feature-graphic atmosphere) — opaque, edge-to-edge field
     for cx, cy, r, color in (
-        (int(width * 0.18), int(height * 0.45), int(height * 0.55), (35, 28, 70)),
-        (int(width * 0.78), int(height * 0.35), int(height * 0.50), (28, 40, 72)),
-        (int(width * 0.55), int(height * 0.85), int(height * 0.40), (50, 30, 80)),
+        (int(width * 0.20), int(height * 0.48), int(height * 0.58), VIOLET_ORB_A),
+        (int(width * 0.72), int(height * 0.38), int(height * 0.52), VIOLET_ORB_B),
+        (int(width * 0.52), int(height * 0.88), int(height * 0.42), VIOLET_ORB_C),
     ):
         draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=color)
 
-    # Logo on the left — large, fills vertical safe area
+    # Logo left — large blue triangle (fills vertical band)
     logo_cx = width * 0.22
     logo_cy = height * 0.50
-    half_h = height * 0.38
+    half_h = height * 0.40
     half_w = half_h * 1.05
-    draw.polygon(
-        [
-            (logo_cx, logo_cy - half_h * 1.08),
-            (logo_cx - half_w * 1.08, logo_cy + half_h * 1.08),
-            (logo_cx + half_w * 1.08, logo_cy + half_h * 1.08),
-        ],
-        fill=(55, 150, 145),
-    )
-    _draw_triangle(draw, logo_cx, logo_cy, half_w, half_h)
+    _draw_blue_triangle(draw, logo_cx, logo_cy, half_w, half_h)
 
-    # App name (required by TV-BN) — right of logo
-    font_size = max(28, int(height * 0.28))
+    # App name (TV-BN) — right of logo
+    font_size = max(28, int(height * 0.30))
     font = _font(font_size)
-    # Vertical center via textbbox
     bbox = draw.textbbox((0, 0), title, font=font)
     tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
     tx = int(width * 0.42)
     ty = int((height - th) / 2 - bbox[1])
-    # Keep text inside right margin
     max_right = width - int(width * 0.06)
-    if tx + tw > max_right:
-        # shrink font until it fits
-        while font_size > 16:
-            font_size -= 2
-            font = _font(font_size)
-            bbox = draw.textbbox((0, 0), title, font=font)
-            tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-            ty = int((height - th) / 2 - bbox[1])
-            if tx + tw <= max_right:
-                break
+    while font_size > 16 and tx + tw > max_right:
+        font_size -= 2
+        font = _font(font_size)
+        bbox = draw.textbbox((0, 0), title, font=font)
+        tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+        ty = int((height - th) / 2 - bbox[1])
     draw.text((tx, ty), title, font=font, fill=WHITE)
     return im
+
+
+def render_banner(width: int, height: int, *, title: str = APP_NAME) -> Image.Image:
+    """Render banner at 4× then downscale for crisp text at xhdpi 320×180."""
+    scale = 4 if width <= 640 else 1
+    hi = render_banner_hires(width * scale, height * scale, title=title)
+    if scale == 1:
+        return hi
+    return hi.resize((width, height), Image.Resampling.LANCZOS)
 
 
 def write_png(path: Path, im: Image.Image) -> None:
@@ -227,29 +214,28 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    print("Generating TV launcher assets…")
+    print("Generating TV launcher assets (blue triangle on violet)…")
 
-    # 1) Banners in drawable-*dpi (xhdpi is what Play reviewers cite)
     banner_xhdpi = render_banner(320, 180, title=args.name)
     for folder, (w, h) in BANNER_SIZES.items():
         img = banner_xhdpi if (w, h) == (320, 180) else render_banner(w, h, title=args.name)
         write_png(RES / folder / "ic_banner.png", img)
-    # Default drawable/ fallback (same pixels as xhdpi) — never a vector
     write_png(RES / "drawable/ic_banner.png", banner_xhdpi)
 
-    # 2) Launcher icons — TV pixel sizes, full-bleed logo
     for folder, size in ICON_SIZES.items():
         write_png(RES / folder / "ic_launcher.png", render_icon(size))
         write_png(RES / folder / "ic_launcher_round.png", render_round_icon(size))
 
     if not args.skip_playstore:
-        write_png(PLAYSTORE / "icon-512.png", render_icon(512))
+        icon512 = render_icon(512)
+        write_png(PLAYSTORE / "icon-512.png", icon512)
         write_png(
             PLAYSTORE / "tv-banner.png",
             render_banner(1280, 720, title=args.name),
         )
+        if WEBSITE_BRAND.is_dir():
+            write_png(WEBSITE_BRAND / "icon-512.png", icon512)
 
-    # Drop vector fallback so aapt cannot pick XML over the PNG
     vector = RES / "drawable/ic_banner.xml"
     if vector.exists():
         vector.unlink()

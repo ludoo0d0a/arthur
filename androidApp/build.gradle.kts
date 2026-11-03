@@ -51,9 +51,20 @@ android {
         applicationId = "fr.geoking.arthur"
         minSdk = 26
         targetSdk = 36
-        versionCode = (System.getenv("VERSION_CODE") ?: versionProps.getProperty("versionCode") ?: "1").toInt()
-        versionName = (System.getenv("VERSION_NAME")?.takeIf { it.isNotBlank() }
-            ?: versionProps.getProperty("versionName") ?: "1.0").removePrefix("v")
+        val computedVersionCode = (
+            System.getenv("VERSION_CODE") ?: versionProps.getProperty("versionCode") ?: "1"
+        ).toInt()
+        val baseVersionName = (
+            System.getenv("VERSION_NAME")?.takeIf { it.isNotBlank() }
+                ?: versionProps.getProperty("versionName")
+                ?: "1.0"
+        ).removePrefix("v")
+        // Play / About: semver + build, e.g. 1.0.0.345 (idempotent if already suffixed).
+        val computedVersionName =
+            if (baseVersionName.endsWith(".$computedVersionCode")) baseVersionName
+            else "$baseVersionName.$computedVersionCode"
+        versionCode = computedVersionCode
+        versionName = computedVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "REVENUECAT_API_KEY", "\"${secret("REVENUECAT_API_KEY")}\"")
         buildConfigField("String", "WEB_CLIENT_ID", "\"${secret("WEB_CLIENT_ID")}\"")

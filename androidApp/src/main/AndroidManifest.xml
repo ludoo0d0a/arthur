@@ -15,6 +15,14 @@
     <uses-feature
         android:name="android.hardware.touchscreen"
         android:required="false" />
+    <!-- Implied by CHANGE_WIFI_MULTICAST_STATE; LAN pairing works without Wi‑Fi HW. -->
+    <uses-feature
+        android:name="android.hardware.wifi"
+        android:required="false" />
+    <!-- Implied by ML Kit GmsBarcodeScanningDelegateActivity screenOrientation=portrait. -->
+    <uses-feature
+        android:name="android.hardware.screen.portrait"
+        android:required="false" />
 
     <application
         android:name=".ArthurApp"

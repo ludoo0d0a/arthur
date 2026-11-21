@@ -4,6 +4,7 @@ import android.app.Application
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import fr.geoking.arthur.billing.DevAwarePackOwnership
 import fr.geoking.arthur.billing.DevAwarePremiumEntitlement
+import com.revenuecat.purchases.Purchases
 import fr.geoking.arthur.billing.FakePurchasesGateway
 import fr.geoking.arthur.billing.PurchasesGateway
 import fr.geoking.arthur.billing.RevenueCatInitializer
@@ -166,7 +167,8 @@ val appModule = module {
     }
     single { DebugLogger(clock = { System.currentTimeMillis() }) }
     single<PurchasesGateway> {
-        if (BuildConfig.REVENUECAT_API_KEY.isNotBlank()) {
+        // Live SDK only after a successful configure (skipped under Robolectric).
+        if (BuildConfig.REVENUECAT_API_KEY.isNotBlank() && Purchases.isConfigured) {
             RevenueCatPurchasesGateway()
         } else {
             FakePurchasesGateway(premium = false)

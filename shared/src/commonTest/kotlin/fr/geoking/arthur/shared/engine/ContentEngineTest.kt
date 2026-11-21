@@ -112,6 +112,19 @@ class ContentEngineTest {
     }
 
     @Test
+    fun browseCatalog_includesLockedPremiumGenart() = runBlocking {
+        val engine = ContentEngine(
+            sources = listOf(GenartSource()),
+            packOwnership = PackOwnership.NONE,
+        )
+        val prepared = PreparedRotation(sourceIds = listOf(GenartSource.ID), artworkIds = emptyList())
+        val gated = engine.catalog(prepared)
+        val browse = engine.browseCatalog(prepared)
+        assertTrue(browse.size > gated.size)
+        assertEquals(GenartSource.defaultCatalog().size, browse.size)
+    }
+
+    @Test
     fun genartSource_owningAllTopicPacks_includesMappedEngines() = runBlocking {
         val ownership = FakePackOwnership().also { it.unlockAll() }
         val engine = ContentEngine(

@@ -665,6 +665,38 @@ private fun stillKindAmbientIds(topic: MuseumTopic?): List<String> =
 fun PackSelection.isGenartCustom(): Boolean =
     family == PackFamily.Genart && genartTopicOrNull() == GenartTopic.Custom
 
+/** Marketplace SKU for the current Genart / Vintage Games visuals selection, if monetized. */
+fun PackSelection.sellablePackIdOrNull(): String? = when (family) {
+    PackFamily.Genart -> {
+        val topic = genartTopicOrNull() ?: return null
+        MarketplaceCatalog.sellablePackIdForGenartTopic(topic.testTagSuffix)
+    }
+    PackFamily.VintageGames -> when (subId) {
+        null, VintageGamesSub.AMBIENT, VintageGamesSub.VISUALS ->
+            MarketplaceCatalog.genartPackId(
+                fr.geoking.arthur.shared.marketplace.GenartPackTopics.VINTAGE,
+            )
+        VintageGamesSub.MUSIC -> AudioPackTopic.ArcadeChips.sellablePackId
+        else -> null
+    }
+    else -> null
+}
+
+/** Whether this selection's sellable pack is locked for [ownership]. */
+fun PackSelection.isPackLocked(ownership: PackOwnership): Boolean {
+    val id = sellablePackIdOrNull() ?: return false
+    return !ownership.owns(id)
+}
+
+/** True when Ambient may start this artwork under current pack ownership. */
+fun PackOwnership.allowsArtwork(artwork: Artwork): Boolean = when (artwork.kind) {
+    ArtworkKind.Genart -> allowsGenartEngine(artwork.id)
+    ArtworkKind.CustomFractal -> ownsCustomFractal()
+    ArtworkKind.FractalPreset -> ownsAllFractalPresets()
+    ArtworkKind.PersonalPhoto -> ownsPersonalPhotos()
+    else -> true
+}
+
 /** True when an empty pool may resolve a generative Artwork from the in-memory catalog. */
 fun PackSelection.allowsGenerativeAmbientFallback(): Boolean =
     family == PackFamily.Genart || family == PackFamily.VintageGames

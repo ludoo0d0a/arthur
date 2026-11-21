@@ -3,6 +3,8 @@ package fr.geoking.arthur.ui.components
 import fr.geoking.arthur.R
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
+import fr.geoking.arthur.shared.marketplace.FakePackOwnership
+import fr.geoking.arthur.shared.marketplace.PackOwnership
 import fr.geoking.arthur.shared.source.BundledPackSource
 import fr.geoking.arthur.shared.source.ClevelandSource
 import fr.geoking.arthur.shared.source.CoverrSource
@@ -17,6 +19,7 @@ import fr.geoking.arthur.shared.source.UnsplashSource
 import fr.geoking.arthur.shared.source.WikimediaStreetArtSource
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -184,6 +187,25 @@ class PackModelsTest {
         assertTrue(suffixes.contains("genart_abstract"))
         assertTrue(suffixes.contains("genart_tapet"))
         assertTrue(suffixes.contains("genart_vintage"))
+    }
+
+    @Test
+    fun genartMonetizedTopic_isPackLockedWithoutOwnership() {
+        val nature = PackSelection(PackFamily.Genart, GenartTopic.Nature.testTagSuffix)
+        assertEquals("genart_nature", nature.sellablePackIdOrNull())
+        assertTrue(nature.isPackLocked(PackOwnership.NONE))
+        val owned = FakePackOwnership(setOf("genart_nature"))
+        assertFalse(nature.isPackLocked(owned))
+        assertNull(
+            PackSelection(PackFamily.Genart, GenartTopic.All.testTagSuffix).sellablePackIdOrNull(),
+        )
+    }
+
+    @Test
+    fun vintageGamesAmbient_sellablePackIsGenartVintage() {
+        val ambient = PackSelection(PackFamily.VintageGames, VintageGamesSub.AMBIENT)
+        assertEquals("genart_vintage", ambient.sellablePackIdOrNull())
+        assertTrue(ambient.isPackLocked(PackOwnership.NONE))
     }
 
     @Test

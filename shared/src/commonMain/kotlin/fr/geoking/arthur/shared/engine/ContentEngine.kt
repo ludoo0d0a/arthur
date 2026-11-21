@@ -50,9 +50,21 @@ class ContentEngine(
     }
 
     suspend fun catalog(prepared: PreparedRotation): List<Artwork> = coroutineScope {
+        val loaded = loadSources(prepared)
+        applyGates(loaded)
+    }
+
+    /**
+     * Full source catalog without Marketplace / free-tier gates — for Control Plane
+     * premium pack previews (static stills + buy CTA). Ambient start must still use
+     * [catalog] / [applyGates].
+     */
+    suspend fun browseCatalog(prepared: PreparedRotation): List<Artwork> = loadSources(prepared)
+
+    private suspend fun loadSources(prepared: PreparedRotation): List<Artwork> = coroutineScope {
         val selectedSources = sources.filter { it.id in prepared.sourceIds.ifEmpty { sources.map { s -> s.id } } }
         val perSourceLimit = calculatePerSourceLimit(selectedSources.size)
-        val loaded = selectedSources.map { source ->
+        selectedSources.map { source ->
             async {
                 try {
                     if (perSourceLimit != null) source.load(perSourceLimit) else source.load()
@@ -62,7 +74,6 @@ class ContentEngine(
                 }
             }
         }.awaitAll().flatten()
-        applyGates(loaded)
     }
 
     fun catalogFlow(prepared: PreparedRotation): Flow<List<Artwork>> = channelFlow {

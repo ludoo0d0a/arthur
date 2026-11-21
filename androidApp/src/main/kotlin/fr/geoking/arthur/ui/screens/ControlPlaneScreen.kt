@@ -20,10 +20,9 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -80,7 +79,7 @@ import fr.geoking.arthur.source.ScreensaverSettings
 import fr.geoking.arthur.source.StillImagePrefetcher
 import fr.geoking.arthur.source.StockPhotoSettings
 import fr.geoking.arthur.source.rememberArtworkImageCache
-import fr.geoking.arthur.ui.components.GenartListItem
+import fr.geoking.arthur.ui.components.GenartPackItemsSection
 import fr.geoking.arthur.ui.components.GenartTopicFilterRow
 import fr.geoking.arthur.ui.components.ControlPlaneHeader
 import org.koin.core.context.GlobalContext
@@ -89,6 +88,8 @@ import fr.geoking.arthur.ui.components.PackFamily
 import fr.geoking.arthur.ui.components.PackGrid
 import fr.geoking.arthur.ui.components.PackSelection
 import fr.geoking.arthur.ui.components.PackTile
+import fr.geoking.arthur.ui.components.VintageGamesSub
+import fr.geoking.arthur.ui.components.allowsArtwork
 import fr.geoking.arthur.ui.components.allowsGenerativeAmbientFallback
 import fr.geoking.arthur.ui.components.appliesArcadeChipsOnAmbientStart
 import fr.geoking.arthur.ui.components.applySoundPack
@@ -96,10 +97,12 @@ import fr.geoking.arthur.ui.components.defaultSubId
 import fr.geoking.arthur.ui.components.genartTopicOrNull
 import fr.geoking.arthur.ui.components.homeTile
 import fr.geoking.arthur.ui.components.isGenartCustom
+import fr.geoking.arthur.ui.components.isPackLocked
 import fr.geoking.arthur.ui.components.museumTopicOrNull
 import fr.geoking.arthur.ui.components.opensNeuralMusic
 import fr.geoking.arthur.ui.components.opensSoundPlayer
 import fr.geoking.arthur.ui.components.resolvePackPool
+import fr.geoking.arthur.ui.components.sellablePackIdOrNull
 import fr.geoking.arthur.ui.components.sourceIdsForAmbientLoad
 import fr.geoking.arthur.ui.components.stockCategoryOrNull
 import fr.geoking.arthur.ui.components.subPackTiles
@@ -305,7 +308,8 @@ fun ControlPlaneScreen(
         if (initialCatalog != null) return@LaunchedEffect
 
         val startTime = System.currentTimeMillis()
-        catalog = contentEngine.catalog(
+        // Ungated browse catalog so locked premium packs still show static previews.
+        catalog = contentEngine.browseCatalog(
             PreparedRotation(
                 sourceIds = listOf(GenartSource.ID, FractalSource.ID, CustomFractalSource.ID),
                 artworkIds = emptyList(),
@@ -340,7 +344,10 @@ fun ControlPlaneScreen(
         catalog = catalog,
         onOpenFamily = { family ->
             val home = family.homeTile()
-            if (home.isLocked(packOwnership)) {
+            // Vintage Games / Genart: open browse with static previews even when locked.
+            val browseWhenLocked =
+                family == PackFamily.VintageGames || family == PackFamily.Genart
+            if (home.isLocked(packOwnership) && !browseWhenLocked) {
                 onOpenMarketplace?.invoke(home.sellablePackId)
             } else if (family == PackFamily.Personal) {
                 selection = PackSelection(PackFamily.Personal)
@@ -363,31 +370,36 @@ fun ControlPlaneScreen(
         onBackToHome = { openedFamily = null },
         onStartAmbient = { openMediaPack(selection, resumeIfPossible = false) },
         onStartAmbientArtwork = { artwork ->
-            lastMediaPack = selection
-            if (selection.appliesArcadeChipsOnAmbientStart()) {
-                ambientAudioSettings?.let { selection.applySoundPack(it) }
+            if (!packOwnership.allowsArtwork(artwork)) {
+                onOpenMarketplace?.invoke(selection.sellablePackIdOrNull())
+            } else {
+                lastMediaPack = selection
+                if (selection.appliesArcadeChipsOnAmbientStart()) {
+                    ambientAudioSettings?.let { selection.applySoundPack(it) }
+                }
+                AmbientRotationLaunch.bindPack(selection.sessionKey())
+                AmbientRotationLaunch.resetPack()
+                AmbientRotationLaunch.bindPack(selection.sessionKey())
+                syncSourceSettings()
+                val renewIds = selection.sourceIdsForAmbientLoad()
+                val pool = resolvePackPool(catalog, selection)
+                    .filter { packOwnership.allowsArtwork(it) }
+                val rotationPool = AmbientAlbumArt.sampleRotationPool(
+                    pool = pool,
+                    seed = artwork,
+                    isPreferred = { art ->
+                        art.isGenerative ||
+                            !art.localPath.isNullOrBlank() ||
+                            imageCache.hasImage(art.id)
+                    },
+                )
+                AmbientRotationLaunch.prepare(
+                    pool = rotationPool,
+                    renewSourceIds = renewIds,
+                    currentArtworkId = artwork.id,
+                )
+                onStartAmbient(artwork, rotationPool, renewIds)
             }
-            AmbientRotationLaunch.bindPack(selection.sessionKey())
-            AmbientRotationLaunch.resetPack()
-            AmbientRotationLaunch.bindPack(selection.sessionKey())
-            syncSourceSettings()
-            val renewIds = selection.sourceIdsForAmbientLoad()
-            val pool = resolvePackPool(catalog, selection)
-            val rotationPool = AmbientAlbumArt.sampleRotationPool(
-                pool = pool,
-                seed = artwork,
-                isPreferred = { art ->
-                    art.isGenerative ||
-                        !art.localPath.isNullOrBlank() ||
-                        imageCache.hasImage(art.id)
-                },
-            )
-            AmbientRotationLaunch.prepare(
-                pool = rotationPool,
-                renewSourceIds = renewIds,
-                currentArtworkId = artwork.id,
-            )
-            onStartAmbient(artwork, rotationPool, renewIds)
         },
         onStartMediaPlayer = {
             // Resume last playlist in place; do not force-unmute (mute is persisted per device).
@@ -676,23 +688,75 @@ private fun PhoneControlPlaneContent(
                             allGenarts.filter { it.title.contains(searchQuery, ignoreCase = true) }
                         }
                     }
+                    val packLocked = selection.isPackLocked(packOwnership)
 
-                    LazyColumn(
+                    GenartPackItemsSection(
+                        artworks = filteredGenarts,
+                        packOwnership = packOwnership,
+                        packLocked = packLocked,
+                        sellablePackId = selection.sellablePackIdOrNull(),
+                        onBuyPack = onOpenMarketplace,
+                        onPlayArtwork = onStartAmbientArtwork,
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth()
                             .testTag("genart_all_list"),
-                        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        items(filteredGenarts, key = { it.id }) { artwork ->
-                            GenartListItem(
-                                artwork = artwork,
-                                selected = false,
-                                onClick = { onStartAmbientArtwork(artwork) },
-                            )
-                        }
+                        contentPadding = PaddingValues(
+                            start = 20.dp,
+                            end = 20.dp,
+                            top = 4.dp,
+                            bottom = 24.dp,
+                        ),
+                    )
+                } else if (
+                    openedFamily == PackFamily.VintageGames &&
+                    selection.subId != VintageGamesSub.MUSIC
+                ) {
+                    val vintageItems = remember(catalog, selection) {
+                        resolvePackPool(catalog, selection)
                     }
+                    val packLocked = selection.isPackLocked(packOwnership)
+                    PackGrid(
+                        tiles = openedFamily.subPackTiles(catalog),
+                        selected = selection,
+                        onTileClick = { tile: PackTile ->
+                            if (tile.selection.opensSoundPlayer()) {
+                                if (tile.isLocked(packOwnership)) {
+                                    onOpenMarketplace?.invoke(tile.sellablePackId)
+                                } else {
+                                    onSelectSubPack(tile.selection)
+                                }
+                            } else {
+                                onSelectSubPack(tile.selection)
+                            }
+                        },
+                        isLocked = { it.isLocked(packOwnership) },
+                        startingSelection = startingSelection,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 180.dp)
+                            .padding(bottom = 8.dp),
+                        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 4.dp),
+                        columns = 3,
+                    )
+                    GenartPackItemsSection(
+                        artworks = vintageItems,
+                        packOwnership = packOwnership,
+                        packLocked = packLocked,
+                        sellablePackId = selection.sellablePackIdOrNull(),
+                        onBuyPack = onOpenMarketplace,
+                        onPlayArtwork = onStartAmbientArtwork,
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .testTag("vintage_items_grid"),
+                        contentPadding = PaddingValues(
+                            start = 20.dp,
+                            end = 20.dp,
+                            top = 4.dp,
+                            bottom = 24.dp,
+                        ),
+                    )
                 } else {
                     PackGrid(
                         tiles = openedFamily.subPackTiles(catalog),

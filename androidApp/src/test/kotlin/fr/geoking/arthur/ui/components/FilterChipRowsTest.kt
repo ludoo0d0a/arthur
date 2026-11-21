@@ -214,10 +214,7 @@ class FilterChipRowsTest {
             CategoryFilter.GENART,
             genartTopic = GenartTopic.Abstract,
         )
-        assertEquals(
-            listOf(GenartSource.PARTICLES, GenartSource.BLOBS, GenartSource.BREATH_CIRCLES),
-            filtered.map { it.id },
-        )
+        assertEquals(listOf(GenartSource.BREATH_CIRCLES), filtered.map { it.id })
     }
 
     @Test
@@ -237,10 +234,7 @@ class FilterChipRowsTest {
             genartTopic = GenartTopic.Abstract,
         )
         assertTrue(resolved.showSubfilters)
-        assertEquals(
-            listOf(GenartSource.PARTICLES, GenartSource.BLOBS, GenartSource.BREATH_CIRCLES),
-            resolved.items.map { it.id },
-        )
+        assertEquals(listOf(GenartSource.BREATH_CIRCLES), resolved.items.map { it.id })
     }
 
     @Test
@@ -380,9 +374,7 @@ class FilterChipRowsTest {
     @Test
     fun genartTopicsFor_returnsMatchingTopicsForGenartAndFractals() {
         val particles = catalog.first { it.id == GenartSource.PARTICLES }
-        val topics = genartTopicsFor(particles)
-        assertTrue(topics.contains(GenartTopic.Abstract))
-        assertTrue(topics.contains(GenartTopic.Geometry))
+        assertEquals(listOf(GenartTopic.Geometry), genartTopicsFor(particles))
 
         val julia = catalog.first { it.id == "fractal.julia" }
         assertEquals(listOf(GenartTopic.Fractal), genartTopicsFor(julia))

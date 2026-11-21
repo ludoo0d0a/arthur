@@ -1,7 +1,9 @@
 package fr.geoking.arthur.phone
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -10,7 +12,7 @@ import fr.geoking.arthur.phone.theme.ArthurTheme
 import fr.geoking.arthur.ui.components.PackFamily
 import fr.geoking.arthur.ui.components.PackSelection
 import fr.geoking.arthur.ui.screens.ControlPlaneContent
-import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -34,8 +36,23 @@ class ControlPlaneFilterTest {
     }
 
     @Test
-    fun genartPack_opensSubPacks_allSelected() {
-        var selection = PackSelection(PackFamily.Genart, "random")
+    fun genartPack_opensSubPackGrid() {
+        setControlPlane(
+            openedFamily = PackFamily.Genart,
+            selection = PackSelection(PackFamily.Genart),
+        )
+
+        composeRule.onNodeWithTag("pack_tile_genart_random").assertIsDisplayed()
+        composeRule.onNodeWithTag("pack_tile_genart_nature").assertIsDisplayed()
+        composeRule.onNodeWithTag("pack_tile_genart_weather").assertIsDisplayed()
+        composeRule.onNodeWithTag("pack_tile_genart_abstract").assertIsDisplayed()
+        composeRule.onNodeWithTag("genart_all_list").assertDoesNotExist()
+        composeRule.onNodeWithTag("genart_topic_row").assertDoesNotExist()
+    }
+
+    @Test
+    fun genartPack_tapSubPack_opensItems() {
+        var selection by mutableStateOf(PackSelection(PackFamily.Genart))
         composeRule.setContent {
             ArthurTheme {
                 ControlPlaneContent(
@@ -49,11 +66,24 @@ class ControlPlaneFilterTest {
             }
         }
 
-        composeRule.onNodeWithTag("pack_tile_genart_random").assertIsDisplayed()
-        composeRule.onNodeWithTag("pack_tile_genart_nature").assertIsDisplayed()
-        composeRule.onNodeWithTag("pack_tile_genart_weather").assertIsDisplayed()
-        composeRule.onNodeWithTag("pack_tile_genart_abstract").assertIsDisplayed()
-        composeRule.onNodeWithTag("pack_tile_genart_random").assertIsSelected()
+        composeRule.onNodeWithTag("pack_tile_genart_nature").performClick()
+        composeRule.waitForIdle()
+        assertEquals("nature", selection.subId)
+
+        composeRule.setContent {
+            ArthurTheme {
+                ControlPlaneContent(
+                    openedFamily = PackFamily.Genart,
+                    selection = selection,
+                    onOpenFamily = {},
+                    onSelectSubPack = { selection = it },
+                    onBackToHome = {},
+                    onStartAmbient = {},
+                )
+            }
+        }
+        composeRule.onNodeWithTag("genart_all_list").assertIsDisplayed()
+        composeRule.onNodeWithTag("genart_search_input").assertIsDisplayed()
     }
 
     @Test
@@ -74,28 +104,6 @@ class ControlPlaneFilterTest {
 
         composeRule.onNodeWithTag("pack_tile_sculpture_random").assertIsDisplayed()
         composeRule.onNodeWithTag("pack_tile_sculpture_met").assertIsDisplayed()
-    }
-
-    @Test
-    fun tapAlreadySelectedSubPack_startsAmbient() {
-        var started = false
-        var selection = PackSelection(PackFamily.Genart, "random")
-        composeRule.setContent {
-            ArthurTheme {
-                ControlPlaneContent(
-                    openedFamily = PackFamily.Genart,
-                    selection = selection,
-                    onOpenFamily = {},
-                    onSelectSubPack = { selection = it },
-                    onBackToHome = {},
-                    onStartAmbient = { started = true },
-                )
-            }
-        }
-
-        composeRule.onNodeWithTag("pack_tile_genart_random").performClick()
-        composeRule.waitForIdle()
-        assertTrue(started)
     }
 
     @Test

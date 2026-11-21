@@ -44,6 +44,8 @@ fun PackFamily.isMusicFamily(): Boolean =
 fun visibleHomePackFamilies(): List<PackFamily> =
     PackFamily.entries.filter { family ->
         when {
+            // Vintage Games lives under Genart (topic [GenartTopic.Vintage]).
+            family == PackFamily.VintageGames -> false
             family.isMusicFamily() -> FeatureFlag.musicEnabled
             family == PackFamily.Personal -> FeatureFlag.personalPhotosEnabled
             else -> true
@@ -59,8 +61,9 @@ object VintageGamesSub {
 
 /**
  * Selected pack for Ambient: a [PackFamily] plus optional subcategory.
- * [subId] null means the family's home tile was started directly, with no sub-pack
- * chosen — Museum and most families behave like **Random** (Genart → All).
+ * [subId] null means the family's home tile / pack grid was opened with no sub-pack
+ * chosen — Museum and most families behave like **Random**; Genart shows the pack
+ * cover grid until a topic is selected.
  */
 data class PackSelection(
     val family: PackFamily,
@@ -381,7 +384,7 @@ fun resolvePackPool(catalog: List<Artwork>, selection: PackSelection): List<Artw
             }
         }
         PackFamily.Genart -> {
-            val topic = selection.genartTopicOrNull() ?: GenartTopic.Random
+            val topic = selection.genartTopicOrNull() ?: GenartTopic.All
             catalog.filterByCategoryAndSources(
                 category = CategoryFilter.GENART,
                 genartTopic = topic,
@@ -528,9 +531,13 @@ fun PackSelection.opensSoundPlayer(): Boolean =
 
 /** True when Ambient start should enable the Arcade Chips chiptune pack. */
 fun PackSelection.appliesArcadeChipsOnAmbientStart(): Boolean =
-    FeatureFlag.musicEnabled &&
-        family == PackFamily.VintageGames &&
-        (subId == null || subId == VintageGamesSub.AMBIENT)
+    FeatureFlag.musicEnabled && (
+        (family == PackFamily.Genart && genartTopicOrNull() == GenartTopic.Vintage) ||
+            (
+                family == PackFamily.VintageGames &&
+                    (subId == null || subId == VintageGamesSub.AMBIENT)
+                )
+        )
 
 /**
  * Enables ambient sound and sets style preference for a Sound pack tile.
@@ -545,8 +552,7 @@ fun PackSelection.applySoundPack(
         family == PackFamily.Sound ||
             family == PackFamily.Neural ||
             family == PackFamily.DownloadedMusic -> audioPackTopicOrNull()
-        family == PackFamily.VintageGames && appliesArcadeChipsOnAmbientStart() ->
-            AudioPackTopic.ArcadeChips
+        appliesArcadeChipsOnAmbientStart() -> AudioPackTopic.ArcadeChips
         family == PackFamily.VintageGames && subId == VintageGamesSub.MUSIC ->
             AudioPackTopic.ArcadeChips
         else -> return

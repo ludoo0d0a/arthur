@@ -20,7 +20,6 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -80,7 +79,6 @@ import fr.geoking.arthur.source.StillImagePrefetcher
 import fr.geoking.arthur.source.StockPhotoSettings
 import fr.geoking.arthur.source.rememberArtworkImageCache
 import fr.geoking.arthur.ui.components.GenartPackItemsSection
-import fr.geoking.arthur.ui.components.GenartTopicFilterRow
 import fr.geoking.arthur.ui.components.ControlPlaneHeader
 import org.koin.core.context.GlobalContext
 import fr.geoking.arthur.ui.components.GenartTopic
@@ -88,7 +86,6 @@ import fr.geoking.arthur.ui.components.PackFamily
 import fr.geoking.arthur.ui.components.PackGrid
 import fr.geoking.arthur.ui.components.PackSelection
 import fr.geoking.arthur.ui.components.PackTile
-import fr.geoking.arthur.ui.components.VintageGamesSub
 import fr.geoking.arthur.ui.components.allowsArtwork
 import fr.geoking.arthur.ui.components.allowsGenerativeAmbientFallback
 import fr.geoking.arthur.ui.components.appliesArcadeChipsOnAmbientStart
@@ -344,14 +341,17 @@ fun ControlPlaneScreen(
         catalog = catalog,
         onOpenFamily = { family ->
             val home = family.homeTile()
-            // Vintage Games / Genart: open browse with static previews even when locked.
-            val browseWhenLocked =
-                family == PackFamily.VintageGames || family == PackFamily.Genart
+            // Genart: open browse with static previews even when locked (incl. Vintage Games topic).
+            val browseWhenLocked = family == PackFamily.Genart
             if (home.isLocked(packOwnership) && !browseWhenLocked) {
                 onOpenMarketplace?.invoke(home.sellablePackId)
             } else if (family == PackFamily.Personal) {
                 selection = PackSelection(PackFamily.Personal)
                 openedFamily = family
+            } else if (family == PackFamily.Genart) {
+                // Pack cover grid first (subId null); detail opens on sub-pack tap.
+                openedFamily = family
+                selection = PackSelection(PackFamily.Genart)
             } else if (family == PackFamily.DownloadedMusic) {
                 val sel = PackSelection(family, family.defaultSubId())
                 selection = sel
@@ -367,7 +367,13 @@ fun ControlPlaneScreen(
                 openMediaPack(sel)
             }
         },
-        onBackToHome = { openedFamily = null },
+        onBackToHome = {
+            if (openedFamily == PackFamily.Genart && selection.subId != null) {
+                selection = PackSelection(PackFamily.Genart)
+            } else {
+                openedFamily = null
+            }
+        },
         onStartAmbient = { openMediaPack(selection, resumeIfPossible = false) },
         onStartAmbientArtwork = { artwork ->
             if (!packOwnership.allowsArtwork(artwork)) {
@@ -570,9 +576,15 @@ private fun PhoneControlPlaneContent(
         },
         topBar = {
             if (openedFamily != null) {
+                val genartTopic = selection.genartTopicOrNull()
+                val titleRes = if (openedFamily == PackFamily.Genart && genartTopic != null) {
+                    genartTopic.labelRes
+                } else {
+                    openedFamily.titleRes
+                }
                 TopAppBar(
                     title = {
-                        Text(stringResource(openedFamily.titleRes))
+                        Text(stringResource(titleRes))
                     },
                     navigationIcon = {
                         IconButton(
@@ -628,6 +640,7 @@ private fun PhoneControlPlaneContent(
                 )
             } else {
                 val isGenartFamily = openedFamily == PackFamily.Genart
+                val genartDetailTopic = selection.genartTopicOrNull()
 
                 if (onCreateCustomFractal != null && selection.isGenartCustom()) {
                     TextButton(
@@ -640,15 +653,24 @@ private fun PhoneControlPlaneContent(
                     }
                 }
 
-                if (isGenartFamily) {
-                    val activeTopic = selection.genartTopicOrNull() ?: GenartTopic.All
-                    GenartTopicFilterRow(
-                        genartTopic = activeTopic,
-                        onGenartTopicChange = { topic ->
-                            onSelectSubPack(PackSelection(PackFamily.Genart, topic.testTagSuffix))
+                if (isGenartFamily && genartDetailTopic == null) {
+                    PackGrid(
+                        tiles = openedFamily.subPackTiles(catalog),
+                        selected = null,
+                        onTileClick = { tile: PackTile ->
+                            onSelectSubPack(tile.selection)
                         },
+                        isLocked = { it.isLocked(packOwnership) },
+                        startingSelection = startingSelection,
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(
+                            start = 20.dp,
+                            end = 20.dp,
+                            top = 8.dp,
+                            bottom = 24.dp,
+                        ),
                     )
-
+                } else if (isGenartFamily) {
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
@@ -701,55 +723,6 @@ private fun PhoneControlPlaneContent(
                             .weight(1f)
                             .fillMaxWidth()
                             .testTag("genart_all_list"),
-                        contentPadding = PaddingValues(
-                            start = 20.dp,
-                            end = 20.dp,
-                            top = 4.dp,
-                            bottom = 24.dp,
-                        ),
-                    )
-                } else if (
-                    openedFamily == PackFamily.VintageGames &&
-                    selection.subId != VintageGamesSub.MUSIC
-                ) {
-                    val vintageItems = remember(catalog, selection) {
-                        resolvePackPool(catalog, selection)
-                    }
-                    val packLocked = selection.isPackLocked(packOwnership)
-                    PackGrid(
-                        tiles = openedFamily.subPackTiles(catalog),
-                        selected = selection,
-                        onTileClick = { tile: PackTile ->
-                            if (tile.selection.opensSoundPlayer()) {
-                                if (tile.isLocked(packOwnership)) {
-                                    onOpenMarketplace?.invoke(tile.sellablePackId)
-                                } else {
-                                    onSelectSubPack(tile.selection)
-                                }
-                            } else {
-                                onSelectSubPack(tile.selection)
-                            }
-                        },
-                        isLocked = { it.isLocked(packOwnership) },
-                        startingSelection = startingSelection,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 180.dp)
-                            .padding(bottom = 8.dp),
-                        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 4.dp),
-                        columns = 3,
-                    )
-                    GenartPackItemsSection(
-                        artworks = vintageItems,
-                        packOwnership = packOwnership,
-                        packLocked = packLocked,
-                        sellablePackId = selection.sellablePackIdOrNull(),
-                        onBuyPack = onOpenMarketplace,
-                        onPlayArtwork = onStartAmbientArtwork,
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                            .testTag("vintage_items_grid"),
                         contentPadding = PaddingValues(
                             start = 20.dp,
                             end = 20.dp,

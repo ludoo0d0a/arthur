@@ -169,15 +169,20 @@ class PackModelsTest {
     }
 
     @Test
-    fun genartAbstract_includesTapetEngines() {
+    fun genartTapet_includesWallpaperEngines() {
         val pool = resolvePackPool(
             catalog,
-            PackSelection(PackFamily.Genart, GenartTopic.Abstract.testTagSuffix),
+            PackSelection(PackFamily.Genart, GenartTopic.Tapet.testTagSuffix),
         )
         assertEquals(
             listOf(GenartSource.BLOBS, GenartSource.GRADIENT_MESH),
             pool.map { it.id },
         )
+        val abstractPool = resolvePackPool(
+            catalog,
+            PackSelection(PackFamily.Genart, GenartTopic.Abstract.testTagSuffix),
+        )
+        assertTrue(abstractPool.none { it.id == GenartSource.BLOBS })
     }
 
     @Test
@@ -202,10 +207,12 @@ class PackModelsTest {
     }
 
     @Test
-    fun vintageGamesAmbient_sellablePackIsGenartVintage() {
-        val ambient = PackSelection(PackFamily.VintageGames, VintageGamesSub.AMBIENT)
-        assertEquals("genart_vintage", ambient.sellablePackIdOrNull())
-        assertTrue(ambient.isPackLocked(PackOwnership.NONE))
+    fun genartVintage_sellablePackAndHiddenFromHome() {
+        val vintage = PackSelection(PackFamily.Genart, GenartTopic.Vintage.testTagSuffix)
+        assertEquals("genart_vintage", vintage.sellablePackIdOrNull())
+        assertTrue(vintage.isPackLocked(PackOwnership.NONE))
+        assertFalse(visibleHomePackFamilies().contains(PackFamily.VintageGames))
+        assertEquals(R.drawable.pack_vintage_games, PackCovers.genart(GenartTopic.Vintage))
     }
 
     @Test
@@ -249,24 +256,15 @@ class PackModelsTest {
     }
 
     @Test
-    fun vintageGamesSubPacks_ambientVisualsMusic() {
-        val tiles = PackFamily.VintageGames.subPackTiles()
-        // Music sub-pack hidden while FeatureFlag.musicEnabled is false.
-        assertEquals(
-            listOf("vintage_ambient", "vintage_visuals"),
-            tiles.map { it.testTagSuffix },
-        )
-        assertEquals("genart_vintage", tiles[0].sellablePackId)
-        assertEquals("genart_vintage", tiles[1].sellablePackId)
+    fun genartSubPacks_includeVintageGamesTopic() {
+        val tiles = PackFamily.Genart.subPackTiles()
+        assertTrue(tiles.any { it.testTagSuffix == "genart_vintage" })
+        val vintage = tiles.first { it.testTagSuffix == "genart_vintage" }
+        assertEquals("genart_vintage", vintage.sellablePackId)
+        assertEquals(R.drawable.pack_vintage_games, vintage.coverRes)
+        // Arcade chips only when music feature is on.
         assertFalse(
-            PackSelection(PackFamily.VintageGames, VintageGamesSub.AMBIENT)
-                .appliesArcadeChipsOnAmbientStart(),
-        )
-        assertFalse(
-            PackSelection(PackFamily.VintageGames, VintageGamesSub.MUSIC).opensSoundPlayer(),
-        )
-        assertFalse(
-            PackSelection(PackFamily.VintageGames, VintageGamesSub.VISUALS)
+            PackSelection(PackFamily.Genart, GenartTopic.Vintage.testTagSuffix)
                 .appliesArcadeChipsOnAmbientStart(),
         )
     }
@@ -702,5 +700,22 @@ class PackModelsTest {
         assertFalse(PackSelection(PackFamily.Painting).allowsGenerativeAmbientFallback())
         assertFalse(PackSelection(PackFamily.Sculpture).allowsGenerativeAmbientFallback())
         assertFalse(PackSelection(PackFamily.Personal).allowsGenerativeAmbientFallback())
+    }
+
+    @Test
+    fun genartPackCovers_areUniqueExceptSharedRandom() {
+        val covers = GenartTopic.entries
+            .filter { it != GenartTopic.Random }
+            .map { it to PackCovers.genart(it) }
+        val duplicates = covers.groupBy { it.second }.filter { it.value.size > 1 }
+        assertTrue(
+            "duplicate genart coverRes: $duplicates",
+            duplicates.isEmpty(),
+        )
+        // Vintage Games cover must not collide with other genart topic covers.
+        assertEquals(R.drawable.pack_vintage_games, PackCovers.genart(GenartTopic.Vintage))
+        assertTrue(
+            covers.none { it.first != GenartTopic.Vintage && it.second == R.drawable.pack_vintage_games },
+        )
     }
 }

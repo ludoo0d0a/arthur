@@ -35,7 +35,7 @@ object PackCovers {
         GenartTopic.Earth -> R.drawable.pack_genart_earth
         GenartTopic.Planets -> R.drawable.pack_genart_planets
         GenartTopic.SciFi -> R.drawable.pack_genart_scifi
-        GenartTopic.Vintage -> R.drawable.pack_genart_vintage
+        GenartTopic.Vintage -> R.drawable.pack_vintage_games
         GenartTopic.Abstract -> R.drawable.pack_genart_abstract
         GenartTopic.Geometry -> R.drawable.pack_genart_geometry
         GenartTopic.Fractal -> R.drawable.pack_genart_fractal

@@ -198,9 +198,9 @@ class ArthurCarAppTest {
         val screen = PackSelectionScreen(carContext)
         val template = screen.onGetTemplate() as androidx.car.app.model.SectionedItemTemplate
         val gridSection = template.sections[0] as androidx.car.app.model.GridSection
-        // With FeatureFlag.musicEnabled=false: Museum, Genart, VintageGames, Photo,
-        // Sculpture, Painting (Video/Personal filtered; music families hidden).
-        assertEquals(6, gridSection.itemsDelegate.size)
+        // With FeatureFlag.musicEnabled=false: Museum, Genart, Photo, Sculpture, Painting
+        // (Vintage Games is under Genart; Video/Personal filtered; music families hidden).
+        assertEquals(5, gridSection.itemsDelegate.size)
         assertTrue(gridSection.itemsDelegate.size <= MAX_HOME_GRID_ITEMS)
     }
 

@@ -25,11 +25,7 @@ import fr.geoking.arthur.ui.components.PackGrid
 import fr.geoking.arthur.ui.components.PackSelection
 import fr.geoking.arthur.ui.components.PackTile
 import fr.geoking.arthur.ui.components.homeTile
-import androidx.compose.foundation.layout.heightIn
 import fr.geoking.arthur.ui.components.GenartPackItemsSection
-import fr.geoking.arthur.ui.components.GenartTopic
-import fr.geoking.arthur.ui.components.GenartTopicFilterRow
-import fr.geoking.arthur.ui.components.VintageGamesSub
 import fr.geoking.arthur.ui.components.genartTopicOrNull
 import fr.geoking.arthur.ui.components.isPackLocked
 import fr.geoking.arthur.ui.components.opensSoundPlayer
@@ -119,95 +115,47 @@ fun TvControlPlaneContent(
                     selectedTileFocusRequester = selectedTileFocus,
                 )
             } else if (openedFamily == PackFamily.Genart) {
+                val genartDetailTopic = selection.genartTopicOrNull()
                 Text(
-                    text = stringResource(openedFamily.titleRes),
+                    text = stringResource(
+                        genartDetailTopic?.labelRes ?: openedFamily.titleRes,
+                    ),
                     style = MaterialTheme.typography.titleMedium,
                     color = scheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
-                val activeTopic = selection.genartTopicOrNull() ?: GenartTopic.All
-                GenartTopicFilterRow(
-                    genartTopic = activeTopic,
-                    onGenartTopicChange = { topic ->
-                        onSelectSubPack(PackSelection(PackFamily.Genart, topic.testTagSuffix))
-                    },
-                    contentPadding = PaddingValues(bottom = 8.dp),
-                )
-
-                val genarts = remember(catalog, selection) { resolvePackPool(catalog, selection) }
-                val packLocked = selection.isPackLocked(packOwnership)
-                GenartPackItemsSection(
-                    artworks = genarts,
-                    packOwnership = packOwnership,
-                    packLocked = packLocked,
-                    sellablePackId = selection.sellablePackIdOrNull(),
-                    onBuyPack = onOpenMarketplace,
-                    onPlayArtwork = onStartAmbientArtwork,
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .testTag("genart_all_list"),
-                    contentPadding = PaddingValues(bottom = 24.dp),
-                    firstTileFocusRequester = firstTileFocus,
-                )
-            } else if (
-                openedFamily == PackFamily.VintageGames &&
-                selection.subId != VintageGamesSub.MUSIC
-            ) {
-                Text(
-                    text = stringResource(openedFamily.titleRes),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = scheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 8.dp),
-                )
-                val vintageItems = remember(catalog, selection) {
-                    resolvePackPool(catalog, selection)
+                if (genartDetailTopic == null) {
+                    PackGrid(
+                        tiles = openedFamily.subPackTiles(catalog),
+                        selected = null,
+                        onTileClick = { tile: PackTile ->
+                            onSelectSubPack(tile.selection)
+                        },
+                        isLocked = { it.isLocked(packOwnership) },
+                        startingSelection = startingSelection,
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(bottom = 24.dp),
+                        firstTileFocusRequester = firstTileFocus,
+                        selectedTileFocusRequester = selectedTileFocus,
+                    )
+                } else {
+                    val genarts = remember(catalog, selection) { resolvePackPool(catalog, selection) }
+                    val packLocked = selection.isPackLocked(packOwnership)
+                    GenartPackItemsSection(
+                        artworks = genarts,
+                        packOwnership = packOwnership,
+                        packLocked = packLocked,
+                        sellablePackId = selection.sellablePackIdOrNull(),
+                        onBuyPack = onOpenMarketplace,
+                        onPlayArtwork = onStartAmbientArtwork,
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .testTag("genart_all_list"),
+                        contentPadding = PaddingValues(bottom = 24.dp),
+                        firstTileFocusRequester = firstTileFocus,
+                    )
                 }
-                val packLocked = selection.isPackLocked(packOwnership)
-                PackGrid(
-                    tiles = openedFamily.subPackTiles(catalog),
-                    selected = selection,
-                    onTileClick = { tile ->
-                        if (tile.selection.opensSoundPlayer()) {
-                            if (tile.isLocked(packOwnership)) {
-                                onOpenMarketplace?.invoke(tile.sellablePackId)
-                            } else {
-                                onSelectSubPack(tile.selection)
-                            }
-                        } else {
-                            onSelectSubPack(tile.selection)
-                        }
-                    },
-                    isLocked = { it.isLocked(packOwnership) },
-                    startingSelection = startingSelection,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 200.dp)
-                        .padding(bottom = 8.dp),
-                    contentPadding = PaddingValues(bottom = 8.dp),
-                    columns = 3,
-                    firstTileFocusRequester = firstTileFocus,
-                    selectedTileFocusRequester = selectedTileFocus,
-                    selectOnFocus = true,
-                    onTileFocused = { tile ->
-                        if (!tile.selection.opensSoundPlayer() || !tile.isLocked(packOwnership)) {
-                            onSelectSubPack(tile.selection)
-                        }
-                    },
-                )
-                GenartPackItemsSection(
-                    artworks = vintageItems,
-                    packOwnership = packOwnership,
-                    packLocked = packLocked,
-                    sellablePackId = selection.sellablePackIdOrNull(),
-                    onBuyPack = onOpenMarketplace,
-                    onPlayArtwork = onStartAmbientArtwork,
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .testTag("vintage_items_grid"),
-                    contentPadding = PaddingValues(bottom = 24.dp),
-                )
             } else {
                 Text(
                     text = stringResource(openedFamily.titleRes),

@@ -475,8 +475,9 @@ class SubPackSelectionScreen(
         val tiles = family.subPackTiles()
             .filter { tile ->
                 when (family) {
-                    // Sound / Vintage Games: free + owned only (no Marketplace unlock on Auto).
-                    PackFamily.Sound, PackFamily.VintageGames -> !tile.isLocked(packOwnership)
+                    // Sound / Genart: free + owned only (no Marketplace unlock on Auto).
+                    // Vintage Games lives under Genart (topic vintage).
+                    PackFamily.Sound, PackFamily.Genart -> !tile.isLocked(packOwnership)
                     // Other families: no sellable/commerce tiles on Auto.
                     else -> tile.sellablePackId == null
                 }

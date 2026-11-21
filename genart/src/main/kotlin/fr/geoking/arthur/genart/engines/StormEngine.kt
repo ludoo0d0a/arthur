@@ -13,7 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -26,6 +25,7 @@ import fr.geoking.arthur.genart.qualityCount
 import fr.geoking.arthur.genart.seededRange
 import fr.geoking.arthur.genart.seededUnit
 import fr.geoking.arthur.genart.sin01
+import fr.geoking.arthur.genart.genartSoftBlur
 import kotlin.math.PI
 
 /**
@@ -124,7 +124,7 @@ internal fun StormEngine(
             )
         }
         // Blurred layer: distant glow + cumulonimbus silhouettes. Real gaussian blur (no-ops below API 31).
-        Canvas(modifier = Modifier.fillMaxSize().blur(30.dp)) {
+        Canvas(modifier = Modifier.fillMaxSize().genartSoftBlur(quality, 30.dp)) {
             val w = size.width
             val h = size.height
             val glowAlpha = (0.08f + glowPulse * 0.22f) * dim

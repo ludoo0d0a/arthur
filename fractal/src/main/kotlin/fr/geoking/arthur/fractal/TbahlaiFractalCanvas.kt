@@ -25,6 +25,7 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 
+
 /**
  * Mandelbrot / Julia canvases adapted from
  * [tbahlai/agsl](https://github.com/tbahlai/agsl) (ProAndroidDev AGSL article).
@@ -36,6 +37,7 @@ import kotlin.math.sin
 internal fun MandelbrotBahlaiCanvas(
     isActive: Boolean,
     colorSeed: Int = 1,
+    quality: FractalQuality = FractalQuality.Medium,
     modifier: Modifier = Modifier,
 ) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
@@ -71,30 +73,36 @@ internal fun MandelbrotBahlaiCanvas(
     val shader = remember { FractalAgslShaders.createMandelbrotBahlaiShader() }
     val stops = remember(colorSeed) { FractalCoherentPalette.fourStops(colorSeed) }
 
-    AgslShaderBox(
-        shader = shader,
+    FractalScaledHost(
+        quality = quality,
         modifier = modifier
             .fillMaxSize()
             .transformable(state = transformState),
-        cacheKey = colorSeed,
-        onConfigure = { size, s ->
-            s.setFloatUniform("size", size.width, size.height)
-            s.setColorUniform("color1", stops[0].toArgb())
-            s.setColorUniform("color2", stops[1].toArgb())
-            s.setColorUniform("color3", stops[2].toArgb())
-            s.setColorUniform("color4", stops[3].toArgb())
-        },
-        onDrawFrame = { _, s ->
-            s.setFloatUniform("zoom", displayZoom)
-            s.setFloatUniform("center", center.x, center.y)
-        },
-    )
+    ) { scaledModifier ->
+        AgslShaderBox(
+            shader = shader,
+            modifier = scaledModifier,
+            cacheKey = colorSeed,
+            onConfigure = { size, s ->
+                s.setFloatUniform("size", size.width, size.height)
+                s.setColorUniform("color1", stops[0].toArgb())
+                s.setColorUniform("color2", stops[1].toArgb())
+                s.setColorUniform("color3", stops[2].toArgb())
+                s.setColorUniform("color4", stops[3].toArgb())
+            },
+            onDrawFrame = { _, s ->
+                s.setFloatUniform("zoom", displayZoom)
+                s.setFloatUniform("center", center.x, center.y)
+            },
+        )
+    }
 }
 
 @Composable
 internal fun JuliaBahlaiCanvas(
     isActive: Boolean,
     colorSeed: Int = 0,
+    quality: FractalQuality = FractalQuality.Medium,
     modifier: Modifier = Modifier,
 ) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
@@ -117,8 +125,8 @@ internal fun JuliaBahlaiCanvas(
     val shader = remember { FractalAgslShaders.createJuliaBahlaiShader() }
     val stops = remember(colorSeed) { FractalCoherentPalette.fourStops(colorSeed) }
 
-    AgslShaderBox(
-        shader = shader,
+    FractalScaledHost(
+        quality = quality,
         modifier = modifier
             .fillMaxSize()
             .pointerInput(Unit) {
@@ -132,25 +140,30 @@ internal fun JuliaBahlaiCanvas(
                     },
                 )
             },
-        cacheKey = colorSeed,
-        onConfigure = { size, s ->
-            s.setFloatUniform("size", size.width, size.height)
-            s.setColorUniform("color1", stops[0].toArgb())
-            s.setColorUniform("color2", stops[1].toArgb())
-            s.setColorUniform("color3", stops[2].toArgb())
-            s.setColorUniform("color4", stops[3].toArgb())
-        },
-        onDrawFrame = { size, s ->
-            val auto = Offset(
-                size.width * (0.5f + 0.22f * cos(orbit * 2f * PI.toFloat())),
-                size.height * (0.5f + 0.18f * sin(orbit * 2f * PI.toFloat() * 1.15f)),
-            )
-            val pos = when {
-                dragging && mousePos != Offset.Unspecified -> mousePos
-                mousePos != Offset.Unspecified && isActive -> mousePos
-                else -> auto
-            }
-            s.setFloatUniform("mouse", pos.x, pos.y)
-        },
-    )
+    ) { scaledModifier ->
+        AgslShaderBox(
+            shader = shader,
+            modifier = scaledModifier,
+            cacheKey = colorSeed,
+            onConfigure = { size, s ->
+                s.setFloatUniform("size", size.width, size.height)
+                s.setColorUniform("color1", stops[0].toArgb())
+                s.setColorUniform("color2", stops[1].toArgb())
+                s.setColorUniform("color3", stops[2].toArgb())
+                s.setColorUniform("color4", stops[3].toArgb())
+            },
+            onDrawFrame = { size, s ->
+                val auto = Offset(
+                    size.width * (0.5f + 0.22f * cos(orbit * 2f * PI.toFloat())),
+                    size.height * (0.5f + 0.18f * sin(orbit * 2f * PI.toFloat() * 1.15f)),
+                )
+                val pos = when {
+                    dragging && mousePos != Offset.Unspecified -> mousePos
+                    mousePos != Offset.Unspecified && isActive -> mousePos
+                    else -> auto
+                }
+                s.setFloatUniform("mouse", pos.x, pos.y)
+            },
+        )
+    }
 }

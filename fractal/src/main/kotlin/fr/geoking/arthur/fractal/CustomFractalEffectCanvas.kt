@@ -8,13 +8,16 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -22,8 +25,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 
 /** Composition zoom so strokes fill the frame without sparse letterboxing (near-4K). */
 private const val FillScale = 1.13f
@@ -69,18 +74,52 @@ fun CustomFractalEffectCanvas(
         CustomFractalEngine.topology(params, engineQuality)
     }
     val path = remember { Path() }
-    val contrastWash = if (isActive) 0.10f else 0.04f
-    val vignetteAlpha = if (isActive) 0.28f else 0.18f
+    val contrastWash = when {
+        !isActive -> 0.04f
+        quality == FractalQuality.High -> 0.10f
+        else -> 0.06f
+    }
+    val vignetteAlpha = when {
+        !isActive -> 0.18f
+        quality == FractalQuality.High -> 0.28f
+        else -> 0.20f
+    }
+    val drawUnderglow = quality != FractalQuality.Low
+    val drawAnchorGlows = quality == FractalQuality.High
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .graphicsLayer {
-                scaleX = FillScale
-                scaleY = FillScale
-            },
+    BoxWithConstraints(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
     ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
+        val density = LocalDensity.current
+        val boxMaxWidth = maxWidth
+        val boxMaxHeight = maxHeight
+        val minSidePx = with(density) {
+            minOf(boxMaxWidth.toPx(), boxMaxHeight.toPx())
+        }
+        val renderScale = fractalAgslRenderScale(quality, minSidePx)
+        val contentModifier = if (renderScale < 0.999f) {
+            Modifier
+                .requiredSize(
+                    width = boxMaxWidth * renderScale,
+                    height = boxMaxHeight * renderScale,
+                )
+                .graphicsLayer {
+                    val up = FillScale / renderScale
+                    scaleX = up
+                    scaleY = up
+                    transformOrigin = TransformOrigin.Center
+                }
+        } else {
+            Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    scaleX = FillScale
+                    scaleY = FillScale
+                }
+        }
+
+        Canvas(modifier = contentModifier) {
             drawRect(Color.Black)
             drawRect(
                 brush = Brush.radialGradient(
@@ -117,7 +156,7 @@ fun CustomFractalEffectCanvas(
                     start = Offset(start.x * w, start.y * h),
                     end = Offset(end.x * w, end.y * h),
                 )
-                path.reset()
+                path.rewind()
                 val first = stroke.cubics.first()
                 path.moveTo(first.p0.x * w, first.p0.y * h)
                 for (cubic in stroke.cubics) {
@@ -131,24 +170,26 @@ fun CustomFractalEffectCanvas(
                     )
                 }
                 val coreWidth = baseStroke * stroke.strokeScale
-                // Soft underglow then sharp core (luminous neon without BlurMaskFilter).
-                drawPath(
-                    path = path,
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            c0.copy(alpha = alpha * 0.28f),
-                            c1.copy(alpha = alpha * 0.22f),
-                            Color.Transparent,
+                // Soft underglow then sharp core (skip underglow at Low for TV cost).
+                if (drawUnderglow) {
+                    drawPath(
+                        path = path,
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                c0.copy(alpha = alpha * 0.28f),
+                                c1.copy(alpha = alpha * 0.22f),
+                                Color.Transparent,
+                            ),
+                            start = Offset(start.x * w, start.y * h),
+                            end = Offset(end.x * w, end.y * h),
                         ),
-                        start = Offset(start.x * w, start.y * h),
-                        end = Offset(end.x * w, end.y * h),
-                    ),
-                    style = Stroke(
-                        width = coreWidth * 2.8f,
-                        cap = StrokeCap.Round,
-                        join = StrokeJoin.Round,
-                    ),
-                )
+                        style = Stroke(
+                            width = coreWidth * 2.8f,
+                            cap = StrokeCap.Round,
+                            join = StrokeJoin.Round,
+                        ),
+                    )
+                }
                 drawPath(
                     path = path,
                     brush = brush,
@@ -160,29 +201,35 @@ fun CustomFractalEffectCanvas(
                 )
             }
 
-            // Soft anchor glow so authored taps remain readable in preview
-            params.points.forEach { p ->
-                val center = Offset(p.x * w, p.y * h)
-                val glowR = baseStroke * 3.4f
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            palette.first().copy(alpha = 0.45f),
-                            palette.getOrElse(2) { palette.first() }.copy(alpha = 0.14f),
-                            Color.Transparent,
+            // Soft anchor glow so authored taps remain readable in preview (High only).
+            if (drawAnchorGlows) {
+                params.points.forEach { p ->
+                    val center = Offset(p.x * w, p.y * h)
+                    val glowR = baseStroke * 3.4f
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                palette.first().copy(alpha = 0.45f),
+                                palette.getOrElse(2) { palette.first() }.copy(alpha = 0.14f),
+                                Color.Transparent,
+                            ),
+                            center = center,
+                            radius = glowR,
                         ),
-                        center = center,
                         radius = glowR,
-                    ),
-                    radius = glowR,
-                    center = center,
-                )
-                drawCircle(
-                    color = palette.first().copy(alpha = 0.35f),
-                    radius = baseStroke * 2.0f,
-                    center = center,
-                    style = Stroke(width = baseStroke * 0.5f, cap = StrokeCap.Round, join = StrokeJoin.Round),
-                )
+                        center = center,
+                    )
+                    drawCircle(
+                        color = palette.first().copy(alpha = 0.35f),
+                        radius = baseStroke * 2.0f,
+                        center = center,
+                        style = Stroke(
+                            width = baseStroke * 0.5f,
+                            cap = StrokeCap.Round,
+                            join = StrokeJoin.Round,
+                        ),
+                    )
+                }
             }
 
             // Near-4K polish: soft center lift + edge vignette

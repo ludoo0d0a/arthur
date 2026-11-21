@@ -14,10 +14,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -26,18 +23,14 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
-import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntSize
 import kotlin.math.PI
 import kotlin.math.abs
@@ -58,7 +51,9 @@ enum class FractalColorIntensity { Low, Medium, High }
 /** Rich multi-stop palette for smooth escape-time gradients (CPU path). */
 private val DefaultPalette = FractalCoherentPalette.escapeStops(seed = 1, count = 12)
 
-private const val CpuBakeLongSidePx = 1120
+private const val CpuBakeLongSidePxHigh = 1120
+private const val CpuBakeLongSidePxMedium = 840
+private const val CpuBakeLongSidePxLow = 640
 private const val CpuBakeIntervalMs = 90L
 private const val CpuCrossfadeMs = 280
 
@@ -151,11 +146,19 @@ fun FractalEffectCanvas(
     ) {
         when (fractalType) {
             FractalType.MandelbrotGlow -> {
-                MandelbrotBahlaiCanvas(isActive = isActive, colorSeed = colorSeed)
+                MandelbrotBahlaiCanvas(
+                    isActive = isActive,
+                    colorSeed = colorSeed,
+                    quality = quality,
+                )
                 return
             }
             FractalType.JuliaTouch -> {
-                JuliaBahlaiCanvas(isActive = isActive, colorSeed = colorSeed)
+                JuliaBahlaiCanvas(
+                    isActive = isActive,
+                    colorSeed = colorSeed,
+                    quality = quality,
+                )
                 return
             }
             else -> Unit
@@ -289,56 +292,28 @@ private fun FractalAgslCanvas(
     }
     val (cx, cy) = fractalCenter(fractalType)
 
-    BoxWithConstraints(modifier = modifier) {
-        val density = LocalDensity.current
-        val boxMaxWidth = maxWidth
-        val boxMaxHeight = maxHeight
-        val minSidePx = with(density) {
-            minOf(boxMaxWidth.toPx(), boxMaxHeight.toPx())
-        }
-        val renderScale = if (minSidePx >= 1080f) 0.75f else 1f
-
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) {
-            val shaderModifier = if (renderScale < 1f) {
-                Modifier
-                    .requiredSize(
-                        width = boxMaxWidth * renderScale,
-                        height = boxMaxHeight * renderScale,
-                    )
-                    .graphicsLayer {
-                        scaleX = 1f / renderScale
-                        scaleY = 1f / renderScale
-                        transformOrigin = TransformOrigin.Center
-                    }
-            } else {
-                Modifier.fillMaxSize()
-            }
-
-            AgslShaderBox(
-                shader = shader,
-                modifier = shaderModifier,
-                cacheKey = colorSeed,
-                onConfigure = { size, s ->
-                    s.setFloatUniform("iResolution", size.width, size.height)
-                    s.setColorUniform("color1", stops[0].toArgb())
-                    s.setColorUniform("color2", stops[1].toArgb())
-                    s.setColorUniform("color3", stops[2].toArgb())
-                    s.setColorUniform("color4", stops[3].toArgb())
-                },
-                onDrawFrame = { _, s ->
-                    s.setFloatUniform("iCenter", cx, cy)
-                    s.setFloatUniform("iZoom", zoom)
-                    s.setFloatUniform("iMaxIter", maxIter)
-                    s.setFloatUniform("iType", fractalType.ordinal.toFloat())
-                    s.setFloatUniform("iJuliaC", juliaCx, juliaCy)
-                    s.setFloatUniform("iPhase", phase)
-                    s.setFloatUniform("iBrightness", brightness)
-                },
-            )
-        }
+    FractalScaledHost(quality = quality, modifier = modifier) { shaderModifier ->
+        AgslShaderBox(
+            shader = shader,
+            modifier = shaderModifier,
+            cacheKey = colorSeed,
+            onConfigure = { size, s ->
+                s.setFloatUniform("iResolution", size.width, size.height)
+                s.setColorUniform("color1", stops[0].toArgb())
+                s.setColorUniform("color2", stops[1].toArgb())
+                s.setColorUniform("color3", stops[2].toArgb())
+                s.setColorUniform("color4", stops[3].toArgb())
+            },
+            onDrawFrame = { _, s ->
+                s.setFloatUniform("iCenter", cx, cy)
+                s.setFloatUniform("iZoom", zoom)
+                s.setFloatUniform("iMaxIter", maxIter)
+                s.setFloatUniform("iType", fractalType.ordinal.toFloat())
+                s.setFloatUniform("iJuliaC", juliaCx, juliaCy)
+                s.setFloatUniform("iPhase", phase)
+                s.setFloatUniform("iBrightness", brightness)
+            },
+        )
     }
 }
 
@@ -399,6 +374,16 @@ private fun FractalCpuCanvas(
             FractalQuality.Medium -> 200
             FractalQuality.High -> 280
         }
+        val longSide = when (quality) {
+            FractalQuality.Low -> CpuBakeLongSidePxLow
+            FractalQuality.Medium -> CpuBakeLongSidePxMedium
+            FractalQuality.High -> CpuBakeLongSidePxHigh
+        }
+        val bakeInterval = when (quality) {
+            FractalQuality.Low -> CpuBakeIntervalMs * 2
+            FractalQuality.Medium -> (CpuBakeIntervalMs * 1.4f).toLong()
+            FractalQuality.High -> CpuBakeIntervalMs
+        }
         val aspect = w.toFloat() / h.toFloat()
         while (true) {
             while (overlay != null) {
@@ -407,7 +392,7 @@ private fun FractalCpuCanvas(
             }
             val baked = withContext(Dispatchers.Default) {
                 bakeFractalBitmap(
-                    longSide = CpuBakeLongSidePx,
+                    longSide = longSide,
                     aspect = aspect,
                     fractalType = fractalType,
                     zoom = zoom,
@@ -423,10 +408,14 @@ private fun FractalCpuCanvas(
             }
             overlay = baked
             overlayAlphaTarget = 1f
-            delay(if (isActive) CpuBakeIntervalMs else CpuBakeIntervalMs * 3)
+            delay(if (isActive) bakeInterval else bakeInterval * 3)
         }
     }
 
+    val upscaleFilter = when (quality) {
+        FractalQuality.High -> FilterQuality.High
+        else -> FilterQuality.Medium
+    }
     Canvas(
         modifier = modifier
             .fillMaxSize()
@@ -443,7 +432,7 @@ private fun FractalCpuCanvas(
                 image = baseBmp.asImageBitmap(),
                 dstSize = dst,
                 alpha = 1f,
-                filterQuality = FilterQuality.High,
+                filterQuality = upscaleFilter,
             )
         } else {
             drawRect(Color(0xFF020617))
@@ -453,7 +442,7 @@ private fun FractalCpuCanvas(
                 image = overlayBmp.asImageBitmap(),
                 dstSize = dst,
                 alpha = overlayAlpha,
-                filterQuality = FilterQuality.High,
+                filterQuality = upscaleFilter,
             )
         }
     }

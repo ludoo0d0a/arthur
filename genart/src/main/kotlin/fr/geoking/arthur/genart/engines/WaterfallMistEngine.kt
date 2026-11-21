@@ -13,7 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -26,6 +25,7 @@ import fr.geoking.arthur.genart.phase01
 import fr.geoking.arthur.genart.qualityCount
 import fr.geoking.arthur.genart.seededRange
 import fr.geoking.arthur.genart.seededUnit
+import fr.geoking.arthur.genart.genartSoftBlur
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -149,7 +149,7 @@ internal fun WaterfallMistEngine(
                 )
             }
         }
-        Canvas(modifier = Modifier.fillMaxSize().blur(18.dp)) {
+        Canvas(modifier = Modifier.fillMaxSize().genartSoftBlur(quality, 18.dp)) {
             val w = size.width
             val h = size.height
             val dim = if (isActive) 1f else 0.6f

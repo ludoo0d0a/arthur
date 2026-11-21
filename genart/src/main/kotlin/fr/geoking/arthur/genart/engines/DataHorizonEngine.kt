@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -22,6 +21,7 @@ import fr.geoking.arthur.genart.TonalPalette
 import fr.geoking.arthur.genart.phase01
 import fr.geoking.arthur.genart.qualityCount
 import fr.geoking.arthur.genart.sin01
+import fr.geoking.arthur.genart.genartSoftBlur
 import kotlin.math.PI
 
 /** Synthwave grid floor: a perspective horizon of slowly cross-fading cool-toned lines — car-safe, no strobe. */
@@ -68,7 +68,7 @@ internal fun DataHorizonEngine(
                 ),
             )
         }
-        Canvas(modifier = Modifier.fillMaxSize().blur(6.dp)) {
+        Canvas(modifier = Modifier.fillMaxSize().genartSoftBlur(quality, 6.dp)) {
             val w = size.width
             val h = size.height
             val horizonY = h * 0.42f

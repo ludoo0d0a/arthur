@@ -71,7 +71,9 @@ object TonalPalette {
 internal fun qualityCount(quality: GenartQuality, low: Int, medium: Int, high: Int): Int =
     when (quality) {
         GenartQuality.Low -> low
-        GenartQuality.Medium -> ((medium + high) * 0.55f).toInt().coerceAtLeast(medium)
+        // Medium stays at the authored medium (TV / gallery). Do not blend toward High —
+        // that previously pushed particle/glow counts near High and hurt TV frame time.
+        GenartQuality.Medium -> medium
         // Near-4K density: High lands denser than the authored high so scenes fill the frame.
         GenartQuality.High -> (high * 1.55f).toInt().coerceAtLeast(high + 2)
     }

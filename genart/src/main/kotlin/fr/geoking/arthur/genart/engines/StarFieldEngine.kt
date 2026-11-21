@@ -13,7 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -27,6 +26,7 @@ import fr.geoking.arthur.genart.qualityCount
 import fr.geoking.arthur.genart.seededRange
 import fr.geoking.arthur.genart.seededUnit
 import fr.geoking.arthur.genart.sin01
+import fr.geoking.arthur.genart.genartSoftBlur
 import kotlin.math.PI
 import kotlin.math.sin
 import kotlin.random.Random
@@ -96,10 +96,10 @@ internal fun StarFieldEngine(
             )
         }
         // Soft nebula / galaxy dust — fills dark voids with blurred colour washes.
-        Canvas(modifier = Modifier.fillMaxSize().blur(28.dp)) {
+        Canvas(modifier = Modifier.fillMaxSize().genartSoftBlur(quality, 28.dp)) {
             drawDustClouds(dustClouds, driftT, paletteColors, brightness, dim)
         }
-        Canvas(modifier = Modifier.fillMaxSize().blur(14.dp)) {
+        Canvas(modifier = Modifier.fillMaxSize().genartSoftBlur(quality, 14.dp)) {
             drawDustClouds(dustClouds, driftT * 0.7f + 0.15f, paletteColors, brightness * 0.85f, dim * 0.7f)
         }
         // Far layer: crisp, slow drift, many small dim stars.
@@ -107,11 +107,11 @@ internal fun StarFieldEngine(
             drawStarLayer(farStars, driftT, twinkleT, driftScale = 0.015f, sizeScale = 1f, alphaScale = 1f, paletteColors, brightness, dim)
         }
         // Mid layer: light blur, medium drift, medium size.
-        Canvas(modifier = Modifier.fillMaxSize().blur(3.dp)) {
+        Canvas(modifier = Modifier.fillMaxSize().genartSoftBlur(quality, 3.dp)) {
             drawStarLayer(midStars, driftT, twinkleT, driftScale = 0.045f, sizeScale = 1.7f, alphaScale = 1.15f, paletteColors, brightness, dim)
         }
         // Near layer: soft bokeh blur, fastest drift, largest/brightest — shallow depth-of-field look.
-        Canvas(modifier = Modifier.fillMaxSize().blur(8.dp)) {
+        Canvas(modifier = Modifier.fillMaxSize().genartSoftBlur(quality, 8.dp)) {
             drawStarLayer(nearStars, driftT, twinkleT, driftScale = 0.09f, sizeScale = 2.6f, alphaScale = 1.3f, paletteColors, brightness, dim)
         }
         // One slow satellite point crossing the frame in a straight line, crisp, fading at both ends.

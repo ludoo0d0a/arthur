@@ -444,7 +444,8 @@ fun AmbientScreenContent(
                 ArtworkTransitionHost(
                     artwork = shown,
                     isActive = ambientActive,
-                    quality = GenartQuality.High,
+                    // TV GPUs struggle with High genart/fractal + blur; Medium keeps motion fluid.
+                    quality = if (isTelevision) GenartQuality.Medium else GenartQuality.High,
                     silentFailure = shouldRotate,
                     onDisplayReady = { displayReady = true },
                     onStillFailed = {

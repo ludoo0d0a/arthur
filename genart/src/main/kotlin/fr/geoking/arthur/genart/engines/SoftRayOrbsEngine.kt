@@ -15,7 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -24,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
 import fr.geoking.arthur.genart.phase01
+import fr.geoking.arthur.genart.genartSoftBlur
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -59,6 +59,11 @@ internal fun SoftRayOrbsEngine(
         GenartQuality.Medium -> 3f
         GenartQuality.High -> 3f
     }
+    val maxSteps = when (quality) {
+        GenartQuality.Low -> 22f
+        GenartQuality.Medium -> 32f
+        GenartQuality.High -> 48f
+    }
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         val shader = remember { RuntimeShader(SOFT_RAY_ORBS_AGSL) }
@@ -68,6 +73,7 @@ internal fun SoftRayOrbsEngine(
             shader.setFloatUniform("iTime", t)
             shader.setFloatUniform("iEnergy", energy)
             shader.setFloatUniform("iOrbs", orbCount)
+            shader.setFloatUniform("iMaxSteps", maxSteps)
             shader.setFloatUniform("iColor0", c0.red, c0.green, c0.blue)
             shader.setFloatUniform("iColor1", c1.red, c1.green, c1.blue)
             shader.setFloatUniform("iColor2", c2.red, c2.green, c2.blue)
@@ -108,7 +114,7 @@ private fun SoftRayOrbsCpu(
         Canvas(Modifier.fillMaxSize()) {
             drawRect(color = Color(0xFF050814))
         }
-        Canvas(Modifier.fillMaxSize().blur(10.dp)) {
+        Canvas(Modifier.fillMaxSize().genartSoftBlur(quality, 10.dp)) {
             val w = size.width
             val h = size.height
             val minDim = minOf(w, h)
@@ -177,6 +183,7 @@ internal const val SOFT_RAY_ORBS_AGSL = """
     uniform float iTime;
     uniform float iEnergy;
     uniform float iOrbs;
+    uniform float iMaxSteps;
     uniform float3 iColor0;
     uniform float3 iColor1;
     uniform float3 iColor2;
@@ -204,7 +211,9 @@ internal const val SOFT_RAY_ORBS_AGSL = """
         float dist = 0.0;
         float hit = 0.0;
         float3 p = ro;
+        float steps = clamp(iMaxSteps, 16.0, 48.0);
         for (int i = 0; i < 48; i++) {
+            if (float(i) >= steps) break;
             float d = mapScene(p, t);
             if (d < 0.002) { hit = 1.0; break; }
             dist += d;

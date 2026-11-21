@@ -18,9 +18,11 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.shared.domain.Artwork
+import fr.geoking.arthur.shared.domain.isGenerative
 
 private const val CrossfadeDurationPhoneMs = 400
 private const val CrossfadeDurationTvMs = 1100
+private const val CrossfadeDurationTvGenerativeMs = 650
 
 /**
  * Keeps the last successfully displayed artwork visible until [artwork] is ready,
@@ -43,7 +45,15 @@ fun ArtworkTransitionHost(
     val isTelevision =
         LocalConfiguration.current.uiMode and Configuration.UI_MODE_TYPE_MASK ==
             Configuration.UI_MODE_TYPE_TELEVISION
-    val crossfadeMs = if (isTelevision) CrossfadeDurationTvMs else CrossfadeDurationPhoneMs
+    // Freeze duration per artwork id so animateFloatAsState does not restart mid-fade.
+    val crossfadeMs = remember(artwork.id, isTelevision) {
+        when {
+            !isTelevision -> CrossfadeDurationPhoneMs
+            artwork.isGenerative || lastGood?.isGenerative == true ->
+                CrossfadeDurationTvGenerativeMs
+            else -> CrossfadeDurationTvMs
+        }
+    }
 
     LaunchedEffect(artwork.id) {
         if (artwork.id != visibleId) {
@@ -73,7 +83,8 @@ fun ArtworkTransitionHost(
                 artwork = back,
                 // Prefer a single active generative engine; stills are cheap to keep warm.
                 isActive = isActive && !showingIncoming,
-                quality = quality,
+                // Outgoing generative on TV: Low quality to avoid dual full-cost engines.
+                quality = if (isTelevision && back.isGenerative) GenartQuality.Low else quality,
                 modifier = Modifier.fillMaxSize(),
             )
         }

@@ -222,6 +222,8 @@ class PackModelsTest {
             PackFamily.DownloadedMusic.homeTile().sellablePackId,
         )
         assertFalse(visibleHomePackFamilies().contains(PackFamily.DownloadedMusic))
+        // FeatureFlag.personalPhotosEnabled=false: Personal Photos home tile hidden.
+        assertFalse(visibleHomePackFamilies().contains(PackFamily.Personal))
     }
 
     @Test

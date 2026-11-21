@@ -22,6 +22,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import fr.geoking.arthur.FeatureFlag
 import fr.geoking.arthur.R
 import fr.geoking.arthur.shared.audio.NeuralAudioPack
 import fr.geoking.arthur.shared.audio.NeuralEngineType
@@ -79,6 +80,12 @@ enum class CategoryFilter(@get:StringRes val labelRes: Int) {
 
     fun showsMuseumTopics(): Boolean = this == PAINTING || this == SCULPTURE
 }
+
+/** Category chips visible for the current feature flags. */
+fun visibleCategoryFilters(): List<CategoryFilter> =
+    CategoryFilter.entries.filter {
+        FeatureFlag.personalPhotosEnabled || it != CategoryFilter.PERSONAL
+    }
 
 /**
  * Genart subcategory: Random mix, Fractal presets, Custom fractal, Abstract, Nature,
@@ -439,7 +446,7 @@ fun CategoryFilterRow(
         contentPadding = contentPadding,
         horizontalArrangement = Arrangement.spacedBy(horizontalSpacing),
     ) {
-        itemsIndexed(CategoryFilter.entries) { index, category ->
+        itemsIndexed(visibleCategoryFilters()) { index, category ->
             FilterChip(
                 selected = selectedCategory == category,
                 onClick = { onCategorySelected(category) },

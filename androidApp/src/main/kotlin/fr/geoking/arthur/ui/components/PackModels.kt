@@ -42,7 +42,13 @@ fun PackFamily.isMusicFamily(): Boolean =
 
 /** Home-grid families visible for the current feature flags. */
 fun visibleHomePackFamilies(): List<PackFamily> =
-    PackFamily.entries.filter { FeatureFlag.musicEnabled || !it.isMusicFamily() }
+    PackFamily.entries.filter { family ->
+        when {
+            family.isMusicFamily() -> FeatureFlag.musicEnabled
+            family == PackFamily.Personal -> FeatureFlag.personalPhotosEnabled
+            else -> true
+        }
+    }
 
 /** Sub-pack ids under [PackFamily.VintageGames]. */
 object VintageGamesSub {

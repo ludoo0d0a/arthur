@@ -10,4 +10,7 @@ object FeatureFlag {
 
     /** Android Auto car app + media browse surfaces. */
     val androidAutoEnabled: Boolean = false
+
+    /** On-device Personal Photos pack + Marketplace SKU + category chip. */
+    val personalPhotosEnabled: Boolean = false
 }

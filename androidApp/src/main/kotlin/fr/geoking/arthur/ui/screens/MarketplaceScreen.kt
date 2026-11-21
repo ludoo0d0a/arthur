@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import fr.geoking.arthur.FeatureFlag
 import fr.geoking.arthur.R
 import fr.geoking.arthur.billing.PurchasesGateway
 import fr.geoking.arthur.shared.marketplace.MarketplaceCatalog
@@ -143,57 +144,62 @@ fun MarketplaceScreen(
 }
 
 internal fun marketplacePackTiles(): List<PackTile> =
-    MarketplaceCatalog.all().map { pack ->
-        when {
-            pack.id == MarketplaceCatalog.PERSONAL_PHOTOS_ID -> PackTile(
-                id = "market_${pack.id}",
-                titleRes = R.string.pack_personal,
-                coverRes = R.drawable.pack_photo,
-                selection = PackSelection(PackFamily.Personal),
-                testTagSuffix = "market_${pack.id}",
-                sellablePackId = pack.id,
-            )
-            pack.genartTopicSuffix != null -> {
-                val topic = GenartTopic.entries.firstOrNull {
-                    it.testTagSuffix == pack.genartTopicSuffix
-                } ?: GenartTopic.Nature
-                PackTile(
-                    id = "market_${pack.id}",
-                    titleRes = topic.labelRes,
-                    coverRes = PackCovers.genart(topic),
-                    selection = PackSelection(PackFamily.Genart, topic.testTagSuffix),
-                    testTagSuffix = "market_${pack.id}",
-                    sellablePackId = pack.id,
-                )
-            }
-            pack.audioPackSuffix != null -> {
-                val topic = AudioPackTopic.entries.firstOrNull {
-                    it.packSuffix == pack.audioPackSuffix
-                } ?: AudioPackTopic.HearthWeather
-                val family = when {
-                    topic == AudioPackTopic.DownloadedMusic -> PackFamily.DownloadedMusic
-                    topic.isNeuralDedicated -> PackFamily.Neural
-                    else -> PackFamily.Sound
-                }
-                PackTile(
-                    id = "market_${pack.id}",
-                    titleRes = topic.labelRes,
-                    coverRes = PackCovers.audio(topic),
-                    selection = PackSelection(family, topic.testTagSuffix),
-                    testTagSuffix = "market_${pack.id}",
-                    sellablePackId = pack.id,
-                )
-            }
-            else -> PackTile(
-                id = "market_${pack.id}",
-                titleRes = R.string.marketplace_title,
-                coverRes = R.drawable.pack_random,
-                selection = PackSelection(PackFamily.Museum),
-                testTagSuffix = "market_${pack.id}",
-                sellablePackId = pack.id,
-            )
+    MarketplaceCatalog.all()
+        .filter { pack ->
+            FeatureFlag.personalPhotosEnabled ||
+                pack.id != MarketplaceCatalog.PERSONAL_PHOTOS_ID
         }
-    }
+        .map { pack ->
+            when {
+                pack.id == MarketplaceCatalog.PERSONAL_PHOTOS_ID -> PackTile(
+                    id = "market_${pack.id}",
+                    titleRes = R.string.pack_personal,
+                    coverRes = R.drawable.pack_photo,
+                    selection = PackSelection(PackFamily.Personal),
+                    testTagSuffix = "market_${pack.id}",
+                    sellablePackId = pack.id,
+                )
+                pack.genartTopicSuffix != null -> {
+                    val topic = GenartTopic.entries.firstOrNull {
+                        it.testTagSuffix == pack.genartTopicSuffix
+                    } ?: GenartTopic.Nature
+                    PackTile(
+                        id = "market_${pack.id}",
+                        titleRes = topic.labelRes,
+                        coverRes = PackCovers.genart(topic),
+                        selection = PackSelection(PackFamily.Genart, topic.testTagSuffix),
+                        testTagSuffix = "market_${pack.id}",
+                        sellablePackId = pack.id,
+                    )
+                }
+                pack.audioPackSuffix != null -> {
+                    val topic = AudioPackTopic.entries.firstOrNull {
+                        it.packSuffix == pack.audioPackSuffix
+                    } ?: AudioPackTopic.HearthWeather
+                    val family = when {
+                        topic == AudioPackTopic.DownloadedMusic -> PackFamily.DownloadedMusic
+                        topic.isNeuralDedicated -> PackFamily.Neural
+                        else -> PackFamily.Sound
+                    }
+                    PackTile(
+                        id = "market_${pack.id}",
+                        titleRes = topic.labelRes,
+                        coverRes = PackCovers.audio(topic),
+                        selection = PackSelection(family, topic.testTagSuffix),
+                        testTagSuffix = "market_${pack.id}",
+                        sellablePackId = pack.id,
+                    )
+                }
+                else -> PackTile(
+                    id = "market_${pack.id}",
+                    titleRes = R.string.marketplace_title,
+                    coverRes = R.drawable.pack_random,
+                    selection = PackSelection(PackFamily.Museum),
+                    testTagSuffix = "market_${pack.id}",
+                    sellablePackId = pack.id,
+                )
+            }
+        }
 
 @Composable
 internal fun marketplacePackTitle(pack: SellablePack): String = when {

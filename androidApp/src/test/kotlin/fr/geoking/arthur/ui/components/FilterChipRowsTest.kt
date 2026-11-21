@@ -124,6 +124,18 @@ class FilterChipRowsTest {
             ),
             CategoryFilter.entries.toList(),
         )
+        // FeatureFlag.personalPhotosEnabled=false: PERSONAL chip hidden.
+        assertEquals(
+            listOf(
+                CategoryFilter.ALL,
+                CategoryFilter.GENART,
+                CategoryFilter.PAINTING,
+                CategoryFilter.PHOTO,
+                CategoryFilter.VIDEO,
+                CategoryFilter.SCULPTURE,
+            ),
+            visibleCategoryFilters(),
+        )
     }
 
     @Test

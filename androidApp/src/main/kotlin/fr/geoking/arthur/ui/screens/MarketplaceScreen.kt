@@ -1,13 +1,17 @@
 package fr.geoking.arthur.ui.screens
 
+import android.app.Activity
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -16,17 +20,24 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.FeatureFlag
 import fr.geoking.arthur.R
+import fr.geoking.arthur.billing.PurchaseResult
 import fr.geoking.arthur.billing.PurchasesGateway
 import fr.geoking.arthur.shared.marketplace.MarketplaceCatalog
 import fr.geoking.arthur.shared.marketplace.PackOwnership
@@ -38,9 +49,11 @@ import fr.geoking.arthur.ui.components.PackFamily
 import fr.geoking.arthur.ui.components.PackGrid
 import fr.geoking.arthur.ui.components.PackSelection
 import fr.geoking.arthur.ui.components.PackTile
+import kotlinx.coroutines.launch
 
 /**
- * Marketplace browse / fake unlock. Phone + TV only — never Android Auto.
+ * Marketplace browse / purchase. Phone + TV only — never Android Auto.
+ * Pack SKUs map to RevenueCat product ids from [MarketplaceCatalog].
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,15 +65,41 @@ fun MarketplaceScreen(
     highlightPackId: String? = null,
     canPurchaseOnDevice: Boolean = true,
 ) {
-    var refreshEpoch by remember { mutableIntStateOf(0) }
+    val scope = rememberCoroutineScope()
+    val activity = LocalContext.current as Activity
+    val isTelevision = LocalConfiguration.current.uiMode and Configuration.UI_MODE_TYPE_MASK ==
+        Configuration.UI_MODE_TYPE_TELEVISION
+    val entitlements by purchases.activeEntitlementIds.collectAsState()
+    val prices by purchases.productPrices.collectAsState()
     var selectedPackId by remember(highlightPackId) {
         mutableStateOf(highlightPackId)
     }
+    var busy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    val pendingMessage = stringResource(R.string.purchase_payment_pending)
     val tiles = remember { marketplacePackTiles() }
     val selectedTile = tiles.firstOrNull { it.sellablePackId == selectedPackId }
     val selectedPack = selectedPackId?.let { MarketplaceCatalog.byId(it) }
-    @Suppress("UNUSED_EXPRESSION")
-    refreshEpoch
+    val firstTileFocus = remember { FocusRequester() }
+    val buyFocus = remember { FocusRequester() }
+
+    @Suppress("UNUSED_VARIABLE")
+    val entitlementRevision = entitlements
+
+    LaunchedEffect(Unit) {
+        purchases.refresh()
+        if (isTelevision) {
+            firstTileFocus.requestFocus()
+        }
+    }
+
+    LaunchedEffect(selectedPackId, isTelevision) {
+        if (isTelevision && selectedPack != null &&
+            !ownership.owns(selectedPack.id) && canPurchaseOnDevice
+        ) {
+            buyFocus.requestFocus()
+        }
+    }
 
     Scaffold(
         modifier = modifier
@@ -98,20 +137,31 @@ fun MarketplaceScreen(
                 selected = selectedTile?.selection,
                 onTileClick = { tile ->
                     selectedPackId = tile.sellablePackId
+                    error = null
                 },
                 isLocked = { it.isLocked(ownership) },
                 modifier = Modifier
                     .weight(1f)
                     .testTag("marketplace_pack_grid"),
-                contentPadding = PaddingValues(16.dp),
+                contentPadding = PaddingValues(
+                    horizontal = if (isTelevision) 48.dp else 16.dp,
+                    vertical = 16.dp,
+                ),
+                firstTileFocusRequester = firstTileFocus,
+                selectOnFocus = isTelevision,
+                onTileFocused = { tile ->
+                    selectedPackId = tile.sellablePackId
+                    error = null
+                },
             )
             if (selectedPack != null) {
                 val owned = ownership.owns(selectedPack.id)
+                val price = prices[selectedPack.productId]
                 Text(
                     text = marketplacePackTitle(selectedPack),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier
-                        .padding(horizontal = 16.dp)
+                        .padding(horizontal = if (isTelevision) 48.dp else 16.dp)
                         .testTag("marketplace_pack_${selectedPack.id}"),
                 )
                 Text(
@@ -122,20 +172,67 @@ fun MarketplaceScreen(
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                    modifier = Modifier.padding(
+                        horizontal = if (isTelevision) 48.dp else 16.dp,
+                        vertical = 4.dp,
+                    ),
                 )
+                if (error != null) {
+                    Text(
+                        text = error!!,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier
+                            .padding(horizontal = if (isTelevision) 48.dp else 16.dp)
+                            .testTag("marketplace_error"),
+                    )
+                }
                 if (!owned && canPurchaseOnDevice) {
                     Button(
                         onClick = {
-                            purchases.unlockEntitlement(selectedPack.entitlementId)
-                            refreshEpoch++
+                            busy = true
+                            error = null
+                            scope.launch {
+                                when (
+                                    val result = purchases.purchaseProduct(
+                                        activity,
+                                        selectedPack.productId,
+                                    )
+                                ) {
+                                    PurchaseResult.Success -> busy = false
+                                    PurchaseResult.Cancelled -> busy = false
+                                    PurchaseResult.Pending -> {
+                                        error = pendingMessage
+                                        busy = false
+                                    }
+                                    is PurchaseResult.Error -> {
+                                        error = result.message
+                                        busy = false
+                                    }
+                                }
+                            }
                         },
+                        enabled = !busy,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp)
+                            .padding(if (isTelevision) 48.dp else 16.dp)
+                            .then(if (isTelevision) Modifier.focusRequester(buyFocus) else Modifier)
                             .testTag("marketplace_unlock_${selectedPack.id}"),
                     ) {
-                        Text(stringResource(R.string.marketplace_unlock))
+                        if (busy) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(22.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                            )
+                        } else {
+                            val label = if (price != null) {
+                                stringResource(R.string.marketplace_buy_priced, price)
+                            } else {
+                                stringResource(R.string.marketplace_unlock)
+                            }
+                            Text(label)
+                        }
                     }
                 }
             }

@@ -27,6 +27,18 @@ class RevenueCatPremiumEntitlementTest {
     }
 
     @Test
+    fun fakeGateway_mapsProductIdToEntitlement() {
+        val pack = MarketplaceCatalog.genartPack("nature")
+        assertTrue(
+            FakePurchasesGateway.entitlementIdForProduct(pack.productId) == pack.entitlementId,
+        )
+        assertTrue(
+            FakePurchasesGateway.entitlementIdForProduct(RevenueCatPremiumEntitlement.PRODUCT_ID) ==
+                RevenueCatPremiumEntitlement.ENTITLEMENT_ID,
+        )
+    }
+
+    @Test
     fun fakeGateway_unlocksAudioPackIndependentlyOfPremium() {
         val gateway = FakePurchasesGateway(premium = false)
         val ownership = RevenueCatPackOwnership(gateway)

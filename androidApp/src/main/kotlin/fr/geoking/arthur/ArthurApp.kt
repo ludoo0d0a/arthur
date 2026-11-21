@@ -6,9 +6,15 @@ import fr.geoking.arthur.billing.DevAwarePackOwnership
 import fr.geoking.arthur.billing.DevAwarePremiumEntitlement
 import fr.geoking.arthur.billing.FakePurchasesGateway
 import fr.geoking.arthur.billing.PurchasesGateway
+import fr.geoking.arthur.billing.RevenueCatInitializer
 import fr.geoking.arthur.billing.RevenueCatPackOwnership
+import fr.geoking.arthur.billing.RevenueCatPurchasesGateway
 import androidx.room.Room
 import fr.geoking.arthur.billing.RevenueCatPremiumEntitlement
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import fr.geoking.arthur.fractal.CustomFractalStore
 import fr.geoking.arthur.db.ArthurDatabase
 import fr.geoking.arthur.shared.debug.DebugLogger
@@ -75,11 +81,17 @@ import org.koin.core.context.stopKoin
 import org.koin.dsl.module
 
 class ArthurApp : Application() {
+    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+
     override fun onCreate() {
         super.onCreate()
         // Avoid debug noise / timeouts; release builds still report.
         runCatching {
             FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(!BuildConfig.DEBUG)
+        }
+        val revenueCatKey = BuildConfig.REVENUECAT_API_KEY
+        if (revenueCatKey.isNotBlank()) {
+            RevenueCatInitializer.initialize(this, revenueCatKey)
         }
         stopKoin()
         startKoin {
@@ -89,6 +101,11 @@ class ArthurApp : Application() {
         // After Koin so ErrorLogger exists; wraps Crashlytics' handler to also fill the error trap.
         runCatching {
             ErrorTrap.install(org.koin.core.context.GlobalContext.get().get())
+        }
+        val gateway = org.koin.core.context.GlobalContext.get().get<PurchasesGateway>()
+        if (gateway is RevenueCatPurchasesGateway) {
+            gateway.attachListener()
+            appScope.launch { gateway.refresh() }
         }
     }
 }
@@ -148,8 +165,13 @@ val appModule = module {
         )
     }
     single { DebugLogger(clock = { System.currentTimeMillis() }) }
-    single { FakePurchasesGateway(premium = false) }
-    single<PurchasesGateway> { get<FakePurchasesGateway>() }
+    single<PurchasesGateway> {
+        if (BuildConfig.REVENUECAT_API_KEY.isNotBlank()) {
+            RevenueCatPurchasesGateway()
+        } else {
+            FakePurchasesGateway(premium = false)
+        }
+    }
     single { DeveloperSettings(androidContext()) }
     single { RotationSettings(androidContext()) }
     single { ScreensaverSettings(androidContext()) }

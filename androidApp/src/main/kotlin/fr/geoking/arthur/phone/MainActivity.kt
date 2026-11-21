@@ -55,10 +55,12 @@ import fr.geoking.arthur.ui.UpdateCheckFeedbackDialog
 import fr.geoking.arthur.ui.UpdateInProgressBanner
 import fr.geoking.arthur.ui.components.debug.ArthurDebugLogOverlay
 import fr.geoking.arthur.ui.components.PackSelection
+import fr.geoking.arthur.ui.screens.AccountScreen
 import fr.geoking.arthur.ui.screens.ControlPlaneScreen
 import fr.geoking.arthur.ui.screens.CustomFractalEditorScreen
 import fr.geoking.arthur.ui.screens.MarketplaceScreen
 import fr.geoking.arthur.ui.screens.PhoneLanPairingScreen
+import fr.geoking.arthur.ui.screens.PremiumPaywallScreen
 import fr.geoking.arthur.ui.screens.SettingsScreen
 import fr.geoking.arthur.ui.screens.SoundPlayerScreen
 import fr.geoking.arthur.ui.screens.TvLanPairingHostScreen
@@ -170,6 +172,8 @@ class MainActivity : ComponentActivity() {
                         var showEditor by remember { mutableStateOf(false) }
                         var showSettings by remember { mutableStateOf(false) }
                         var showMarketplace by remember { mutableStateOf(false) }
+                        var showAccount by remember { mutableStateOf(false) }
+                        var showPaywall by remember { mutableStateOf(false) }
                         var showPairing by pairingRequested
                         var marketplaceHighlight by remember { mutableStateOf<String?>(null) }
                         var soundPlayerSelection by remember {
@@ -193,9 +197,40 @@ class MainActivity : ComponentActivity() {
                         val ambientSoundCharacter by ambientAudioSettings.character.collectAsState()
                         val ambientSoundStylePreference by ambientAudioSettings.stylePreference.collectAsState()
                         val ambientSoundComplexity by ambientAudioSettings.complexity.collectAsState()
+                        val activeEntitlements by purchases.activeEntitlementIds.collectAsState()
                         val isPremium = premium.isPremium
                         // Custom fractal authoring needs touch; TV uses remote only.
                         when {
+                            showPaywall -> {
+                                PremiumPaywallScreen(
+                                    purchases = purchases,
+                                    onDismiss = { showPaywall = false },
+                                    onPurchaseSuccess = {
+                                        showPaywall = false
+                                        catalogEpoch++
+                                    },
+                                )
+                            }
+                            showAccount -> {
+                                AccountScreen(
+                                    purchases = purchases,
+                                    ownership = packOwnership,
+                                    isPremium = isPremium,
+                                    onDismiss = {
+                                        showAccount = false
+                                        catalogEpoch++
+                                    },
+                                    onOpenPaywall = {
+                                        showAccount = false
+                                        showPaywall = true
+                                    },
+                                    onOpenMarketplace = {
+                                        showAccount = false
+                                        marketplaceHighlight = null
+                                        showMarketplace = true
+                                    },
+                                )
+                            }
                             showPairing -> {
                                 if (isTelevision) {
                                     TvLanPairingHostScreen(
@@ -297,6 +332,14 @@ class MainActivity : ComponentActivity() {
                                         marketplaceHighlight = highlight
                                         showMarketplace = true
                                     },
+                                    onOpenAccount = {
+                                        showSettings = false
+                                        showAccount = true
+                                    },
+                                    onOpenPaywall = {
+                                        showSettings = false
+                                        showPaywall = true
+                                    },
                                     onOpenPairing = {
                                         showSettings = false
                                         pairingRequested.value = true
@@ -322,7 +365,13 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                             else -> {
-                                key(catalogEpoch, isPremium, packOwnership.ownsPersonalPhotos(), simulateAllPacks) {
+                                key(
+                                    catalogEpoch,
+                                    isPremium,
+                                    packOwnership.ownsPersonalPhotos(),
+                                    simulateAllPacks,
+                                    activeEntitlements,
+                                ) {
                                     ControlPlaneScreen(
                                         contentEngine = contentEngine,
                                         stockPhotoSettings = stockPhotoSettings,

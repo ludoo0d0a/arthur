@@ -78,6 +78,7 @@ import fr.geoking.arthur.shared.domain.isGenerative
 import fr.geoking.arthur.source.AmbientAudioSettings
 import fr.geoking.arthur.source.InvalidArtworkStore
 import fr.geoking.arthur.source.Quote
+import fr.geoking.arthur.source.QuoteProvider
 import fr.geoking.arthur.source.RemoteStillNetworkGate
 import fr.geoking.arthur.source.RotationSettings
 import fr.geoking.arthur.source.StillImagePrefetcher
@@ -294,6 +295,7 @@ fun AmbientScreenContent(
     val showQuotes by quoteSettings.showQuotes.collectAsState()
     val quoteProvider by quoteSettings.provider.collectAsState()
     var quotesById by remember { mutableStateOf<Map<String, Quote>>(emptyMap()) }
+    var quotesBoundProvider by remember { mutableStateOf<QuoteProvider?>(null) }
     val shown = if (shouldRotate) current else artwork
     val slideQuote = if (showQuotes) shown?.id?.let { quotesById[it] } else null
     var showDetails by remember { mutableStateOf(false) }
@@ -303,19 +305,36 @@ fun AmbientScreenContent(
     }
     val ambientActive = isActive && !showDetails
 
-    LaunchedEffect(poolIds, artwork?.id, showQuotes, quoteProvider) {
+    // Bind once per pool / provider — not on each slide. Appends only assign new ids
+    // so each image keeps a distinct quote instead of reshuffling the batch.
+    val pinArtworkId = artwork?.id?.takeIf { poolIds.isEmpty() }
+    LaunchedEffect(poolIds, showQuotes, quoteProvider, pinArtworkId) {
         if (!showQuotes) {
             quotesById = emptyMap()
+            quotesBoundProvider = null
             return@LaunchedEffect
         }
-        val ids = poolIds.ifEmpty { listOfNotNull(artwork?.id) }
+        val ids = poolIds.ifEmpty { listOfNotNull(pinArtworkId) }
         if (ids.isEmpty()) {
             quotesById = emptyMap()
             return@LaunchedEffect
         }
-        quotesById = withContext(Dispatchers.IO) {
-            runCatching { quoteRepository.quotesForArtworks(ids) }.getOrDefault(emptyMap())
+        val idSet = ids.toSet()
+        val existing = quotesById
+        val replaceAll =
+            quotesBoundProvider != quoteProvider ||
+                existing.isEmpty() ||
+                existing.keys.none { it in idSet }
+        val idsToAssign = if (replaceAll) ids else ids.filter { it !in existing }
+        val assigned = if (idsToAssign.isEmpty()) {
+            emptyMap()
+        } else {
+            withContext(Dispatchers.IO) {
+                runCatching { quoteRepository.quotesForArtworks(idsToAssign) }.getOrDefault(emptyMap())
+            }
         }
+        quotesById = if (replaceAll) assigned else (existing + assigned).filterKeys { it in idSet }
+        quotesBoundProvider = quoteProvider
     }
 
     LaunchedEffect(shown?.id, poolIds, ambientActive) {

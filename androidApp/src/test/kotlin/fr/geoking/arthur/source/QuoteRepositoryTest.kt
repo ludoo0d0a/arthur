@@ -101,6 +101,25 @@ class QuoteRepositoryTest {
     }
 
     @Test
+    fun quotesForArtworks_prefersDistinctQuotesPerImage() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        context.getSharedPreferences("arthur_quotes_cache", Context.MODE_PRIVATE).edit().clear().commit()
+        val body = (0 until 10).joinToString(",", prefix = "[", postfix = "]") { i ->
+            """{"q":"Q$i","a":"A$i"}"""
+        }
+        val repo = QuoteRepository(
+            context = context,
+            httpGet = { body },
+            provider = { QuoteProvider.ZenQuotes },
+            clock = { 1_000L },
+        )
+        val ids = (1..8).map { "img-$it" }
+        val assigned = repo.quotesForArtworks(ids)
+        assertEquals(8, assigned.size)
+        assertEquals(8, assigned.values.map { it.text }.toSet().size)
+    }
+
+    @Test
     fun nextQuote_usesCacheWithinTtl() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<Context>()
         context.getSharedPreferences("arthur_quotes_cache", Context.MODE_PRIVATE).edit().clear().commit()
@@ -179,6 +198,27 @@ class QuoteRepositoryTest {
     }
 
     @Test
+    fun quotesForArtworks_growsLecogCacheForLargePool() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        context.getSharedPreferences("arthur_quotes_cache", Context.MODE_PRIVATE).edit().clear().commit()
+        var fetches = 0
+        val repo = QuoteRepository(
+            context = context,
+            httpGet = { url ->
+                fetches++
+                val n = url.substringAfter("n=").substringBefore("&").toInt()
+                """{"success":true,"data":{"text":"Lecog $n","author":{"forename":"","name":"L$n"}}}"""
+            },
+            provider = { QuoteProvider.CitationLecog },
+            clock = { 42_000L },
+        )
+        val ids = (0 until 20).map { "img-$it" }
+        val assigned = repo.quotesForArtworks(ids)
+        assertTrue(fetches > QuoteRepository.LECOG_BATCH_SIZE)
+        assertEquals(20, assigned.values.map { it.text }.toSet().size)
+    }
+
+    @Test
     fun quotesForArtworks_refetchesWhenCachedBatchTooSmall() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<Context>()
         context.getSharedPreferences("arthur_quotes_cache", Context.MODE_PRIVATE).edit().clear().commit()
@@ -206,8 +246,9 @@ class QuoteRepositoryTest {
         now += 1
         val assigned = repo.quotesForArtworks(listOf("img-1", "img-2"))
         assertTrue(fetches > afterPoison)
-        assertEquals(Quote("Lecog 0", "L0"), assigned["img-1"])
-        assertEquals(Quote("Lecog 1", "L1"), assigned["img-2"])
+        // Grows the cache and prefers distinct quotes per image (poisoned entry may remain).
+        assertEquals(2, assigned.size)
+        assertEquals(2, assigned.values.map { it.text }.toSet().size)
     }
 
     @Test

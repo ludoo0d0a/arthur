@@ -132,7 +132,14 @@ class RevenueCatPackOwnership(
 ) : PackOwnership {
     override fun owns(packId: String): Boolean {
         val pack = MarketplaceCatalog.byId(packId) ?: return false
-        return gateway.hasEntitlement(pack.entitlementId)
+        if (gateway.hasEntitlement(pack.entitlementId)) return true
+        // Diamond once-for-all: unlocks every content pack (not Premium UX).
+        if (!MarketplaceCatalog.isDiamond(packId) &&
+            gateway.hasEntitlement(MarketplaceCatalog.DIAMOND_ENTITLEMENT)
+        ) {
+            return true
+        }
+        return false
     }
 }
 

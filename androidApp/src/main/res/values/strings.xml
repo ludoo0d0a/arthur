@@ -75,6 +75,8 @@
     <string name="kind_genart">Genart</string>
     <string name="kind_personal">Personal photo</string>
     <string name="pack_personal">Personal photos</string>
+    <string name="pack_diamond">Diamond</string>
+    <string name="pack_diamond_subtitle">All Marketplace packs, once for all</string>
     <string name="pack_locked">Locked</string>
     <string name="marketplace_title">Marketplace</string>
     <string name="marketplace_owned">Owned</string>

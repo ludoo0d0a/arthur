@@ -23,6 +23,11 @@ object MarketplaceCatalog {
     const val PERSONAL_PHOTOS_ENTITLEMENT = "pack_personal_photos"
     const val PERSONAL_PHOTOS_PRODUCT = "arthur_pack_personal_photos"
 
+    /** Once-for-all content unlock: grants every [contentPacks] SKU. Does not grant Premium UX. */
+    const val DIAMOND_ID = "diamond"
+    const val DIAMOND_ENTITLEMENT = "pack_diamond"
+    const val DIAMOND_PRODUCT = "arthur_pack_diamond"
+
     fun genartPackId(topicSuffix: String): String = "genart_$topicSuffix"
     fun genartEntitlementId(topicSuffix: String): String = "pack_genart_$topicSuffix"
     fun genartProductId(topicSuffix: String): String = "arthur_pack_genart_$topicSuffix"
@@ -48,6 +53,12 @@ object MarketplaceCatalog {
         productId = PERSONAL_PHOTOS_PRODUCT,
     )
 
+    val diamond: SellablePack = SellablePack(
+        id = DIAMOND_ID,
+        entitlementId = DIAMOND_ENTITLEMENT,
+        productId = DIAMOND_PRODUCT,
+    )
+
     fun genartPack(topicSuffix: String): SellablePack = SellablePack(
         id = genartPackId(topicSuffix),
         entitlementId = genartEntitlementId(topicSuffix),
@@ -66,11 +77,17 @@ object MarketplaceCatalog {
         audioPackSuffix = packSuffix,
     )
 
-    fun all(): List<SellablePack> = listOf(personalPhotos) +
+    /** Individual content SKUs (excludes Diamond bundle). */
+    fun contentPacks(): List<SellablePack> = listOf(personalPhotos) +
         GenartPackTopics.monetizedTopicSuffixes.map { genartPack(it) } +
         AudioPackCatalog.monetizedPackSuffixes.map { audioPack(it) }
 
+    /** Diamond first, then every content pack. */
+    fun all(): List<SellablePack> = listOf(diamond) + contentPacks()
+
     fun byId(id: String): SellablePack? = all().firstOrNull { it.id == id }
+
+    fun isDiamond(packId: String): Boolean = packId == DIAMOND_ID
 
     fun sellablePackIdForGenartTopic(topicSuffix: String): String? =
         if (topicSuffix in GenartPackTopics.monetizedTopicSuffixes) genartPackId(topicSuffix) else null

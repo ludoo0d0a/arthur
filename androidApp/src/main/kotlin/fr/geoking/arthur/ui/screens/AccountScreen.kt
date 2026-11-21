@@ -72,8 +72,13 @@ fun AccountScreen(
     val restoreOk = stringResource(R.string.account_restore_success)
     val primaryFocus = remember { FocusRequester() }
 
-    val ownedPacks = remember(entitlements, ownership) {
-        MarketplaceCatalog.all().filter { ownership.owns(it.id) }
+    val ownsDiamond = ownership.ownsDiamond()
+    val ownedPacks = remember(entitlements, ownership, ownsDiamond) {
+        if (ownsDiamond) {
+            listOf(MarketplaceCatalog.diamond)
+        } else {
+            MarketplaceCatalog.contentPacks().filter { ownership.owns(it.id) }
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -226,7 +231,23 @@ fun AccountScreen(
                 )
             }
 
-            if (ownedPacks.isEmpty()) {
+            if (ownsDiamond) {
+                item {
+                    Text(
+                        text = stringResource(R.string.pack_diamond),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("account_owned_diamond"),
+                    )
+                    Text(
+                        text = stringResource(R.string.pack_diamond_subtitle),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            } else if (ownedPacks.isEmpty()) {
                 item {
                     Text(
                         text = stringResource(R.string.account_no_packs),

@@ -10,6 +10,7 @@ class MarketplaceCatalogTest {
     @Test
     fun catalog_includesPersonalAndMonetizedGenartTopics() {
         val ids = MarketplaceCatalog.all().map { it.id }.toSet()
+        assertTrue(MarketplaceCatalog.DIAMOND_ID in ids)
         assertTrue(MarketplaceCatalog.PERSONAL_PHOTOS_ID in ids)
         assertTrue(MarketplaceCatalog.genartPackId(GenartPackTopics.TAPET) in ids)
         assertTrue(MarketplaceCatalog.genartPackId(GenartPackTopics.CUSTOM) in ids)
@@ -18,10 +19,28 @@ class MarketplaceCatalogTest {
         assertTrue(MarketplaceCatalog.audioPackId(AudioPackCatalog.SOLO_VIOLIN) in ids)
         assertTrue(MarketplaceCatalog.audioPackId(AudioPackCatalog.ARCADE_CHIPS) in ids)
         assertEquals(
-            1 + GenartPackTopics.monetizedTopicSuffixes.size +
+            1 + 1 + GenartPackTopics.monetizedTopicSuffixes.size +
                 AudioPackCatalog.monetizedPackSuffixes.size,
             MarketplaceCatalog.all().size,
         )
+        assertEquals(
+            MarketplaceCatalog.all().size - 1,
+            MarketplaceCatalog.contentPacks().size,
+        )
+    }
+
+    @Test
+    fun diamond_unlocksAllContentPacks() {
+        val ownership = FakePackOwnership(owned = setOf(MarketplaceCatalog.DIAMOND_ID))
+        assertTrue(ownership.ownsDiamond())
+        assertTrue(ownership.ownsPersonalPhotos())
+        assertTrue(ownership.ownsCustomFractal())
+        assertTrue(ownership.ownsAudioPack(AudioPackCatalog.HEARTH_WEATHER))
+        assertTrue(ownership.allowsMusicStyle("ocean_waves"))
+        assertTrue(ownership.allowsGenartEngine(GenartSource.BLOBS))
+        MarketplaceCatalog.contentPacks().forEach { pack ->
+            assertTrue(ownership.owns(pack.id), "diamond should unlock ${pack.id}")
+        }
     }
 
     @Test

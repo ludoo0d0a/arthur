@@ -74,6 +74,8 @@
     <string name="kind_genart">Genart</string>
     <string name="kind_personal">Photo personnelle</string>
     <string name="pack_personal">Photos personnelles</string>
+    <string name="pack_diamond">Diamond</string>
+    <string name="pack_diamond_subtitle">Tous les packs Boutique, une fois pour toutes</string>
     <string name="pack_locked">Verrouillé</string>
     <string name="marketplace_title">Boutique</string>
     <string name="marketplace_owned">Possédé</string>

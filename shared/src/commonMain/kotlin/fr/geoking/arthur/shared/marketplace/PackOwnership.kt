@@ -3,9 +3,15 @@ package fr.geoking.arthur.shared.marketplace
 /**
  * Whether the user owns Marketplace pack SKUs. Adapters (RevenueCat) live on Android.
  * Premium does **not** imply pack ownership.
+ * Diamond (`pack_diamond`) unlocks every content pack once-for-all.
  */
 interface PackOwnership {
+    /**
+     * True if [packId] is unlocked — either its own entitlement, or Diamond for any content pack.
+     */
     fun owns(packId: String): Boolean
+
+    fun ownsDiamond(): Boolean = owns(MarketplaceCatalog.DIAMOND_ID)
 
     fun ownsPersonalPhotos(): Boolean = owns(MarketplaceCatalog.PERSONAL_PHOTOS_ID)
 
@@ -57,8 +63,14 @@ class FakePackOwnership(
     }
 
     fun unlockAll() {
-        owned = MarketplaceCatalog.all().map { it.id }.toSet()
+        owned = setOf(MarketplaceCatalog.DIAMOND_ID)
     }
 
-    override fun owns(packId: String): Boolean = packId in owned
+    override fun owns(packId: String): Boolean {
+        if (packId in owned) return true
+        if (!MarketplaceCatalog.isDiamond(packId) && MarketplaceCatalog.DIAMOND_ID in owned) {
+            return MarketplaceCatalog.byId(packId) != null
+        }
+        return false
+    }
 }

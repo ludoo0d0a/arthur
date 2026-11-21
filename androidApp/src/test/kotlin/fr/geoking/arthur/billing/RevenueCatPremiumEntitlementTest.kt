@@ -36,6 +36,24 @@ class RevenueCatPremiumEntitlementTest {
             FakePurchasesGateway.entitlementIdForProduct(RevenueCatPremiumEntitlement.PRODUCT_ID) ==
                 RevenueCatPremiumEntitlement.ENTITLEMENT_ID,
         )
+        assertTrue(
+            FakePurchasesGateway.entitlementIdForProduct(MarketplaceCatalog.DIAMOND_PRODUCT) ==
+                MarketplaceCatalog.DIAMOND_ENTITLEMENT,
+        )
+    }
+
+    @Test
+    fun revenueCatPackOwnership_diamondUnlocksAllContent() {
+        val gateway = FakePurchasesGateway(premium = false)
+        gateway.unlockEntitlement(MarketplaceCatalog.DIAMOND_ENTITLEMENT)
+        val ownership = RevenueCatPackOwnership(gateway)
+        assertTrue(ownership.ownsDiamond())
+        assertTrue(ownership.ownsPersonalPhotos())
+        assertTrue(ownership.ownsCustomFractal())
+        MarketplaceCatalog.contentPacks().forEach { pack ->
+            assertTrue(ownership.owns(pack.id))
+        }
+        assertFalse(RevenueCatPremiumEntitlement(gateway).isPremium)
     }
 
     @Test

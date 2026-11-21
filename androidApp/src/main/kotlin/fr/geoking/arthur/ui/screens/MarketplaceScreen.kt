@@ -164,6 +164,17 @@ fun MarketplaceScreen(
                         .padding(horizontal = if (isTelevision) 48.dp else 16.dp)
                         .testTag("marketplace_pack_${selectedPack.id}"),
                 )
+                if (selectedPack.id == MarketplaceCatalog.DIAMOND_ID) {
+                    Text(
+                        text = stringResource(R.string.pack_diamond_subtitle),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(
+                            horizontal = if (isTelevision) 48.dp else 16.dp,
+                            vertical = 2.dp,
+                        ),
+                    )
+                }
                 Text(
                     text = if (owned) {
                         stringResource(R.string.marketplace_owned)
@@ -248,6 +259,14 @@ internal fun marketplacePackTiles(): List<PackTile> =
         }
         .map { pack ->
             when {
+                pack.id == MarketplaceCatalog.DIAMOND_ID -> PackTile(
+                    id = "market_${pack.id}",
+                    titleRes = R.string.pack_diamond,
+                    coverRes = R.drawable.pack_random,
+                    selection = PackSelection(PackFamily.Museum),
+                    testTagSuffix = "market_${pack.id}",
+                    sellablePackId = pack.id,
+                )
                 pack.id == MarketplaceCatalog.PERSONAL_PHOTOS_ID -> PackTile(
                     id = "market_${pack.id}",
                     titleRes = R.string.pack_personal,
@@ -300,6 +319,8 @@ internal fun marketplacePackTiles(): List<PackTile> =
 
 @Composable
 internal fun marketplacePackTitle(pack: SellablePack): String = when {
+    pack.id == MarketplaceCatalog.DIAMOND_ID ->
+        stringResource(R.string.pack_diamond)
     pack.id == MarketplaceCatalog.PERSONAL_PHOTOS_ID ->
         stringResource(R.string.pack_personal)
     pack.genartTopicSuffix != null ->

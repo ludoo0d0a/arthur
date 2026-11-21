@@ -104,6 +104,7 @@ import fr.geoking.arthur.ui.components.sourceIdsForAmbientLoad
 import fr.geoking.arthur.ui.components.stockCategoryOrNull
 import fr.geoking.arthur.ui.components.subPackTiles
 import fr.geoking.arthur.ui.components.videoSourceOrNull
+import fr.geoking.arthur.ui.components.visibleHomePackFamilies
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -601,7 +602,7 @@ private fun PhoneControlPlaneContent(
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
                 )
                 PackGrid(
-                    tiles = PackFamily.entries.map { it.homeTile(catalog) },
+                    tiles = visibleHomePackFamilies().map { it.homeTile(catalog) },
                     selected = null,
                     onTileClick = { onOpenFamily(it.selection.family) },
                     isLocked = { it.isLocked(packOwnership) },

@@ -213,30 +213,32 @@ class PackModelsTest {
             PackFamily.DownloadedMusic,
             PackFamily.DownloadedMusic.defaultSubId(),
         )
-        assertTrue(selection.opensSoundPlayer())
+        // FeatureFlag.musicEnabled=false gates Sound Player / Neural routes.
+        assertFalse(selection.opensSoundPlayer())
         assertFalse(selection.opensNeuralMusic())
         assertEquals(AudioPackTopic.DownloadedMusic, selection.audioPackTopicOrNull())
         assertEquals(
             AudioPackTopic.DownloadedMusic.sellablePackId,
             PackFamily.DownloadedMusic.homeTile().sellablePackId,
         )
+        assertFalse(visibleHomePackFamilies().contains(PackFamily.DownloadedMusic))
     }
 
     @Test
     fun vintageGamesSubPacks_ambientVisualsMusic() {
         val tiles = PackFamily.VintageGames.subPackTiles()
+        // Music sub-pack hidden while FeatureFlag.musicEnabled is false.
         assertEquals(
-            listOf("vintage_ambient", "vintage_visuals", "vintage_music"),
+            listOf("vintage_ambient", "vintage_visuals"),
             tiles.map { it.testTagSuffix },
         )
         assertEquals("genart_vintage", tiles[0].sellablePackId)
         assertEquals("genart_vintage", tiles[1].sellablePackId)
-        assertEquals("audio_arcade_chips", tiles[2].sellablePackId)
-        assertTrue(
+        assertFalse(
             PackSelection(PackFamily.VintageGames, VintageGamesSub.AMBIENT)
                 .appliesArcadeChipsOnAmbientStart(),
         )
-        assertTrue(
+        assertFalse(
             PackSelection(PackFamily.VintageGames, VintageGamesSub.MUSIC).opensSoundPlayer(),
         )
         assertFalse(
@@ -269,16 +271,18 @@ class PackModelsTest {
         assertEquals(R.string.audio_pack_atmospheres_nature, tiles[0].titleRes)
         assertEquals(R.string.audio_pack_museums_classical, tiles[1].titleRes)
         assertEquals(R.string.audio_pack_genart_digital, tiles[2].titleRes)
-        assertTrue(PackSelection(PackFamily.Neural, "atmospheres_nature").opensNeuralMusic())
-        assertTrue(PackSelection(PackFamily.Neural, "museums_classical").opensNeuralMusic())
-        assertTrue(PackSelection(PackFamily.Neural, "genart_digital").opensNeuralMusic())
-        assertTrue(PackSelection(PackFamily.Neural, "executorch").opensNeuralMusic())
+        // FeatureFlag.musicEnabled=false: neural / sound player routes stay closed.
+        assertFalse(PackSelection(PackFamily.Neural, "atmospheres_nature").opensNeuralMusic())
+        assertFalse(PackSelection(PackFamily.Neural, "museums_classical").opensNeuralMusic())
+        assertFalse(PackSelection(PackFamily.Neural, "genart_digital").opensNeuralMusic())
+        assertFalse(PackSelection(PackFamily.Neural, "executorch").opensNeuralMusic())
         assertFalse(PackSelection(PackFamily.Neural, "atmospheres_nature").opensSoundPlayer())
-        assertTrue(PackSelection(PackFamily.Neural, "stem").opensSoundPlayer())
-        assertTrue(PackSelection(PackFamily.Neural, "wavetable").opensSoundPlayer())
+        assertFalse(PackSelection(PackFamily.Neural, "stem").opensSoundPlayer())
+        assertFalse(PackSelection(PackFamily.Neural, "wavetable").opensSoundPlayer())
         assertFalse(PackSelection(PackFamily.Neural, "stem").opensNeuralMusic())
         val pool = resolvePackPool(catalog, PackSelection(PackFamily.Neural, "stem"))
         assertTrue(pool.isEmpty())
+        assertFalse(visibleHomePackFamilies().contains(PackFamily.Neural))
         // Dedicated neural engines and downloaded music are not listed under Procedural Music.
         val soundTags = PackFamily.Sound.subPackTiles().map { it.testTagSuffix }
         assertFalse(soundTags.contains("sound_atmospheres_nature"))

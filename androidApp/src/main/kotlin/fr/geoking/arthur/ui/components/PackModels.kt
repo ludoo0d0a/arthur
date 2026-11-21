@@ -2,6 +2,7 @@ package fr.geoking.arthur.ui.components
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import fr.geoking.arthur.FeatureFlag
 import fr.geoking.arthur.R
 import fr.geoking.arthur.audio.MusicStyle
 import fr.geoking.arthur.audio.MusicStyleIds
@@ -32,6 +33,16 @@ enum class PackFamily(
     Sculpture(R.string.kind_sculpture, R.drawable.pack_sculpture, "sculpture"),
     Painting(R.string.kind_painting, R.drawable.pack_painting, "painting"),
 }
+
+/** Sound / neural / downloaded-music root families (gated by [FeatureFlag.musicEnabled]). */
+fun PackFamily.isMusicFamily(): Boolean =
+    this == PackFamily.Sound ||
+        this == PackFamily.DownloadedMusic ||
+        this == PackFamily.Neural
+
+/** Home-grid families visible for the current feature flags. */
+fun visibleHomePackFamilies(): List<PackFamily> =
+    PackFamily.entries.filter { FeatureFlag.musicEnabled || !it.isMusicFamily() }
 
 /** Sub-pack ids under [PackFamily.VintageGames]. */
 object VintageGamesSub {
@@ -293,52 +304,60 @@ fun PackFamily.subPackTiles(catalog: List<Artwork> = emptyList()): List<PackTile
         )
     }
     PackFamily.DownloadedMusic -> emptyList()
-    PackFamily.VintageGames -> listOf(
-        PackTile(
-            id = "sub_vintage_${VintageGamesSub.AMBIENT}",
-            titleRes = R.string.vintage_sub_ambient,
-            coverRes = R.drawable.pack_vintage_games,
-            selection = PackSelection(PackFamily.VintageGames, VintageGamesSub.AMBIENT),
-            testTagSuffix = "vintage_${VintageGamesSub.AMBIENT}",
-            itemCount = if (catalog.isNotEmpty()) {
-                resolvePackPool(
-                    catalog,
-                    PackSelection(PackFamily.VintageGames, VintageGamesSub.AMBIENT),
-                ).size
-            } else {
-                null
-            },
-            sellablePackId = MarketplaceCatalog.genartPackId(
-                fr.geoking.arthur.shared.marketplace.GenartPackTopics.VINTAGE,
+    PackFamily.VintageGames -> buildList {
+        add(
+            PackTile(
+                id = "sub_vintage_${VintageGamesSub.AMBIENT}",
+                titleRes = R.string.vintage_sub_ambient,
+                coverRes = R.drawable.pack_vintage_games,
+                selection = PackSelection(PackFamily.VintageGames, VintageGamesSub.AMBIENT),
+                testTagSuffix = "vintage_${VintageGamesSub.AMBIENT}",
+                itemCount = if (catalog.isNotEmpty()) {
+                    resolvePackPool(
+                        catalog,
+                        PackSelection(PackFamily.VintageGames, VintageGamesSub.AMBIENT),
+                    ).size
+                } else {
+                    null
+                },
+                sellablePackId = MarketplaceCatalog.genartPackId(
+                    fr.geoking.arthur.shared.marketplace.GenartPackTopics.VINTAGE,
+                ),
             ),
-        ),
-        PackTile(
-            id = "sub_vintage_${VintageGamesSub.VISUALS}",
-            titleRes = R.string.vintage_sub_visuals,
-            coverRes = R.drawable.pack_genart_vintage,
-            selection = PackSelection(PackFamily.VintageGames, VintageGamesSub.VISUALS),
-            testTagSuffix = "vintage_${VintageGamesSub.VISUALS}",
-            itemCount = if (catalog.isNotEmpty()) {
-                resolvePackPool(
-                    catalog,
-                    PackSelection(PackFamily.VintageGames, VintageGamesSub.VISUALS),
-                ).size
-            } else {
-                null
-            },
-            sellablePackId = MarketplaceCatalog.genartPackId(
-                fr.geoking.arthur.shared.marketplace.GenartPackTopics.VINTAGE,
+        )
+        add(
+            PackTile(
+                id = "sub_vintage_${VintageGamesSub.VISUALS}",
+                titleRes = R.string.vintage_sub_visuals,
+                coverRes = R.drawable.pack_genart_vintage,
+                selection = PackSelection(PackFamily.VintageGames, VintageGamesSub.VISUALS),
+                testTagSuffix = "vintage_${VintageGamesSub.VISUALS}",
+                itemCount = if (catalog.isNotEmpty()) {
+                    resolvePackPool(
+                        catalog,
+                        PackSelection(PackFamily.VintageGames, VintageGamesSub.VISUALS),
+                    ).size
+                } else {
+                    null
+                },
+                sellablePackId = MarketplaceCatalog.genartPackId(
+                    fr.geoking.arthur.shared.marketplace.GenartPackTopics.VINTAGE,
+                ),
             ),
-        ),
-        PackTile(
-            id = "sub_vintage_${VintageGamesSub.MUSIC}",
-            titleRes = R.string.vintage_sub_music,
-            coverRes = PackCovers.audio(AudioPackTopic.ArcadeChips),
-            selection = PackSelection(PackFamily.VintageGames, VintageGamesSub.MUSIC),
-            testTagSuffix = "vintage_${VintageGamesSub.MUSIC}",
-            sellablePackId = AudioPackTopic.ArcadeChips.sellablePackId,
-        ),
-    )
+        )
+        if (FeatureFlag.musicEnabled) {
+            add(
+                PackTile(
+                    id = "sub_vintage_${VintageGamesSub.MUSIC}",
+                    titleRes = R.string.vintage_sub_music,
+                    coverRes = PackCovers.audio(AudioPackTopic.ArcadeChips),
+                    selection = PackSelection(PackFamily.VintageGames, VintageGamesSub.MUSIC),
+                    testTagSuffix = "vintage_${VintageGamesSub.MUSIC}",
+                    sellablePackId = AudioPackTopic.ArcadeChips.sellablePackId,
+                ),
+            )
+        }
+    }
 }
 
 fun resolvePackPool(catalog: List<Artwork>, selection: PackSelection): List<Artwork> {
@@ -488,18 +507,23 @@ fun PackSelection.audioPackTopicOrNull(): AudioPackTopic? =
  * Stem / Wavetable stay on Sound Player (no [NeuralAudioPack]).
  */
 fun PackSelection.opensNeuralMusic(): Boolean =
-    family == PackFamily.Neural && audioPackTopicOrNull()?.neuralPack != null
+    FeatureFlag.musicEnabled &&
+        family == PackFamily.Neural &&
+        audioPackTopicOrNull()?.neuralPack != null
 
 /** True when this selection opens Sound Player instead of Ambient. */
 fun PackSelection.opensSoundPlayer(): Boolean =
-    family == PackFamily.DownloadedMusic ||
-        family == PackFamily.Sound ||
-        (family == PackFamily.Neural && audioPackTopicOrNull()?.neuralPack == null) ||
-        (family == PackFamily.VintageGames && subId == VintageGamesSub.MUSIC)
+    FeatureFlag.musicEnabled && (
+        family == PackFamily.DownloadedMusic ||
+            family == PackFamily.Sound ||
+            (family == PackFamily.Neural && audioPackTopicOrNull()?.neuralPack == null) ||
+            (family == PackFamily.VintageGames && subId == VintageGamesSub.MUSIC)
+        )
 
 /** True when Ambient start should enable the Arcade Chips chiptune pack. */
 fun PackSelection.appliesArcadeChipsOnAmbientStart(): Boolean =
-    family == PackFamily.VintageGames &&
+    FeatureFlag.musicEnabled &&
+        family == PackFamily.VintageGames &&
         (subId == null || subId == VintageGamesSub.AMBIENT)
 
 /**
@@ -510,6 +534,7 @@ fun PackSelection.applySoundPack(
     settings: AmbientAudioSettings,
     styleOverride: MusicStyle? = null,
 ) {
+    if (!FeatureFlag.musicEnabled) return
     val topic = when {
         family == PackFamily.Sound ||
             family == PackFamily.Neural ||

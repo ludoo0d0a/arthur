@@ -28,6 +28,7 @@ import androidx.car.app.model.Template
 import androidx.car.app.validation.HostValidator
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.IconCompat
+import fr.geoking.arthur.FeatureFlag
 import fr.geoking.arthur.R
 import fr.geoking.arthur.source.AmbientAudioSettings
 import fr.geoking.arthur.source.QuoteProvider
@@ -40,6 +41,7 @@ import fr.geoking.arthur.ui.components.applySoundPack
 import fr.geoking.arthur.ui.components.defaultSubId
 import fr.geoking.arthur.ui.components.opensSoundPlayer
 import fr.geoking.arthur.ui.components.subPackTiles
+import fr.geoking.arthur.ui.components.visibleHomePackFamilies
 import fr.geoking.arthur.shared.marketplace.PackOwnership
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -121,7 +123,26 @@ class ArthurCarAppService : CarAppService() {
     }
 
     override fun onCreateSession(): Session {
+        if (!FeatureFlag.androidAutoEnabled) {
+            return DisabledAndroidAutoSession()
+        }
         return ArthurCarSession()
+    }
+}
+
+/** Shown when [FeatureFlag.androidAutoEnabled] is false; keeps Auto source compiled but inert. */
+internal class DisabledAndroidAutoSession : Session() {
+    override fun onCreateScreen(intent: Intent): Screen = DisabledAndroidAutoScreen(carContext)
+}
+
+internal class DisabledAndroidAutoScreen(carContext: CarContext) : Screen(carContext) {
+    override fun onGetTemplate(): Template {
+        return MessageTemplate.Builder(
+            carContext.getString(R.string.auto_feature_disabled),
+        )
+            .setTitle(carContext.getString(R.string.app_name))
+            .setHeaderAction(Action.APP_ICON)
+            .build()
     }
 }
 
@@ -192,7 +213,7 @@ class PackSelectionScreen(carContext: CarContext) : Screen(carContext) {
 
     private fun buildTemplate(): Template {
         val gridLimit = gridContentLimit(carContext, MAX_HOME_GRID_ITEMS)
-        val families = PackFamily.entries
+        val families = visibleHomePackFamilies()
             .filter { it != PackFamily.Video }
             .filter { it != PackFamily.Personal } // Marketplace packs: no Auto commerce / Personal browse
             .take(gridLimit)
@@ -347,18 +368,20 @@ class CarSettingsScreen(carContext: CarContext) : Screen(carContext), KoinCompon
         }
         listBuilder.addItem(providerRowBuilder.build())
 
-        val soundEnabled = ambientAudioSettings.enabled.value
-        val soundRowBuilder = Row.Builder()
-            .setTitle(carContext.getString(R.string.settings_ambient_sound))
-            .addText(carContext.getString(R.string.settings_ambient_sound_subtitle))
-        if (soundEnabled) {
-            soundRowBuilder.addText("✓")
+        if (FeatureFlag.musicEnabled) {
+            val soundEnabled = ambientAudioSettings.enabled.value
+            val soundRowBuilder = Row.Builder()
+                .setTitle(carContext.getString(R.string.settings_ambient_sound))
+                .addText(carContext.getString(R.string.settings_ambient_sound_subtitle))
+            if (soundEnabled) {
+                soundRowBuilder.addText("✓")
+            }
+            soundRowBuilder.setOnClickListener {
+                ambientAudioSettings.setEnabled(!soundEnabled)
+                invalidate()
+            }
+            listBuilder.addItem(soundRowBuilder.build())
         }
-        soundRowBuilder.setOnClickListener {
-            ambientAudioSettings.setEnabled(!soundEnabled)
-            invalidate()
-        }
-        listBuilder.addItem(soundRowBuilder.build())
 
         val durationRow = Row.Builder()
             .setTitle(carContext.getString(R.string.screen_rotation_interval))

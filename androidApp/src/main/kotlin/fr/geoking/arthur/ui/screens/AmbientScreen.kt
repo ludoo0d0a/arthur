@@ -66,6 +66,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import fr.geoking.arthur.FeatureFlag
 import fr.geoking.arthur.R
 import fr.geoking.arthur.audio.ZenAudioEngine
 import fr.geoking.arthur.auto.AmbientAlbumArt
@@ -208,7 +209,11 @@ fun AmbientScreenContent(
         runCatching { GlobalContext.get().get<InvalidArtworkStore>() }.getOrNull()
     }
     val ambientAudioSettings = remember {
-        runCatching { GlobalContext.get().get<AmbientAudioSettings>() }.getOrNull()
+        if (!FeatureFlag.musicEnabled) {
+            null
+        } else {
+            runCatching { GlobalContext.get().get<AmbientAudioSettings>() }.getOrNull()
+        }
     }
     val audioEnabled = ambientAudioSettings?.enabled?.collectAsState()?.value == true
     // Mute stays at the bottom whenever audio settings are available (sound on or off).

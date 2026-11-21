@@ -58,6 +58,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.OutlinedTextField
+import fr.geoking.arthur.FeatureFlag
 import fr.geoking.arthur.audio.MusicStyle
 import fr.geoking.arthur.audio.engines.ModelDownloadState
 import fr.geoking.arthur.audio.engines.NeuralModelDownloader
@@ -552,22 +553,24 @@ private fun MainMenu(
                 onClick = { onNavigate(SettingsScreenPage.QuoteProvider) },
                 modifier = Modifier.testTag("settings_quote_provider"),
             )
-            SettingsItem(
-                label = stringResource(R.string.settings_ambient_sound),
-                value = if (ambientSoundEnabled) {
-                    stringResource(R.string.settings_ambient_sound_character_melody)
-                } else {
-                    stringResource(R.string.settings_ambient_sound_subtitle)
-                },
-                onClick = { onNavigate(SettingsScreenPage.AmbientSound) },
-                modifier = Modifier.testTag("settings_ambient_sound"),
-            )
-            SettingsItem(
-                label = stringResource(R.string.settings_neural_models),
-                value = stringResource(R.string.settings_neural_models_subtitle),
-                onClick = { onNavigate(SettingsScreenPage.NeuralModels) },
-                modifier = Modifier.testTag("settings_neural_models"),
-            )
+            if (FeatureFlag.musicEnabled) {
+                SettingsItem(
+                    label = stringResource(R.string.settings_ambient_sound),
+                    value = if (ambientSoundEnabled) {
+                        stringResource(R.string.settings_ambient_sound_character_melody)
+                    } else {
+                        stringResource(R.string.settings_ambient_sound_subtitle)
+                    },
+                    onClick = { onNavigate(SettingsScreenPage.AmbientSound) },
+                    modifier = Modifier.testTag("settings_ambient_sound"),
+                )
+                SettingsItem(
+                    label = stringResource(R.string.settings_neural_models),
+                    value = stringResource(R.string.settings_neural_models_subtitle),
+                    onClick = { onNavigate(SettingsScreenPage.NeuralModels) },
+                    modifier = Modifier.testTag("settings_neural_models"),
+                )
+            }
             SettingsItem(
                 label = "DeviantArt Credentials",
                 onClick = { onNavigate(SettingsScreenPage.DeviantArtCredentials) },
@@ -688,11 +691,13 @@ private fun RotationIntervalSelectionMenu(
                 value = rotationIntervalLabel(tvIntervalMs),
                 onClick = { onNavigate(SettingsScreenPage.TvRotationInterval) },
             )
-            SettingsItem(
-                label = stringResource(R.string.rotation_interval_auto),
-                value = rotationIntervalLabel(autoIntervalMs),
-                onClick = { onNavigate(SettingsScreenPage.AutoRotationInterval) },
-            )
+            if (FeatureFlag.androidAutoEnabled) {
+                SettingsItem(
+                    label = stringResource(R.string.rotation_interval_auto),
+                    value = rotationIntervalLabel(autoIntervalMs),
+                    onClick = { onNavigate(SettingsScreenPage.AutoRotationInterval) },
+                )
+            }
         }
     }
 }
@@ -861,19 +866,21 @@ private fun DeveloperContent(
                 onClick = onOpenErrorLog,
             )
 
-            SettingsItem(
-                label = "AI Music Generation Sandbox (POC)",
-                value = "Test downloading models, custom prompts, stems & mini player",
-                onClick = onOpenSandbox,
-                modifier = Modifier.testTag("dev_open_music_sandbox"),
-            )
+            if (FeatureFlag.musicEnabled) {
+                SettingsItem(
+                    label = "AI Music Generation Sandbox (POC)",
+                    value = "Test downloading models, custom prompts, stems & mini player",
+                    onClick = onOpenSandbox,
+                    modifier = Modifier.testTag("dev_open_music_sandbox"),
+                )
 
-            SettingsItem(
-                label = stringResource(R.string.screen_dev_royalty_free_music),
-                value = stringResource(R.string.dev_royalty_free_music_desc),
-                onClick = onOpenRoyaltyFreeMusic,
-                modifier = Modifier.testTag("dev_open_royalty_free_music"),
-            )
+                SettingsItem(
+                    label = stringResource(R.string.screen_dev_royalty_free_music),
+                    value = stringResource(R.string.dev_royalty_free_music_desc),
+                    onClick = onOpenRoyaltyFreeMusic,
+                    modifier = Modifier.testTag("dev_open_royalty_free_music"),
+                )
+            }
         }
     }
 }

@@ -14,6 +14,7 @@ import androidx.media3.session.SessionError
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
+import fr.geoking.arthur.FeatureFlag
 import fr.geoking.arthur.R
 import fr.geoking.arthur.audio.AmbientAudioFocusHandler
 import fr.geoking.arthur.audio.ZenAudioEngine
@@ -84,6 +85,9 @@ class ArthurMediaService : MediaLibraryService() {
 
     override fun onCreate() {
         super.onCreate()
+        if (!FeatureFlag.androidAutoEnabled) {
+            return
+        }
         player = AmbientMediaPlayer(
             Looper.getMainLooper(),
             object : AmbientMediaPlayer.Callbacks {
@@ -127,7 +131,7 @@ class ArthurMediaService : MediaLibraryService() {
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? =
-        librarySession
+        if (FeatureFlag.androidAutoEnabled) librarySession else null
 
     /**
      * Keep browse-only / no FGS behavior (Play Console demo video not yet available).
@@ -552,6 +556,11 @@ class ArthurMediaService : MediaLibraryService() {
     }
 
     override fun onDestroy() {
+        if (!FeatureFlag.androidAutoEnabled || !::player.isInitialized) {
+            scope.cancel()
+            super.onDestroy()
+            return
+        }
         runCatching { rotationJob?.cancel() }
         runCatching { zenAudio.destroy() }
         runCatching { scope.cancel() }

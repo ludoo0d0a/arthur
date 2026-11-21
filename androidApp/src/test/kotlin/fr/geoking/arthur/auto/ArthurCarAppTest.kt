@@ -32,18 +32,26 @@ class ArthurCarAppTest {
     }
 
     @Test
-    fun session_createsArthurCarSession() {
+    fun session_createsDisabledSessionWhenAndroidAutoFlagOff() {
         val service = ArthurCarAppService()
         val session = service.onCreateSession()
         assertNotNull(session)
-        assertTrue(session is ArthurCarSession)
+        assertTrue(session is DisabledAndroidAutoSession)
     }
 
     @Test
-    fun session_onCreateScreen_returnsPackSelectionScreen() {
-        val context = org.robolectric.RuntimeEnvironment.getApplication()
+    fun session_onCreateScreen_returnsDisabledScreenWhenAndroidAutoFlagOff() {
         val service = ArthurCarAppService()
         val session = service.onCreateSession()
+        val intent = android.content.Intent()
+        val screen = session.onCreateScreen(intent)
+        assertNotNull(screen)
+        assertTrue(screen is DisabledAndroidAutoScreen)
+    }
+
+    @Test
+    fun arthurCarSession_onCreateScreen_returnsPackSelectionScreen() {
+        val session = ArthurCarSession()
         val intent = android.content.Intent()
         val screen = session.onCreateScreen(intent)
         assertNotNull(screen)
@@ -99,8 +107,7 @@ class ArthurCarAppTest {
 
     @Test
     fun session_onCreateScreen_withArtworkId_returnsArtworkPaneScreenWithInitialId() {
-        val service = ArthurCarAppService()
-        val session = service.onCreateSession()
+        val session = ArthurCarSession()
         val intent = android.content.Intent().apply {
             putExtra("artwork_id", "genart.particles")
             putExtra("pack_family", "Genart")
@@ -115,8 +122,7 @@ class ArthurCarAppTest {
 
     @Test
     fun session_onCreateScreen_withDeepLinkData_returnsArtworkPaneScreenWithInitialId() {
-        val service = ArthurCarAppService()
-        val session = service.onCreateSession()
+        val session = ArthurCarSession()
         val intent = android.content.Intent().apply {
             data = android.net.Uri.parse("arthur://ambient?artwork_id=rijks-SK-C-5&family=Museum")
         }
@@ -183,7 +189,7 @@ class ArthurCarAppTest {
     }
 
     @Test
-    fun packSelectionScreen_includesSoundFamily() {
+    fun packSelectionScreen_includesVisibleFamiliesOnly() {
         val owner = object : androidx.lifecycle.LifecycleOwner {
             override val lifecycle = androidx.lifecycle.LifecycleRegistry(this)
         }
@@ -192,8 +198,8 @@ class ArthurCarAppTest {
         val screen = PackSelectionScreen(carContext)
         val template = screen.onGetTemplate() as androidx.car.app.model.SectionedItemTemplate
         val gridSection = template.sections[0] as androidx.car.app.model.GridSection
-        // Museum, Genart, VintageGames, Photo, Sound, DownloadedMusic
-        // (Video/Personal filtered; Neural/Sculpture/Painting beyond host cap).
+        // With FeatureFlag.musicEnabled=false: Museum, Genart, VintageGames, Photo,
+        // Sculpture, Painting (Video/Personal filtered; music families hidden).
         assertEquals(6, gridSection.itemsDelegate.size)
         assertTrue(gridSection.itemsDelegate.size <= MAX_HOME_GRID_ITEMS)
     }
@@ -311,8 +317,8 @@ class ArthurCarAppTest {
             val listTemplate = template as androidx.car.app.model.ListTemplate
             val list = listTemplate.singleList
             assertNotNull(list)
-            // Check update + quotes + provider + sound + duration entry (options live in sub-screen).
-            assertEquals(5, list!!.items.size)
+            // Check update + quotes + provider + duration (sound hidden while music flag off).
+            assertEquals(4, list!!.items.size)
         } finally {
             org.koin.core.context.stopKoin()
         }

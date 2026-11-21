@@ -35,6 +35,7 @@ import fr.geoking.arthur.ui.components.genartTopicOrNull
 import fr.geoking.arthur.ui.components.opensSoundPlayer
 import fr.geoking.arthur.ui.components.resolvePackPool
 import fr.geoking.arthur.ui.components.subPackTiles
+import fr.geoking.arthur.ui.components.visibleHomePackFamilies
 
 /**
  * TV Control Plane: pack grid (no hero preview).
@@ -107,7 +108,7 @@ fun TvControlPlaneContent(
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
                 PackGrid(
-                    tiles = PackFamily.entries.map { it.homeTile(catalog) },
+                    tiles = visibleHomePackFamilies().map { it.homeTile(catalog) },
                     selected = null,
                     onTileClick = { onOpenFamily(it.selection.family) },
                     isLocked = { it.isLocked(packOwnership) },

@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.google.android.play.core.install.model.InstallStatus
 import fr.geoking.arthur.BuildConfig
+import fr.geoking.arthur.FeatureFlag
 import fr.geoking.arthur.R
 import fr.geoking.arthur.billing.PurchasesGateway
 import fr.geoking.arthur.fractal.CustomFractalStore
@@ -220,14 +221,14 @@ class MainActivity : ComponentActivity() {
                                     )
                                 }
                             }
-                            neuralRoute != null && !isTelevision -> {
+                            neuralRoute != null && !isTelevision && FeatureFlag.musicEnabled -> {
                                 NeuralMusicHost(
                                     route = neuralRoute!!,
                                     onRouteChange = { neuralRoute = it },
                                     audioSettings = ambientAudioSettings,
                                 )
                             }
-                            soundPlayerSelection != null -> {
+                            soundPlayerSelection != null && FeatureFlag.musicEnabled -> {
                                 SoundPlayerScreen(
                                     selection = soundPlayerSelection!!,
                                     onDismiss = { soundPlayerSelection = null },
@@ -332,10 +333,12 @@ class MainActivity : ComponentActivity() {
                                             marketplaceHighlight = packId
                                             showMarketplace = true
                                         },
-                                        onOpenSoundPlayer = { selection ->
-                                            soundPlayerSelection = selection
+                                        onOpenSoundPlayer = if (FeatureFlag.musicEnabled) {
+                                            { selection -> soundPlayerSelection = selection }
+                                        } else {
+                                            null
                                         },
-                                        onOpenNeuralMusic = if (isTelevision) {
+                                        onOpenNeuralMusic = if (isTelevision || !FeatureFlag.musicEnabled) {
                                             null
                                         } else {
                                             { selection ->

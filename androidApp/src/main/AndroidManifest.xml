@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -19,7 +20,7 @@
     <uses-feature
         android:name="android.hardware.wifi"
         android:required="false" />
-    <!-- Implied by ML Kit GmsBarcodeScanningDelegateActivity screenOrientation=portrait. -->
+    <!-- Belt-and-suspenders for TV: also strip ML Kit portrait lock below. -->
     <uses-feature
         android:name="android.hardware.screen.portrait"
         android:required="false" />
@@ -45,6 +46,14 @@
         <meta-data
             android:name="com.google.mlkit.vision.DEPENDENCIES"
             android:value="barcode_ui" />
+
+        <!-- play-services-code-scanner locks this invisible delegate to portrait,
+             which implies android.hardware.screen.portrait and fails TV quality
+             ("Unsupported hardware uses"). Phone QR scan still works; the real
+             scanner UI is hosted by Play services. -->
+        <activity
+            android:name="com.google.mlkit.vision.codescanner.internal.GmsBarcodeScanningDelegateActivity"
+            tools:remove="android:screenOrientation" />
 
         <activity
             android:name=".phone.MainActivity"

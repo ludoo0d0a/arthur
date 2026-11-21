@@ -85,7 +85,7 @@ android {
         buildConfigField("String", "BUILD_DATE", "\"$buildDate\"")
     }
 
-    // local.properties / gradle.properties / CI: DEBUG_DEV=true (optional). Used by `full` only.
+    // local.properties / gradle.properties / CI: DEBUG_DEV=true (optional). Applies to all flavors.
     val debugDevEnabled = secretFlag("DEBUG_DEV") || secretFlag("debug_dev")
 
     flavorDimensions += "distribution"
@@ -93,14 +93,14 @@ android {
         create("full") {
             dimension = "distribution"
             buildConfigField("boolean", "IS_PLAYSTORE_DISTRIBUTION", "false")
-            // Developer UI on fullDebug and fullRelease when debug_dev / DEBUG_DEV is true.
+            // Developer UI when debug_dev / DEBUG_DEV is true.
             buildConfigField("boolean", "DEBUG_DEV", debugDevEnabled.toString())
         }
         create("playstore") {
             dimension = "distribution"
             buildConfigField("boolean", "IS_PLAYSTORE_DISTRIBUTION", "true")
-            // Play Store AABs must not ship developer UI — ignore local debug_dev flags.
-            buildConfigField("boolean", "DEBUG_DEV", "false")
+            // Same DEBUG_DEV gate as full (local/CI flag); leave unset for production Play uploads.
+            buildConfigField("boolean", "DEBUG_DEV", debugDevEnabled.toString())
         }
     }
 

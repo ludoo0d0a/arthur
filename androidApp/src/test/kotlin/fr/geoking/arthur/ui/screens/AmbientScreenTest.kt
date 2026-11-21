@@ -34,7 +34,7 @@ class AmbientScreenTest {
     )
 
     @Test
-    fun ambientScreen_whenSoundOn_displaysBottomSoundAndInfoIcons_withoutMediaBar() {
+    fun ambientScreen_whenMusicFlagOff_hidesSoundChromeKeepsPlayPauseAndDetails() {
         stopKoin()
         val context = ApplicationProvider.getApplicationContext<Context>()
         val audioSettings = AmbientAudioSettings(context)
@@ -61,8 +61,9 @@ class AmbientScreenTest {
                 }
             }
 
+            // FeatureFlag.musicEnabled=false: no mute/sound chrome; phone still gets play/pause.
             composeTestRule.onNodeWithTag("ambient_media_play_pause").assertExists()
-            composeTestRule.onNodeWithTag("ambient_sound_toggle").assertExists()
+            composeTestRule.onNodeWithTag("ambient_sound_toggle").assertDoesNotExist()
             composeTestRule.onNodeWithTag("ambient_details").assertExists()
             composeTestRule.onNodeWithTag("ambient_media_player").assertDoesNotExist()
             composeTestRule.onNodeWithTag("ambient_media_progress").assertDoesNotExist()
@@ -73,7 +74,7 @@ class AmbientScreenTest {
 
     @Test
     @Config(qualifiers = "television")
-    fun ambientScreen_onTv_whenSoundOff_displaysBottomMuteToggle() {
+    fun ambientScreen_onTv_whenMusicFlagOff_hidesMuteKeepsDetails() {
         stopKoin()
         val context = ApplicationProvider.getApplicationContext<Context>()
         val audioSettings = AmbientAudioSettings(context)
@@ -100,7 +101,7 @@ class AmbientScreenTest {
                 }
             }
 
-            composeTestRule.onNodeWithTag("ambient_sound_toggle").assertExists()
+            composeTestRule.onNodeWithTag("ambient_sound_toggle").assertDoesNotExist()
             composeTestRule.onNodeWithTag("ambient_details").assertExists()
             composeTestRule.onNodeWithTag("ambient_media_play_pause").assertDoesNotExist()
         } finally {

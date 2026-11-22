@@ -1,7 +1,6 @@
 package fr.geoking.arthur.ui.screens
 
 import android.content.res.Configuration
-import android.os.Build
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
@@ -41,7 +40,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
@@ -109,8 +107,8 @@ import kotlin.math.abs
  *
  * Navigation while rotating:
  * - Phone & TV: bottom mute always visible (toggles sound on/off). Phone also shows
- *   play/pause (+ info); TV focuses mute (OK toggles sound). D-pad left/right skips,
- *   up opens info. Media keys still work as shortcuts. Phone keeps swipe.
+ *   play/pause; info sits bottom-right. TV focuses mute (OK toggles sound). D-pad
+ *   left/right skips, up opens info. Media keys still work as shortcuts. Phone keeps swipe.
  * - Phone chrome stays above the nav bar; quotes respect the status bar.
  *
  * Display interval starts only after the still is ready (loader time excluded).
@@ -657,12 +655,6 @@ fun AmbientScreenContent(
                                 null
                             },
                         )
-                        if (canOpenDetails) {
-                            AmbientDetailsButton(
-                                onClick = { showDetails = true },
-                                focusable = !isTelevision,
-                            )
-                        }
                     }
                 } else if (!isTelevision && shouldRotate) {
                     AmbientPlayPauseButton(
@@ -672,14 +664,14 @@ fun AmbientScreenContent(
                 }
             }
         }
-        if (canOpenDetails && !showBottomChrome) {
+        if (canOpenDetails) {
             AmbientDetailsButton(
                 onClick = { showDetails = true },
                 focusable = !isTelevision,
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .statusBarsPadding()
-                    .padding(12.dp),
+                    .align(Alignment.BottomEnd)
+                    .navigationBarsPadding()
+                    .padding(28.dp),
             )
         }
     }
@@ -704,7 +696,6 @@ private fun AmbientPlayPauseButton(
             .testTag("ambient_media_play_pause"),
         contentAlignment = Alignment.Center,
     ) {
-        AmbientFrostedCircle()
         IconButton(
             onClick = onToggle,
             interactionSource = interactionSource,
@@ -741,7 +732,6 @@ private fun AmbientDetailsButton(
             .testTag("ambient_details"),
         contentAlignment = Alignment.Center,
     ) {
-        AmbientFrostedCircle()
         IconButton(
             onClick = onClick,
             interactionSource = interactionSource,
@@ -780,7 +770,6 @@ private fun AmbientSoundToggleButton(
             .testTag("ambient_sound_toggle"),
         contentAlignment = Alignment.Center,
     ) {
-        AmbientFrostedCircle()
         IconButton(
             onClick = onToggle,
             interactionSource = interactionSource,
@@ -827,22 +816,6 @@ private fun AmbientSoundToggleButton(
             )
         }
     }
-}
-
-@Composable
-private fun AmbientFrostedCircle(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .then(
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    Modifier.blur(12.dp)
-                } else {
-                    Modifier
-                },
-            )
-            .background(Color.White.copy(alpha = 0.18f), CircleShape),
-    )
 }
 
 private fun Artwork.isAmbientDisplayable(): Boolean =

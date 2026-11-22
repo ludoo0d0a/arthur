@@ -87,37 +87,45 @@ State under `~/arthur-genart-ollama/`: `current_pack.txt`, `packs_done.txt`, `qu
 ./scripts/genart-ollama/build-queue.sh --pack weather
 ```
 
-### Continuous run (default)
+### Continuous optimization (default = apply LLM patches)
+
+Local Ollama **writes improved Engine+Still Kotlin into the repo** for every pack:
 
 ```bash
-# Resume last incomplete pack → finish it → next pack → … until all done
+# Prerequisites once
+./scripts/genart-ollama/setup.sh
+ollama serve   # keep running
+
+# Optimize all packs (resume → apply → next pack → …)
 ./scripts/genart-ollama/run-batch.sh
 
-# One engine then stop
+# One engine
 ./scripts/genart-ollama/run-batch.sh --once
 
-# Finish current pack only, then stop
+# Finish current pack only
 ./scripts/genart-ollama/run-batch.sh --pack-once
 
 # At most N engines
 ./scripts/genart-ollama/run-batch.sh -n 5
 
-# Force start pack then continue
-./scripts/genart-ollama/run-batch.sh --pack nature
+# Force pack
+./scripts/genart-ollama/run-batch.sh --pack weather
 
-# With auto-apply of out/ Kotlin
-./scripts/genart-ollama/run-batch.sh --apply --pack-once
+# Audit only (do not touch repo Kotlin)
+./scripts/genart-ollama/run-batch.sh --no-apply --once
 ```
 
 ## One-engine loop
 
 ```bash
-./scripts/genart-ollama/run-one.sh Aurora
-# or apply suggested Kotlin from work/<Engine>/out/ into the repo:
-./scripts/genart-ollama/run-one.sh --apply Aurora
+# Default: apply LLM patches into genart/engines + stills
+./scripts/genart-ollama/run-one.sh Storm
+
+# Suggestions only
+./scripts/genart-ollama/run-one.sh --no-apply Storm
 ```
 
-Flow: bake PNG+MP4 before → Ollama audit → fix/micro (or heavy) → optional `--apply` → bake after → compare MP4.
+Flow: bake before → Ollama audit → fix/micro (or heavy) → **apply into repo** → bake after → compare MP4.
 
 ## Cadence
 
@@ -139,9 +147,11 @@ Manual: phone preview Low/Med, TV Dream if available, still bake readability.
 ```
 ~/arthur-genart-ollama/
   current_pack.txt packs_done.txt
-  queue.txt done.txt skip.txt
+  queue.txt done.txt skip.txt failed.txt
   work/<Engine>/{audit,fix-v1,fix-v2,redesign}.md
   work/<Engine>/out/{XxxEngine.kt,XxxStill.kt}
   previews/before|after/{stills,videos,frames}/
   previews/compare/
 ```
+
+If extract/apply fails, the engine goes to `failed.txt` and is **not** marked done (batch can retry).

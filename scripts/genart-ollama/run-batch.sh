@@ -5,7 +5,8 @@ source "$(cd "$(dirname "$0")" && pwd)/common.sh"
 
 ensure_workdir
 
-APPLY_FLAG=()
+# Default: APPLY — local LLM patches Engine/Still into the repo for real quality upgrades.
+APPLY=1
 MODE=continuous   # continuous | once | pack-once | count
 COUNT=0
 PACK_FORCE=""
@@ -14,24 +15,28 @@ usage() {
   cat <<'EOF'
 Usage: run-batch.sh [options]
 
-Default: run continuously — resume the last incomplete pack, process engines,
-         when the pack is finished advance to the next pack, until all done.
+Optimizes genart Engine+Still quality via local Ollama models, for every pack.
+
+Default: --apply continuous — resume incomplete pack, LLM-fix each engine into the
+         repo, bake after/compare, advance to next pack until all done.
 
 Options:
   --list           list packs progress and exit
   --once           process one engine then stop
   --pack-once      finish the current pack then stop
-  --pack NAME      start/force this pack (then continuous unless --once/--pack-once)
+  --pack NAME      start/force this pack
   -n N / N         process at most N engines then stop
-  --apply          pass --apply to run-one.sh
+  --apply          (default) write LLM Kotlin into the repo
+  --no-apply       audit/fix only — leave suggestions in work/<Engine>/
   -h / --help      this help
 
 Examples:
   ./scripts/genart-ollama/run-batch.sh
   ./scripts/genart-ollama/run-batch.sh --list
   ./scripts/genart-ollama/run-batch.sh --once
-  ./scripts/genart-ollama/run-batch.sh --pack-once --apply
+  ./scripts/genart-ollama/run-batch.sh --pack-once
   ./scripts/genart-ollama/run-batch.sh --pack nature -n 3
+  ./scripts/genart-ollama/run-batch.sh --no-apply --once
 EOF
 }
 
@@ -41,7 +46,8 @@ while [[ $# -gt 0 ]]; do
     --once) MODE=once; shift ;;
     --pack-once) MODE=pack-once; shift ;;
     --pack) PACK_FORCE="${2:-}"; shift 2 ;;
-    --apply) APPLY_FLAG=(--apply); shift ;;
+    --apply) APPLY=1; shift ;;
+    --no-apply) APPLY=0; shift ;;
     -n) COUNT="${2:-}"; MODE=count; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     [0-9]*) COUNT="$1"; MODE=count; shift ;;
@@ -53,7 +59,6 @@ processed=0
 start_pack=""
 
 read_next_into_queue() {
-  # Parses resolve_packs next → CURRENT_PACK + QUEUE_ENGINES
   local line first=1
   local pack=""
   QUEUE_ENGINES=()
@@ -96,7 +101,7 @@ activate_pack() {
     fi
   fi
   start_pack="$CURRENT_PACK"
-  echo "======== PACK $CURRENT_PACK (${#QUEUE_ENGINES[@]} remaining) ========"
+  echo "======== PACK $CURRENT_PACK (${#QUEUE_ENGINES[@]} remaining) apply=$APPLY ========"
   return 0
 }
 
@@ -122,7 +127,7 @@ while true; do
       resolve_packs list
       exit 0
     fi
-    echo "======== PACK $CURRENT_PACK (${#QUEUE_ENGINES[@]} remaining) ========"
+    echo "======== PACK $CURRENT_PACK (${#QUEUE_ENGINES[@]} remaining) apply=$APPLY ========"
     prev_pack="$CURRENT_PACK"
   fi
 
@@ -134,15 +139,21 @@ while true; do
       exit 0
     fi
     prev_pack="$CURRENT_PACK"
-    echo "======== PACK $CURRENT_PACK (${#QUEUE_ENGINES[@]} remaining) ========"
+    echo "======== PACK $CURRENT_PACK (${#QUEUE_ENGINES[@]} remaining) apply=$APPLY ========"
     continue
   fi
 
   eng="${QUEUE_ENGINES[0]}"
-  echo "======== [$CURRENT_PACK] $eng ========"
-  "$SCRIPT_DIR/run-one.sh" "${APPLY_FLAG[@]}" "$eng" || {
-    echo "warn: run-one failed for $eng — continuing" >&2
-  }
+  echo "======== [$CURRENT_PACK] optimize $eng (LLM local) ========"
+  if [[ "$APPLY" -eq 1 ]]; then
+    "$SCRIPT_DIR/run-one.sh" --apply "$eng" || {
+      echo "warn: run-one failed for $eng — continuing" >&2
+    }
+  else
+    "$SCRIPT_DIR/run-one.sh" "$eng" || {
+      echo "warn: run-one failed for $eng — continuing" >&2
+    }
+  fi
   processed=$((processed + 1))
   mark_pack_done_if_complete "$CURRENT_PACK"
 

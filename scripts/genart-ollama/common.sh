@@ -33,7 +33,7 @@ ensure_workdir() {
     "$PREVIEWS/after/frames" \
     "$PREVIEWS/compare"
   touch "$WORK_ROOT/queue.txt" "$WORK_ROOT/done.txt" "$WORK_ROOT/skip.txt" \
-    "$WORK_ROOT/packs_done.txt" "$WORK_ROOT/current_pack.txt"
+    "$WORK_ROOT/packs_done.txt" "$WORK_ROOT/current_pack.txt" "$WORK_ROOT/failed.txt"
 }
 
 resolve_packs() {

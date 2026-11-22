@@ -146,6 +146,13 @@ android {
         // Robolectric on JDK 17+ needs reflective access to OpenJDK internals
         // (FileDescriptor / SharedSecrets). See https://robolectric.org/getting-started/
         unitTests.all {
+            // Must be set on the *test worker* JVM — Gradle daemon systemProp alone is not enough.
+            // Prefer Maven Central; the GCS mirror flakes on CI (MavenArtifactFetcher IOException).
+            it.systemProperty(
+                "robolectric.dependency.repo.url",
+                "https://repo1.maven.org/maven2",
+            )
+            it.systemProperty("robolectric.dependency.repo.id", "mavenCentral")
             it.jvmArgs(
                 // Avoid HotSpot C2 "Field too big for insn" crashes on Apple Silicon
                 // when Robolectric/Roborazzi exercises large Compose trees.

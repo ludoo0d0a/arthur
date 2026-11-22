@@ -1,10 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Penrose silhouette + outer orbit for themed / monochrome icons. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
     <path
+        android:fillColor="#00000000"
+        android:strokeWidth="1.0"
+        android:strokeColor="#FFFFFF"
+        android:strokeAlpha="0.30"
+        android:pathData="M54,8.1 a45.9,45.9 0 1,1 0,91.8 a45.9,45.9 0 1,1 0,-91.8" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeWidth="1.1"
+        android:strokeColor="#FFFFFF"
+        android:strokeAlpha="0.22"
+        android:pathData="M54,3.8 a50.2,50.2 0 1,1 0,100.4 a50.2,50.2 0 1,1 0,-100.4" />
+    <path
         android:fillColor="#FFFFFF"
-        android:pathData="M54,2 L106,106 L2,106 Z" />
+        android:pathData="M35.13,67.68 L40.81,67.71 L56.44,40.51 L78.83,77.82 L81.62,72.74 L56.52,30.18 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M26.38,72.92 L29.02,77.88 L78.85,77.85 L56.45,40.51 L53.63,45.4 L69.86,72.89 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M50.42,30.12 L26.39,72.91 L69.87,72.9 L66.79,67.7 L35.1,67.7 L56.54,30.18 Z" />
 </vector>

@@ -3,8 +3,11 @@
 Play rejects TV form-factor builds that lack a **bitmap** home-screen banner in
 `drawable-xhdpi` and/or ship a padded launcher icon.
 
-**Brand:** solid **blue triangle on violet** (`#2A1848`). Do not revive the old
-yellow-circle / blue-circle / yellow-square mark.
+**Brand:** **Penrose triangle** fully inscribed in the round mask (lavender
+`#C4B5FD` / blue `#5B8FC8` / pink `#F9A8D4`) on violet (`#2A1848`), with light
+zen/screensaver accents (soft orbits + particles, teal `#5EEAD4`). Do not
+revive the old yellow-circle / blue-circle / yellow-square mark, nor a plain
+solid triangle that overflows the circle.
 
 ## Required in-APK resources
 

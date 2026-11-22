@@ -179,6 +179,102 @@ class GenartSource(
         const val CAFE_WALL = "genart.cafewall"
         const val KANIZSA_TRIANGLE = "genart.kanizsa"
         const val CHECKER_SHADOW = "genart.checkershadow"
+        const val CAT_WINDOW = "genart.catwindow"
+        const val CAT_SLEEP = "genart.catsleep"
+        const val DOG_NAP = "genart.dognap"
+        const val DOG_DISTANT_WALK = "genart.dogdistantwalk"
+        const val PANDA_SIT = "genart.pandasit"
+        const val PANDA_BAMBOO = "genart.pandabamboo"
+        const val CAT_TAIL = "genart.cattail"
+        const val DOG_STRETCH = "genart.dogstretch"
+        const val PANDA_ROLL = "genart.pandaroll"
+        const val SEASON_SPRING_WASH = "genart.seasonspringwash"
+        const val SEASON_AUTUMN_WASH = "genart.seasonautumnwash"
+        const val SEASON_WINTER_WASH = "genart.seasonwinterwash"
+        const val FROSTED_WINDOW_DAWN = "genart.frostedwindowdawn"
+        const val PAPER_LANTERN = "genart.paperlantern"
+        const val HEARTH_GLOW = "genart.hearthglow"
+        const val VOLUMETRIC_STAIRWELL = "genart.volumetricstairwell"
+        const val WINDOW_DUST_MOTES = "genart.windowdustmotes"
+        const val BOOKSHELF_GLOW = "genart.bookshelfglow"
+        const val FLOOR_LAMP_POOL = "genart.floorlamppool"
+        const val CRYSTAL_CAVERN_GLOW = "genart.crystalcavernglow"
+        const val INK_BLOOM = "genart.inkbloom"
+        const val SUMI_WASH = "genart.sumiwash"
+        const val INK_TENDRIL = "genart.inktendril"
+        const val KALEIDO_PETAL = "genart.kaleidopetal"
+        const val KALEIDO_MIRROR = "genart.kaleidomirror"
+        const val KALEIDO_ORBIT = "genart.kaleidoorbit"
+        const val ZEN_EN_SO = "genart.zenenso"
+        const val ZEN_STONE_RIPPLES = "genart.zenstoneripples"
+        const val ZEN_INCENSE = "genart.zenincense"
+        const val OBSIDIAN_SHORE = "genart.obsidianshore"
+        const val TIDE_FOAM = "genart.tidefoam"
+        const val COAST_CLIFF_HAZE = "genart.coastcliffhaze"
+        const val DREAM_VEIL = "genart.dreamveil"
+        const val LUCID_ORBS = "genart.lucidorbs"
+        const val SLEEP_PARALLAX = "genart.sleepparallax"
+        const val MICRO_DEW = "genart.microdew"
+        const val MICRO_FIBER = "genart.microfiber"
+        const val MICRO_DUST = "genart.microdust"
+        const val MICRO_POLLEN_CLOSE = "genart.micropollenclose"
+        const val MICRO_BUBBLE_SKIN = "genart.microbubbleskin"
+        const val AUTO_DASH_SOFT = "genart.autodashsoft"
+        const val AUTO_RAIN_GLASS = "genart.autorainonglass"
+        const val AUTO_DISTANT_HEADLIGHTS = "genart.autodistantheadlights"
+        const val AUTO_DASHBOARD_GLOW = "genart.autodashboardglow"
+        const val AUTO_TUNNEL_LIGHT = "genart.autotunnellight"
+        const val AUTO_HORIZON_DRIVE = "genart.autohorizondrive"
+        const val MOTO_HEADLIGHT = "genart.motoheadlight"
+        const val MOTO_WIND_STREAKS = "genart.motowindstreaks"
+        const val MOTO_ROAD_BLUR = "genart.motoroadblur"
+        const val MOTO_NIGHT_LEAN = "genart.motonightlean"
+        const val MOTO_TAIL_GLOW = "genart.mototailglow"
+        const val MOTO_DAWN_RIDE = "genart.motodawnride"
+        const val AVION_HORIZON_CLOUDS = "genart.avionhorizonclouds"
+        const val AVION_CONTRAIL = "genart.avioncontrail"
+        const val AVION_WING_GLOW = "genart.avionwingglow"
+        const val AVION_CABIN_WINDOW = "genart.avioncabinwindow"
+        const val AVION_SUNRISE_BAND = "genart.avionsunriseband"
+        const val AVION_NIGHT_CITY = "genart.avionnightcity"
+        const val VELO_PATH_FIELDS = "genart.velopathfields"
+        const val VELO_PARALLAX_TREES = "genart.veloparallaxtrees"
+        const val VELO_DAWN_LANE = "genart.velodawnlane"
+        const val VELO_RAIN_ASPHALT = "genart.velorainasphalt"
+        const val VELO_GOLDEN_HOUR = "genart.velogoldenhour"
+        const val VELO_FOREST_CANOPY = "genart.veloforestcanopy"
+        const val TRAIN_WINDOW_BLUR = "genart.trainwindowblur"
+        const val TRAIN_CATENARY = "genart.traincatenary"
+        const val TRAIN_PLATFORM_GLOW = "genart.trainplatformglow"
+        const val TRAIN_COUNTRYSIDE = "genart.traincountryside"
+        const val TRAIN_NIGHT_CARRIAGE = "genart.trainnightcarriage"
+        const val TRAIN_TUNNEL_PULSE = "genart.traintunnelpulse"
+        const val US_DINER_NEON = "genart.usdinerneon"
+        const val US_MOTEL_SIGN = "genart.usmotelsign"
+        const val US_ROUTE66_WASH = "genart.usroute66wash"
+        const val US_CRT_ARCADE = "genart.uscrtarcade"
+        const val US_RETROWAVE = "genart.usretrowave"
+        const val US_DRIVE_IN = "genart.usdrivein"
+        const val STORM_STROBE_FLASH = "genart.stormstrobeflash"
+        const val STORM_STROBE_SHEET = "genart.stormstrobesheet"
+        const val STORM_STROBE_PULSE = "genart.stormstrobepulse"
+        const val STORM_STROBE_FORK = "genart.stormstrobefork"
+        const val STORM_STROBE_HORIZON = "genart.stormstrobehorizon"
+        const val STORM_STROBE_CLOUD = "genart.stormstrobecloud"
+        const val PHYSARUM_VEINS = "genart.physarumveins"
+        const val PHYSARUM_LATTICE = "genart.physarumlattice"
+        const val PHYSARUM_BLOOM = "genart.physarumbloom"
+        const val PHYSARUM_DRIFT = "genart.physarumdrift"
+        const val PHYSARUM_NODE = "genart.physarumnode"
+        const val PHYSARUM_FILAMENT = "genart.physarumfilament"
+        const val REACTION_SPOTS = "genart.reactionspots"
+        const val REACTION_CORALS = "genart.reactioncorals"
+        const val REACTION_WAVES = "genart.reactionwaves"
+        const val REACTION_MITOSIS = "genart.reactionmitosis"
+        const val REACTION_MAZE = "genart.reactionmaze"
+        const val REACTION_BLOBS = "genart.reactionblobs"
+        const val SOFT_TIDE_RIPPLES = "genart.softtideripples"
+        const val HARBOR_MIST = "genart.harbormist"
 
         fun defaultCatalog(): List<Artwork> = listOf(
             entry(PARTICLES, "#1 - Drifting Particles"),
@@ -341,6 +437,102 @@ class GenartSource(
             entry(CAFE_WALL, "#157 - Café Wall"),
             entry(KANIZSA_TRIANGLE, "#158 - Kanizsa Triangle"),
             entry(CHECKER_SHADOW, "#159 - Checker Shadow"),
+            entry(CAT_WINDOW, "#160 - Cat at Window"),
+            entry(CAT_SLEEP, "#161 - Sleeping Cat"),
+            entry(DOG_NAP, "#162 - Dog Nap"),
+            entry(DOG_DISTANT_WALK, "#163 - Distant Dog Walk"),
+            entry(PANDA_SIT, "#164 - Sitting Panda"),
+            entry(PANDA_BAMBOO, "#165 - Panda and Bamboo"),
+            entry(CAT_TAIL, "#166 - Cat Tail Sway"),
+            entry(DOG_STRETCH, "#167 - Dog Stretch"),
+            entry(PANDA_ROLL, "#168 - Panda Roll"),
+            entry(SEASON_SPRING_WASH, "#169 - Season Spring Wash"),
+            entry(SEASON_AUTUMN_WASH, "#170 - Season Autumn Wash"),
+            entry(SEASON_WINTER_WASH, "#171 - Season Winter Wash"),
+            entry(FROSTED_WINDOW_DAWN, "#172 - Frosted Window Dawn"),
+            entry(PAPER_LANTERN, "#173 - Paper Lantern Glow"),
+            entry(HEARTH_GLOW, "#174 - Hearth Glow"),
+            entry(VOLUMETRIC_STAIRWELL, "#175 - Volumetric Stairwell"),
+            entry(WINDOW_DUST_MOTES, "#176 - Window Dust Motes"),
+            entry(BOOKSHELF_GLOW, "#177 - Bookshelf Glow"),
+            entry(FLOOR_LAMP_POOL, "#178 - Floor Lamp Pool"),
+            entry(CRYSTAL_CAVERN_GLOW, "#179 - Crystal Cavern Glow"),
+            entry(INK_BLOOM, "#180 - Ink Bloom"),
+            entry(SUMI_WASH, "#181 - Sumi Wash"),
+            entry(INK_TENDRIL, "#182 - Ink Tendril"),
+            entry(KALEIDO_PETAL, "#183 - Kaleido Petal"),
+            entry(KALEIDO_MIRROR, "#184 - Kaleido Mirror"),
+            entry(KALEIDO_ORBIT, "#185 - Kaleido Orbit"),
+            entry(ZEN_EN_SO, "#186 - Zen En So"),
+            entry(ZEN_STONE_RIPPLES, "#187 - Zen Stone Ripples"),
+            entry(ZEN_INCENSE, "#188 - Zen Incense"),
+            entry(OBSIDIAN_SHORE, "#189 - Obsidian Shore"),
+            entry(TIDE_FOAM, "#190 - Tide Foam"),
+            entry(COAST_CLIFF_HAZE, "#191 - Coast Cliff Haze"),
+            entry(DREAM_VEIL, "#192 - Dream Veil"),
+            entry(LUCID_ORBS, "#193 - Lucid Orbs"),
+            entry(SLEEP_PARALLAX, "#194 - Sleep Parallax"),
+            entry(MICRO_DEW, "#195 - Micro Dew"),
+            entry(MICRO_FIBER, "#196 - Micro Fiber"),
+            entry(MICRO_DUST, "#197 - Micro Dust"),
+            entry(MICRO_POLLEN_CLOSE, "#198 - Micro Pollen Close"),
+            entry(MICRO_BUBBLE_SKIN, "#199 - Micro Bubble Skin"),
+            entry(AUTO_DASH_SOFT, "#200 - Auto Dash Soft"),
+            entry(AUTO_RAIN_GLASS, "#201 - Auto Rain on Glass"),
+            entry(AUTO_DISTANT_HEADLIGHTS, "#202 - Auto Distant Headlights"),
+            entry(AUTO_DASHBOARD_GLOW, "#203 - Auto Dashboard Glow"),
+            entry(AUTO_TUNNEL_LIGHT, "#204 - Auto Tunnel Light Rhythm"),
+            entry(AUTO_HORIZON_DRIVE, "#205 - Auto Horizon Drive"),
+            entry(MOTO_HEADLIGHT, "#206 - Moto Single Headlight"),
+            entry(MOTO_WIND_STREAKS, "#207 - Moto Wind Streaks"),
+            entry(MOTO_ROAD_BLUR, "#208 - Moto Road Blur"),
+            entry(MOTO_NIGHT_LEAN, "#209 - Moto Night Lean"),
+            entry(MOTO_TAIL_GLOW, "#210 - Moto Tail Glow"),
+            entry(MOTO_DAWN_RIDE, "#211 - Moto Dawn Ride"),
+            entry(AVION_HORIZON_CLOUDS, "#212 - Avion Horizon Clouds"),
+            entry(AVION_CONTRAIL, "#213 - Avion Contrail"),
+            entry(AVION_WING_GLOW, "#214 - Avion Wing Glow"),
+            entry(AVION_CABIN_WINDOW, "#215 - Avion Cabin Window"),
+            entry(AVION_SUNRISE_BAND, "#216 - Avion Sunrise Band"),
+            entry(AVION_NIGHT_CITY, "#217 - Avion Night City Below"),
+            entry(VELO_PATH_FIELDS, "#218 - Velo Path and Fields"),
+            entry(VELO_PARALLAX_TREES, "#219 - Velo Parallax Trees"),
+            entry(VELO_DAWN_LANE, "#220 - Velo Dawn Lane"),
+            entry(VELO_RAIN_ASPHALT, "#221 - Velo Rain Asphalt"),
+            entry(VELO_GOLDEN_HOUR, "#222 - Velo Golden Hour"),
+            entry(VELO_FOREST_CANOPY, "#223 - Velo Forest Canopy"),
+            entry(TRAIN_WINDOW_BLUR, "#224 - Train Window Blur"),
+            entry(TRAIN_CATENARY, "#225 - Train Soft Catenary"),
+            entry(TRAIN_PLATFORM_GLOW, "#226 - Train Platform Glow"),
+            entry(TRAIN_COUNTRYSIDE, "#227 - Train Countryside Wash"),
+            entry(TRAIN_NIGHT_CARRIAGE, "#228 - Train Night Carriage"),
+            entry(TRAIN_TUNNEL_PULSE, "#229 - Train Tunnel Pulse"),
+            entry(US_DINER_NEON, "#230 - US Diner Neon"),
+            entry(US_MOTEL_SIGN, "#231 - US Motel Sign"),
+            entry(US_ROUTE66_WASH, "#232 - US Route 66 Desert Wash"),
+            entry(US_CRT_ARCADE, "#233 - US CRT Arcade"),
+            entry(US_RETROWAVE, "#234 - US Retrowave Horizon"),
+            entry(US_DRIVE_IN, "#235 - US Drive-In Glow"),
+            entry(STORM_STROBE_FLASH, "#236 - Storm Strobe Flash"),
+            entry(STORM_STROBE_SHEET, "#237 - Storm Strobe Sheet Lightning"),
+            entry(STORM_STROBE_PULSE, "#238 - Storm Strobe Pulse"),
+            entry(STORM_STROBE_FORK, "#239 - Storm Strobe Fork"),
+            entry(STORM_STROBE_HORIZON, "#240 - Storm Strobe Horizon"),
+            entry(STORM_STROBE_CLOUD, "#241 - Storm Strobe Cloud Burst"),
+            entry(PHYSARUM_VEINS, "#242 - Physarum Veins"),
+            entry(PHYSARUM_LATTICE, "#243 - Physarum Lattice"),
+            entry(PHYSARUM_BLOOM, "#244 - Physarum Bloom"),
+            entry(PHYSARUM_DRIFT, "#245 - Physarum Drift"),
+            entry(PHYSARUM_NODE, "#246 - Physarum Node Nest"),
+            entry(PHYSARUM_FILAMENT, "#247 - Physarum Filament"),
+            entry(REACTION_SPOTS, "#248 - Reaction Diffusion Spots"),
+            entry(REACTION_CORALS, "#249 - Reaction Diffusion Corals"),
+            entry(REACTION_WAVES, "#250 - Reaction Diffusion Waves"),
+            entry(REACTION_MITOSIS, "#251 - Reaction Diffusion Mitosis"),
+            entry(REACTION_MAZE, "#252 - Reaction Diffusion Maze"),
+            entry(REACTION_BLOBS, "#253 - Reaction Soft Blobs"),
+            entry(SOFT_TIDE_RIPPLES, "#254 - Soft Tide Ripples"),
+            entry(HARBOR_MIST, "#255 - Harbor Mist"),
         )
 
         private fun entry(id: String, title: String) = Artwork(

@@ -1,0 +1,149 @@
+package fr.geoking.arthur.genart.engines
+
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import fr.geoking.arthur.genart.GenartQuality
+import fr.geoking.arthur.genart.TonalPalette
+import fr.geoking.arthur.genart.phase01
+import fr.geoking.arthur.genart.qualityCount
+import fr.geoking.arthur.genart.seededRange
+import fr.geoking.arthur.genart.seededUnit
+import kotlin.math.PI
+import kotlin.math.sin
+
+private data class CatSleepMote(
+    val x0: Float,
+    val y0: Float,
+    val driftX: Float,
+    val driftY: Float,
+    val phaseOffset: Float,
+)
+
+/** Curled sleeping cat silhouette with pointed ears, breathing slowly. */
+@Composable
+internal fun CatSleepEngine(
+    isActive: Boolean,
+    paletteColors: List<Color>,
+    quality: GenartQuality,
+    brightness: Float,
+    speed: Float,
+    modifier: Modifier = Modifier,
+) {
+    val moteCount = qualityCount(quality, low = 0, medium = 1, high = 3)
+    val motes = remember(moteCount) {
+        List(moteCount) { i ->
+            CatSleepMote(
+                x0 = seededUnit(i * 19 + 5),
+                y0 = seededUnit(i * 31 + 9),
+                driftX = seededRange(i * 43 + 13, 0.015f, 0.04f),
+                driftY = seededRange(i * 47 + 17, 0.01f, 0.03f),
+                phaseOffset = seededRange(i * 53 + 21, 0f, 2f * PI.toFloat()),
+            )
+        }
+    }
+    val infiniteTransition = rememberInfiniteTransition(label = "cat_sleep_loop")
+    val breathAnim by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween((5600 / speed.coerceAtLeast(0.2f)).toInt(), easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "cat_sleep_breath",
+    )
+    val driftAnim by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween((70000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "cat_sleep_drift",
+    )
+    val restingDim = if (isActive) 1f else 0.6f
+
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val minDim = w.coerceAtMost(h)
+        val cx = w * 0.5f
+        val cy = h * 0.58f
+
+        drawRect(
+            brush = Brush.radialGradient(
+                0f to Color(0xFF2C221C),
+                0.55f to Color(0xFF1A1410),
+                1f to Color(0xFF0C0908),
+                center = Offset(cx, cy),
+                radius = w.coerceAtLeast(h) * 0.85f,
+            ),
+        )
+
+        val breathT = phase01(breathAnim)
+        val breath = sin(breathT * 2f * PI.toFloat()) * 0.5f + 0.5f
+        val scale = 1f + (if (isActive) 0.03f else 0.01f) * breath
+        val bodyColor = TonalPalette.brightness(
+            TonalPalette.mix(Color(0xFF241810), TonalPalette.pick(paletteColors, 0), 0.28f),
+            brightness * restingDim,
+        )
+
+        val bodyRx = minDim * 0.28f * scale
+        val bodyRy = minDim * 0.18f * scale
+        drawOval(
+            color = bodyColor,
+            topLeft = Offset(cx - bodyRx, cy - bodyRy),
+            size = Size(bodyRx * 2f, bodyRy * 2f),
+        )
+        val headR = minDim * 0.13f * scale
+        val head = Offset(cx - bodyRx * 0.55f, cy - bodyRy * 0.45f)
+        drawCircle(color = bodyColor, radius = headR, center = head)
+        val tuckR = minDim * 0.10f * scale
+        drawCircle(color = bodyColor, radius = tuckR, center = Offset(cx + bodyRx * 0.4f, cy - bodyRy * 0.2f))
+
+        val ears = Path().apply {
+            moveTo(head.x - headR * 0.7f, head.y - headR * 0.15f)
+            lineTo(head.x - headR * 0.95f, head.y - headR * 1.4f)
+            lineTo(head.x - headR * 0.1f, head.y - headR * 0.55f)
+            close()
+            moveTo(head.x + headR * 0.05f, head.y - headR * 0.5f)
+            lineTo(head.x + headR * 0.85f, head.y - headR * 1.35f)
+            lineTo(head.x + headR * 0.65f, head.y - headR * 0.1f)
+            close()
+        }
+        drawPath(ears, color = bodyColor)
+
+        val time = phase01(driftAnim)
+        motes.forEach { mote ->
+            val mx = phase01(mote.x0 + time * mote.driftX) * w
+            val my = phase01(mote.y0 + time * mote.driftY) * h
+            val glow = TonalPalette.brightness(TonalPalette.pick(paletteColors, 1), brightness)
+            val alpha = (0.12f + 0.08f * (0.5f + 0.5f * sin(time * 2f * PI.toFloat() + mote.phaseOffset))) * restingDim
+            val r = minDim * 0.05f
+            drawCircle(
+                brush = Brush.radialGradient(
+                    0f to TonalPalette.withAlpha(glow, alpha),
+                    1f to Color.Transparent,
+                    center = Offset(mx, my),
+                    radius = r,
+                ),
+                radius = r,
+                center = Offset(mx, my),
+            )
+        }
+    }
+}

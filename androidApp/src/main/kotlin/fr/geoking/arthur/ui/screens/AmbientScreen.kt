@@ -240,6 +240,13 @@ fun AmbientScreenContent(
         return pool.mapNotNull { art ->
             if (art.id in invalid) return@mapNotNull null
             if (cacheOnly && !art.isOfflineDisplayable(imageCache)) return@mapNotNull null
+            // TV Dream excludes phone-only engines (e.g. storm_strobe).
+            if (isTelevision &&
+                art.kind == ArtworkKind.Genart &&
+                !fr.geoking.arthur.genart.GenartRegistry.tvDreamSafe(art.id)
+            ) {
+                return@mapNotNull null
+            }
             art.id
         }.toSet()
     }

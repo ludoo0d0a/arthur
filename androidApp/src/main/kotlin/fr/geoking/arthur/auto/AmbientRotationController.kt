@@ -6,7 +6,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import fr.geoking.arthur.audio.AmbientAudioFocusHandler
 import fr.geoking.arthur.audio.ZenAudioEngine
+import fr.geoking.arthur.genart.GenartRegistry
 import fr.geoking.arthur.shared.domain.Artwork
+import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.domain.isGenerative
 import fr.geoking.arthur.shared.domain.resolveAmbientArtwork
@@ -187,10 +189,16 @@ internal class AmbientRotationController(
         onInvalidate()
     }
 
+    /** Drop phone-only / Auto-unsafe genart engines (storm strobe, physarum, reactions). */
+    private fun filterAutoSafe(pool: List<Artwork>): List<Artwork> =
+        pool.filter { art ->
+            art.kind != ArtworkKind.Genart || GenartRegistry.autoSafe(art.id)
+        }
+
     private fun samplePool(pool: List<Artwork>, seed: Artwork? = current): List<Artwork> {
         if (pool.isEmpty()) return emptyList()
         return AmbientAlbumArt.sampleRotationPool(
-            pool = pool,
+            pool = filterAutoSafe(pool),
             maxSize = AmbientAlbumArt.MAX_AUTO_ROTATION_POOL,
             seed = seed,
             isPreferred = { art ->
@@ -203,7 +211,7 @@ internal class AmbientRotationController(
 
     private fun applyPool(pool: List<Artwork>, preferInitial: Boolean) {
         val previousId = current?.id
-        catalog = pool
+        catalog = filterAutoSafe(pool)
         current = when {
             preferInitial && initialArtworkId != null ->
                 pool.firstOrNull { it.id == initialArtworkId } ?: resolveAmbientArtwork(pool, null)

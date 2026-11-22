@@ -187,6 +187,15 @@ class PackModelsTest {
         assertTrue(suffixes.contains("genart_abstract"))
         assertFalse(suffixes.contains("genart_tapet"))
         assertTrue(suffixes.contains("genart_vintage"))
+        assertTrue(suffixes.contains("genart_animals"))
+        assertTrue(suffixes.contains("genart_storm_strobe"))
+        assertTrue(suffixes.contains("genart_physarum"))
+        assertTrue(suffixes.contains("genart_reactions"))
+        val animalsIdx = suffixes.indexOf("genart_animals")
+        val fractalIdx = suffixes.indexOf("genart_fractal")
+        assertTrue(animalsIdx > suffixes.indexOf("genart_illusions"))
+        assertTrue(animalsIdx < fractalIdx)
+        assertEquals("genart_custom", suffixes.last())
     }
 
     @Test

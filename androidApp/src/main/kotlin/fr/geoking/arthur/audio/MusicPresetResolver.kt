@@ -195,12 +195,13 @@ object MusicPresetResolver {
         GenartPackTopics.WATER -> 0
         GenartPackTopics.WEATHER -> 1
         GenartPackTopics.PLANETS, GenartPackTopics.SCIFI, GenartPackTopics.VINTAGE -> 2
-        GenartPackTopics.LIFE -> 3
-        GenartPackTopics.EARTH -> 4
-        GenartPackTopics.NATURE -> 5
-        GenartPackTopics.ABSTRACT, GenartPackTopics.GEOMETRY, GenartPackTopics.ILLUSIONS -> 6
-        GenartPackTopics.FRACTAL, GenartPackTopics.CUSTOM -> 7
-        else -> 8
+        GenartPackTopics.ANIMALS -> 3
+        GenartPackTopics.LIFE -> 4
+        GenartPackTopics.EARTH -> 5
+        GenartPackTopics.NATURE -> 6
+        GenartPackTopics.ABSTRACT, GenartPackTopics.GEOMETRY, GenartPackTopics.ILLUSIONS -> 7
+        GenartPackTopics.FRACTAL, GenartPackTopics.CUSTOM -> 8
+        else -> 9
     }
 
     private fun topicToStyles(topic: String): List<MusicStyle> = when (topic) {
@@ -208,6 +209,8 @@ object MusicPresetResolver {
         GenartPackTopics.NATURE ->
             listOf(MusicStyle.Zen, MusicStyle.SoftGuitar, MusicStyle.Songbirds)
         GenartPackTopics.EARTH -> listOf(MusicStyle.SoftGuitar, MusicStyle.Zen, MusicStyle.AfricanPulse)
+        GenartPackTopics.ANIMALS ->
+            listOf(MusicStyle.Zen, MusicStyle.Songbirds, MusicStyle.SoftGuitar)
         GenartPackTopics.LIFE ->
             listOf(MusicStyle.SoftGuitar, MusicStyle.Songbirds, MusicStyle.JazzPiano)
         GenartPackTopics.WEATHER ->

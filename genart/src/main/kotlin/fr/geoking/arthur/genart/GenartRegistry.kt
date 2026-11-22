@@ -67,6 +67,102 @@ import fr.geoking.arthur.genart.engines.PenroseStairsEngine
 import fr.geoking.arthur.genart.engines.ImpossibleCubeEngine
 import fr.geoking.arthur.genart.engines.NeckerCubeEngine
 import fr.geoking.arthur.genart.engines.CafeWallEngine
+import fr.geoking.arthur.genart.engines.CatSleepEngine
+import fr.geoking.arthur.genart.engines.CatTailEngine
+import fr.geoking.arthur.genart.engines.CatWindowEngine
+import fr.geoking.arthur.genart.engines.DogDistantWalkEngine
+import fr.geoking.arthur.genart.engines.DogNapEngine
+import fr.geoking.arthur.genart.engines.DogStretchEngine
+import fr.geoking.arthur.genart.engines.PandaBambooEngine
+import fr.geoking.arthur.genart.engines.PandaRollEngine
+import fr.geoking.arthur.genart.engines.SeasonSpringWashEngine
+import fr.geoking.arthur.genart.engines.SeasonAutumnWashEngine
+import fr.geoking.arthur.genart.engines.SeasonWinterWashEngine
+import fr.geoking.arthur.genart.engines.FrostedWindowDawnEngine
+import fr.geoking.arthur.genart.engines.PaperLanternEngine
+import fr.geoking.arthur.genart.engines.HearthGlowEngine
+import fr.geoking.arthur.genart.engines.VolumetricStairwellEngine
+import fr.geoking.arthur.genart.engines.WindowDustMotesEngine
+import fr.geoking.arthur.genart.engines.BookshelfGlowEngine
+import fr.geoking.arthur.genart.engines.FloorLampPoolEngine
+import fr.geoking.arthur.genart.engines.CrystalCavernGlowEngine
+import fr.geoking.arthur.genart.engines.InkBloomEngine
+import fr.geoking.arthur.genart.engines.SumiWashEngine
+import fr.geoking.arthur.genart.engines.InkTendrilEngine
+import fr.geoking.arthur.genart.engines.KaleidoPetalEngine
+import fr.geoking.arthur.genart.engines.KaleidoMirrorEngine
+import fr.geoking.arthur.genart.engines.KaleidoOrbitEngine
+import fr.geoking.arthur.genart.engines.ZenEnSoEngine
+import fr.geoking.arthur.genart.engines.ZenStoneRipplesEngine
+import fr.geoking.arthur.genart.engines.ZenIncenseEngine
+import fr.geoking.arthur.genart.engines.ObsidianShoreEngine
+import fr.geoking.arthur.genart.engines.TideFoamEngine
+import fr.geoking.arthur.genart.engines.CoastCliffHazeEngine
+import fr.geoking.arthur.genart.engines.DreamVeilEngine
+import fr.geoking.arthur.genart.engines.LucidOrbsEngine
+import fr.geoking.arthur.genart.engines.SleepParallaxEngine
+import fr.geoking.arthur.genart.engines.MicroDewEngine
+import fr.geoking.arthur.genart.engines.MicroFiberEngine
+import fr.geoking.arthur.genart.engines.MicroDustEngine
+import fr.geoking.arthur.genart.engines.MicroPollenCloseEngine
+import fr.geoking.arthur.genart.engines.MicroBubbleSkinEngine
+import fr.geoking.arthur.genart.engines.AutoDashSoftEngine
+import fr.geoking.arthur.genart.engines.AutoRainGlassEngine
+import fr.geoking.arthur.genart.engines.AutoDistantHeadlightsEngine
+import fr.geoking.arthur.genart.engines.AutoDashboardGlowEngine
+import fr.geoking.arthur.genart.engines.AutoTunnelLightEngine
+import fr.geoking.arthur.genart.engines.AutoHorizonDriveEngine
+import fr.geoking.arthur.genart.engines.MotoHeadlightEngine
+import fr.geoking.arthur.genart.engines.MotoWindStreaksEngine
+import fr.geoking.arthur.genart.engines.MotoRoadBlurEngine
+import fr.geoking.arthur.genart.engines.MotoNightLeanEngine
+import fr.geoking.arthur.genart.engines.MotoTailGlowEngine
+import fr.geoking.arthur.genart.engines.MotoDawnRideEngine
+import fr.geoking.arthur.genart.engines.AvionHorizonCloudsEngine
+import fr.geoking.arthur.genart.engines.AvionContrailEngine
+import fr.geoking.arthur.genart.engines.AvionWingGlowEngine
+import fr.geoking.arthur.genart.engines.AvionCabinWindowEngine
+import fr.geoking.arthur.genart.engines.AvionSunriseBandEngine
+import fr.geoking.arthur.genart.engines.AvionNightCityEngine
+import fr.geoking.arthur.genart.engines.VeloPathFieldsEngine
+import fr.geoking.arthur.genart.engines.VeloParallaxTreesEngine
+import fr.geoking.arthur.genart.engines.VeloDawnLaneEngine
+import fr.geoking.arthur.genart.engines.VeloRainAsphaltEngine
+import fr.geoking.arthur.genart.engines.VeloGoldenHourEngine
+import fr.geoking.arthur.genart.engines.VeloForestCanopyEngine
+import fr.geoking.arthur.genart.engines.TrainWindowBlurEngine
+import fr.geoking.arthur.genart.engines.TrainCatenaryEngine
+import fr.geoking.arthur.genart.engines.TrainPlatformGlowEngine
+import fr.geoking.arthur.genart.engines.TrainCountrysideEngine
+import fr.geoking.arthur.genart.engines.TrainNightCarriageEngine
+import fr.geoking.arthur.genart.engines.TrainTunnelPulseEngine
+import fr.geoking.arthur.genart.engines.UsDinerNeonEngine
+import fr.geoking.arthur.genart.engines.UsMotelSignEngine
+import fr.geoking.arthur.genart.engines.UsRoute66WashEngine
+import fr.geoking.arthur.genart.engines.UsCrtArcadeEngine
+import fr.geoking.arthur.genart.engines.UsRetrowaveEngine
+import fr.geoking.arthur.genart.engines.UsDriveInEngine
+import fr.geoking.arthur.genart.engines.StormStrobeFlashEngine
+import fr.geoking.arthur.genart.engines.StormStrobeSheetEngine
+import fr.geoking.arthur.genart.engines.StormStrobePulseEngine
+import fr.geoking.arthur.genart.engines.StormStrobeForkEngine
+import fr.geoking.arthur.genart.engines.StormStrobeHorizonEngine
+import fr.geoking.arthur.genart.engines.StormStrobeCloudEngine
+import fr.geoking.arthur.genart.engines.PhysarumVeinsEngine
+import fr.geoking.arthur.genart.engines.PhysarumLatticeEngine
+import fr.geoking.arthur.genart.engines.PhysarumBloomEngine
+import fr.geoking.arthur.genart.engines.PhysarumDriftEngine
+import fr.geoking.arthur.genart.engines.PhysarumNodeEngine
+import fr.geoking.arthur.genart.engines.PhysarumFilamentEngine
+import fr.geoking.arthur.genart.engines.ReactionSpotsEngine
+import fr.geoking.arthur.genart.engines.ReactionCoralsEngine
+import fr.geoking.arthur.genart.engines.ReactionWavesEngine
+import fr.geoking.arthur.genart.engines.ReactionMitosisEngine
+import fr.geoking.arthur.genart.engines.ReactionMazeEngine
+import fr.geoking.arthur.genart.engines.ReactionBlobsEngine
+import fr.geoking.arthur.genart.engines.SoftTideRipplesEngine
+import fr.geoking.arthur.genart.engines.HarborMistEngine
+import fr.geoking.arthur.genart.engines.PandaSitEngine
 import fr.geoking.arthur.genart.engines.KanizsaTriangleEngine
 import fr.geoking.arthur.genart.engines.CheckerShadowEngine
 import fr.geoking.arthur.genart.engines.DriftingHalosEngine
@@ -227,6 +323,102 @@ import fr.geoking.arthur.genart.stills.PenroseStairsStill
 import fr.geoking.arthur.genart.stills.ImpossibleCubeStill
 import fr.geoking.arthur.genart.stills.NeckerCubeStill
 import fr.geoking.arthur.genart.stills.CafeWallStill
+import fr.geoking.arthur.genart.stills.CatSleepStill
+import fr.geoking.arthur.genart.stills.CatTailStill
+import fr.geoking.arthur.genart.stills.CatWindowStill
+import fr.geoking.arthur.genart.stills.DogDistantWalkStill
+import fr.geoking.arthur.genart.stills.DogNapStill
+import fr.geoking.arthur.genart.stills.DogStretchStill
+import fr.geoking.arthur.genart.stills.PandaBambooStill
+import fr.geoking.arthur.genart.stills.PandaRollStill
+import fr.geoking.arthur.genart.stills.SeasonSpringWashStill
+import fr.geoking.arthur.genart.stills.SeasonAutumnWashStill
+import fr.geoking.arthur.genart.stills.SeasonWinterWashStill
+import fr.geoking.arthur.genart.stills.FrostedWindowDawnStill
+import fr.geoking.arthur.genart.stills.PaperLanternStill
+import fr.geoking.arthur.genart.stills.HearthGlowStill
+import fr.geoking.arthur.genart.stills.VolumetricStairwellStill
+import fr.geoking.arthur.genart.stills.WindowDustMotesStill
+import fr.geoking.arthur.genart.stills.BookshelfGlowStill
+import fr.geoking.arthur.genart.stills.FloorLampPoolStill
+import fr.geoking.arthur.genart.stills.CrystalCavernGlowStill
+import fr.geoking.arthur.genart.stills.InkBloomStill
+import fr.geoking.arthur.genart.stills.SumiWashStill
+import fr.geoking.arthur.genart.stills.InkTendrilStill
+import fr.geoking.arthur.genart.stills.KaleidoPetalStill
+import fr.geoking.arthur.genart.stills.KaleidoMirrorStill
+import fr.geoking.arthur.genart.stills.KaleidoOrbitStill
+import fr.geoking.arthur.genart.stills.ZenEnSoStill
+import fr.geoking.arthur.genart.stills.ZenStoneRipplesStill
+import fr.geoking.arthur.genart.stills.ZenIncenseStill
+import fr.geoking.arthur.genart.stills.ObsidianShoreStill
+import fr.geoking.arthur.genart.stills.TideFoamStill
+import fr.geoking.arthur.genart.stills.CoastCliffHazeStill
+import fr.geoking.arthur.genart.stills.DreamVeilStill
+import fr.geoking.arthur.genart.stills.LucidOrbsStill
+import fr.geoking.arthur.genart.stills.SleepParallaxStill
+import fr.geoking.arthur.genart.stills.MicroDewStill
+import fr.geoking.arthur.genart.stills.MicroFiberStill
+import fr.geoking.arthur.genart.stills.MicroDustStill
+import fr.geoking.arthur.genart.stills.MicroPollenCloseStill
+import fr.geoking.arthur.genart.stills.MicroBubbleSkinStill
+import fr.geoking.arthur.genart.stills.AutoDashSoftStill
+import fr.geoking.arthur.genart.stills.AutoRainGlassStill
+import fr.geoking.arthur.genart.stills.AutoDistantHeadlightsStill
+import fr.geoking.arthur.genart.stills.AutoDashboardGlowStill
+import fr.geoking.arthur.genart.stills.AutoTunnelLightStill
+import fr.geoking.arthur.genart.stills.AutoHorizonDriveStill
+import fr.geoking.arthur.genart.stills.MotoHeadlightStill
+import fr.geoking.arthur.genart.stills.MotoWindStreaksStill
+import fr.geoking.arthur.genart.stills.MotoRoadBlurStill
+import fr.geoking.arthur.genart.stills.MotoNightLeanStill
+import fr.geoking.arthur.genart.stills.MotoTailGlowStill
+import fr.geoking.arthur.genart.stills.MotoDawnRideStill
+import fr.geoking.arthur.genart.stills.AvionHorizonCloudsStill
+import fr.geoking.arthur.genart.stills.AvionContrailStill
+import fr.geoking.arthur.genart.stills.AvionWingGlowStill
+import fr.geoking.arthur.genart.stills.AvionCabinWindowStill
+import fr.geoking.arthur.genart.stills.AvionSunriseBandStill
+import fr.geoking.arthur.genart.stills.AvionNightCityStill
+import fr.geoking.arthur.genart.stills.VeloPathFieldsStill
+import fr.geoking.arthur.genart.stills.VeloParallaxTreesStill
+import fr.geoking.arthur.genart.stills.VeloDawnLaneStill
+import fr.geoking.arthur.genart.stills.VeloRainAsphaltStill
+import fr.geoking.arthur.genart.stills.VeloGoldenHourStill
+import fr.geoking.arthur.genart.stills.VeloForestCanopyStill
+import fr.geoking.arthur.genart.stills.TrainWindowBlurStill
+import fr.geoking.arthur.genart.stills.TrainCatenaryStill
+import fr.geoking.arthur.genart.stills.TrainPlatformGlowStill
+import fr.geoking.arthur.genart.stills.TrainCountrysideStill
+import fr.geoking.arthur.genart.stills.TrainNightCarriageStill
+import fr.geoking.arthur.genart.stills.TrainTunnelPulseStill
+import fr.geoking.arthur.genart.stills.UsDinerNeonStill
+import fr.geoking.arthur.genart.stills.UsMotelSignStill
+import fr.geoking.arthur.genart.stills.UsRoute66WashStill
+import fr.geoking.arthur.genart.stills.UsCrtArcadeStill
+import fr.geoking.arthur.genart.stills.UsRetrowaveStill
+import fr.geoking.arthur.genart.stills.UsDriveInStill
+import fr.geoking.arthur.genart.stills.StormStrobeFlashStill
+import fr.geoking.arthur.genart.stills.StormStrobeSheetStill
+import fr.geoking.arthur.genart.stills.StormStrobePulseStill
+import fr.geoking.arthur.genart.stills.StormStrobeForkStill
+import fr.geoking.arthur.genart.stills.StormStrobeHorizonStill
+import fr.geoking.arthur.genart.stills.StormStrobeCloudStill
+import fr.geoking.arthur.genart.stills.PhysarumVeinsStill
+import fr.geoking.arthur.genart.stills.PhysarumLatticeStill
+import fr.geoking.arthur.genart.stills.PhysarumBloomStill
+import fr.geoking.arthur.genart.stills.PhysarumDriftStill
+import fr.geoking.arthur.genart.stills.PhysarumNodeStill
+import fr.geoking.arthur.genart.stills.PhysarumFilamentStill
+import fr.geoking.arthur.genart.stills.ReactionSpotsStill
+import fr.geoking.arthur.genart.stills.ReactionCoralsStill
+import fr.geoking.arthur.genart.stills.ReactionWavesStill
+import fr.geoking.arthur.genart.stills.ReactionMitosisStill
+import fr.geoking.arthur.genart.stills.ReactionMazeStill
+import fr.geoking.arthur.genart.stills.ReactionBlobsStill
+import fr.geoking.arthur.genart.stills.SoftTideRipplesStill
+import fr.geoking.arthur.genart.stills.HarborMistStill
+import fr.geoking.arthur.genart.stills.PandaSitStill
 import fr.geoking.arthur.genart.stills.KanizsaTriangleStill
 import fr.geoking.arthur.genart.stills.CheckerShadowStill
 import fr.geoking.arthur.genart.stills.DriftingHalosStill
@@ -350,6 +542,10 @@ class GenartEngineDescriptor(
         pulse: Float,
         palette: AnimationPalette,
     ) -> Unit,
+    /** When false, excluded from Android Auto Ambient rotation. */
+    val autoSafe: Boolean = true,
+    /** When false, excluded from TV Dream / Ambient rotation. */
+    val tvDreamSafe: Boolean = true,
 )
 
 /** Single registration point for every genart engine — see [GenartEngineDescriptor]. */
@@ -2123,6 +2319,1086 @@ object GenartRegistry {
                 CheckerShadowStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
             },
         ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.CatWindow,
+            stableId = "genart.catwindow",
+            title = "#160 - Cat at Window",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                CatWindowEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                CatWindowStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.CatSleep,
+            stableId = "genart.catsleep",
+            title = "#161 - Sleeping Cat",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                CatSleepEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                CatSleepStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.DogNap,
+            stableId = "genart.dognap",
+            title = "#162 - Dog Nap",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                DogNapEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                DogNapStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.DogDistantWalk,
+            stableId = "genart.dogdistantwalk",
+            title = "#163 - Distant Dog Walk",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                DogDistantWalkEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                DogDistantWalkStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.PandaSit,
+            stableId = "genart.pandasit",
+            title = "#164 - Sitting Panda",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                PandaSitEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                PandaSitStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.PandaBamboo,
+            stableId = "genart.pandabamboo",
+            title = "#165 - Panda and Bamboo",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                PandaBambooEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                PandaBambooStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.CatTail,
+            stableId = "genart.cattail",
+            title = "#166 - Cat Tail Sway",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                CatTailEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                CatTailStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.DogStretch,
+            stableId = "genart.dogstretch",
+            title = "#167 - Dog Stretch",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                DogStretchEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                DogStretchStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.PandaRoll,
+            stableId = "genart.pandaroll",
+            title = "#168 - Panda Roll",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                PandaRollEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                PandaRollStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.SeasonSpringWash,
+            stableId = "genart.seasonspringwash",
+            title = "#169 - Season Spring Wash",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                SeasonSpringWashEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                SeasonSpringWashStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.SeasonAutumnWash,
+            stableId = "genart.seasonautumnwash",
+            title = "#170 - Season Autumn Wash",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                SeasonAutumnWashEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                SeasonAutumnWashStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.SeasonWinterWash,
+            stableId = "genart.seasonwinterwash",
+            title = "#171 - Season Winter Wash",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                SeasonWinterWashEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                SeasonWinterWashStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.FrostedWindowDawn,
+            stableId = "genart.frostedwindowdawn",
+            title = "#172 - Frosted Window Dawn",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                FrostedWindowDawnEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                FrostedWindowDawnStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.PaperLantern,
+            stableId = "genart.paperlantern",
+            title = "#173 - Paper Lantern Glow",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                PaperLanternEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                PaperLanternStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.HearthGlow,
+            stableId = "genart.hearthglow",
+            title = "#174 - Hearth Glow",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                HearthGlowEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                HearthGlowStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.VolumetricStairwell,
+            stableId = "genart.volumetricstairwell",
+            title = "#175 - Volumetric Stairwell",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                VolumetricStairwellEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                VolumetricStairwellStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.WindowDustMotes,
+            stableId = "genart.windowdustmotes",
+            title = "#176 - Window Dust Motes",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                WindowDustMotesEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                WindowDustMotesStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.BookshelfGlow,
+            stableId = "genart.bookshelfglow",
+            title = "#177 - Bookshelf Glow",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                BookshelfGlowEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                BookshelfGlowStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.FloorLampPool,
+            stableId = "genart.floorlamppool",
+            title = "#178 - Floor Lamp Pool",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                FloorLampPoolEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                FloorLampPoolStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.CrystalCavernGlow,
+            stableId = "genart.crystalcavernglow",
+            title = "#179 - Crystal Cavern Glow",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                CrystalCavernGlowEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                CrystalCavernGlowStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.InkBloom,
+            stableId = "genart.inkbloom",
+            title = "#180 - Ink Bloom",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                InkBloomEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                InkBloomStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.SumiWash,
+            stableId = "genart.sumiwash",
+            title = "#181 - Sumi Wash",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                SumiWashEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                SumiWashStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.InkTendril,
+            stableId = "genart.inktendril",
+            title = "#182 - Ink Tendril",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                InkTendrilEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                InkTendrilStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.KaleidoPetal,
+            stableId = "genart.kaleidopetal",
+            title = "#183 - Kaleido Petal",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                KaleidoPetalEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                KaleidoPetalStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.KaleidoMirror,
+            stableId = "genart.kaleidomirror",
+            title = "#184 - Kaleido Mirror",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                KaleidoMirrorEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                KaleidoMirrorStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.KaleidoOrbit,
+            stableId = "genart.kaleidoorbit",
+            title = "#185 - Kaleido Orbit",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                KaleidoOrbitEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                KaleidoOrbitStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.ZenEnSo,
+            stableId = "genart.zenenso",
+            title = "#186 - Zen En So",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                ZenEnSoEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                ZenEnSoStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.ZenStoneRipples,
+            stableId = "genart.zenstoneripples",
+            title = "#187 - Zen Stone Ripples",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                ZenStoneRipplesEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                ZenStoneRipplesStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.ZenIncense,
+            stableId = "genart.zenincense",
+            title = "#188 - Zen Incense",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                ZenIncenseEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                ZenIncenseStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.ObsidianShore,
+            stableId = "genart.obsidianshore",
+            title = "#189 - Obsidian Shore",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                ObsidianShoreEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                ObsidianShoreStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.TideFoam,
+            stableId = "genart.tidefoam",
+            title = "#190 - Tide Foam",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                TideFoamEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                TideFoamStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.CoastCliffHaze,
+            stableId = "genart.coastcliffhaze",
+            title = "#191 - Coast Cliff Haze",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                CoastCliffHazeEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                CoastCliffHazeStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.DreamVeil,
+            stableId = "genart.dreamveil",
+            title = "#192 - Dream Veil",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                DreamVeilEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                DreamVeilStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.LucidOrbs,
+            stableId = "genart.lucidorbs",
+            title = "#193 - Lucid Orbs",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                LucidOrbsEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                LucidOrbsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.SleepParallax,
+            stableId = "genart.sleepparallax",
+            title = "#194 - Sleep Parallax",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                SleepParallaxEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                SleepParallaxStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.MicroDew,
+            stableId = "genart.microdew",
+            title = "#195 - Micro Dew",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                MicroDewEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                MicroDewStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.MicroFiber,
+            stableId = "genart.microfiber",
+            title = "#196 - Micro Fiber",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                MicroFiberEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                MicroFiberStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.MicroDust,
+            stableId = "genart.microdust",
+            title = "#197 - Micro Dust",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                MicroDustEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                MicroDustStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.MicroPollenClose,
+            stableId = "genart.micropollenclose",
+            title = "#198 - Micro Pollen Close",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                MicroPollenCloseEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                MicroPollenCloseStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.MicroBubbleSkin,
+            stableId = "genart.microbubbleskin",
+            title = "#199 - Micro Bubble Skin",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                MicroBubbleSkinEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                MicroBubbleSkinStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.AutoDashSoft,
+            stableId = "genart.autodashsoft",
+            title = "#200 - Auto Dash Soft",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                AutoDashSoftEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                AutoDashSoftStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.AutoRainGlass,
+            stableId = "genart.autorainonglass",
+            title = "#201 - Auto Rain on Glass",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                AutoRainGlassEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                AutoRainGlassStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.AutoDistantHeadlights,
+            stableId = "genart.autodistantheadlights",
+            title = "#202 - Auto Distant Headlights",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                AutoDistantHeadlightsEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                AutoDistantHeadlightsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.AutoDashboardGlow,
+            stableId = "genart.autodashboardglow",
+            title = "#203 - Auto Dashboard Glow",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                AutoDashboardGlowEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                AutoDashboardGlowStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.AutoTunnelLight,
+            stableId = "genart.autotunnellight",
+            title = "#204 - Auto Tunnel Light Rhythm",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                AutoTunnelLightEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                AutoTunnelLightStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.AutoHorizonDrive,
+            stableId = "genart.autohorizondrive",
+            title = "#205 - Auto Horizon Drive",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                AutoHorizonDriveEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                AutoHorizonDriveStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.MotoHeadlight,
+            stableId = "genart.motoheadlight",
+            title = "#206 - Moto Single Headlight",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                MotoHeadlightEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                MotoHeadlightStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.MotoWindStreaks,
+            stableId = "genart.motowindstreaks",
+            title = "#207 - Moto Wind Streaks",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                MotoWindStreaksEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                MotoWindStreaksStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.MotoRoadBlur,
+            stableId = "genart.motoroadblur",
+            title = "#208 - Moto Road Blur",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                MotoRoadBlurEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                MotoRoadBlurStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.MotoNightLean,
+            stableId = "genart.motonightlean",
+            title = "#209 - Moto Night Lean",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                MotoNightLeanEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                MotoNightLeanStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.MotoTailGlow,
+            stableId = "genart.mototailglow",
+            title = "#210 - Moto Tail Glow",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                MotoTailGlowEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                MotoTailGlowStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.MotoDawnRide,
+            stableId = "genart.motodawnride",
+            title = "#211 - Moto Dawn Ride",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                MotoDawnRideEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                MotoDawnRideStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.AvionHorizonClouds,
+            stableId = "genart.avionhorizonclouds",
+            title = "#212 - Avion Horizon Clouds",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                AvionHorizonCloudsEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                AvionHorizonCloudsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.AvionContrail,
+            stableId = "genart.avioncontrail",
+            title = "#213 - Avion Contrail",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                AvionContrailEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                AvionContrailStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.AvionWingGlow,
+            stableId = "genart.avionwingglow",
+            title = "#214 - Avion Wing Glow",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                AvionWingGlowEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                AvionWingGlowStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.AvionCabinWindow,
+            stableId = "genart.avioncabinwindow",
+            title = "#215 - Avion Cabin Window",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                AvionCabinWindowEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                AvionCabinWindowStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.AvionSunriseBand,
+            stableId = "genart.avionsunriseband",
+            title = "#216 - Avion Sunrise Band",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                AvionSunriseBandEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                AvionSunriseBandStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.AvionNightCity,
+            stableId = "genart.avionnightcity",
+            title = "#217 - Avion Night City Below",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                AvionNightCityEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                AvionNightCityStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.VeloPathFields,
+            stableId = "genart.velopathfields",
+            title = "#218 - Velo Path and Fields",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                VeloPathFieldsEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                VeloPathFieldsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.VeloParallaxTrees,
+            stableId = "genart.veloparallaxtrees",
+            title = "#219 - Velo Parallax Trees",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                VeloParallaxTreesEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                VeloParallaxTreesStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.VeloDawnLane,
+            stableId = "genart.velodawnlane",
+            title = "#220 - Velo Dawn Lane",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                VeloDawnLaneEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                VeloDawnLaneStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.VeloRainAsphalt,
+            stableId = "genart.velorainasphalt",
+            title = "#221 - Velo Rain Asphalt",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                VeloRainAsphaltEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                VeloRainAsphaltStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.VeloGoldenHour,
+            stableId = "genart.velogoldenhour",
+            title = "#222 - Velo Golden Hour",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                VeloGoldenHourEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                VeloGoldenHourStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.VeloForestCanopy,
+            stableId = "genart.veloforestcanopy",
+            title = "#223 - Velo Forest Canopy",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                VeloForestCanopyEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                VeloForestCanopyStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.TrainWindowBlur,
+            stableId = "genart.trainwindowblur",
+            title = "#224 - Train Window Blur",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                TrainWindowBlurEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                TrainWindowBlurStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.TrainCatenary,
+            stableId = "genart.traincatenary",
+            title = "#225 - Train Soft Catenary",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                TrainCatenaryEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                TrainCatenaryStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.TrainPlatformGlow,
+            stableId = "genart.trainplatformglow",
+            title = "#226 - Train Platform Glow",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                TrainPlatformGlowEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                TrainPlatformGlowStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.TrainCountryside,
+            stableId = "genart.traincountryside",
+            title = "#227 - Train Countryside Wash",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                TrainCountrysideEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                TrainCountrysideStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.TrainNightCarriage,
+            stableId = "genart.trainnightcarriage",
+            title = "#228 - Train Night Carriage",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                TrainNightCarriageEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                TrainNightCarriageStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.TrainTunnelPulse,
+            stableId = "genart.traintunnelpulse",
+            title = "#229 - Train Tunnel Pulse",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                TrainTunnelPulseEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                TrainTunnelPulseStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.UsDinerNeon,
+            stableId = "genart.usdinerneon",
+            title = "#230 - US Diner Neon",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                UsDinerNeonEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                UsDinerNeonStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.UsMotelSign,
+            stableId = "genart.usmotelsign",
+            title = "#231 - US Motel Sign",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                UsMotelSignEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                UsMotelSignStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.UsRoute66Wash,
+            stableId = "genart.usroute66wash",
+            title = "#232 - US Route 66 Desert Wash",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                UsRoute66WashEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                UsRoute66WashStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.UsCrtArcade,
+            stableId = "genart.uscrtarcade",
+            title = "#233 - US CRT Arcade",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                UsCrtArcadeEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                UsCrtArcadeStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.UsRetrowave,
+            stableId = "genart.usretrowave",
+            title = "#234 - US Retrowave Horizon",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                UsRetrowaveEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                UsRetrowaveStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.UsDriveIn,
+            stableId = "genart.usdrivein",
+            title = "#235 - US Drive-In Glow",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                UsDriveInEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                UsDriveInStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.StormStrobeFlash,
+            stableId = "genart.stormstrobeflash",
+            title = "#236 - Storm Strobe Flash",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                StormStrobeFlashEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                StormStrobeFlashStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+            autoSafe = false,
+            tvDreamSafe = false,
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.StormStrobeSheet,
+            stableId = "genart.stormstrobesheet",
+            title = "#237 - Storm Strobe Sheet Lightning",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                StormStrobeSheetEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                StormStrobeSheetStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+            autoSafe = false,
+            tvDreamSafe = false,
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.StormStrobePulse,
+            stableId = "genart.stormstrobepulse",
+            title = "#238 - Storm Strobe Pulse",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                StormStrobePulseEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                StormStrobePulseStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+            autoSafe = false,
+            tvDreamSafe = false,
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.StormStrobeFork,
+            stableId = "genart.stormstrobefork",
+            title = "#239 - Storm Strobe Fork",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                StormStrobeForkEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                StormStrobeForkStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+            autoSafe = false,
+            tvDreamSafe = false,
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.StormStrobeHorizon,
+            stableId = "genart.stormstrobehorizon",
+            title = "#240 - Storm Strobe Horizon",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                StormStrobeHorizonEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                StormStrobeHorizonStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+            autoSafe = false,
+            tvDreamSafe = false,
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.StormStrobeCloud,
+            stableId = "genart.stormstrobecloud",
+            title = "#241 - Storm Strobe Cloud Burst",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                StormStrobeCloudEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                StormStrobeCloudStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+            autoSafe = false,
+            tvDreamSafe = false,
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.PhysarumVeins,
+            stableId = "genart.physarumveins",
+            title = "#242 - Physarum Veins",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                PhysarumVeinsEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                PhysarumVeinsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+            autoSafe = false,
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.PhysarumLattice,
+            stableId = "genart.physarumlattice",
+            title = "#243 - Physarum Lattice",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                PhysarumLatticeEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                PhysarumLatticeStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+            autoSafe = false,
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.PhysarumBloom,
+            stableId = "genart.physarumbloom",
+            title = "#244 - Physarum Bloom",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                PhysarumBloomEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                PhysarumBloomStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+            autoSafe = false,
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.PhysarumDrift,
+            stableId = "genart.physarumdrift",
+            title = "#245 - Physarum Drift",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                PhysarumDriftEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                PhysarumDriftStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+            autoSafe = false,
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.PhysarumNode,
+            stableId = "genart.physarumnode",
+            title = "#246 - Physarum Node Nest",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                PhysarumNodeEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                PhysarumNodeStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+            autoSafe = false,
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.PhysarumFilament,
+            stableId = "genart.physarumfilament",
+            title = "#247 - Physarum Filament",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                PhysarumFilamentEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                PhysarumFilamentStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+            autoSafe = false,
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.ReactionSpots,
+            stableId = "genart.reactionspots",
+            title = "#248 - Reaction Diffusion Spots",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                ReactionSpotsEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                ReactionSpotsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+            autoSafe = false,
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.ReactionCorals,
+            stableId = "genart.reactioncorals",
+            title = "#249 - Reaction Diffusion Corals",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                ReactionCoralsEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                ReactionCoralsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+            autoSafe = false,
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.ReactionWaves,
+            stableId = "genart.reactionwaves",
+            title = "#250 - Reaction Diffusion Waves",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                ReactionWavesEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                ReactionWavesStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+            autoSafe = false,
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.ReactionMitosis,
+            stableId = "genart.reactionmitosis",
+            title = "#251 - Reaction Diffusion Mitosis",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                ReactionMitosisEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                ReactionMitosisStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+            autoSafe = false,
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.ReactionMaze,
+            stableId = "genart.reactionmaze",
+            title = "#252 - Reaction Diffusion Maze",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                ReactionMazeEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                ReactionMazeStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+            autoSafe = false,
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.ReactionBlobs,
+            stableId = "genart.reactionblobs",
+            title = "#253 - Reaction Soft Blobs",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                ReactionBlobsEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                ReactionBlobsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+            autoSafe = false,
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.SoftTideRipples,
+            stableId = "genart.softtideripples",
+            title = "#254 - Soft Tide Ripples",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                SoftTideRipplesEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                SoftTideRipplesStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.HarborMist,
+            stableId = "genart.harbormist",
+            title = "#255 - Harbor Mist",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                HarborMistEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                HarborMistStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
     )
 
     private val byStableId: Map<String, GenartEngineDescriptor> = all.associateBy { it.stableId }
@@ -2134,4 +3410,8 @@ object GenartRegistry {
     fun engineForId(stableId: String): GenartEngineId? = byStableId[stableId]?.id
 
     fun descriptorFor(engineId: GenartEngineId): GenartEngineDescriptor = byEngineId.getValue(engineId)
+
+    fun autoSafe(stableId: String): Boolean = byStableId[stableId]?.autoSafe != false
+
+    fun tvDreamSafe(stableId: String): Boolean = byStableId[stableId]?.tvDreamSafe != false
 }

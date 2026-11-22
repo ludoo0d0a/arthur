@@ -11,39 +11,48 @@ Local visual-improvement kit (Ollama + PNG/MP4 before/after): [genart-ollama.md]
 ## Principles
 
 - Slow motion, soft loops, low cognitive load.
-- No sudden flashes or high-contrast flicker (car-safe).
+- No sudden flashes or high-contrast flicker (car-safe) — except the dedicated **Storm Strobe** pack (phone / preview only).
 - **Live creatures** = silhouettes, flocks, schools, tiny agents — not detailed anatomy sims.
+- **Animals** pack: soft silhouettes (dogs / cats / panda); fur detail is polish within the same SKU.
 
 ## Status
 
-**Backlog cleared.** Original category list, Round 2 (ray / texture / 3D soft), and Round 3 (ambient themes) are all shipped.
+**Shipped category packs:** Nature, Weather, Water, Life, Earth, Planets, Sci-Fi, Vintage, Abstract, Geometry, Illusions (+ Fractal / Custom kinds).
 
-## Optional next ideas (unscoped)
+**Category packs shipped (≥6 engines each after Waves 1–4):**
 
-Light Ambient themes — not committed, no stable ids yet:
+| Group | Suffixes |
+|-------|----------|
+| Priority content | `animals`, `seasons` |
+| Ambiance | `light`, `night`, `material`, `interior`, `crystal`, `ink`, `botanical`, `fire`, `kaleido`, `zen` |
+| Niches | `coast`, `dream`, `micro` |
+| Mobilité | `auto`, `moto`, `avion`, `velo`, `train` |
+| Look | `us_vintage` |
+| Heavy / special | `storm_strobe` (**phone-only** — `autoSafe`/`tvDreamSafe` false), `physarum`, `reactions` (AGSL + Canvas fallback; **not Auto**) |
 
-- *Frosted Window Dawn* — condensation + soft sun disc behind frosted glass
-- *Obsidian Shore* — lit pebbles + foam wash (Pebble Shore + terminator)
-- *Volumetric Stairwell* — trapezoid perspective + one vertical light well
-- *Aurora over Ice Shelf* — ice horizon + Aurora ribbons + frost rim
-- *Paper Lantern Glow* — lantern silhouettes + warm cones
+**Waves 1–4 status:** Animals + ambient exclusive repartition + mobility/US Vintage + heavy packs **shipped** (catalog ~254; `maxGenart` 300).
 
-## Parked (too heavy for Ambient)
+## Optional Ambient ideas (may seed Light / Coast / Interior / …)
 
-Sim / buffer-heavy concepts — impress but wrong cost for phone / Auto loops:
+- *Frosted Window Dawn* — condensation + soft sun disc behind frosted glass → `light`
+- *Obsidian Shore* — lit pebbles + foam wash → `coast`
+- *Volumetric Stairwell* — trapezoid perspective + one vertical light well → `interior`
+- *Aurora over Ice Shelf* — ice horizon + Aurora ribbons + frost rim → `night` / `seasons`
+- *Paper Lantern Glow* — lantern silhouettes + warm cones → `light`
 
-- `genart.slimegrowth` — Physarum-style transport filaments
-- `genart.differentialgrowth` — expanding self-repelling lichen rim
-- `genart.wetwash` — watercolor bleeding (needs diffusion buffers)
-- `genart.hatching` — charcoal stroke physics
-- Gray-Scott reaction-diffusion, hydraulic erosion — optional future GPU / AGSL only
+## Heavy sims (in scope via dedicated packs)
+
+GPU / buffer-heavy concepts ship under their own monetized packs (tier **D**), not as default Auto Ambient:
+
+- `physarum` — Physarum-style transport filaments (AGSL + simplified Canvas fallback)
+- `reactions` — Gray-Scott reaction-diffusion (AGSL + soft-blob fallback)
+- Related parked-until-pack ideas (still not free-tier Ambient): differential growth, wet wash, hatching, hydraulic erosion
 
 ## Out of scope
 
-- Detailed pets walking or interacting
-- City traffic sims
-- Real storm lightning strobes (calm glow pulses already ship as `genart.storm`)
-- Anything that fights “relax” on Auto / TV Ambient
+- City traffic sims (mobility packs are POV Ambient, not traffic)
+- Detailed multi-pet interaction games
+- Anything that fights “relax” on Auto / TV Ambient **outside** packs explicitly gated (Storm Strobe phone-only; Physarum / Reactions not Auto by default)
 
 ## Ship filter
 
@@ -51,8 +60,8 @@ Sim / buffer-heavy concepts — impress but wrong cost for phone / Auto loops:
 |------|--------|----------|
 | **A — Analytic** | Polar math, prebaked attractors, `loopedFbm` / `flowAngle01` | Preferred |
 | **B — Light physics** | Shared wind scalar, short Verlet, Gerstner sines | OK if `qualityCount`-capped |
-| **C — Field sims** | Physarum, Gray-Scott, wet diffusion | Park |
-| **D — GPU shaders** | AGSL `RuntimeShader` | Flagship only, API 33+, Canvas fallback |
+| **C — Field sims** | Physarum, Gray-Scott, wet diffusion | Dedicated packs + fallback |
+| **D — GPU shaders** | AGSL `RuntimeShader` | Flagship / heavy packs, API 33+, Canvas fallback |
 
 ## Registry
 
@@ -68,10 +77,11 @@ Shipping an engine means:
 3. Add one `GenartEngineDescriptor` to `GenartRegistry.all`.
 4. Add the id/title to `GenartSource` in `:shared` — a separate KMP-only catalog, since
    `:genart` is Android-only and `:shared` can't depend on it, so the two stay in sync by hand.
+5. Assign the id to exactly one category `*_IDS` in `GenartPackTopics`.
 
-`FreeTierLimits.maxGenart` / `StockPhotoSettings.MAX_GENART` (bumped to 168 with the Illusions
-pack / ~159 engines) are sized to "cover the full shipped catalog" — bump both together again
-once the count gets within ~5 of the ceiling.
+`FreeTierLimits.maxGenart` / `StockPhotoSettings.MAX_GENART` (bumped to 300 with Animals /
+~168 engines; headroom for ambient + mobility waves) are sized to "cover the full shipped
+catalog" — bump both together again once the count gets within ~5 of the ceiling.
 
 ## Realism upgrades (rendering techniques)
 
@@ -93,7 +103,7 @@ Codebase-compatible upgrades for new *and* existing engines, in rough order of e
 5. **Light/shading realism** — off-center radial + terminator for spheres; thin blurred atmosphere
    rim. Shipped for Solar System planets and Moonlight Ripples’ moon.
 6. **AGSL `RuntimeShader`** (API 33+) — flagship path with Canvas fallback for `minSdk = 26`
-   (pattern: Interference Wash, Soft Ray Orbs, Soap Film).
+   (pattern: Interference Wash, Soft Ray Orbs, Soap Film). Required path for Physarum / Reactions.
 7. **Anti-pixelation hygiene** — still bakers: `Paint` with `isAntiAlias` + `isDither`.
 
 ## Parallel-build notes (large batches)

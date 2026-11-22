@@ -42,6 +42,30 @@ object PackCovers {
         GenartTopic.Abstract -> R.drawable.pack_genart_abstract
         GenartTopic.Geometry -> R.drawable.pack_genart_geometry
         GenartTopic.Illusions -> R.drawable.pack_genart_illusions
+        GenartTopic.Animals -> R.drawable.pack_genart_animals
+        GenartTopic.Seasons -> R.drawable.pack_genart_seasons
+        GenartTopic.Light -> R.drawable.pack_genart_light
+        GenartTopic.Night -> R.drawable.pack_genart_night
+        GenartTopic.Material -> R.drawable.pack_genart_material
+        GenartTopic.Interior -> R.drawable.pack_genart_interior
+        GenartTopic.Crystal -> R.drawable.pack_genart_crystal
+        GenartTopic.Ink -> R.drawable.pack_genart_ink
+        GenartTopic.Botanical -> R.drawable.pack_genart_botanical
+        GenartTopic.Fire -> R.drawable.pack_genart_fire
+        GenartTopic.Kaleido -> R.drawable.pack_genart_kaleido
+        GenartTopic.Zen -> R.drawable.pack_genart_zen
+        GenartTopic.Coast -> R.drawable.pack_genart_coast
+        GenartTopic.Dream -> R.drawable.pack_genart_dream
+        GenartTopic.Micro -> R.drawable.pack_genart_micro
+        GenartTopic.Auto -> R.drawable.pack_genart_auto
+        GenartTopic.Moto -> R.drawable.pack_genart_moto
+        GenartTopic.Avion -> R.drawable.pack_genart_avion
+        GenartTopic.Velo -> R.drawable.pack_genart_velo
+        GenartTopic.Train -> R.drawable.pack_genart_train
+        GenartTopic.UsVintage -> R.drawable.pack_genart_us_vintage
+        GenartTopic.StormStrobe -> R.drawable.pack_genart_storm_strobe
+        GenartTopic.Physarum -> R.drawable.pack_genart_physarum
+        GenartTopic.Reactions -> R.drawable.pack_genart_reactions
         GenartTopic.Fractal -> R.drawable.pack_genart_fractal
         GenartTopic.Custom -> R.drawable.pack_genart_custom
     }

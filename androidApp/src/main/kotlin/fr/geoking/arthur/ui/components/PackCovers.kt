@@ -10,6 +10,10 @@ object PackCovers {
     @get:DrawableRes
     val random: Int = R.drawable.pack_random
 
+    /** Marketplace Diamond once-for-all pack — radiant gem. */
+    @get:DrawableRes
+    val diamond: Int = R.drawable.pack_diamond
+
     @DrawableRes
     fun museum(topic: MuseumTopic): Int = when (topic) {
         MuseumTopic.Random -> random

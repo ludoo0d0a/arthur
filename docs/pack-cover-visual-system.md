@@ -77,6 +77,7 @@ stock keyword topics use a **topic** hue so tiles are easy to tell apart.
 | **Video** | `#042A2E` | `#1A7A78` | `#A8E6E0` | Clapperboard / play slate |
 | **Genart** | `#1A0A2E` | `#6B3FA0` | `#E8B4F8` | Generative curves / fractal-like shapes |
 | **Sound** | `#1A1208` | `#A67C3D` | `#F0D9A0` | Note / diapason (root); topic hues for sub-packs |
+| **Diamond** | `#0A1628` | `#4A7A9A` | `#C8E8F8` | Radiant faceted gem + sparkle rays (Marketplace) |
 
 ### Stock keyword topics (`StockPhotoCategory`)
 
@@ -130,6 +131,7 @@ Optional fourth stop for recessed voids: near-black of the **same** hue.
 | Video | `pack_video.webp` | Video teal |
 | Genart | `pack_genart.webp` | Genart purples |
 | Sound | `pack_sound.webp` | Sound amber |
+| Diamond (Marketplace) | `pack_diamond.webp` | Ice cyan — radiant faceted gem |
 
 ### Photo / Video keyword topics (`StockPhotoCategory`)
 

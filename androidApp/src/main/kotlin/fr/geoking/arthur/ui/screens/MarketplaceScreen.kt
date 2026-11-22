@@ -265,7 +265,7 @@ internal fun marketplacePackTiles(): List<PackTile> =
                 pack.id == MarketplaceCatalog.DIAMOND_ID -> PackTile(
                     id = "market_${pack.id}",
                     titleRes = R.string.pack_diamond,
-                    coverRes = R.drawable.pack_random,
+                    coverRes = PackCovers.diamond,
                     selection = PackSelection(PackFamily.Museum),
                     testTagSuffix = "market_${pack.id}",
                     sellablePackId = pack.id,

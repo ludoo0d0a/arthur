@@ -41,6 +41,7 @@ object PackCovers {
         GenartTopic.Vintage -> R.drawable.pack_vintage_games
         GenartTopic.Abstract -> R.drawable.pack_genart_abstract
         GenartTopic.Geometry -> R.drawable.pack_genart_geometry
+        GenartTopic.Illusions -> R.drawable.pack_genart_illusions
         GenartTopic.Fractal -> R.drawable.pack_genart_fractal
         GenartTopic.Custom -> R.drawable.pack_genart_custom
     }

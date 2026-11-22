@@ -9,7 +9,7 @@ import fr.geoking.arthur.shared.source.GenartSource
  * Category packs are **exclusive**: each engine id appears in exactly one monetized
  * category set (not Fractal / Custom, which are kinds). Assignment priority when
  * partitioning overlaps: Vintage → Life → Nature → Weather → Water → Earth →
- * Planets → SciFi → Geometry → Abstract.
+ * Planets → SciFi → Geometry → Illusions → Abstract.
  */
 object GenartPackTopics {
     const val NATURE = "nature"
@@ -22,17 +22,19 @@ object GenartPackTopics {
     const val VINTAGE = "vintage"
     const val ABSTRACT = "abstract"
     const val GEOMETRY = "geometry"
+    const val ILLUSIONS = "illusions"
     const val FRACTAL = "fractal"
     const val CUSTOM = "custom"
 
     /** Monetized topic suffixes (excludes All / Random). */
     val monetizedTopicSuffixes: List<String> = listOf(
-        NATURE, WEATHER, WATER, LIFE, EARTH, PLANETS, SCIFI, VINTAGE, ABSTRACT, GEOMETRY, FRACTAL, CUSTOM,
+        NATURE, WEATHER, WATER, LIFE, EARTH, PLANETS, SCIFI, VINTAGE, ABSTRACT, GEOMETRY,
+        ILLUSIONS, FRACTAL, CUSTOM,
     )
 
     /** Category packs that own engine id sets (excludes Fractal / Custom kinds). */
     val categoryTopicSuffixes: List<String> = listOf(
-        NATURE, WEATHER, WATER, LIFE, EARTH, PLANETS, SCIFI, VINTAGE, ABSTRACT, GEOMETRY,
+        NATURE, WEATHER, WATER, LIFE, EARTH, PLANETS, SCIFI, VINTAGE, ABSTRACT, GEOMETRY, ILLUSIONS,
     )
 
     val WEATHER_IDS: Set<String> = setOf(
@@ -218,6 +220,16 @@ object GenartPackTopics {
         GenartSource.CROSSING_SPOTLIGHTS,
     )
 
+    val ILLUSIONS_IDS: Set<String> = setOf(
+        GenartSource.PENROSE_TRIANGLE,
+        GenartSource.PENROSE_STAIRS,
+        GenartSource.IMPOSSIBLE_CUBE,
+        GenartSource.NECKER_CUBE,
+        GenartSource.CAFE_WALL,
+        GenartSource.KANIZSA_TRIANGLE,
+        GenartSource.CHECKER_SHADOW,
+    )
+
     fun engineIdsForTopic(topicSuffix: String): Set<String> = when (topicSuffix) {
         NATURE -> NATURE_IDS
         WEATHER -> WEATHER_IDS
@@ -229,6 +241,7 @@ object GenartPackTopics {
         VINTAGE -> VINTAGE_IDS
         ABSTRACT -> ABSTRACT_IDS
         GEOMETRY -> GEOMETRY_IDS
+        ILLUSIONS -> ILLUSIONS_IDS
         else -> emptySet()
     }
 

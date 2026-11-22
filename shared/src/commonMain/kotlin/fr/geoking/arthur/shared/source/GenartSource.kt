@@ -172,6 +172,13 @@ class GenartSource(
         const val MILKY_WAY = "genart.milkyway"
         const val PLASMA_FLOW = "genart.plasmaflow"
         const val ROBOTIC_EYE = "genart.roboticeye"
+        const val PENROSE_TRIANGLE = "genart.penrosetriangle"
+        const val PENROSE_STAIRS = "genart.penrosestairs"
+        const val IMPOSSIBLE_CUBE = "genart.impossiblecube"
+        const val NECKER_CUBE = "genart.neckercube"
+        const val CAFE_WALL = "genart.cafewall"
+        const val KANIZSA_TRIANGLE = "genart.kanizsa"
+        const val CHECKER_SHADOW = "genart.checkershadow"
 
         fun defaultCatalog(): List<Artwork> = listOf(
             entry(PARTICLES, "#1 - Drifting Particles"),
@@ -327,6 +334,13 @@ class GenartSource(
             entry(MILKY_WAY, "#150 - Milky Way Galaxy"),
             entry(PLASMA_FLOW, "#151 - Plasma Flow Streamlines"),
             entry(ROBOTIC_EYE, "#152 - Cybernetic Robotic Eye"),
+            entry(PENROSE_TRIANGLE, "#153 - Penrose Triangle"),
+            entry(PENROSE_STAIRS, "#154 - Penrose Stairs"),
+            entry(IMPOSSIBLE_CUBE, "#155 - Impossible Cube"),
+            entry(NECKER_CUBE, "#156 - Necker Cube"),
+            entry(CAFE_WALL, "#157 - Café Wall"),
+            entry(KANIZSA_TRIANGLE, "#158 - Kanizsa Triangle"),
+            entry(CHECKER_SHADOW, "#159 - Checker Shadow"),
         )
 
         private fun entry(id: String, title: String) = Artwork(

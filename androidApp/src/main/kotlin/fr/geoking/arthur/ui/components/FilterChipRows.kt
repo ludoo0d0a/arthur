@@ -107,6 +107,7 @@ enum class GenartTopic(
     Vintage(R.string.genart_topic_vintage, "vintage"),
     Abstract(R.string.genart_topic_abstract, "abstract"),
     Geometry(R.string.genart_topic_geometry, "geometry"),
+    Illusions(R.string.genart_topic_illusions, "illusions"),
     Fractal(R.string.genart_topic_fractal, "fractal"),
     Custom(R.string.genart_topic_custom, "custom"),
 }
@@ -367,6 +368,7 @@ fun matchesGenartTopic(art: Artwork, topic: GenartTopic): Boolean = when (topic)
     GenartTopic.Vintage -> art.id in GenartPackTopics.VINTAGE_IDS
     GenartTopic.Abstract -> art.id in GenartPackTopics.ABSTRACT_IDS
     GenartTopic.Geometry -> art.id in GenartPackTopics.GEOMETRY_IDS
+    GenartTopic.Illusions -> art.id in GenartPackTopics.ILLUSIONS_IDS
     GenartTopic.Fractal -> art.kind == ArtworkKind.FractalPreset
     GenartTopic.Custom -> art.kind == ArtworkKind.CustomFractal
 }

@@ -62,6 +62,13 @@ import fr.geoking.arthur.genart.engines.ShadyMarbledPaperEngine
 import fr.geoking.arthur.genart.engines.MilkyWayEngine
 import fr.geoking.arthur.genart.engines.PlasmaFlowEngine
 import fr.geoking.arthur.genart.engines.RoboticEyeEngine
+import fr.geoking.arthur.genart.engines.PenroseTriangleEngine
+import fr.geoking.arthur.genart.engines.PenroseStairsEngine
+import fr.geoking.arthur.genart.engines.ImpossibleCubeEngine
+import fr.geoking.arthur.genart.engines.NeckerCubeEngine
+import fr.geoking.arthur.genart.engines.CafeWallEngine
+import fr.geoking.arthur.genart.engines.KanizsaTriangleEngine
+import fr.geoking.arthur.genart.engines.CheckerShadowEngine
 import fr.geoking.arthur.genart.engines.DriftingHalosEngine
 import fr.geoking.arthur.genart.engines.AntTrailsEngine
 import fr.geoking.arthur.genart.engines.AuroraWashEngine
@@ -215,6 +222,13 @@ import fr.geoking.arthur.genart.stills.ShadyMarbledPaperStill
 import fr.geoking.arthur.genart.stills.MilkyWayStill
 import fr.geoking.arthur.genart.stills.PlasmaFlowStill
 import fr.geoking.arthur.genart.stills.RoboticEyeStill
+import fr.geoking.arthur.genart.stills.PenroseTriangleStill
+import fr.geoking.arthur.genart.stills.PenroseStairsStill
+import fr.geoking.arthur.genart.stills.ImpossibleCubeStill
+import fr.geoking.arthur.genart.stills.NeckerCubeStill
+import fr.geoking.arthur.genart.stills.CafeWallStill
+import fr.geoking.arthur.genart.stills.KanizsaTriangleStill
+import fr.geoking.arthur.genart.stills.CheckerShadowStill
 import fr.geoking.arthur.genart.stills.DriftingHalosStill
 import fr.geoking.arthur.genart.stills.AntTrailsStill
 import fr.geoking.arthur.genart.stills.AuroraWashStill
@@ -2030,6 +2044,83 @@ object GenartRegistry {
             },
             renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
                 RoboticEyeStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.PenroseTriangle,
+            stableId = "genart.penrosetriangle",
+            title = "#153 - Penrose Triangle",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                PenroseTriangleEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                PenroseTriangleStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.PenroseStairs,
+            stableId = "genart.penrosestairs",
+            title = "#154 - Penrose Stairs",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                PenroseStairsEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                PenroseStairsStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.ImpossibleCube,
+            stableId = "genart.impossiblecube",
+            title = "#155 - Impossible Cube",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                ImpossibleCubeEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                ImpossibleCubeStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.NeckerCube,
+            stableId = "genart.neckercube",
+            title = "#156 - Necker Cube",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                NeckerCubeEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                NeckerCubeStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.CafeWall,
+            stableId = "genart.cafewall",
+            title = "#157 - Café Wall",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                CafeWallEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                CafeWallStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.KanizsaTriangle,
+            stableId = "genart.kanizsa",
+            title = "#158 - Kanizsa Triangle",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                KanizsaTriangleEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                KanizsaTriangleStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.CheckerShadow,
+            stableId = "genart.checkershadow",
+            title = "#159 - Checker Shadow",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                CheckerShadowEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                CheckerShadowStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
             },
         ),
     )

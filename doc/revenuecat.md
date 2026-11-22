@@ -54,6 +54,7 @@ Owns Diamond ⇒ `PackOwnership.owns(any content pack)` is true. Does **not** se
 
 Former wallpaper topic SKU `genart_tapet` is retired from the catalog; existing buyers still unlock Abstract via `LEGACY_GENART_WALLPAPER_PACK_ID`.
 | `genart_geometry` | `pack_genart_geometry` | `arthur_pack_genart_geometry` | **1,99 €** |
+| `genart_illusions` | `pack_genart_illusions` | `arthur_pack_genart_illusions` | **1,99 €** |
 | `genart_fractal` | `pack_genart_fractal` | `arthur_pack_genart_fractal` | **2,99 €** |
 | `genart_custom` | `pack_genart_custom` | `arthur_pack_genart_custom` | **2,99 €** |
 

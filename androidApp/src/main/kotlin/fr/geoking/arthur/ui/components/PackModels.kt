@@ -132,6 +132,7 @@ private val GenartSubTopics = listOf(
     GenartTopic.Vintage,
     GenartTopic.Abstract,
     GenartTopic.Geometry,
+    GenartTopic.Illusions,
     GenartTopic.Fractal,
     GenartTopic.Custom,
 )

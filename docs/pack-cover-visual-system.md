@@ -111,6 +111,7 @@ Random uses shared `pack_random`.
 | **SciFi** | Cyan | `#0A1A22` | `#2A8A9A` | `#A8F0F8` |
 | **Abstract** | Magenta | `#2A0A2E` | `#B03A8C` | `#F2B4E0` |
 | **Geometry** | Cool steel | `#12161C` | `#5A6A7A` | `#D0D8E0` |
+| **Illusions** | Paradox indigo | `#0E1024` | `#5A4A9A` | `#C8C0F0` |
 | **Fractal** | Genart purple | `#1A0A2E` | `#6B3FA0` | `#E8B4F8` |
 | **Custom** | Warm violet | `#1A0A1E` | `#7A4A9A` | `#E8C8F0` |
 
@@ -168,6 +169,7 @@ Wired via `PackCovers.genart()`. Each topic has its **own primary hue** (see tab
 | SciFi | `pack_genart_scifi.webp` | Geometric probe / ship | Cyan |
 | Abstract | `pack_genart_abstract.webp` | Soft arcs / disks | Magenta |
 | Geometry | `pack_genart_geometry.webp` | Platonic solid / crystal | Cool steel |
+| Illusions | `pack_genart_illusions.webp` | Penrose tribar | Paradox indigo |
 | Fractal | `pack_genart_fractal.webp` | Recursive spiral | Genart purple |
 | Custom | `pack_genart_custom.webp` | Faceted gem + dial ring | Warm violet |
 

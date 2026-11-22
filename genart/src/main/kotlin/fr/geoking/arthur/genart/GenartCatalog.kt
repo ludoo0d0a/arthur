@@ -154,6 +154,13 @@ enum class GenartEngineId {
     MilkyWay,
     PlasmaFlow,
     RoboticEye,
+    PenroseTriangle,
+    PenroseStairs,
+    ImpossibleCube,
+    NeckerCube,
+    CafeWall,
+    KanizsaTriangle,
+    CheckerShadow,
 }
 
 enum class GenartQuality { Low, Medium, High }

@@ -119,6 +119,13 @@ class GenartCatalogTest {
         assertEquals(GenartEngineId.ShadyWarpSpeed, GenartCatalog.engineForId("genart.warpspeed"))
         assertEquals(GenartEngineId.ShadyMarbledPaper, GenartCatalog.engineForId("genart.marbledpaper"))
         assertEquals(GenartEngineId.MilkyWay, GenartCatalog.engineForId("genart.milkyway"))
+        assertEquals(GenartEngineId.PenroseTriangle, GenartCatalog.engineForId("genart.penrosetriangle"))
+        assertEquals(GenartEngineId.PenroseStairs, GenartCatalog.engineForId("genart.penrosestairs"))
+        assertEquals(GenartEngineId.ImpossibleCube, GenartCatalog.engineForId("genart.impossiblecube"))
+        assertEquals(GenartEngineId.NeckerCube, GenartCatalog.engineForId("genart.neckercube"))
+        assertEquals(GenartEngineId.CafeWall, GenartCatalog.engineForId("genart.cafewall"))
+        assertEquals(GenartEngineId.KanizsaTriangle, GenartCatalog.engineForId("genart.kanizsa"))
+        assertEquals(GenartEngineId.CheckerShadow, GenartCatalog.engineForId("genart.checkershadow"))
     }
 
     @Test
@@ -226,5 +233,12 @@ class GenartCatalogTest {
         assertEquals("#148 - Shady Warp Speed", GenartCatalog.entries().first { it.id == "genart.warpspeed" }.title)
         assertEquals("#149 - Shady Marbled Paper", GenartCatalog.entries().first { it.id == "genart.marbledpaper" }.title)
         assertEquals("#150 - Milky Way Galaxy", GenartCatalog.entries().first { it.id == "genart.milkyway" }.title)
+        assertEquals("#153 - Penrose Triangle", GenartCatalog.entries().first { it.id == "genart.penrosetriangle" }.title)
+        assertEquals("#154 - Penrose Stairs", GenartCatalog.entries().first { it.id == "genart.penrosestairs" }.title)
+        assertEquals("#155 - Impossible Cube", GenartCatalog.entries().first { it.id == "genart.impossiblecube" }.title)
+        assertEquals("#156 - Necker Cube", GenartCatalog.entries().first { it.id == "genart.neckercube" }.title)
+        assertEquals("#157 - Café Wall", GenartCatalog.entries().first { it.id == "genart.cafewall" }.title)
+        assertEquals("#158 - Kanizsa Triangle", GenartCatalog.entries().first { it.id == "genart.kanizsa" }.title)
+        assertEquals("#159 - Checker Shadow", GenartCatalog.entries().first { it.id == "genart.checkershadow" }.title)
     }
 }

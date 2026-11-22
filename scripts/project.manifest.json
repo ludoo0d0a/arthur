@@ -124,13 +124,14 @@
       "governmentApp": false,
       "financialFeatures": false,
       "healthApp": false,
-      "containsAds": false,
+      "containsAds": true,
       "advertisingId": {
         "usesAdvertisingId": true,
         "purposes": [
-          "ANALYTICS"
+          "ANALYTICS",
+          "ADVERTISING"
         ],
-        "note": "Firebase Analytics merges com.google.android.gms.permission.AD_ID. Console requires Yes + Analytics (not advertising/marketing)."
+        "note": "AD_ID for Firebase Analytics and AdMob phone banners (playstore). Update Play Console Data safety for AdMob when shipping."
       },
       "signInRequired": false,
       "allFeaturesAvailableWithoutRestriction": true,

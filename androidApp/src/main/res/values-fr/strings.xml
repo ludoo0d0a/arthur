@@ -98,6 +98,9 @@
     <string name="marketplace_genart_pack">Genart · %1$s</string>
     <string name="marketplace_open">Boutique</string>
     <string name="marketplace_subtitle">Packs, Premium et restauration des achats</string>
+    <string name="marketplace_featured">Populaires</string>
+    <string name="marketplace_browse_all">Voir tous les packs</string>
+    <string name="marketplace_show_featured">Voir les populaires</string>
     <string name="marketplace_audio_pack">Musique · %1$s</string>
     <string name="pack_sound">Musiques procédurales</string>
     <string name="pack_neural">Musiques IA</string>
@@ -169,7 +172,7 @@
     <string name="neural_result_variant">Variante</string>
     <string name="neural_procedural_fallback">Musique Procédurale de Secours</string>
     <string name="neural_prompts_title">Catalogue de Prompts</string>
-    <string name="premium_ux_subtitle">Sans pubs et favoris (bientôt)</string>
+    <string name="premium_ux_subtitle">Sans pubs et favoris</string>
     <string name="genart_topic_fractal">Fractale</string>
     <string name="genart_topic_custom">Perso</string>
     <string name="genart_topic_abstract">Abstrait</string>

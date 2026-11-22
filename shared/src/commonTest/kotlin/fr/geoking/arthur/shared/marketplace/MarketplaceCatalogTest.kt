@@ -12,6 +12,12 @@ class MarketplaceCatalogTest {
         val ids = MarketplaceCatalog.all().map { it.id }.toSet()
         assertTrue(MarketplaceCatalog.DIAMOND_ID in ids)
         assertTrue(MarketplaceCatalog.PERSONAL_PHOTOS_ID in ids)
+        assertFalse(MarketplaceCatalog.PERSONAL_PHOTOS_ID in MarketplaceCatalog.featuredContentPackIds())
+        assertTrue(
+            MarketplaceCatalog.featuredContentPackIds().all { id ->
+                MarketplaceCatalog.byId(id) != null && id != MarketplaceCatalog.DIAMOND_ID
+            },
+        )
         assertTrue(MarketplaceCatalog.genartPackId(GenartPackTopics.ABSTRACT) in ids)
         assertTrue(MarketplaceCatalog.genartPackId(GenartPackTopics.CUSTOM) in ids)
         assertTrue(MarketplaceCatalog.genartPackId(GenartPackTopics.VINTAGE) in ids)

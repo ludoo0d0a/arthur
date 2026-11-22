@@ -105,10 +105,16 @@ fun MarketplaceScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var message by remember { mutableStateOf<String?>(null) }
     var previewCatalog by remember { mutableStateOf<List<Artwork>>(emptyList()) }
+    // Deep-link / highlight opens full catalog so the pack is reachable.
+    var showAllPacks by remember(highlightPackId) {
+        mutableStateOf(!highlightPackId.isNullOrBlank())
+    }
     val pendingMessage = stringResource(R.string.purchase_payment_pending)
     val restoreOk = stringResource(R.string.account_restore_success)
-    val tiles = remember(activeUniverse) { marketplacePackTiles(activeUniverse) }
-    val browsingTile = tiles.firstOrNull { it.sellablePackId == browsingPackId }
+    val allTiles = remember(activeUniverse) { marketplacePackTiles(activeUniverse) }
+    val featuredTiles = remember(allTiles) { marketplaceFeaturedTiles(allTiles) }
+    val tiles = if (showAllPacks) allTiles else featuredTiles
+    val browsingTile = allTiles.firstOrNull { it.sellablePackId == browsingPackId }
         ?: marketplacePackTiles(null).firstOrNull { it.sellablePackId == browsingPackId }
     val browsingPack = browsingPackId?.let { MarketplaceCatalog.byId(it) }
     val otherUniverse = when (activeUniverse) {
@@ -292,6 +298,16 @@ fun MarketplaceScreen(
                         modifier = Modifier.padding(horizontal = hPad, vertical = 8.dp),
                     )
                 }
+                if (!showAllPacks) {
+                    Text(
+                        text = stringResource(R.string.marketplace_featured),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .padding(horizontal = hPad, vertical = 4.dp)
+                            .testTag("marketplace_featured_label"),
+                    )
+                }
                 PackGrid(
                     tiles = tiles,
                     selected = null,
@@ -316,6 +332,24 @@ fun MarketplaceScreen(
                     firstTileFocusRequester = firstTileFocus,
                     selectOnFocus = isTelevision,
                 )
+                if (allTiles.size > featuredTiles.size) {
+                    TextButton(
+                        onClick = { showAllPacks = !showAllPacks },
+                        modifier = Modifier
+                            .padding(horizontal = hPad, vertical = 4.dp)
+                            .testTag("marketplace_browse_all"),
+                    ) {
+                        Text(
+                            stringResource(
+                                if (showAllPacks) {
+                                    R.string.marketplace_show_featured
+                                } else {
+                                    R.string.marketplace_browse_all
+                                },
+                            ),
+                        )
+                    }
+                }
                 if (onUniverseChange != null) {
                     TextButton(
                         onClick = { onUniverseChange(otherUniverse) },
@@ -526,10 +560,27 @@ private fun MarketplacePackPreview(
 }
 
 /**
+ * Home vitrine: Diamond first, then curated featured packs present in [allTiles].
+ */
+internal fun marketplaceFeaturedTiles(allTiles: List<PackTile>): List<PackTile> {
+    val byId = allTiles.associateBy { it.sellablePackId }
+    val orderedIds = listOf(MarketplaceCatalog.DIAMOND_ID) +
+        MarketplaceCatalog.featuredContentPackIds()
+    val featured = orderedIds.mapNotNull { byId[it] }
+    return featured.ifEmpty {
+        allTiles.filter { it.sellablePackId == MarketplaceCatalog.DIAMOND_ID }
+            .ifEmpty { allTiles.take(1) }
+    }
+}
+
+/**
  * Marketplace tiles for [universe]. Diamond is always included.
  * Personal photos only in Gallery (when enabled). Genart packs only in Generative.
  * Audio packs omitted while [FeatureFlag.musicEnabled] is false.
  * Pass null to list every visible pack (preview deep-link lookup).
+ *
+ * Personal Photos stays gated by [FeatureFlag.personalPhotosEnabled] (deferred SKU).
+ * Subscriptions are not offered — all products remain one-time IAPs.
  */
 internal fun marketplacePackTiles(universe: ArtUniverse? = null): List<PackTile> =
     MarketplaceCatalog.all()
@@ -551,7 +602,7 @@ internal fun marketplacePackTiles(universe: ArtUniverse? = null): List<PackTile>
                 pack.id == MarketplaceCatalog.DIAMOND_ID -> PackTile(
                     id = "market_${pack.id}",
                     titleRes = R.string.pack_diamond,
-                    coverRes = R.drawable.pack_random,
+                    coverRes = R.drawable.pack_diamond,
                     selection = PackSelection(PackFamily.Museum),
                     testTagSuffix = "market_${pack.id}",
                     sellablePackId = pack.id,

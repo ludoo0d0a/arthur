@@ -1,6 +1,7 @@
 package fr.geoking.arthur
 
 import android.app.Application
+import com.google.android.gms.ads.MobileAds
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import fr.geoking.arthur.billing.DevAwarePackOwnership
 import fr.geoking.arthur.billing.DevAwarePremiumEntitlement
@@ -90,6 +91,9 @@ class ArthurApp : Application() {
         // Avoid debug noise / timeouts; release builds still report.
         runCatching {
             FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(!BuildConfig.DEBUG)
+        }
+        if (BuildConfig.IS_PLAYSTORE_DISTRIBUTION) {
+            MobileAds.initialize(this)
         }
         val revenueCatKey = BuildConfig.REVENUECAT_API_KEY
         if (revenueCatKey.isNotBlank()) {

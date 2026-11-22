@@ -83,6 +83,13 @@ android {
         buildConfigField("boolean", "DEBUG_DEV", "false")
         val buildDate = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
         buildConfigField("String", "BUILD_DATE", "\"$buildDate\"")
+        // AdMob (Play Store): Google test IDs when ADMOB_* unset in local.properties / CI.
+        val admobAppId = secret("ADMOB_APP_ID")
+            .ifBlank { "ca-app-pub-3940256099942544~3347511713" }
+        val admobBannerUnitId = secret("ADMOB_BANNER_UNIT_ID")
+            .ifBlank { "ca-app-pub-3940256099942544/6300978111" }
+        manifestPlaceholders["admobAppId"] = admobAppId
+        buildConfigField("String", "ADMOB_BANNER_UNIT_ID", "\"$admobBannerUnitId\"")
     }
 
     // local.properties / gradle.properties / CI: DEBUG_DEV=true (optional). Applies to all flavors.
@@ -219,6 +226,7 @@ dependencies {
     implementation(libs.revenuecat.purchases)
     implementation(libs.play.app.update)
     implementation(libs.play.app.update.ktx)
+    implementation(libs.play.services.ads)
     implementation(libs.play.services.code.scanner)
     implementation(libs.zxing.core)
     implementation(libs.aboutlibraries.compose.m3)

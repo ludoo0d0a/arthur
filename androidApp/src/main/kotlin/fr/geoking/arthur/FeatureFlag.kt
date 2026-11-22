@@ -11,6 +11,10 @@ object FeatureFlag {
     /** Android Auto car app + media browse surfaces. */
     val androidAutoEnabled: Boolean = false
 
-    /** On-device Personal Photos pack + Marketplace SKU + category chip. */
+    /**
+     * On-device Personal Photos pack + Marketplace SKU + category chip.
+     * Keep false until the UX is ready — SKU/entitlement stay in [MarketplaceCatalog]
+     * but are hidden from the storefront (business: defer high-demand feature pricing).
+     */
     val personalPhotosEnabled: Boolean = false
 }

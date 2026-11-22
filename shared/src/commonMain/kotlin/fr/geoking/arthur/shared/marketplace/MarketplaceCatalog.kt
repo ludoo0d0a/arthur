@@ -91,6 +91,17 @@ object MarketplaceCatalog {
     /** Diamond first, then every content pack. */
     fun all(): List<SellablePack> = listOf(diamond) + contentPacks()
 
+    /**
+     * Curated Marketplace home content packs (excludes Diamond hero).
+     * Personal Photos stays out until the product ships ([PERSONAL_PHOTOS_ID] remains in [all]).
+     */
+    fun featuredContentPackIds(): List<String> = listOf(
+        genartPackId(GenartPackTopics.NATURE),
+        genartPackId(GenartPackTopics.ANIMALS),
+        genartPackId(GenartPackTopics.FRACTAL),
+        genartPackId(GenartPackTopics.CUSTOM),
+    )
+
     fun byId(id: String): SellablePack? = all().firstOrNull { it.id == id }
 
     fun isDiamond(packId: String): Boolean = packId == DIAMOND_ID

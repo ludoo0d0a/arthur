@@ -99,6 +99,9 @@
     <string name="marketplace_genart_pack">Genart · %1$s</string>
     <string name="marketplace_open">Marketplace</string>
     <string name="marketplace_subtitle">Packs, Premium, and restore purchases</string>
+    <string name="marketplace_featured">Popular</string>
+    <string name="marketplace_browse_all">Browse all packs</string>
+    <string name="marketplace_show_featured">Show popular only</string>
     <string name="marketplace_audio_pack">Music · %1$s</string>
     <string name="pack_sound">Procedural Music</string>
     <string name="pack_neural">AI Music</string>
@@ -170,7 +173,7 @@
     <string name="neural_generating_failed">Generation failed. Try again.</string>
     <string name="neural_result_other_take">Other take</string>
     <string name="neural_result_variant">Variant</string>
-    <string name="premium_ux_subtitle">No ads and favorites (coming soon)</string>
+    <string name="premium_ux_subtitle">No ads and favorites</string>
     <string name="genart_topic_fractal">Fractal</string>
     <string name="genart_topic_custom">Custom</string>
     <string name="genart_topic_abstract">Abstract</string>

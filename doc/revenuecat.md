@@ -2,7 +2,7 @@
 
 Source of truth in code: `MarketplaceCatalog`, `GenartPackTopics`, `AudioPackCatalog`, `RevenueCatPremiumEntitlement`.
 
-All v1 products are **one-time (lifetime) Play IAPs**, not subscriptions. Premium unlocks **global UX only**; packs unlock content. Premium does **not** grant packs. **Diamond** unlocks **all content packs** once-for-all; it does **not** grant Premium UX.
+All v1 products are **one-time (lifetime) Play IAPs**, not subscriptions. Premium unlocks **global UX only** (no ads, favorites); packs unlock content. Premium does **not** grant packs. **Diamond** unlocks **all content packs** once-for-all; it does **not** grant Premium UX. Phone free tier shows AdMob banners (`docs/ADS_SETUP.md`). Marketplace home surfaces Diamond + curated featured packs; Personal Photos stays out of the storefront until `FeatureFlag.personalPhotosEnabled`.
 
 **Prix FR** = prix catalogue proposé pour Google Play **France** (EUR TTC affiché à l’utilisateur). À saisir dans Play Console (option d’achat régionale `FR`) puis synchroniser avec RevenueCat. Ajustable avant prod.
 

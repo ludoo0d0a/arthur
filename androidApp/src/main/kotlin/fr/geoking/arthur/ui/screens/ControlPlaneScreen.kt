@@ -55,6 +55,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import fr.geoking.arthur.BuildConfig
 import fr.geoking.arthur.R
 import fr.geoking.arthur.auto.AmbientAlbumArt
 import fr.geoking.arthur.phone.theme.ArthurTheme
@@ -80,6 +81,7 @@ import fr.geoking.arthur.source.StillImagePrefetcher
 import fr.geoking.arthur.source.StockPhotoSettings
 import fr.geoking.arthur.source.UniverseSettings
 import fr.geoking.arthur.source.rememberArtworkImageCache
+import fr.geoking.arthur.ui.components.AdMobBanner
 import fr.geoking.arthur.ui.components.GenartPackItemsSection
 import fr.geoking.arthur.ui.components.ControlPlaneHeader
 import org.koin.core.context.GlobalContext
@@ -656,6 +658,16 @@ private fun PhoneControlPlaneContent(
                 ) {
                     AnimatedEqualizerIcon(isActive = audioEnabled)
                 }
+            }
+        },
+        bottomBar = {
+            if (BuildConfig.IS_PLAYSTORE_DISTRIBUTION) {
+                AdMobBanner(
+                    adUnitId = BuildConfig.ADMOB_BANNER_UNIT_ID,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("admob_banner"),
+                )
             }
         },
         topBar = {

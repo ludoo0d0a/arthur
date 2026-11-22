@@ -735,6 +735,7 @@ private fun PhoneControlPlaneContent(
                         tiles = openedFamily.subPackTiles(catalog),
                         selected = selection,
                         onTileClick = { tile: PackTile ->
+                            // Phone: one tap opens (select + start). TV keeps focus-then-OK.
                             if (tile.isLocked(packOwnership)) {
                                 onOpenMarketplace?.invoke(tile.sellablePackId)
                             } else if (
@@ -742,10 +743,9 @@ private fun PhoneControlPlaneContent(
                                 tile.selection.opensSoundPlayer()
                             ) {
                                 onSelectSubPack(tile.selection)
-                            } else if (tile.selection == selection) {
-                                onStartAmbient()
                             } else {
                                 onSelectSubPack(tile.selection)
+                                onStartAmbient()
                             }
                         },
                         isLocked = { it.isLocked(packOwnership) },

@@ -198,7 +198,6 @@ fun SettingsScreen(
     onDeviantArtPasswordChange: (String) -> Unit = {},
     onCheckForUpdate: (() -> Unit)? = null,
     onOpenMarketplace: ((highlightPackId: String?) -> Unit)? = null,
-    onOpenAccount: (() -> Unit)? = null,
     onOpenPaywall: (() -> Unit)? = null,
     onOpenPairing: (() -> Unit)? = null,
     initialScreenStack: List<SettingsScreenPage>? = null,
@@ -302,7 +301,6 @@ fun SettingsScreen(
                     ambientSoundEnabled = ambientSoundEnabled,
                     onCheckForUpdate = onCheckForUpdate,
                     onOpenMarketplace = onOpenMarketplace,
-                    onOpenAccount = onOpenAccount,
                     onOpenPaywall = onOpenPaywall,
                     onOpenPairing = onOpenPairing,
                     onNavigate = { screenStack = screenStack + it },
@@ -405,7 +403,6 @@ private fun MainMenu(
     ambientSoundEnabled: Boolean,
     onCheckForUpdate: (() -> Unit)?,
     onOpenMarketplace: ((highlightPackId: String?) -> Unit)?,
-    onOpenAccount: (() -> Unit)?,
     onOpenPaywall: (() -> Unit)?,
     onOpenPairing: (() -> Unit)?,
     onNavigate: (SettingsScreenPage) -> Unit,
@@ -468,20 +465,6 @@ private fun MainMenu(
             }
         }
 
-        if (onOpenAccount != null) {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-            ) {
-                SettingsItem(
-                    label = stringResource(R.string.account_open),
-                    value = stringResource(R.string.account_subtitle),
-                    onClick = onOpenAccount,
-                    modifier = Modifier.testTag("settings_open_account"),
-                )
-            }
-        }
-
         if (onOpenMarketplace != null) {
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -491,6 +474,7 @@ private fun MainMenu(
                     label = stringResource(R.string.marketplace_open),
                     value = stringResource(R.string.marketplace_subtitle),
                     onClick = { onOpenMarketplace(null) },
+                    modifier = Modifier.testTag("settings_open_marketplace"),
                 )
             }
         }

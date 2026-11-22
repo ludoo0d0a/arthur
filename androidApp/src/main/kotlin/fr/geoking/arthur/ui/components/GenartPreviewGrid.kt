@@ -228,19 +228,12 @@ fun GenartPreviewTile(
                     }
                 }
                 if (locked) {
-                    Box(
+                    PackLockBadge(
+                        testTag = "genart_preview_locked_${artwork.id}",
                         modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.45f)),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.pack_locked),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = Color.White,
-                            modifier = Modifier.testTag("genart_preview_locked_${artwork.id}"),
-                        )
-                    }
+                            .align(Alignment.TopEnd)
+                            .padding(6.dp),
+                    )
                 }
             }
         }

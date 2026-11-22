@@ -55,7 +55,6 @@ import fr.geoking.arthur.ui.UpdateCheckFeedbackDialog
 import fr.geoking.arthur.ui.UpdateInProgressBanner
 import fr.geoking.arthur.ui.components.debug.ArthurDebugLogOverlay
 import fr.geoking.arthur.ui.components.PackSelection
-import fr.geoking.arthur.ui.screens.AccountScreen
 import fr.geoking.arthur.ui.screens.ControlPlaneScreen
 import fr.geoking.arthur.ui.screens.CustomFractalEditorScreen
 import fr.geoking.arthur.ui.screens.MarketplaceScreen
@@ -172,10 +171,10 @@ class MainActivity : ComponentActivity() {
                         var showEditor by remember { mutableStateOf(false) }
                         var showSettings by remember { mutableStateOf(false) }
                         var showMarketplace by remember { mutableStateOf(false) }
-                        var showAccount by remember { mutableStateOf(false) }
                         var showPaywall by remember { mutableStateOf(false) }
                         var showPairing by pairingRequested
                         var marketplaceHighlight by remember { mutableStateOf<String?>(null) }
+                        var pendingOpenPack by remember { mutableStateOf<PackSelection?>(null) }
                         var soundPlayerSelection by remember {
                             mutableStateOf<PackSelection?>(null)
                         }
@@ -255,29 +254,23 @@ class MainActivity : ComponentActivity() {
                                 MarketplaceScreen(
                                     ownership = packOwnership,
                                     purchases = purchases,
+                                    contentEngine = contentEngine,
+                                    isPremium = isPremium,
                                     onDismiss = {
                                         showMarketplace = false
                                         marketplaceHighlight = null
                                         catalogEpoch++
                                     },
-                                    highlightPackId = marketplaceHighlight,
-                                    canPurchaseOnDevice = true,
-                                )
-                            }
-                            showAccount -> {
-                                AccountScreen(
-                                    purchases = purchases,
-                                    ownership = packOwnership,
-                                    isPremium = isPremium,
-                                    onDismiss = {
-                                        showAccount = false
+                                    onOpenOwnedPack = { selection ->
+                                        pendingOpenPack = selection
+                                        showMarketplace = false
+                                        showSettings = false
+                                        marketplaceHighlight = null
                                         catalogEpoch++
                                     },
                                     onOpenPaywall = { showPaywall = true },
-                                    onOpenMarketplace = {
-                                        marketplaceHighlight = null
-                                        showMarketplace = true
-                                    },
+                                    highlightPackId = marketplaceHighlight,
+                                    canPurchaseOnDevice = true,
                                 )
                             }
                             showSettings -> {
@@ -328,7 +321,6 @@ class MainActivity : ComponentActivity() {
                                         marketplaceHighlight = highlight
                                         showMarketplace = true
                                     },
-                                    onOpenAccount = { showAccount = true },
                                     onOpenPaywall = { showPaywall = true },
                                     onOpenPairing = { pairingRequested.value = true },
                                 )
@@ -364,6 +356,8 @@ class MainActivity : ComponentActivity() {
                                         museumSearchSettings = museumSearchSettings,
                                         screensaverSettings = screensaverSettings,
                                         packOwnership = packOwnership,
+                                        initialOpenPack = pendingOpenPack,
+                                        onInitialOpenPackConsumed = { pendingOpenPack = null },
                                         onOpenMarketplace = { packId ->
                                             marketplaceHighlight = packId
                                             showMarketplace = true

@@ -124,6 +124,9 @@ fun ControlPlaneScreen(
     onOpenMarketplace: ((highlightPackId: String?) -> Unit)? = null,
     onOpenSoundPlayer: ((PackSelection) -> Unit)? = null,
     onOpenNeuralMusic: ((PackSelection) -> Unit)? = null,
+    /** Pack to open once after returning from Boutique (owned pack tap). */
+    initialOpenPack: PackSelection? = null,
+    onInitialOpenPackConsumed: (() -> Unit)? = null,
 ) {
     var catalog by remember { mutableStateOf(initialCatalog.orEmpty()) }
     var openedFamily by remember { mutableStateOf<PackFamily?>(null) }
@@ -293,6 +296,26 @@ fun ControlPlaneScreen(
                     ambientAudioSettings?.let { forSelection.applySoundPack(it) }
                 }
                 launchAmbient(forSelection, resumeIfPossible = resumeIfPossible)
+            }
+        }
+    }
+
+    LaunchedEffect(initialOpenPack) {
+        val pack = initialOpenPack ?: return@LaunchedEffect
+        onInitialOpenPackConsumed?.invoke()
+        when {
+            pack.opensNeuralMusic() || pack.opensSoundPlayer() -> openMediaPack(pack)
+            pack.family == PackFamily.Personal -> {
+                selection = PackSelection(PackFamily.Personal)
+                openedFamily = PackFamily.Personal
+            }
+            pack.family == PackFamily.Genart -> {
+                openedFamily = PackFamily.Genart
+                selection = pack
+            }
+            else -> {
+                openedFamily = pack.family
+                selection = pack
             }
         }
     }

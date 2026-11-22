@@ -26,7 +26,10 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -238,19 +241,12 @@ fun PackCoverTile(
                     modifier = Modifier.fillMaxSize(),
                 )
                 if (tile.sellablePackId != null && tileLocked) {
-                    Box(
+                    PackLockBadge(
+                        testTag = "pack_tile_locked_${tile.testTagSuffix}",
                         modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.45f)),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.pack_locked),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = Color.White,
-                            modifier = Modifier.testTag("pack_tile_locked_${tile.testTagSuffix}"),
-                        )
-                    }
+                            .align(Alignment.TopEnd)
+                            .padding(6.dp),
+                    )
                 }
                 PackSelectedPlayOverlay(
                     visible = (showPlay || loading) && !tileLocked,
@@ -272,6 +268,28 @@ fun PackCoverTile(
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = 8.dp, start = 2.dp, end = 2.dp),
+        )
+    }
+}
+
+/** Small corner lock badge for sellable packs that are not yet owned. */
+@Composable
+internal fun PackLockBadge(
+    testTag: String,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .size(28.dp)
+            .background(Color.Black.copy(alpha = 0.55f), CircleShape)
+            .testTag(testTag),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Lock,
+            contentDescription = stringResource(R.string.pack_locked),
+            tint = Color.White,
+            modifier = Modifier.size(14.dp),
         )
     }
 }

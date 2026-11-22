@@ -8,7 +8,11 @@ ensure_workdir
 
 ENGINES=("$@")
 if [[ ${#ENGINES[@]} -eq 0 ]]; then
-  mapfile -t ENGINES < <(ls "$PREVIEWS/before/videos"/*.mp4 2>/dev/null | xargs -n1 basename | sed 's/\.mp4$//' || true)
+  ENGINES=()
+  for f in "$PREVIEWS/before/videos"/*.mp4; do
+    [[ -e "$f" ]] || continue
+    ENGINES+=("$(basename "$f" .mp4)")
+  done
 fi
 
 for eng in "${ENGINES[@]}"; do

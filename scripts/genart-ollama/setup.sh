@@ -21,8 +21,10 @@ ollama create arthur-fix -f "$MF/Modelfile.fix"
 ollama create arthur-fast -f "$MF/Modelfile.fast"
 ollama create arthur-heavy -f "$MF/Modelfile.heavy"
 
-"$SCRIPT_DIR/build-queue.sh"
+"$SCRIPT_DIR/build-queue.sh" --resume || true
 
 echo "Ready. Workdir: $WORK_ROOT"
 echo "Docs: $ARTHUR_ROOT/docs/genart-ollama.md"
+echo "Packs:"
+"$SCRIPT_DIR/list-packs.sh" || true
 ollama list | grep -E 'arthur-|NAME' || true

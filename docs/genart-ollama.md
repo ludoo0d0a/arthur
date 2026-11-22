@@ -66,14 +66,48 @@ Outputs live under `~/arthur-genart-ollama/previews/{before,after}/{stills,video
 
 Video defaults: **720px**, **12 fps**, **4 s** (48 frames). Override via Gradle props or env in scripts.
 
-## Queue by pack
+## Packs: list, resume, continuous
+
+Pack membership and order come from `GenartPackTopics.categoryTopicSuffixes` (auto-resolved).
 
 ```bash
+# Progress table (done / total / remaining)
+./scripts/genart-ollama/list-packs.sh
+# same as:
+./scripts/genart-ollama/run-batch.sh --list
+```
+
+State under `~/arthur-genart-ollama/`: `current_pack.txt`, `packs_done.txt`, `queue.txt`, `done.txt`, `skip.txt`.
+
+```bash
+# Rebuild queue = remaining engines of the next incomplete pack (default)
+./scripts/genart-ollama/build-queue.sh --resume
+
+# Or force one pack
 ./scripts/genart-ollama/build-queue.sh --pack weather
 ```
 
-Pack order recommendation: `weather` → `nature` → `water` → `abstract` → `scifi` → `planets` → `vintage` → rest  
-(see `GenartPackTopics` in `:shared`).
+### Continuous run (default)
+
+```bash
+# Resume last incomplete pack → finish it → next pack → … until all done
+./scripts/genart-ollama/run-batch.sh
+
+# One engine then stop
+./scripts/genart-ollama/run-batch.sh --once
+
+# Finish current pack only, then stop
+./scripts/genart-ollama/run-batch.sh --pack-once
+
+# At most N engines
+./scripts/genart-ollama/run-batch.sh -n 5
+
+# Force start pack then continue
+./scripts/genart-ollama/run-batch.sh --pack nature
+
+# With auto-apply of out/ Kotlin
+./scripts/genart-ollama/run-batch.sh --apply --pack-once
+```
 
 ## One-engine loop
 
@@ -81,8 +115,6 @@ Pack order recommendation: `weather` → `nature` → `water` → `abstract` →
 ./scripts/genart-ollama/run-one.sh Aurora
 # or apply suggested Kotlin from work/<Engine>/out/ into the repo:
 ./scripts/genart-ollama/run-one.sh --apply Aurora
-
-./scripts/genart-ollama/run-batch.sh 5
 ```
 
 Flow: bake PNG+MP4 before → Ollama audit → fix/micro (or heavy) → optional `--apply` → bake after → compare MP4.
@@ -106,6 +138,7 @@ Manual: phone preview Low/Med, TV Dream if available, still bake readability.
 
 ```
 ~/arthur-genart-ollama/
+  current_pack.txt packs_done.txt
   queue.txt done.txt skip.txt
   work/<Engine>/{audit,fix-v1,fix-v2,redesign}.md
   work/<Engine>/out/{XxxEngine.kt,XxxStill.kt}

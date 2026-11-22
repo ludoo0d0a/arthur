@@ -6,58 +6,59 @@ source "$(cd "$(dirname "$0")" && pwd)/common.sh"
 ensure_workdir
 
 PACK=""
+RESUME=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --pack) PACK="${2:-}"; shift 2 ;;
-    *) echo "Usage: build-queue.sh [--pack weather|nature|water|all]"; exit 1 ;;
+    --resume) RESUME=1; shift ;;
+    --list)
+      resolve_packs list
+      exit 0
+      ;;
+    -h|--help)
+      cat <<'EOF'
+Usage: build-queue.sh [--resume | --pack NAME | --list]
+
+  --resume   (default if no --pack) queue = remaining engines of next incomplete pack
+  --pack X   queue = all engines in pack X (from GenartPackTopics)
+  --list     show pack progress and exit
+
+Pack order and membership come from GenartPackTopics.categoryTopicSuffixes.
+EOF
+      exit 0
+      ;;
+    *) echo "Unknown arg: $1 (try --help)"; exit 1 ;;
   esac
 done
 
-STILLS_DIR="$ARTHUR_ROOT/genart/src/main/kotlin/fr/geoking/arthur/genart/stills"
-QUEUE="$WORK_ROOT/queue.txt"
+if [[ -z "$PACK" ]]; then
+  RESUME=1
+fi
 
-# Pack → still filename stem (PascalCase) substrings / exact names derived from GenartPackTopics.
-weather_match() {
-  case "$1" in
-    Snow|Aurora|Clouds|Rain|Fog|Sunbeams|Storm|LightDrizzle|Rainbow|Smog|Smoke|HeatHaze|Sunshine|SteamCurl|RainOnGlass|PaneReflections|WaterfallMist|SoftWindStreaks|DayNightWash|FrostCrystals|EclipseCorona|Fire|AuroraWash|Fireworks) return 0 ;;
-    *) return 1 ;;
-  esac
-}
-
-nature_match() {
-  case "$1" in
-    Grass|PondRipples|FallingLeaves|Bubbles|Waves|Lake|Fields|Reeds|Rivers|FlowRibbons|MultiFlames|AirBubbles|CherryBlossoms|Fireflies|FishSchool|DriftingPollen|BirdFlock|Mountains|Dunes|Tree|Reeds) return 0 ;;
-    *) return 1 ;;
-  esac
-}
-
-water_match() {
-  case "$1" in
-    PondRipples|Waves|Lake|Rivers|Bubbles|AirBubbles|MoonlightRipples|OceanSwell|InkInWater|SoapFilm|MarbleCaustics|SoftCaustics|RainOnGlass|WaterfallMist) return 0 ;;
-    *) return 1 ;;
-  esac
-}
-
-: > "$QUEUE"
-count=0
-for f in "$STILLS_DIR"/*Still.kt; do
-  [[ -e "$f" ]] || continue
-  base="$(basename "$f" Still.kt)"
-  include=1
-  if [[ -n "$PACK" && "$PACK" != "all" ]]; then
-    include=0
-    case "$PACK" in
-      weather) weather_match "$base" && include=1 ;;
-      nature) nature_match "$base" && include=1 ;;
-      water) water_match "$base" && include=1 ;;
-      *) echo "Unknown pack: $PACK" >&2; exit 1 ;;
-    esac
+if [[ "$RESUME" -eq 1 ]]; then
+  if ! load_next_pack; then
+    echo "All packs complete (nothing to queue)."
+    resolve_packs list
+    exit 0
   fi
-  if [[ "$include" -eq 1 ]]; then
-    echo "$base" >> "$QUEUE"
-    count=$((count + 1))
-  fi
-done
+  echo "Resume pack=$CURRENT_PACK (${#QUEUE_ENGINES[@]} remaining) → $WORK_ROOT/queue.txt"
+  printf '  %s\n' "${QUEUE_ENGINES[@]}"
+  exit 0
+fi
 
-sort -u -o "$QUEUE" "$QUEUE"
-echo "Wrote $count engines → $QUEUE (pack=${PACK:-all})"
+# Explicit --pack
+QUEUE_ENGINES=()
+while IFS= read -r line || [[ -n "$line" ]]; do
+  [[ -z "$line" ]] && continue
+  QUEUE_ENGINES+=("$line")
+done < <(resolve_packs engines --pack "$PACK")
+
+if [[ ${#QUEUE_ENGINES[@]} -eq 0 ]]; then
+  echo "No engines for pack=$PACK (unknown or empty)" >&2
+  exit 1
+fi
+CURRENT_PACK="$PACK"
+printf '%s\n' "$CURRENT_PACK" > "$WORK_ROOT/current_pack.txt"
+printf '%s\n' "${QUEUE_ENGINES[@]}" > "$WORK_ROOT/queue.txt"
+echo "Wrote ${#QUEUE_ENGINES[@]} engines → $WORK_ROOT/queue.txt (pack=$PACK)"
+printf '  %s\n' "${QUEUE_ENGINES[@]}"

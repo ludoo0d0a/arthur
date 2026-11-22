@@ -12,8 +12,15 @@ case "$STAGE" in before|after) ;; *) echo "stage must be before|after"; exit 1 ;
 
 ENGINES=("$@")
 if [[ ${#ENGINES[@]} -eq 0 ]]; then
-  # default: next unfinished from queue (up to 8) or all weather if empty done
-  mapfile -t ENGINES < <(comm -23 <(sort -u "$WORK_ROOT/queue.txt") <(sort -u "$WORK_ROOT/done.txt" "$WORK_ROOT/skip.txt" 2>/dev/null | sort -u) | head -n 8)
+  # default: next unfinished from queue (up to 8)
+  ENGINES=()
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ -z "$line" ]] && continue
+    ENGINES+=("$line")
+  done < <(comm -23 \
+    <(sort -u "$WORK_ROOT/queue.txt") \
+    <(cat "$WORK_ROOT/done.txt" "$WORK_ROOT/skip.txt" 2>/dev/null | sort -u) \
+    | head -n 8)
 fi
 if [[ ${#ENGINES[@]} -eq 0 ]]; then
   echo "No engines specified / queued." >&2

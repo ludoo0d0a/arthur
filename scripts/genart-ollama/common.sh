@@ -32,7 +32,61 @@ ensure_workdir() {
     "$PREVIEWS/after/videos" \
     "$PREVIEWS/after/frames" \
     "$PREVIEWS/compare"
-  touch "$WORK_ROOT/queue.txt" "$WORK_ROOT/done.txt" "$WORK_ROOT/skip.txt"
+  touch "$WORK_ROOT/queue.txt" "$WORK_ROOT/done.txt" "$WORK_ROOT/skip.txt" \
+    "$WORK_ROOT/packs_done.txt" "$WORK_ROOT/current_pack.txt"
+}
+
+resolve_packs() {
+  python3 "$SCRIPT_DIR/lib/resolve_packs.py" "$@" --work "$WORK_ROOT"
+}
+
+# Load next pack + remaining engines into CURRENT_PACK / QUEUE_ENGINES.
+load_next_pack() {
+  local pack="" line first=1
+  QUEUE_ENGINES=()
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    if [[ "$first" -eq 1 ]]; then
+      pack="$line"
+      first=0
+      continue
+    fi
+    case "$line" in
+      engine:*) QUEUE_ENGINES+=("${line#engine:}") ;;
+    esac
+  done < <(resolve_packs next)
+
+  if [[ -z "$pack" ]]; then
+    CURRENT_PACK=""
+    return 1
+  fi
+  CURRENT_PACK="$pack"
+  printf '%s\n' "$CURRENT_PACK" > "$WORK_ROOT/current_pack.txt"
+  if [[ ${#QUEUE_ENGINES[@]} -gt 0 ]]; then
+    printf '%s\n' "${QUEUE_ENGINES[@]}" > "$WORK_ROOT/queue.txt"
+  else
+    : > "$WORK_ROOT/queue.txt"
+  fi
+  return 0
+}
+
+mark_pack_done_if_complete() {
+  local pack="${1:-}"
+  [[ -n "$pack" ]] || return 0
+  local e pending=0 total=0
+  while IFS= read -r e || [[ -n "$e" ]]; do
+    [[ -z "$e" ]] && continue
+    total=$((total + 1))
+    if ! grep -qxF "$e" "$WORK_ROOT/done.txt" 2>/dev/null \
+      && ! grep -qxF "$e" "$WORK_ROOT/skip.txt" 2>/dev/null; then
+      pending=$((pending + 1))
+    fi
+  done < <(resolve_packs engines --pack "$pack")
+  if [[ "$total" -gt 0 && "$pending" -eq 0 ]]; then
+    if ! grep -qxF "$pack" "$WORK_ROOT/packs_done.txt" 2>/dev/null; then
+      echo "$pack" >> "$WORK_ROOT/packs_done.txt"
+      echo "pack done: $pack"
+    fi
+  fi
 }
 
 require_cmd() {

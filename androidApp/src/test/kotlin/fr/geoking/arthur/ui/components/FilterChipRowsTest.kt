@@ -214,16 +214,10 @@ class FilterChipRowsTest {
             CategoryFilter.GENART,
             genartTopic = GenartTopic.Abstract,
         )
-        assertEquals(listOf(GenartSource.BREATH_CIRCLES), filtered.map { it.id })
-    }
-
-    @Test
-    fun genartTapet_showsTapetEngines() {
-        val filtered = catalog.filterByCategoryAndSources(
-            CategoryFilter.GENART,
-            genartTopic = GenartTopic.Tapet,
+        assertEquals(
+            listOf(GenartSource.BLOBS, GenartSource.BREATH_CIRCLES),
+            filtered.map { it.id },
         )
-        assertEquals(listOf(GenartSource.BLOBS), filtered.map { it.id })
     }
 
     @Test
@@ -234,7 +228,10 @@ class FilterChipRowsTest {
             genartTopic = GenartTopic.Abstract,
         )
         assertTrue(resolved.showSubfilters)
-        assertEquals(listOf(GenartSource.BREATH_CIRCLES), resolved.items.map { it.id })
+        assertEquals(
+            listOf(GenartSource.BLOBS, GenartSource.BREATH_CIRCLES),
+            resolved.items.map { it.id },
+        )
     }
 
     @Test

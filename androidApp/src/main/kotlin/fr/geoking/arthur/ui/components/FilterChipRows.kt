@@ -97,7 +97,6 @@ enum class GenartTopic(
 ) {
     All(R.string.category_all, "all"),
     Random(R.string.stock_topic_random, "random"),
-    Tapet(R.string.genart_topic_tapet, "tapet"),
     Nature(R.string.genart_topic_nature, "nature"),
     Weather(R.string.genart_topic_weather, "weather"),
     Water(R.string.genart_topic_water, "water"),
@@ -358,7 +357,6 @@ fun List<Artwork>.canLoadMoreCatalog(visibleCount: Int): Boolean =
 fun matchesGenartTopic(art: Artwork, topic: GenartTopic): Boolean = when (topic) {
     GenartTopic.All -> true
     GenartTopic.Random -> true
-    GenartTopic.Tapet -> art.id in GenartPackTopics.TAPET_IDS
     GenartTopic.Nature -> art.id in GenartPackTopics.NATURE_IDS
     GenartTopic.Weather -> art.id in GenartPackTopics.WEATHER_IDS
     GenartTopic.Water -> art.id in GenartPackTopics.WATER_IDS

@@ -27,7 +27,7 @@ import fr.geoking.arthur.genart.sin01
 import kotlin.math.PI
 
 /**
- * Dense paper-cut pack of capsules / soft blobs — Tapet packed-shape wallpaper picture.
+ * Dense paper-cut pack of capsules / soft blobs — packed-shape wallpaper picture.
  *
  * Algorithm: seeded scatter + z-order stack with drop shadows and palette mixing.
  * Tweakables via [quality]: piece count, shadow depth, gutter (via size range).

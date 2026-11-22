@@ -32,7 +32,7 @@ import kotlin.math.min
 /**
  * Dense nested / interlocking pack — ovals, oblongs, teardrops, irregular
  * triangles & quads, and soft Tetris polyominoes. Shape kind is seeded-random;
- * color bands follow horizontal position across the palette (Tapet multicolor nest).
+ * color bands follow horizontal position across the palette (multicolor nest).
  */
 @Composable
 internal fun NestedPackEngine(

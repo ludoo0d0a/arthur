@@ -27,7 +27,7 @@ import kotlin.math.PI
 import kotlin.math.sin
 
 /**
- * Soft overlapping blobs / capsules with paper-cut shadows — Tapet lava-lamp picture feel.
+ * Soft overlapping blobs / capsules with paper-cut shadows — lava-lamp picture feel.
  *
  * Tweakables via [quality]: count, shadow strength.
  * Per-blob seeds randomize shape kind (round vs capsule), aspect, rotation, palette pick.

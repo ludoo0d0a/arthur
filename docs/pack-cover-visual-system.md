@@ -101,7 +101,6 @@ Random uses shared `pack_random`.
 
 | Topic | Hue idea | Background | Mid | Highlight |
 |-------|----------|------------|-----|-----------|
-| **Tapet** | Soft lilac | `#1E0F2E` | `#8B6BB0` | `#E8D4F8` |
 | **Nature** | Forest green | `#0A2F1F` | `#2D6A4F` | `#A8E6C0` |
 | **Weather** | Storm slate | `#0E1A28` | `#4A6B8A` | `#B8D4F0` |
 | **Water** | Deep teal | `#021F2E` | `#1A7A8A` | `#A8E8F0` |
@@ -158,7 +157,6 @@ Wired via `PackCovers.genart()`. Each topic has its **own primary hue** (see tab
 | Topic | Drawable | Motif | Primary hue |
 |-------|----------|--------|-------------|
 | Random | `pack_random.webp` | Die / chance cube | Warm chance amber |
-| Tapet | `pack_genart_tapet.webp` | Silk diamond weave / wallpaper panels | Soft lilac |
 | Nature | `pack_genart_nature.webp` | Layered tree | Forest green |
 | Weather | `pack_genart_weather.webp` | Storm cloud + rain + lightning | Storm slate |
 | Water | `pack_genart_water.webp` | Waves + horizon disk | Deep teal |

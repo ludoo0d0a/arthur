@@ -25,7 +25,7 @@ import fr.geoking.arthur.genart.sin01
 import kotlin.math.PI
 
 /**
- * Diagonal rhombus / diamond weave — Tapet Havana-style geometric wallpaper picture.
+ * Diagonal rhombus / diamond weave — Havana-style geometric wallpaper picture.
  *
  * Seeded per-tile color + subtle shade split; [quality] tweaks grid density and shadow.
  */

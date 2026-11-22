@@ -15,8 +15,12 @@ interface PackOwnership {
 
     fun ownsPersonalPhotos(): Boolean = owns(MarketplaceCatalog.PERSONAL_PHOTOS_ID)
 
-    fun ownsGenartTopic(topicSuffix: String): Boolean =
-        MarketplaceCatalog.sellablePackIdForGenartTopic(topicSuffix)?.let { owns(it) } == true
+    fun ownsGenartTopic(topicSuffix: String): Boolean {
+        val packId = MarketplaceCatalog.sellablePackIdForGenartTopic(topicSuffix) ?: return false
+        if (owns(packId)) return true
+        // Former wallpaper-pack SKU buyers keep Abstract engines unlocked.
+        return topicSuffix == GenartPackTopics.ABSTRACT && owns(MarketplaceCatalog.LEGACY_GENART_WALLPAPER_PACK_ID)
+    }
 
     /** Genart engine unlocked by free allowlist or any owned covering topic pack. */
     fun allowsGenartEngine(engineId: String): Boolean {

@@ -213,8 +213,8 @@ Keyword topics search across all video remotes. No still disk cache for streams.
 
 ### 6.2 Genart
 `GenartSource`, `FractalSource`, `CustomFractalSource` — local only.
-Sub-packs: All, Random, Tapet, Nature, Weather, Water, Life, Earth, Planets,
-Sci‑Fi, Abstract, Geometry, Fractal, Custom.
+Sub-packs: All, Random, Nature, Weather, Water, Life, Earth, Planets,
+Sci‑Fi, Vintage, Abstract, Geometry, Fractal, Custom.
 
 ---
 

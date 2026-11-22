@@ -8,11 +8,10 @@ import fr.geoking.arthur.shared.source.GenartSource
  *
  * Category packs are **exclusive**: each engine id appears in exactly one monetized
  * category set (not Fractal / Custom, which are kinds). Assignment priority when
- * partitioning overlaps: Vintage → Tapet → Life → Nature → Weather → Water → Earth →
+ * partitioning overlaps: Vintage → Life → Nature → Weather → Water → Earth →
  * Planets → SciFi → Geometry → Abstract.
  */
 object GenartPackTopics {
-    const val TAPET = "tapet"
     const val NATURE = "nature"
     const val WEATHER = "weather"
     const val WATER = "water"
@@ -28,34 +27,12 @@ object GenartPackTopics {
 
     /** Monetized topic suffixes (excludes All / Random). */
     val monetizedTopicSuffixes: List<String> = listOf(
-        TAPET, NATURE, WEATHER, WATER, LIFE, EARTH, PLANETS, SCIFI, VINTAGE, ABSTRACT, GEOMETRY, FRACTAL, CUSTOM,
+        NATURE, WEATHER, WATER, LIFE, EARTH, PLANETS, SCIFI, VINTAGE, ABSTRACT, GEOMETRY, FRACTAL, CUSTOM,
     )
 
     /** Category packs that own engine id sets (excludes Fractal / Custom kinds). */
     val categoryTopicSuffixes: List<String> = listOf(
-        TAPET, NATURE, WEATHER, WATER, LIFE, EARTH, PLANETS, SCIFI, VINTAGE, ABSTRACT, GEOMETRY,
-    )
-
-    val TAPET_IDS: Set<String> = setOf(
-        GenartSource.GRADIENT_MESH,
-        GenartSource.BLOBS,
-        GenartSource.VORONOI,
-        GenartSource.SILK,
-        GenartSource.ARC_MOSAIC,
-        GenartSource.RIBBONS,
-        GenartSource.NOISE_FIELD,
-        GenartSource.LOW_FREQ_NOISE_FIELD,
-        GenartSource.TONAL_GEOMETRY,
-        GenartSource.PAPER_CUT_PACK,
-        GenartSource.DIAMOND_WEAVE,
-        GenartSource.NESTED_PACK,
-        GenartSource.CHROMATIC_BLOBS,
-        GenartSource.BILLOWING_CLOTH,
-        GenartSource.WIND_CURTAINS,
-        GenartSource.PAPER_SIMPLEX_NOISE,
-        GenartSource.PAPER_GRAIN_GRADIENT,
-        GenartSource.SHADY_MARBLED_PAPER,
-        GenartSource.LWP_VORONOI,
+        NATURE, WEATHER, WATER, LIFE, EARTH, PLANETS, SCIFI, VINTAGE, ABSTRACT, GEOMETRY,
     )
 
     val WEATHER_IDS: Set<String> = setOf(
@@ -206,6 +183,25 @@ object GenartPackTopics {
     )
 
     val ABSTRACT_IDS: Set<String> = setOf(
+        GenartSource.GRADIENT_MESH,
+        GenartSource.BLOBS,
+        GenartSource.VORONOI,
+        GenartSource.SILK,
+        GenartSource.ARC_MOSAIC,
+        GenartSource.RIBBONS,
+        GenartSource.NOISE_FIELD,
+        GenartSource.LOW_FREQ_NOISE_FIELD,
+        GenartSource.TONAL_GEOMETRY,
+        GenartSource.PAPER_CUT_PACK,
+        GenartSource.DIAMOND_WEAVE,
+        GenartSource.NESTED_PACK,
+        GenartSource.CHROMATIC_BLOBS,
+        GenartSource.BILLOWING_CLOTH,
+        GenartSource.WIND_CURTAINS,
+        GenartSource.PAPER_SIMPLEX_NOISE,
+        GenartSource.PAPER_GRAIN_GRADIENT,
+        GenartSource.SHADY_MARBLED_PAPER,
+        GenartSource.LWP_VORONOI,
         GenartSource.BREATH_CIRCLES,
         GenartSource.SPECTRAL_FOLDS,
         GenartSource.INTERFERENCE_WASH,
@@ -223,7 +219,6 @@ object GenartPackTopics {
     )
 
     fun engineIdsForTopic(topicSuffix: String): Set<String> = when (topicSuffix) {
-        TAPET -> TAPET_IDS
         NATURE -> NATURE_IDS
         WEATHER -> WEATHER_IDS
         WATER -> WATER_IDS

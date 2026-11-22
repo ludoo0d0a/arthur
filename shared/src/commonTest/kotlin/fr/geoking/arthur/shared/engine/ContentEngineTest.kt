@@ -66,7 +66,7 @@ class ContentEngineTest {
             owned = setOf(
                 MarketplaceCatalog.PERSONAL_PHOTOS_ID,
                 MarketplaceCatalog.genartPackId(GenartPackTopics.CUSTOM),
-                MarketplaceCatalog.genartPackId(GenartPackTopics.TAPET),
+                MarketplaceCatalog.genartPackId(GenartPackTopics.ABSTRACT),
                 MarketplaceCatalog.genartPackId(GenartPackTopics.FRACTAL),
             ),
         )
@@ -143,10 +143,9 @@ class ContentEngineTest {
     }
 
     @Test
-    fun genartSource_owningTapet_includesAbstractTapetEngines() = runBlocking {
+    fun genartSource_owningAbstract_includesAbstractEngines() = runBlocking {
         val ownership = FakePackOwnership(
             owned = setOf(
-                MarketplaceCatalog.genartPackId(GenartPackTopics.TAPET),
                 MarketplaceCatalog.genartPackId(GenartPackTopics.ABSTRACT),
             ),
         )

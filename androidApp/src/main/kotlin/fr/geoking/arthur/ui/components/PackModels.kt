@@ -122,7 +122,6 @@ fun List<Artwork>.sortedByGenartNumber(): List<Artwork> = sortedWith(
 private val GenartSubTopics = listOf(
     GenartTopic.All,
     GenartTopic.Random,
-    GenartTopic.Tapet,
     GenartTopic.Nature,
     GenartTopic.Weather,
     GenartTopic.Water,

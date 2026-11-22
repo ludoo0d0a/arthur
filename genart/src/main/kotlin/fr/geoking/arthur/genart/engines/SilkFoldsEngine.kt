@@ -25,7 +25,7 @@ import kotlin.math.PI
 import kotlin.math.sin
 
 /**
- * Stacked undulating bands with paper-cut drop shadows — Tapet silk / Mitmita feel.
+ * Stacked undulating bands with paper-cut drop shadows — silk / Mitmita feel.
  *
  * Tweakables via [quality]: fold count, segment density, shadow depth.
  * Shape/color layout is seeded-random per fold (cycles, thickness, palette pick).

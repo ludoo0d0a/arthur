@@ -169,28 +169,23 @@ class PackModelsTest {
     }
 
     @Test
-    fun genartTapet_includesWallpaperEngines() {
-        val pool = resolvePackPool(
-            catalog,
-            PackSelection(PackFamily.Genart, GenartTopic.Tapet.testTagSuffix),
-        )
-        assertEquals(
-            listOf(GenartSource.BLOBS, GenartSource.GRADIENT_MESH),
-            pool.map { it.id },
-        )
+    fun genartAbstract_includesWallpaperStyleEngines() {
         val abstractPool = resolvePackPool(
             catalog,
             PackSelection(PackFamily.Genart, GenartTopic.Abstract.testTagSuffix),
         )
-        assertTrue(abstractPool.none { it.id == GenartSource.BLOBS })
+        assertEquals(
+            listOf(GenartSource.BLOBS, GenartSource.GRADIENT_MESH),
+            abstractPool.map { it.id },
+        )
     }
 
     @Test
-    fun genartSubPacks_includeAllAbstractAndTapet() {
+    fun genartSubPacks_includeAbstractAndVintage() {
         val suffixes = PackFamily.Genart.subPackTiles().map { it.testTagSuffix }
         assertEquals("genart_all", suffixes.first())
         assertTrue(suffixes.contains("genart_abstract"))
-        assertTrue(suffixes.contains("genart_tapet"))
+        assertFalse(suffixes.contains("genart_tapet"))
         assertTrue(suffixes.contains("genart_vintage"))
     }
 
@@ -322,8 +317,8 @@ class PackModelsTest {
         assertEquals(5, homeTile.itemCount)
 
         val subTiles = PackFamily.Genart.subPackTiles(catalog)
-        val tapetTile = subTiles.first { it.testTagSuffix == "genart_tapet" }
-        assertEquals(2, tapetTile.itemCount)
+        val abstractTile = subTiles.first { it.testTagSuffix == "genart_abstract" }
+        assertEquals(2, abstractTile.itemCount)
         val weatherTile = subTiles.first { it.testTagSuffix == "genart_weather" }
         assertEquals(1, weatherTile.itemCount)
     }

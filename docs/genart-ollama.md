@@ -72,7 +72,7 @@ Video defaults: **720px**, **12 fps**, **4 s** (48 frames). Override via Gradle 
 ./scripts/genart-ollama/build-queue.sh --pack weather
 ```
 
-Pack order recommendation: `weather` → `nature` → `water` → `abstract` / `tapet` → `scifi` → `planets` → `vintage` → rest  
+Pack order recommendation: `weather` → `nature` → `water` → `abstract` → `scifi` → `planets` → `vintage` → rest  
 (see `GenartPackTopics` in `:shared`).
 
 ## One-engine loop

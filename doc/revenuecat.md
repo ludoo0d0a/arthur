@@ -42,7 +42,6 @@ Owns Diamond ⇒ `PackOwnership.owns(any content pack)` is true. Does **not** se
 
 | Pack id | Entitlement | Play product | Prix FR |
 |---------|-------------|--------------|--------:|
-| `genart_tapet` | `pack_genart_tapet` | `arthur_pack_genart_tapet` | **1,99 €** |
 | `genart_nature` | `pack_genart_nature` | `arthur_pack_genart_nature` | **1,99 €** |
 | `genart_weather` | `pack_genart_weather` | `arthur_pack_genart_weather` | **1,99 €** |
 | `genart_water` | `pack_genart_water` | `arthur_pack_genart_water` | **1,99 €** |
@@ -52,6 +51,8 @@ Owns Diamond ⇒ `PackOwnership.owns(any content pack)` is true. Does **not** se
 | `genart_scifi` | `pack_genart_scifi` | `arthur_pack_genart_scifi` | **1,99 €** |
 | `genart_vintage` | `pack_genart_vintage` | `arthur_pack_genart_vintage` | **1,99 €** |
 | `genart_abstract` | `pack_genart_abstract` | `arthur_pack_genart_abstract` | **1,99 €** |
+
+Former wallpaper topic SKU `genart_tapet` is retired from the catalog; existing buyers still unlock Abstract via `LEGACY_GENART_WALLPAPER_PACK_ID`.
 | `genart_geometry` | `pack_genart_geometry` | `arthur_pack_genart_geometry` | **1,99 €** |
 | `genart_fractal` | `pack_genart_fractal` | `arthur_pack_genart_fractal` | **2,99 €** |
 | `genart_custom` | `pack_genart_custom` | `arthur_pack_genart_custom` | **2,99 €** |

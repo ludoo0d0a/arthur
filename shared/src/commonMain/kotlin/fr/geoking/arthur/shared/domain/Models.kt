@@ -98,7 +98,7 @@ data class FreeTierLimits(
     val maxFractalPresets: Int = 3,
     /**
      * Cap on free-tier Genart engines. Must cover the full shipped catalog so
-     * late topics (Abstract Tapet engines, Weather, Planets) are not empty —
+     * late topics (Abstract, Weather, Planets) are not empty —
      * Genart is on-device procedural, so a tight prefix cap only hides packs.
      */
     val maxGenart: Int = 160,

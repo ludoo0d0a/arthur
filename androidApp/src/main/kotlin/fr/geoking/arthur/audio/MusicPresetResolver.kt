@@ -198,7 +198,7 @@ object MusicPresetResolver {
         GenartPackTopics.LIFE -> 3
         GenartPackTopics.EARTH -> 4
         GenartPackTopics.NATURE -> 5
-        GenartPackTopics.ABSTRACT, GenartPackTopics.GEOMETRY, GenartPackTopics.TAPET -> 6
+        GenartPackTopics.ABSTRACT, GenartPackTopics.GEOMETRY -> 6
         GenartPackTopics.FRACTAL, GenartPackTopics.CUSTOM -> 7
         else -> 8
     }
@@ -212,7 +212,7 @@ object MusicPresetResolver {
             listOf(MusicStyle.SoftGuitar, MusicStyle.Songbirds, MusicStyle.JazzPiano)
         GenartPackTopics.WEATHER ->
             listOf(MusicStyle.WindChimes, MusicStyle.SoftRain, MusicStyle.WindAmbience)
-        GenartPackTopics.ABSTRACT, GenartPackTopics.GEOMETRY, GenartPackTopics.TAPET ->
+        GenartPackTopics.ABSTRACT, GenartPackTopics.GEOMETRY ->
             listOf(MusicStyle.JazzPiano, MusicStyle.BarAmbience, MusicStyle.NightLounge)
         GenartPackTopics.PLANETS, GenartPackTopics.SCIFI ->
             listOf(MusicStyle.CosmicDrone, MusicStyle.OrchestraPads, MusicStyle.Zen)

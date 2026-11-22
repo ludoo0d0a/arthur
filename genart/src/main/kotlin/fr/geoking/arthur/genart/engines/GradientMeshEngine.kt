@@ -24,7 +24,7 @@ import fr.geoking.arthur.genart.seededUnit
 import fr.geoking.arthur.genart.sin01
 import kotlin.math.PI
 
-/** Multi-blob radial gradients with slow center/color morph — Tapet wallpaper feel. */
+/** Multi-blob radial gradients with slow center/color morph — soft wallpaper feel. */
 @Composable
 internal fun GradientMeshEngine(
     isActive: Boolean,

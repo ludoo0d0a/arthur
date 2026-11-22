@@ -27,7 +27,6 @@ object PackCovers {
     fun genart(topic: GenartTopic): Int = when (topic) {
         GenartTopic.All -> R.drawable.pack_genart
         GenartTopic.Random -> random
-        GenartTopic.Tapet -> R.drawable.pack_genart_tapet
         GenartTopic.Nature -> R.drawable.pack_genart_nature
         GenartTopic.Weather -> R.drawable.pack_genart_weather
         GenartTopic.Water -> R.drawable.pack_genart_water

@@ -31,7 +31,6 @@ la structure doit etre la suivante :
 - genart (sous-packs monétisés via Marketplace sauf tout / aléatoire — free subset)
   - tout (105)
   - aleatoire (genart aleatoire sur tout le catalogue des genarts)
-  - tapet (genart aleatoire sur leses genarts de cette categorie )
   - nature (genart aleatoire sur leses genarts de cette categorie )
   - meteo (genart aleatoire sur leses genarts de cette categorie )
   - eau (genart aleatoire sur leses genarts de cette categorie )

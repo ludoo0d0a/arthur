@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import fr.geoking.arthur.R
+import fr.geoking.arthur.fractal.FractalStillRenderer
 import fr.geoking.arthur.genart.GenartCatalog
 import fr.geoking.arthur.genart.GenartStillRenderer
 import fr.geoking.arthur.shared.domain.Artwork
@@ -381,17 +382,27 @@ internal fun loadOrBakeGenartStill(
 }
 
 private fun bakeGenartStill(artwork: Artwork, maxSide: Int): Bitmap? {
-    if (artwork.kind != ArtworkKind.Genart) return null
-    val engine = GenartCatalog.engineForId(artwork.id) ?: return null
     val size = maxSide.coerceAtLeast(64)
-    return runCatching {
-        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-        GenartStillRenderer.draw(
-            canvas = Canvas(bitmap),
-            engineId = engine,
-            size = size,
-            generation = 0L,
-        )
-        bitmap
-    }.getOrNull()
+    return when (artwork.kind) {
+        ArtworkKind.Genart -> {
+            val engine = GenartCatalog.engineForId(artwork.id) ?: return null
+            runCatching {
+                val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+                GenartStillRenderer.draw(
+                    canvas = Canvas(bitmap),
+                    engineId = engine,
+                    size = size,
+                    generation = 0L,
+                )
+                bitmap
+            }.getOrNull()
+        }
+        ArtworkKind.FractalPreset -> {
+            val type = FractalStillRenderer.typeForArtworkId(artwork.id) ?: return null
+            runCatching {
+                FractalStillRenderer.render(type = type, size = size, generation = 0L)
+            }.getOrNull()
+        }
+        else -> null
+    }
 }

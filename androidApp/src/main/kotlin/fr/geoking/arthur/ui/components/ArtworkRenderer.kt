@@ -42,6 +42,7 @@ import fr.geoking.arthur.fractal.CustomFractalEffectCanvas
 import fr.geoking.arthur.fractal.CustomFractalParams
 import fr.geoking.arthur.fractal.FractalEffectCanvas
 import fr.geoking.arthur.fractal.FractalQuality
+import fr.geoking.arthur.fractal.FractalStillRenderer
 import fr.geoking.arthur.fractal.FractalType
 import fr.geoking.arthur.genart.AnimationPalettes
 import fr.geoking.arthur.genart.GenartCatalog
@@ -52,7 +53,6 @@ import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.error.ErrorCategory
 import fr.geoking.arthur.shared.error.ErrorLogger
-import fr.geoking.arthur.shared.source.FractalSource
 import fr.geoking.arthur.source.SafeBitmapDecoder
 import fr.geoking.arthur.source.DeveloperSettings
 import fr.geoking.arthur.source.InvalidArtworkStore
@@ -519,21 +519,7 @@ fun StillArtworkPlaceholder(
 }
 
 internal fun fractalTypeForArtworkId(artworkId: String): FractalType? =
-    when (FractalSource.typeKey(artworkId)?.lowercase()) {
-        "mandelbrot" -> FractalType.Mandelbrot
-        "julia" -> FractalType.Julia
-        "burningship" -> FractalType.BurningShip
-        "tricorn" -> FractalType.Tricorn
-        "multibrot" -> FractalType.Multibrot
-        "celtic" -> FractalType.Celtic
-        "buffalo" -> FractalType.Buffalo
-        "phoenix" -> FractalType.Phoenix
-        "nova" -> FractalType.Nova
-        "newton" -> FractalType.Newton
-        "mandelbrotglow" -> FractalType.MandelbrotGlow
-        "juliatouch" -> FractalType.JuliaTouch
-        else -> null
-    }
+    FractalStillRenderer.typeForArtworkId(artworkId)
 
 internal fun GenartQuality.toFractalQuality(): FractalQuality = when (this) {
     GenartQuality.Low -> FractalQuality.Low

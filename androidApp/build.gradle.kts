@@ -262,6 +262,11 @@ val genartScreenshotOutputDir =
         .dir("screenshots")
         .asFile.absolutePath
 
+val fractalScreenshotOutputDir =
+    rootProject.layout.projectDirectory
+        .dir("screenshots/fractal")
+        .asFile.absolutePath
+
 val genartPreviewFramesOutputDir =
     rootProject.layout.projectDirectory
         .dir("screenshots/genart-frames")
@@ -283,6 +288,7 @@ afterEvaluate {
     val screenOnly =
         !framedOnly && screenshotTasks.any { it.contains("generatePhoneScreenshots") }
     val genartOnly = screenshotTasks.any { it.contains("generateGenartScreenshots") }
+    val fractalOnly = screenshotTasks.any { it.contains("generateFractalScreenshots") }
     val genartFramesOnly = screenshotTasks.any { it.contains("generateGenartPreviewFrames") }
 
     if (framedOnly) {
@@ -325,6 +331,22 @@ afterEvaluate {
             )
         }
     }
+    if (fractalOnly) {
+        tasks.named<Test>("testFullDebugUnitTest").configure {
+            filter {
+                includeTestsMatching("fr.geoking.arthur.preview.FractalPreviewScreenshotTest")
+            }
+            systemProperty("screenshot.outputDir", fractalScreenshotOutputDir)
+            systemProperty(
+                "fractal.screenshot.size",
+                (findProperty("fractalScreenshotSize") as String?) ?: "720",
+            )
+            systemProperty(
+                "fractal.screenshot.generation",
+                (findProperty("fractalScreenshotGeneration") as String?) ?: "7",
+            )
+        }
+    }
     if (genartFramesOnly) {
         tasks.named<Test>("testFullDebugUnitTest").configure {
             filter {
@@ -353,7 +375,7 @@ afterEvaluate {
             )
         }
     }
-    if (!framedOnly && !screenOnly && !genartOnly && !genartFramesOnly) {
+    if (!framedOnly && !screenOnly && !genartOnly && !fractalOnly && !genartFramesOnly) {
         tasks.named<Test>("testFullDebugUnitTest").configure {
             filter {
                 excludeTestsMatching("fr.geoking.arthur.preview.*")
@@ -412,6 +434,14 @@ tasks.register("generateGenartScreenshots") {
     description =
         "Bakes genart still previews to screenshots/#N-Name.png " +
             "(-PgenartScreenshotSize=720, -PgenartScreenshotGeneration=7)"
+    dependsOn("testFullDebugUnitTest")
+}
+
+tasks.register("generateFractalScreenshots") {
+    group = "screenshots"
+    description =
+        "Bakes fractal still previews to screenshots/fractal/#N-Name.png " +
+            "(-PfractalScreenshotSize=720, -PfractalScreenshotGeneration=7)"
     dependsOn("testFullDebugUnitTest")
 }
 

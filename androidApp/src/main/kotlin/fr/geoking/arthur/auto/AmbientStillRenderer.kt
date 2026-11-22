@@ -10,7 +10,8 @@ import android.graphics.Shader
 import fr.geoking.arthur.fractal.CustomFractalParams
 import fr.geoking.arthur.fractal.CustomFractalQuality
 import fr.geoking.arthur.fractal.CustomFractalStillRenderer
-import fr.geoking.arthur.fractal.FractalCoherentPalette
+import fr.geoking.arthur.fractal.FractalStillRenderer
+import fr.geoking.arthur.fractal.FractalType
 import fr.geoking.arthur.genart.GenartCatalog
 import fr.geoking.arthur.genart.GenartStillRenderer
 import fr.geoking.arthur.shared.domain.Artwork
@@ -337,161 +338,12 @@ object AmbientStillRenderer {
     }
 
     private fun drawFractalField(canvas: Canvas, artworkId: String, seed: Long) {
-        val rnd = Random(seed)
-        val pixels = IntArray(SIZE * SIZE)
-        val maxIter = 220
-        val type = when {
-            artworkId.contains("mandelbrotglow") -> "mandelbrotglow"
-            artworkId.contains("juliatouch") -> "juliatouch"
-            artworkId.contains("phoenix") -> "phoenix"
-            artworkId.contains("newton") -> "newton"
-            artworkId.contains("nova") -> "nova"
-            artworkId.contains("julia") -> "julia"
-            artworkId.contains("burning") -> "burningship"
-            artworkId.contains("tricorn") -> "tricorn"
-            artworkId.contains("multibrot") -> "multibrot"
-            artworkId.contains("celtic") -> "celtic"
-            artworkId.contains("buffalo") -> "buffalo"
-            else -> "mandelbrot"
-        }
-        val (cx, cy, span) = when (type) {
-            "julia", "juliatouch" -> Triple(-0.4 + rnd.nextDouble() * 0.1, 0.6, 2.6)
-            "burningship" -> Triple(-1.75, -0.04, 2.2)
-            "tricorn" -> Triple(-0.2, rnd.nextDouble() * 0.04, 2.6)
-            "multibrot" -> Triple(0.0, 0.0, 2.4)
-            "celtic" -> Triple(-0.5, 0.0, 2.5)
-            "buffalo" -> Triple(-0.65, -0.45, 2.4)
-            "phoenix" -> Triple(0.0, 0.0, 2.8)
-            "nova" -> Triple(0.0, 0.0, 2.5)
-            "newton" -> Triple(0.0, 0.0, 2.8)
-            "mandelbrotglow" -> Triple(-0.5, 0.0, 2.5)
-            else -> Triple(-0.55 + rnd.nextDouble() * 0.08, rnd.nextDouble() * 0.05, 2.6)
-        }
-        val scale = span / SIZE
-        val hueBase = (seed and 0xFF).toInt()
-        val isJuliaLike = type == "julia" || type == "juliatouch" || type == "phoenix" || type == "newton"
-        for (py in 0 until SIZE) {
-            for (px in 0 until SIZE) {
-                val cr = (px - SIZE / 2.0) * scale + cx
-                val ci = (py - SIZE / 2.0) * scale + cy
-                var zx = if (isJuliaLike) cr else 0.0
-                var zy = if (isJuliaLike) ci else 0.0
-                var prevX = 0.0
-                var prevY = 0.0
-                val jx = when (type) {
-                    "julia", "juliatouch" -> cx
-                    "phoenix" -> 0.5667
-                    else -> cr
-                }
-                val jy = when (type) {
-                    "julia", "juliatouch" -> cy
-                    "phoenix" -> -0.5
-                    else -> ci
-                }
-                var iter = 0
-                var escaped = false
-                var zr2 = 0.0
-                var zi2 = 0.0
-                var newtonContinuous = -1f
-                while (iter < maxIter) {
-                    zr2 = zx * zx
-                    zi2 = zy * zy
-                    if (type != "newton" && zr2 + zi2 > 4.0) {
-                        escaped = true
-                        break
-                    }
-                    val nextX: Double
-                    val nextY: Double
-                    when (type) {
-                        "tricorn" -> {
-                            nextX = zr2 - zi2 + jx
-                            nextY = -2.0 * zx * zy + jy
-                        }
-                        "burningship" -> {
-                            nextX = kotlin.math.abs(zr2 - zi2 + jx)
-                            nextY = 2.0 * kotlin.math.abs(zx * zy) + jy
-                        }
-                        "multibrot" -> {
-                            nextX = zx * (zr2 - 3.0 * zi2) + jx
-                            nextY = zy * (3.0 * zr2 - zi2) + jy
-                        }
-                        "celtic" -> {
-                            nextX = kotlin.math.abs(zr2 - zi2) + jx
-                            nextY = 2.0 * zx * zy + jy
-                        }
-                        "buffalo" -> {
-                            nextX = kotlin.math.abs(zr2 - zi2) + jx
-                            nextY = -kotlin.math.abs(2.0 * zx * zy) + jy
-                        }
-                        "phoenix" -> {
-                            nextX = zr2 - zi2 + jx + jy * prevX
-                            nextY = 2.0 * zx * zy + jy * prevY
-                            prevX = zx
-                            prevY = zy
-                        }
-                        "nova" -> {
-                            val z3r = zx * (zr2 - 3.0 * zi2)
-                            val z3i = zy * (3.0 * zr2 - zi2)
-                            nextX = z3r * zx - z3i * zy + jx
-                            nextY = z3r * zy + z3i * zx + jy
-                        }
-                        "newton" -> {
-                            val z2r = zr2 - zi2
-                            val z2i = 2.0 * zx * zy
-                            val invDen = 1.0 / (z2r * z2r + z2i * z2i).coerceAtLeast(1e-12)
-                            nextX = (2.0 / 3.0) * zx + (1.0 / 3.0) * z2r * invDen
-                            nextY = (2.0 / 3.0) * zy + (1.0 / 3.0) * (-z2i * invDen)
-                        }
-                        else -> {
-                            nextX = zr2 - zi2 + jx
-                            nextY = 2.0 * zx * zy + jy
-                        }
-                    }
-                    if (type == "newton") {
-                        val dr = nextX - zx
-                        val di = nextY - zy
-                        zx = nextX
-                        zy = nextY
-                        if (dr * dr + di * di < 1e-10) {
-                            escaped = true
-                            val angle = kotlin.math.atan2(zy, zx)
-                            newtonContinuous =
-                                ((angle / (2.0 * Math.PI) + 0.5 + iter * 0.002) * maxIter * 0.15)
-                                    .toFloat()
-                            break
-                        }
-                    } else {
-                        zx = nextX
-                        zy = nextY
-                    }
-                    iter++
-                }
-                pixels[py * SIZE + px] = if (!escaped) {
-                    Color.rgb(2, 6, 23)
-                } else {
-                    val power = when (type) {
-                        "multibrot" -> 3.0
-                        "nova" -> 4.0
-                        else -> 2.0
-                    }
-                    val continuous = if (type == "newton" && newtonContinuous >= 0f) {
-                        newtonContinuous
-                    } else {
-                        val logZn = kotlin.math.ln((zr2 + zi2).coerceAtLeast(1e-12)) / 2.0
-                        val nu = kotlin.math.ln((logZn / kotlin.math.ln(2.0)).coerceAtLeast(1e-12)) /
-                            kotlin.math.ln(power)
-                        (iter + 1.0 - nu).toFloat()
-                    }
-                    val t = (kotlin.math.ln(1.0 + continuous) / kotlin.math.ln(1.0 + maxIter))
-                        .toFloat()
-                    val cycles = 2.6f
-                    val u = ((t * cycles) + hueBase / 360f).mod(1f)
-                    FractalCoherentPalette.sampleArgb(seed.toInt(), u)
-                }
-            }
-        }
-        val field = Bitmap.createBitmap(pixels, SIZE, SIZE, Bitmap.Config.ARGB_8888)
-        canvas.drawBitmap(field, 0f, 0f, null)
-        field.recycle()
+        val type = FractalStillRenderer.typeForArtworkId(artworkId) ?: FractalType.Mandelbrot
+        FractalStillRenderer.draw(
+            canvas = canvas,
+            type = type,
+            size = SIZE,
+            generation = seed,
+        )
     }
 }

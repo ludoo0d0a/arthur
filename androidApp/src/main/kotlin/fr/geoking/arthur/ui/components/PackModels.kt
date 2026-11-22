@@ -6,6 +6,7 @@ import fr.geoking.arthur.FeatureFlag
 import fr.geoking.arthur.R
 import fr.geoking.arthur.audio.MusicStyle
 import fr.geoking.arthur.audio.MusicStyleIds
+import fr.geoking.arthur.shared.domain.ArtUniverse
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.marketplace.AudioPackCatalog
@@ -40,7 +41,30 @@ fun PackFamily.isMusicFamily(): Boolean =
         this == PackFamily.DownloadedMusic ||
         this == PackFamily.Neural
 
-/** Home-grid families visible for the current feature flags. */
+/**
+ * Product universe for this family, or null when transversal (music — shown in both
+ * when [FeatureFlag.musicEnabled] is on).
+ */
+fun PackFamily.artUniverse(): ArtUniverse? = when (this) {
+    PackFamily.Museum,
+    PackFamily.Painting,
+    PackFamily.Sculpture,
+    PackFamily.Photo,
+    PackFamily.Video,
+    PackFamily.Personal,
+    -> ArtUniverse.Gallery
+
+    PackFamily.Genart,
+    PackFamily.VintageGames,
+    -> ArtUniverse.Generative
+
+    PackFamily.Sound,
+    PackFamily.Neural,
+    PackFamily.DownloadedMusic,
+    -> null
+}
+
+/** Home-grid families visible for the current feature flags (all universes). */
 fun visibleHomePackFamilies(): List<PackFamily> =
     PackFamily.entries.filter { family ->
         when {
@@ -51,6 +75,22 @@ fun visibleHomePackFamilies(): List<PackFamily> =
             else -> true
         }
     }
+
+/**
+ * Home-grid families for [universe]: universe-specific packs plus transversal music
+ * (when enabled).
+ */
+fun visibleHomePackFamilies(universe: ArtUniverse): List<PackFamily> =
+    visibleHomePackFamilies().filter { family ->
+        val packUniverse = family.artUniverse()
+        packUniverse == null || packUniverse == universe
+    }
+
+/** Default pack when resuming media in [universe] with no last session. */
+fun ArtUniverse.defaultPackSelection(): PackSelection = when (this) {
+    ArtUniverse.Gallery -> PackSelection(PackFamily.Museum, MuseumTopic.Random.testTagSuffix)
+    ArtUniverse.Generative -> PackSelection(PackFamily.Genart, PackFamily.Genart.defaultSubId())
+}
 
 /** Sub-pack ids under [PackFamily.VintageGames]. */
 object VintageGamesSub {

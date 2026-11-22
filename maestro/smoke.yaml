@@ -2,9 +2,20 @@ appId: fr.geoking.arthur
 ---
 - launchApp
 - assertVisible:
-    id: control_plane_title
-- assertVisible: "Arthur Control Plane"
+    id: universe_picker
 - tapOn:
+    id: universe_pick_gallery
+- assertVisible:
+    id: control_plane_title
+- assertVisible:
+    id: universe_switcher
+- assertVisible:
     id: pack_tile_museum
 - tapOn:
-    id: pack_tile_museum_all
+    id: universe_chip_generative
+- assertVisible:
+    id: pack_tile_genart
+- tapOn:
+    id: universe_chip_gallery
+- tapOn:
+    id: pack_tile_museum

@@ -1,4 +1,17 @@
-la structure doit etre la suivante : 
+la structure doit etre la suivante :
+
+## Univers (racine)
+
+Choix de préférence au premier lancement (`UniversePicker`) ; bascule libre via chips header.
+
+- **Galerie** — musées, sculpture, peinture, photos, vidéos, photos personnelles
+- **Génératif** — genart (topics monétisés, fractales, custom)
+
+Audio / Sound / Neural : hors scope tant que `FeatureFlag.musicEnabled` est off ; transversal aux deux univers quand réactivé.
+
+## Packs par univers
+
+### Galerie
 
 - musées
   - aleatoire (image aleatoire sur tout les catalogues des musées)
@@ -28,6 +41,8 @@ la structure doit etre la suivante :
   - europeana (image aleatoire sur le catalogue du musée, categorie 'peinture')
   - harvard (image aleatoire sur le catalogue du musée, categorie 'peinture')
   - smithsonian (image aleatoire sur le catalogue du musée, categorie 'peinture')
+### Génératif
+
 - genart (sous-packs monétisés via Marketplace sauf tout / aléatoire — free subset)
   - tout (105)
   - aleatoire (genart aleatoire sur tout le catalogue des genarts)

@@ -3,6 +3,17 @@
     <string name="app_name">ART\'hur</string>
     <string name="control_plane_title">ART\'hur</string>
     <string name="control_plane_subtitle">Your art ambient</string>
+    <string name="universe_gallery">Gallery</string>
+    <string name="universe_generative">Generative</string>
+    <string name="universe_picker_title">Choose your universe</string>
+    <string name="universe_picker_subtitle">You can switch anytime from the home screen</string>
+    <string name="universe_gallery_blurb">Museum works, photos, and curated stills</string>
+    <string name="universe_generative_blurb">Living genart, fractals, and procedural visuals</string>
+    <string name="universe_switch_hint">You can switch back anytime</string>
+    <string name="universe_marketplace_see_other_gallery">See Gallery packs</string>
+    <string name="universe_marketplace_see_other_generative">See Generative packs</string>
+    <string name="settings_change_universe">Change starting universe</string>
+    <string name="settings_change_universe_subtitle">Gallery or Generative</string>
     <string name="preview_label">Preview: %1$s</string>
     <string name="artwork_unavailable">Artwork unavailable</string>
     <string name="artwork_unavailable_detail">Failed to load picture. Please check your network connection or try again.</string>

@@ -1,6 +1,7 @@
 package fr.geoking.arthur.ui.components
 
 import fr.geoking.arthur.R
+import fr.geoking.arthur.shared.domain.ArtUniverse
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.ArtworkKind
 import fr.geoking.arthur.shared.marketplace.FakePackOwnership
@@ -217,6 +218,34 @@ class PackModelsTest {
         assertTrue(vintage.isPackLocked(PackOwnership.NONE))
         assertFalse(visibleHomePackFamilies().contains(PackFamily.VintageGames))
         assertEquals(R.drawable.pack_vintage_games, PackCovers.genart(GenartTopic.Vintage))
+    }
+
+    @Test
+    fun artUniverse_mapsFamilies() {
+        assertEquals(ArtUniverse.Gallery, PackFamily.Museum.artUniverse())
+        assertEquals(ArtUniverse.Gallery, PackFamily.Photo.artUniverse())
+        assertEquals(ArtUniverse.Gallery, PackFamily.Video.artUniverse())
+        assertEquals(ArtUniverse.Generative, PackFamily.Genart.artUniverse())
+        assertNull(PackFamily.Sound.artUniverse())
+    }
+
+    @Test
+    fun visibleHomePackFamilies_filtersByUniverse() {
+        val gallery = visibleHomePackFamilies(ArtUniverse.Gallery)
+        assertTrue(gallery.contains(PackFamily.Museum))
+        assertTrue(gallery.contains(PackFamily.Photo))
+        assertFalse(gallery.contains(PackFamily.Genart))
+
+        val generative = visibleHomePackFamilies(ArtUniverse.Generative)
+        assertTrue(generative.contains(PackFamily.Genart))
+        assertFalse(generative.contains(PackFamily.Museum))
+        assertFalse(generative.contains(PackFamily.Photo))
+    }
+
+    @Test
+    fun defaultPackSelection_perUniverse() {
+        assertEquals(PackFamily.Museum, ArtUniverse.Gallery.defaultPackSelection().family)
+        assertEquals(PackFamily.Genart, ArtUniverse.Generative.defaultPackSelection().family)
     }
 
     @Test

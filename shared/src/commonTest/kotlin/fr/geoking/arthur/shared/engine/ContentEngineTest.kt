@@ -157,14 +157,12 @@ class ContentEngineTest {
             PreparedRotation(sourceIds = listOf(GenartSource.ID), artworkIds = emptyList()),
         )
         val ids = catalog.map { it.id }.toSet()
-        assertTrue(ids.contains(GenartSource.BLOBS))
-        assertTrue(ids.contains(GenartSource.NOISE_FIELD))
-        assertTrue(ids.contains(GenartSource.VORONOI))
-        assertTrue(ids.contains(GenartSource.SILK))
-        assertTrue(ids.contains(GenartSource.GRADIENT_MESH))
-        assertTrue(ids.contains(GenartSource.ARC_MOSAIC))
-        assertTrue(ids.contains(GenartSource.BREATH_CIRCLES))
-        assertTrue(ids.contains(GenartSource.RIBBONS))
+        // Abstract pack membership is defined by GenartPackTopics.ABSTRACT_IDS.
+        assertTrue(ids.containsAll(GenartPackTopics.ABSTRACT_IDS))
+        assertTrue(MarketplaceCatalog.freeGenartEngineIds.all { it in ids })
+        // Moved to Geometry — must not unlock via Abstract alone.
+        assertFalse(ids.contains(GenartSource.VORONOI))
+        assertFalse(ids.contains(GenartSource.ARC_MOSAIC))
     }
 
     @Test

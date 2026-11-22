@@ -46,6 +46,7 @@ import fr.geoking.arthur.FeatureFlag
 import fr.geoking.arthur.R
 import fr.geoking.arthur.billing.PurchaseResult
 import fr.geoking.arthur.billing.PurchasesGateway
+import fr.geoking.arthur.shared.domain.ArtUniverse
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.domain.PreparedRotation
 import fr.geoking.arthur.shared.engine.ContentEngine
@@ -87,6 +88,8 @@ fun MarketplaceScreen(
     modifier: Modifier = Modifier,
     highlightPackId: String? = null,
     canPurchaseOnDevice: Boolean = true,
+    activeUniverse: ArtUniverse = ArtUniverse.Gallery,
+    onUniverseChange: ((ArtUniverse) -> Unit)? = null,
 ) {
     val scope = rememberCoroutineScope()
     val activity = LocalContext.current as Activity
@@ -104,9 +107,18 @@ fun MarketplaceScreen(
     var previewCatalog by remember { mutableStateOf<List<Artwork>>(emptyList()) }
     val pendingMessage = stringResource(R.string.purchase_payment_pending)
     val restoreOk = stringResource(R.string.account_restore_success)
-    val tiles = remember { marketplacePackTiles() }
+    val tiles = remember(activeUniverse) { marketplacePackTiles(activeUniverse) }
     val browsingTile = tiles.firstOrNull { it.sellablePackId == browsingPackId }
+        ?: marketplacePackTiles(null).firstOrNull { it.sellablePackId == browsingPackId }
     val browsingPack = browsingPackId?.let { MarketplaceCatalog.byId(it) }
+    val otherUniverse = when (activeUniverse) {
+        ArtUniverse.Gallery -> ArtUniverse.Generative
+        ArtUniverse.Generative -> ArtUniverse.Gallery
+    }
+    val seeOtherLabelRes = when (otherUniverse) {
+        ArtUniverse.Gallery -> R.string.universe_marketplace_see_other_gallery
+        ArtUniverse.Generative -> R.string.universe_marketplace_see_other_generative
+    }
     val firstTileFocus = remember { FocusRequester() }
     val buyFocus = remember { FocusRequester() }
     val primaryFocus = remember { FocusRequester() }
@@ -304,6 +316,16 @@ fun MarketplaceScreen(
                     firstTileFocusRequester = firstTileFocus,
                     selectOnFocus = isTelevision,
                 )
+                if (onUniverseChange != null) {
+                    TextButton(
+                        onClick = { onUniverseChange(otherUniverse) },
+                        modifier = Modifier
+                            .padding(horizontal = hPad, vertical = 8.dp)
+                            .testTag("marketplace_see_other_universe"),
+                    ) {
+                        Text(stringResource(seeOtherLabelRes))
+                    }
+                }
             }
         }
     }
@@ -503,11 +525,26 @@ private fun MarketplacePackPreview(
     }
 }
 
-internal fun marketplacePackTiles(): List<PackTile> =
+/**
+ * Marketplace tiles for [universe]. Diamond is always included.
+ * Personal photos only in Gallery (when enabled). Genart packs only in Generative.
+ * Audio packs omitted while [FeatureFlag.musicEnabled] is false.
+ * Pass null to list every visible pack (preview deep-link lookup).
+ */
+internal fun marketplacePackTiles(universe: ArtUniverse? = null): List<PackTile> =
     MarketplaceCatalog.all()
         .filter { pack ->
-            FeatureFlag.personalPhotosEnabled ||
-                pack.id != MarketplaceCatalog.PERSONAL_PHOTOS_ID
+            when {
+                pack.id == MarketplaceCatalog.DIAMOND_ID -> true
+                pack.id == MarketplaceCatalog.PERSONAL_PHOTOS_ID ->
+                    FeatureFlag.personalPhotosEnabled &&
+                        (universe == null || universe == ArtUniverse.Gallery)
+                pack.genartTopicSuffix != null ->
+                    universe == null || universe == ArtUniverse.Generative
+                pack.audioPackSuffix != null ->
+                    FeatureFlag.musicEnabled && universe == null
+                else -> universe == null
+            }
         }
         .map { pack ->
             when {

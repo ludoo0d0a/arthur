@@ -74,9 +74,11 @@ import fr.geoking.arthur.shared.debug.DebugLogger
 import fr.geoking.arthur.source.AmbientAudioSettings
 import fr.geoking.arthur.tv.AmbientRotationLaunch
 import fr.geoking.arthur.source.MuseumSearchSettings
+import fr.geoking.arthur.shared.domain.ArtUniverse
 import fr.geoking.arthur.source.ScreensaverSettings
 import fr.geoking.arthur.source.StillImagePrefetcher
 import fr.geoking.arthur.source.StockPhotoSettings
+import fr.geoking.arthur.source.UniverseSettings
 import fr.geoking.arthur.source.rememberArtworkImageCache
 import fr.geoking.arthur.ui.components.GenartPackItemsSection
 import fr.geoking.arthur.ui.components.ControlPlaneHeader
@@ -90,6 +92,8 @@ import fr.geoking.arthur.ui.components.allowsArtwork
 import fr.geoking.arthur.ui.components.allowsGenerativeAmbientFallback
 import fr.geoking.arthur.ui.components.appliesArcadeChipsOnAmbientStart
 import fr.geoking.arthur.ui.components.applySoundPack
+import fr.geoking.arthur.ui.components.artUniverse
+import fr.geoking.arthur.ui.components.defaultPackSelection
 import fr.geoking.arthur.ui.components.defaultSubId
 import fr.geoking.arthur.ui.components.genartTopicOrNull
 import fr.geoking.arthur.ui.components.homeTile
@@ -105,6 +109,9 @@ import fr.geoking.arthur.ui.components.stockCategoryOrNull
 import fr.geoking.arthur.ui.components.subPackTiles
 import fr.geoking.arthur.ui.components.videoSourceOrNull
 import fr.geoking.arthur.ui.components.visibleHomePackFamilies
+import fr.geoking.arthur.analytics.UniverseAnalytics
+import com.google.firebase.analytics.FirebaseAnalytics
+import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -119,6 +126,7 @@ fun ControlPlaneScreen(
     stockPhotoSettings: StockPhotoSettings? = null,
     museumSearchSettings: MuseumSearchSettings? = null,
     screensaverSettings: ScreensaverSettings? = null,
+    universeSettings: UniverseSettings? = null,
     onOpenSettings: (() -> Unit)? = null,
     packOwnership: PackOwnership = PackOwnership.NONE,
     onOpenMarketplace: ((highlightPackId: String?) -> Unit)? = null,
@@ -133,13 +141,29 @@ fun ControlPlaneScreen(
     var selection by remember { mutableStateOf(PackSelection(PackFamily.Museum)) }
     var startingSelection by remember { mutableStateOf<PackSelection?>(null) }
     /** Last pack launched via Ambient / Sound player — FAB reopens this from home. */
-    var lastMediaPack by remember { mutableStateOf<PackSelection?>(null) }
+    var lastMediaPackByUniverse by remember {
+        mutableStateOf<Map<ArtUniverse, PackSelection>>(emptyMap())
+    }
+    var showUniverseSwitchHint by remember { mutableStateOf(false) }
     val packCatalogCache = remember { mutableMapOf<String, List<Artwork>>() }
     val imageCache = rememberArtworkImageCache()
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     val debugLogger = remember {
         runCatching { GlobalContext.get().get<DebugLogger>() }.getOrNull()
+    }
+    val resolvedUniverseSettings = remember(universeSettings) {
+        universeSettings
+            ?: runCatching { GlobalContext.get().get<UniverseSettings>() }.getOrNull()
+    }
+    val activeUniverse by resolvedUniverseSettings?.activeUniverse?.collectAsState()
+        ?: remember { mutableStateOf<ArtUniverse?>(ArtUniverse.Gallery) }
+    val currentUniverse = activeUniverse ?: ArtUniverse.Gallery
+    val hasSwitchedOnce by resolvedUniverseSettings?.hasSwitchedOnce?.collectAsState()
+        ?: remember { mutableStateOf(true) }
+    val firebaseAnalytics = remember(context) {
+        runCatching { FirebaseAnalytics.getInstance(context.applicationContext) }.getOrNull()
     }
 
     val defaultScreensaver by screensaverSettings?.defaultPack?.collectAsState()
@@ -147,6 +171,23 @@ fun ControlPlaneScreen(
 
     val ambientAudioSettings = remember {
         runCatching { GlobalContext.get().get<AmbientAudioSettings>() }.getOrNull()
+    }
+
+    fun rememberLastPack(forSelection: PackSelection) {
+        val universe = forSelection.family.artUniverse() ?: currentUniverse
+        lastMediaPackByUniverse = lastMediaPackByUniverse + (universe to forSelection)
+    }
+
+    fun onUniverseSelected(universe: ArtUniverse) {
+        if (universe == currentUniverse) return
+        val isFirstSwitch = !hasSwitchedOnce
+        resolvedUniverseSettings?.setActiveUniverse(universe, isFirstSelection = false)
+        UniverseAnalytics.switched(firebaseAnalytics, universe)
+        openedFamily = null
+        selection = universe.defaultPackSelection()
+        if (isFirstSwitch) {
+            showUniverseSwitchHint = true
+        }
     }
 
     val stockCategory = selection.stockCategoryOrNull()
@@ -287,7 +328,7 @@ fun ControlPlaneScreen(
     }
 
     fun openMediaPack(forSelection: PackSelection, resumeIfPossible: Boolean = true) {
-        lastMediaPack = forSelection
+        rememberLastPack(forSelection)
         when {
             forSelection.opensNeuralMusic() -> onOpenNeuralMusic?.invoke(forSelection)
             forSelection.opensSoundPlayer() -> onOpenSoundPlayer?.invoke(forSelection)
@@ -402,7 +443,7 @@ fun ControlPlaneScreen(
             if (!packOwnership.allowsArtwork(artwork)) {
                 onOpenMarketplace?.invoke(selection.sellablePackIdOrNull())
             } else {
-                lastMediaPack = selection
+                rememberLastPack(selection)
                 if (selection.appliesArcadeChipsOnAmbientStart()) {
                     ambientAudioSettings?.let { selection.applySoundPack(it) }
                 }
@@ -435,8 +476,9 @@ fun ControlPlaneScreen(
             val mediaSelection = resolveMediaPlayerPack(
                 openedFamily = openedFamily,
                 selection = selection,
-                lastMediaPack = lastMediaPack,
+                lastMediaPack = lastMediaPackByUniverse[currentUniverse],
                 defaultScreensaver = defaultScreensaver,
+                universe = currentUniverse,
             )
             val home = mediaSelection.family.homeTile()
             if (home.isLocked(packOwnership)) {
@@ -454,23 +496,30 @@ fun ControlPlaneScreen(
         onOpenMarketplace = onOpenMarketplace,
         startingSelection = startingSelection,
         onOpenMediaPlayer = { openMediaPack(selection) },
+        activeUniverse = currentUniverse,
+        onUniverseChange = ::onUniverseSelected,
+        showUniverseSwitchHint = showUniverseSwitchHint,
     )
 }
 
 /**
  * Pack opened by the media-player FAB: current pack when browsing a family,
- * otherwise the last launched pack, then screensaver default, then Genart.
+ * otherwise the last launched pack for [universe], then screensaver default (if same
+ * universe), then the universe default pack.
  */
 internal fun resolveMediaPlayerPack(
     openedFamily: PackFamily?,
     selection: PackSelection,
     lastMediaPack: PackSelection?,
     defaultScreensaver: PackSelection?,
+    universe: ArtUniverse = ArtUniverse.Generative,
 ): PackSelection = when {
     openedFamily != null -> selection
     lastMediaPack != null -> lastMediaPack
-    defaultScreensaver != null -> defaultScreensaver
-    else -> PackSelection(PackFamily.Genart, PackFamily.Genart.defaultSubId())
+    defaultScreensaver != null &&
+        (defaultScreensaver.family.artUniverse() == null ||
+            defaultScreensaver.family.artUniverse() == universe) -> defaultScreensaver
+    else -> universe.defaultPackSelection()
 }
 
 private fun PackSelection.prefetchKey(
@@ -498,6 +547,9 @@ fun ControlPlaneContent(
     packOwnership: PackOwnership = PackOwnership.NONE,
     onOpenMarketplace: ((highlightPackId: String?) -> Unit)? = null,
     onOpenMediaPlayer: (() -> Unit)? = null,
+    activeUniverse: ArtUniverse = ArtUniverse.Gallery,
+    onUniverseChange: ((ArtUniverse) -> Unit)? = null,
+    showUniverseSwitchHint: Boolean = false,
 ) {
     val configuration = LocalConfiguration.current
     val isTelevision = remember(configuration) {
@@ -523,6 +575,9 @@ fun ControlPlaneContent(
                 packOwnership = packOwnership,
                 onOpenMarketplace = onOpenMarketplace,
                 startingSelection = startingSelection,
+                activeUniverse = activeUniverse,
+                onUniverseChange = onUniverseChange,
+                showUniverseSwitchHint = showUniverseSwitchHint,
             )
         } else {
             PhoneControlPlaneContent(
@@ -542,6 +597,9 @@ fun ControlPlaneContent(
                 packOwnership = packOwnership,
                 onOpenMarketplace = onOpenMarketplace,
                 startingSelection = startingSelection,
+                activeUniverse = activeUniverse,
+                onUniverseChange = onUniverseChange,
+                showUniverseSwitchHint = showUniverseSwitchHint,
             )
         }
     }
@@ -566,6 +624,9 @@ private fun PhoneControlPlaneContent(
     packOwnership: PackOwnership = PackOwnership.NONE,
     onOpenMarketplace: ((highlightPackId: String?) -> Unit)? = null,
     startingSelection: PackSelection? = null,
+    activeUniverse: ArtUniverse = ArtUniverse.Gallery,
+    onUniverseChange: ((ArtUniverse) -> Unit)? = null,
+    showUniverseSwitchHint: Boolean = false,
 ) {
     val scheme = MaterialTheme.colorScheme
     var searchQuery by remember(openedFamily, selection) { mutableStateOf("") }
@@ -641,6 +702,9 @@ private fun PhoneControlPlaneContent(
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp, vertical = 8.dp),
                     onOpenSettings = onOpenSettings,
+                    activeUniverse = activeUniverse,
+                    onUniverseChange = onUniverseChange,
+                    showUniverseSwitchHint = showUniverseSwitchHint,
                 )
                 Text(
                     text = stringResource(R.string.packs_section),
@@ -649,7 +713,7 @@ private fun PhoneControlPlaneContent(
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
                 )
                 PackGrid(
-                    tiles = visibleHomePackFamilies().map { it.homeTile(catalog) },
+                    tiles = visibleHomePackFamilies(activeUniverse).map { it.homeTile(catalog) },
                     selected = null,
                     onTileClick = { onOpenFamily(it.selection.family) },
                     isLocked = { it.isLocked(packOwnership) },

@@ -198,6 +198,7 @@ fun SettingsScreen(
     onDeviantArtPasswordChange: (String) -> Unit = {},
     onCheckForUpdate: (() -> Unit)? = null,
     onOpenMarketplace: ((highlightPackId: String?) -> Unit)? = null,
+    onOpenUniversePicker: (() -> Unit)? = null,
     onOpenPaywall: (() -> Unit)? = null,
     onOpenPairing: (() -> Unit)? = null,
     initialScreenStack: List<SettingsScreenPage>? = null,
@@ -301,6 +302,7 @@ fun SettingsScreen(
                     ambientSoundEnabled = ambientSoundEnabled,
                     onCheckForUpdate = onCheckForUpdate,
                     onOpenMarketplace = onOpenMarketplace,
+                    onOpenUniversePicker = onOpenUniversePicker,
                     onOpenPaywall = onOpenPaywall,
                     onOpenPairing = onOpenPairing,
                     onNavigate = { screenStack = screenStack + it },
@@ -403,6 +405,7 @@ private fun MainMenu(
     ambientSoundEnabled: Boolean,
     onCheckForUpdate: (() -> Unit)?,
     onOpenMarketplace: ((highlightPackId: String?) -> Unit)?,
+    onOpenUniversePicker: (() -> Unit)?,
     onOpenPaywall: (() -> Unit)?,
     onOpenPairing: (() -> Unit)?,
     onNavigate: (SettingsScreenPage) -> Unit,
@@ -475,6 +478,20 @@ private fun MainMenu(
                     value = stringResource(R.string.marketplace_subtitle),
                     onClick = { onOpenMarketplace(null) },
                     modifier = Modifier.testTag("settings_open_marketplace"),
+                )
+            }
+        }
+
+        if (onOpenUniversePicker != null) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            ) {
+                SettingsItem(
+                    label = stringResource(R.string.settings_change_universe),
+                    value = stringResource(R.string.settings_change_universe_subtitle),
+                    onClick = onOpenUniversePicker,
+                    modifier = Modifier.testTag("settings_change_universe"),
                 )
             }
         }

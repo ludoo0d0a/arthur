@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import fr.geoking.arthur.R
+import fr.geoking.arthur.shared.domain.ArtUniverse
 import fr.geoking.arthur.shared.domain.Artwork
 import fr.geoking.arthur.shared.marketplace.PackOwnership
 import fr.geoking.arthur.ui.components.ControlPlaneHeader
@@ -56,6 +57,9 @@ fun TvControlPlaneContent(
     packOwnership: PackOwnership = PackOwnership.NONE,
     onOpenMarketplace: ((highlightPackId: String?) -> Unit)? = null,
     startingSelection: PackSelection? = null,
+    activeUniverse: ArtUniverse = ArtUniverse.Gallery,
+    onUniverseChange: ((ArtUniverse) -> Unit)? = null,
+    showUniverseSwitchHint: Boolean = false,
 ) {
     val scheme = MaterialTheme.colorScheme
     val firstTileFocus = remember { FocusRequester() }
@@ -90,6 +94,9 @@ fun TvControlPlaneContent(
                 .padding(horizontal = 48.dp, vertical = 16.dp),
             onOpenSettings = onOpenSettings,
             onOpenMediaPlayer = onOpenMediaPlayer,
+            activeUniverse = activeUniverse,
+            onUniverseChange = onUniverseChange,
+            showUniverseSwitchHint = showUniverseSwitchHint,
         )
         Column(
             modifier = Modifier
@@ -105,7 +112,7 @@ fun TvControlPlaneContent(
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
                 PackGrid(
-                    tiles = visibleHomePackFamilies().map { it.homeTile(catalog) },
+                    tiles = visibleHomePackFamilies(activeUniverse).map { it.homeTile(catalog) },
                     selected = null,
                     onTileClick = { onOpenFamily(it.selection.family) },
                     isLocked = { it.isLocked(packOwnership) },

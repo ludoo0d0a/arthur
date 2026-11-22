@@ -65,6 +65,7 @@ import fr.geoking.arthur.source.QuoteSettings
 import fr.geoking.arthur.source.RemoteStillNetworkGate
 import fr.geoking.arthur.source.RotationSettings
 import fr.geoking.arthur.source.ScreensaverSettings
+import fr.geoking.arthur.source.UniverseSettings
 import fr.geoking.arthur.source.StockPhotoSettings
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
@@ -177,6 +178,7 @@ val appModule = module {
     single { DeveloperSettings(androidContext()) }
     single { RotationSettings(androidContext()) }
     single { ScreensaverSettings(androidContext()) }
+    single { UniverseSettings(androidContext()) }
     single { QuoteSettings(androidContext()) }
     single { AmbientAudioSettings(androidContext()) }
     single { ProceduralMusicEngine(androidContext(), get(), get()) }

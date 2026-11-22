@@ -5,9 +5,10 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import fr.geoking.arthur.phone.theme.ArthurTheme
+import fr.geoking.arthur.shared.domain.ArtUniverse
 import fr.geoking.arthur.ui.components.PackFamily
 import fr.geoking.arthur.ui.components.PackSelection
-import fr.geoking.arthur.ui.components.defaultSubId
+import fr.geoking.arthur.ui.components.defaultPackSelection
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -75,7 +76,7 @@ class ControlPlaneScreenTest {
     }
 
     @Test
-    fun resolveMediaPlayerPack_fallsBackToScreensaverThenGenart() {
+    fun resolveMediaPlayerPack_fallsBackToScreensaverThenUniverseDefault() {
         val screensaver = PackSelection(PackFamily.Museum, "random")
         assertEquals(
             screensaver,
@@ -84,15 +85,27 @@ class ControlPlaneScreenTest {
                 selection = PackSelection(PackFamily.Museum),
                 lastMediaPack = null,
                 defaultScreensaver = screensaver,
+                universe = ArtUniverse.Gallery,
             ),
         )
         assertEquals(
-            PackSelection(PackFamily.Genart, PackFamily.Genart.defaultSubId()),
+            ArtUniverse.Generative.defaultPackSelection(),
             resolveMediaPlayerPack(
                 openedFamily = null,
                 selection = PackSelection(PackFamily.Museum),
                 lastMediaPack = null,
                 defaultScreensaver = null,
+                universe = ArtUniverse.Generative,
+            ),
+        )
+        assertEquals(
+            ArtUniverse.Gallery.defaultPackSelection(),
+            resolveMediaPlayerPack(
+                openedFamily = null,
+                selection = PackSelection(PackFamily.Museum),
+                lastMediaPack = null,
+                defaultScreensaver = PackSelection(PackFamily.Genart, "all"),
+                universe = ArtUniverse.Gallery,
             ),
         )
     }

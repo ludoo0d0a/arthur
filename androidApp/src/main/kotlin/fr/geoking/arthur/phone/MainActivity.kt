@@ -46,8 +46,11 @@ import fr.geoking.arthur.source.HttpCacheController
 import fr.geoking.arthur.source.MuseumSearchSettings
 import fr.geoking.arthur.source.QuoteSettings
 import fr.geoking.arthur.source.RotationSettings
+import fr.geoking.arthur.analytics.UniverseAnalytics
+import fr.geoking.arthur.shared.domain.ArtUniverse
 import fr.geoking.arthur.source.ScreensaverSettings
 import fr.geoking.arthur.source.StockPhotoSettings
+import fr.geoking.arthur.source.UniverseSettings
 import fr.geoking.arthur.tv.AmbientActivity
 import fr.geoking.arthur.tv.AmbientRotationLaunch
 import fr.geoking.arthur.ui.UpdateAvailableDialog
@@ -63,6 +66,7 @@ import fr.geoking.arthur.ui.screens.PremiumPaywallScreen
 import fr.geoking.arthur.ui.screens.SettingsScreen
 import fr.geoking.arthur.ui.screens.SoundPlayerScreen
 import fr.geoking.arthur.ui.screens.TvLanPairingHostScreen
+import fr.geoking.arthur.ui.screens.UniversePickerScreen
 import fr.geoking.arthur.ui.screens.neural.NeuralMusicHost
 import fr.geoking.arthur.ui.screens.neural.neuralPackIdOrNull
 import fr.geoking.arthur.shared.neural.NeuralMusicRoute
@@ -71,6 +75,7 @@ import fr.geoking.arthur.update.PlayStoreUpdates
 import fr.geoking.arthur.update.TvUpdateChecker
 import fr.geoking.tools.inappupdate.CheckFeedback
 import fr.geoking.tools.inappupdate.UpdateNotificationSpec
+import com.google.firebase.analytics.FirebaseAnalytics
 import org.koin.android.ext.android.inject
 
 class MainActivity : ComponentActivity() {
@@ -86,9 +91,13 @@ class MainActivity : ComponentActivity() {
     private val developerSettings: DeveloperSettings by inject()
     private val rotationSettings: RotationSettings by inject()
     private val screensaverSettings: ScreensaverSettings by inject()
+    private val universeSettings: UniverseSettings by inject()
     private val quoteSettings: QuoteSettings by inject()
     private val ambientAudioSettings: AmbientAudioSettings by inject()
     private val lanPairingPrefs: LanPairingPrefs by inject()
+    private val firebaseAnalytics by lazy {
+        runCatching { FirebaseAnalytics.getInstance(applicationContext) }.getOrNull()
+    }
 
     private val isTelevision: Boolean
         get() = resources.configuration.uiMode and Configuration.UI_MODE_TYPE_MASK ==
@@ -172,9 +181,11 @@ class MainActivity : ComponentActivity() {
                         var showSettings by remember { mutableStateOf(false) }
                         var showMarketplace by remember { mutableStateOf(false) }
                         var showPaywall by remember { mutableStateOf(false) }
+                        var showUniversePicker by remember { mutableStateOf(false) }
                         var showPairing by pairingRequested
                         var marketplaceHighlight by remember { mutableStateOf<String?>(null) }
                         var pendingOpenPack by remember { mutableStateOf<PackSelection?>(null) }
+                        val activeUniverse by universeSettings.activeUniverse.collectAsState()
                         var soundPlayerSelection by remember {
                             mutableStateOf<PackSelection?>(null)
                         }
@@ -198,9 +209,34 @@ class MainActivity : ComponentActivity() {
                         val ambientSoundComplexity by ambientAudioSettings.complexity.collectAsState()
                         val activeEntitlements by purchases.activeEntitlementIds.collectAsState()
                         val isPremium = premium.isPremium
+                        fun openMarketplace(packId: String?) {
+                            if (packId != null && MarketplaceCatalog.byId(packId)?.genartTopicSuffix != null) {
+                                universeSettings.setActiveUniverse(ArtUniverse.Generative)
+                            }
+                            marketplaceHighlight = packId
+                            showMarketplace = true
+                        }
+
                         // Overlay priority = stack order (top first). Parent flags stay set so
                         // dismiss / system back returns to the previous overlay, not the Control Plane.
                         when {
+                            activeUniverse == null || showUniversePicker -> {
+                                UniversePickerScreen(
+                                    onUniverseChosen = { universe ->
+                                        val isFirst = activeUniverse == null
+                                        universeSettings.setActiveUniverse(
+                                            universe,
+                                            isFirstSelection = isFirst,
+                                        )
+                                        if (isFirst) {
+                                            UniverseAnalytics.selected(firebaseAnalytics, universe)
+                                        } else {
+                                            UniverseAnalytics.switched(firebaseAnalytics, universe)
+                                        }
+                                        showUniversePicker = false
+                                    },
+                                )
+                            }
                             showPaywall -> {
                                 PremiumPaywallScreen(
                                     purchases = purchases,
@@ -256,6 +292,11 @@ class MainActivity : ComponentActivity() {
                                     purchases = purchases,
                                     contentEngine = contentEngine,
                                     isPremium = isPremium,
+                                    activeUniverse = activeUniverse ?: ArtUniverse.Gallery,
+                                    onUniverseChange = { universe ->
+                                        universeSettings.setActiveUniverse(universe)
+                                        UniverseAnalytics.switched(firebaseAnalytics, universe)
+                                    },
                                     onDismiss = {
                                         showMarketplace = false
                                         marketplaceHighlight = null
@@ -317,9 +358,10 @@ class MainActivity : ComponentActivity() {
                                             inAppUpdateHelper?.checkForUpdate(manual = true)
                                         }
                                     },
-                                    onOpenMarketplace = { highlight ->
-                                        marketplaceHighlight = highlight
-                                        showMarketplace = true
+                                    onOpenMarketplace = { openMarketplace(it) },
+                                    onOpenUniversePicker = {
+                                        showSettings = false
+                                        showUniversePicker = true
                                     },
                                     onOpenPaywall = { showPaywall = true },
                                     onOpenPairing = { pairingRequested.value = true },
@@ -355,13 +397,11 @@ class MainActivity : ComponentActivity() {
                                         stockPhotoSettings = stockPhotoSettings,
                                         museumSearchSettings = museumSearchSettings,
                                         screensaverSettings = screensaverSettings,
+                                        universeSettings = universeSettings,
                                         packOwnership = packOwnership,
                                         initialOpenPack = pendingOpenPack,
                                         onInitialOpenPackConsumed = { pendingOpenPack = null },
-                                        onOpenMarketplace = { packId ->
-                                            marketplaceHighlight = packId
-                                            showMarketplace = true
-                                        },
+                                        onOpenMarketplace = { openMarketplace(it) },
                                         onOpenSoundPlayer = if (FeatureFlag.musicEnabled) {
                                             { selection -> soundPlayerSelection = selection }
                                         } else {

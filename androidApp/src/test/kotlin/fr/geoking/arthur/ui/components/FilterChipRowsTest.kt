@@ -61,8 +61,8 @@ class FilterChipRowsTest {
             kind = ArtworkKind.Photo,
         ),
         Artwork(
-            id = GenartSource.SNOW,
-            title = "Snow",
+            id = GenartSource.RAIN,
+            title = "Rain",
             sourceId = GenartSource.ID,
             kind = ArtworkKind.Genart,
         ),
@@ -196,7 +196,7 @@ class FilterChipRowsTest {
             CategoryFilter.GENART,
             genartTopic = GenartTopic.Weather,
         )
-        assertEquals(listOf(GenartSource.SNOW), filtered.map { it.id })
+        assertEquals(listOf(GenartSource.RAIN), filtered.map { it.id })
     }
 
     @Test
@@ -214,10 +214,8 @@ class FilterChipRowsTest {
             CategoryFilter.GENART,
             genartTopic = GenartTopic.Abstract,
         )
-        assertEquals(
-            listOf(GenartSource.BLOBS, GenartSource.BREATH_CIRCLES),
-            filtered.map { it.id },
-        )
+        // Breath Circles lives under Kaleido; Abstract keeps wallpaper-style engines only.
+        assertEquals(listOf(GenartSource.BLOBS), filtered.map { it.id })
     }
 
     @Test
@@ -228,10 +226,7 @@ class FilterChipRowsTest {
             genartTopic = GenartTopic.Abstract,
         )
         assertTrue(resolved.showSubfilters)
-        assertEquals(
-            listOf(GenartSource.BLOBS, GenartSource.BREATH_CIRCLES),
-            resolved.items.map { it.id },
-        )
+        assertEquals(listOf(GenartSource.BLOBS), resolved.items.map { it.id })
     }
 
     @Test
@@ -320,7 +315,7 @@ class FilterChipRowsTest {
             genartTopic = GenartTopic.Weather,
         )
         assertTrue(resolved.showSubfilters)
-        assertEquals(listOf(GenartSource.SNOW), resolved.items.map { it.id })
+        assertEquals(listOf(GenartSource.RAIN), resolved.items.map { it.id })
     }
 
     @Test

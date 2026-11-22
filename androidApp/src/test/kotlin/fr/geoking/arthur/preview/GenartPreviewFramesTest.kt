@@ -67,7 +67,7 @@ class GenartPreviewFramesTest {
                 for (i in 0 until frameCount) {
                     val t = i / frameCount.toFloat()
                     val phase = t * 2f * PI.toFloat()
-                    val pulse = 0.35f + 0.65f * (0.5f + 0.5f * sin(t * 2f * PI.toFloat())).toFloat()
+                    val pulse = 0.35f + 0.65f * (0.5f + 0.5f * sin(t * 2f * PI.toFloat()))
                     bitmap.eraseColor(0)
                     GenartStillRenderer.drawFrame(
                         canvas = Canvas(bitmap),

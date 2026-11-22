@@ -52,8 +52,8 @@ class PackModelsTest {
             kind = ArtworkKind.Photo,
         ),
         Artwork(
-            id = GenartSource.SNOW,
-            title = "Snow",
+            id = GenartSource.RAIN,
+            title = "Rain",
             sourceId = GenartSource.ID,
             kind = ArtworkKind.Genart,
         ),
@@ -115,7 +115,7 @@ class PackModelsTest {
             catalog,
             PackSelection(PackFamily.Genart, GenartTopic.Nature.testTagSuffix),
         )
-        assertEquals(listOf(GenartSource.SNOW), weather.map { it.id })
+        assertEquals(listOf(GenartSource.RAIN), weather.map { it.id })
         assertEquals(listOf(GenartSource.GRASS), nature.map { it.id })
     }
 
@@ -127,7 +127,7 @@ class PackModelsTest {
         )
         assertEquals(
             listOf(
-                GenartSource.SNOW,
+                GenartSource.RAIN,
                 GenartSource.GRASS,
                 GenartSource.NEBULA,
                 GenartSource.BLOBS,
@@ -159,7 +159,7 @@ class PackModelsTest {
         val pool = resolvePackPool(catalog, PackSelection(PackFamily.Genart))
         assertEquals(
             setOf(
-                GenartSource.SNOW,
+                GenartSource.RAIN,
                 GenartSource.GRASS,
                 GenartSource.NEBULA,
                 GenartSource.BLOBS,

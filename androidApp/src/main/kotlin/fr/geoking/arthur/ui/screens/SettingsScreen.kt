@@ -1786,8 +1786,9 @@ private fun AmbientSoundContent(
                 FilterChip(
                     selected = stylePreference == style,
                     onClick = {
-                        if (locked && style != null) {
-                            val suffix = fr.geoking.arthur.audio.MusicStyleIds.toSuffix(style)
+                        // [locked] already implies style != null (Auto chip is never locked).
+                        if (locked) {
+                            val suffix = fr.geoking.arthur.audio.MusicStyleIds.toSuffix(requireNotNull(style))
                             val packId = fr.geoking.arthur.shared.marketplace.AudioPackCatalog
                                 .packsCoveringStyle(suffix)
                                 .firstOrNull()

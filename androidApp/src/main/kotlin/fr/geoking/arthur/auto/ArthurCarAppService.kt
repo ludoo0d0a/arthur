@@ -140,8 +140,12 @@ internal class DisabledAndroidAutoScreen(carContext: CarContext) : Screen(carCon
         return MessageTemplate.Builder(
             carContext.getString(R.string.auto_feature_disabled),
         )
-            .setTitle(carContext.getString(R.string.app_name))
-            .setHeaderAction(Action.APP_ICON)
+            .setHeader(
+                Header.Builder()
+                    .setTitle(carContext.getString(R.string.app_name))
+                    .setStartHeaderAction(Action.APP_ICON)
+                    .build(),
+            )
             .build()
     }
 }

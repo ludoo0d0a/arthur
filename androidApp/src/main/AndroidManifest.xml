@@ -54,11 +54,14 @@
 
         <!-- play-services-code-scanner locks this invisible delegate to portrait,
              which implies android.hardware.screen.portrait and fails TV quality
-             ("Unsupported hardware uses"). Phone QR scan still works; the real
-             scanner UI is hosted by Play services. -->
+             ("Unsupported hardware uses"). Override with tools:replace (not
+             tools:remove) so unit-test merges without the library activity stay quiet.
+             Phone QR scan still works; the real scanner UI is hosted by Play services. -->
         <activity
             android:name="com.google.mlkit.vision.codescanner.internal.GmsBarcodeScanningDelegateActivity"
-            tools:remove="android:screenOrientation" />
+            android:exported="false"
+            android:screenOrientation="unspecified"
+            tools:replace="android:screenOrientation" />
 
         <activity
             android:name=".phone.MainActivity"

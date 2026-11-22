@@ -103,7 +103,7 @@ internal fun AuroraEngine(
             stars.forEach { star ->
                 val twinkle = 0.75f + 0.25f * (
                     0.5f + 0.5f * sin(phase01(t) * 2f * PI.toFloat() + star.xFrac * 6f)
-                    ).toFloat()
+                    )
                 drawCircle(
                     color = Color.White.copy(alpha = star.alpha * 0.9f * twinkle),
                     radius = star.radius,

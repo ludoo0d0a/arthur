@@ -41,6 +41,7 @@ class FakePlayer(looper: Looper) : SimpleBasePlayer(looper) {
         return com.google.common.util.concurrent.Futures.immediateVoidFuture()
     }
 
+    @Deprecated("Deprecated in Media3; kept for FakePlayer stub.")
     override fun handleSetVolume(volume: Float): com.google.common.util.concurrent.ListenableFuture<*> {
         setVolumeValue = volume
         return com.google.common.util.concurrent.Futures.immediateVoidFuture()

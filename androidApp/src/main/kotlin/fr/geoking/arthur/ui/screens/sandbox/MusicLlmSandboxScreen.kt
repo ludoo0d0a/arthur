@@ -225,10 +225,10 @@ fun MusicLlmSandboxScreen(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Model Status: " + when (currentModelState) {
+                                text = "Model Status: " + when (val state = currentModelState) {
                                     is ModelDownloadState.Ready -> "Ready for inference"
                                     is ModelDownloadState.Downloading ->
-                                        "Downloading (${(currentModelState as ModelDownloadState.Downloading).progressPercent}%)"
+                                        "Downloading (${state.progressPercent}%)"
                                     is ModelDownloadState.Error -> "Download Error"
                                     is ModelDownloadState.Idle -> "Not Downloaded"
                                 },
@@ -267,11 +267,13 @@ fun MusicLlmSandboxScreen(
                         }
                     }
 
-                    if (currentModelState is ModelDownloadState.Downloading) {
-                        val state = currentModelState as ModelDownloadState.Downloading
+                    val downloading = currentModelState as? ModelDownloadState.Downloading
+                    if (downloading != null) {
                         Spacer(Modifier.height(8.dp))
                         LinearProgressIndicator(
-                            progress = { if (state.totalBytes > 0) state.progressPercent / 100f else 0f },
+                            progress = {
+                                if (downloading.totalBytes > 0) downloading.progressPercent / 100f else 0f
+                            },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("sandbox_model_download_progress"),

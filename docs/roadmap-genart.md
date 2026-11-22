@@ -6,6 +6,8 @@ On-device procedural Ambient loops (Compose Canvas in `:genart`). Not AI image g
 
 Canonical catalog: `GenartRegistry` / `GenartSource` (stable `genart.*` ids).
 
+Local visual-improvement kit (Ollama + PNG/MP4 before/after): [genart-ollama.md](genart-ollama.md).
+
 ## Principles
 
 - Slow motion, soft loops, low cognitive load.

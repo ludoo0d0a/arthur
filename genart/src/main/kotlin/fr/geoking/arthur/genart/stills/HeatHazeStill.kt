@@ -6,8 +6,8 @@ import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Shader
 import fr.geoking.arthur.genart.AnimationPalette
+import fr.geoking.arthur.genart.loopedFbm
 import kotlin.math.PI
-import kotlin.math.sin
 import kotlin.random.Random
 
 /** Bakes one frozen frame of Heat Haze for Auto/Ambient album art. */
@@ -26,6 +26,7 @@ internal object HeatHazeStill {
         val rnd = Random(generation)
         val w = size.toFloat()
         val h = size.toFloat()
+        val t01 = ((phase / (2f * PI.toFloat())) % 1f + 1f) % 1f
 
         val groundTop = palette.colorAt(0)
         val groundMid = palette.colorAt(1)
@@ -40,27 +41,25 @@ internal object HeatHazeStill {
         canvas.drawRect(0f, 0f, w, h, paint)
         paint.shader = null
 
-        val bandCount = 6
-        val drift = phase + rotationDeg * PI.toFloat() / 180f
+        val bandCount = 8
         val pulseMix = 0.9f + pulse * 0.1f
         for (i in 0 until bandCount) {
             val depthFrac = i / (bandCount - 1f)
-            val yFrac = 0.42f + depthFrac * 0.5f + (rnd.nextFloat() - 0.5f) * 0.04f
-            val thicknessFrac = 0.02f + rnd.nextFloat() * 0.025f
-            val widthFrac = 0.82f + rnd.nextFloat() * 0.15f
-            val shimmerAmpFrac = 0.01f + rnd.nextFloat() * 0.025f
-            val shimmerFreq = 1.4f + rnd.nextFloat() * 1.8f
-            val shimmerPhase = rnd.nextFloat() * 2f * PI.toFloat()
-            val alphaBase = 0.04f + rnd.nextFloat() * 0.08f
+            val yFrac = 0.40f + depthFrac * 0.52f + (rnd.nextFloat() - 0.5f) * 0.04f
+            val thicknessFrac = 0.018f + rnd.nextFloat() * 0.028f
+            val widthFrac = 0.80f + rnd.nextFloat() * 0.18f
+            val shimmerAmpFrac = 0.01f + rnd.nextFloat() * 0.028f
+            val alphaBase = 0.04f + rnd.nextFloat() * 0.09f
 
-            val shimmer = sin(drift * shimmerFreq + shimmerPhase) * shimmerAmpFrac * pulseMix
+            val shimmer = (loopedFbm(t01, radius = 1.3f + i * 0.08f, seedOffset = i * 59) * 2f - 1f) *
+                shimmerAmpFrac * pulseMix
             val bandWidth = widthFrac * w
-            val centerX = w * 0.5f + shimmer * w
+            val centerX = w * 0.5f + shimmer * w + rotationDeg * 0.0005f * w
             val y = yFrac * h
             val thickness = thicknessFrac * h
             val tint = palette.colorAt(i)
             val factor = 0.7f + depthFrac * 0.3f
-            val alpha = (alphaBase * 255).toInt().coerceIn(0, 36)
+            val alpha = (alphaBase * 255).toInt().coerceIn(0, 40)
 
             paint.style = Paint.Style.FILL
             paint.color = Color.argb(

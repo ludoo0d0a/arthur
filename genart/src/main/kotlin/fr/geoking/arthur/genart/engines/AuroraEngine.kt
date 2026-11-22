@@ -83,9 +83,29 @@ internal fun AuroraEngine(
                     colors = listOf(Color(0xFF040A1A), Color(0xFF000000)),
                 ),
             )
+            val glow = TonalPalette.brightness(
+                TonalPalette.pick(paletteColors, 0),
+                brightness * 0.35f,
+            )
+            val activeGlow = if (isActive) 0.12f else 0.06f
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        TonalPalette.withAlpha(glow, activeGlow),
+                        Color.Transparent,
+                    ),
+                    center = Offset(w * 0.5f, h * 0.28f),
+                    radius = w * 0.7f,
+                ),
+                radius = w * 0.7f,
+                center = Offset(w * 0.5f, h * 0.28f),
+            )
             stars.forEach { star ->
+                val twinkle = 0.75f + 0.25f * (
+                    0.5f + 0.5f * sin(phase01(t) * 2f * PI.toFloat() + star.xFrac * 6f)
+                    ).toFloat()
                 drawCircle(
-                    color = Color.White.copy(alpha = star.alpha * 0.9f),
+                    color = Color.White.copy(alpha = star.alpha * 0.9f * twinkle),
                     radius = star.radius,
                     center = Offset(star.xFrac * w, star.yFrac * h),
                 )
@@ -97,7 +117,7 @@ internal fun AuroraEngine(
             val h = size.height
             val timeAngle = phase01(t) * 2f * PI.toFloat()
             val activeFactor = if (isActive) 1f else 0.55f
-            val segments = 32
+            val segments = qualityCount(quality, low = 28, medium = 36, high = 44)
             ribbons.forEach { ribbon ->
                 val freqPerPixel = ribbon.cycles * 2f * PI.toFloat() / w.coerceAtLeast(1f)
                 val amplitudePx = ribbon.amplitudeFrac * h * activeFactor

@@ -27,7 +27,32 @@ object GenartStillRenderer {
         val phase = ((generation % 360L).toFloat() / 360f) * (2f * PI.toFloat())
         val rotationDeg = ((generation * 37L) % 360L).toFloat()
         val pulse = 0.35f + ((generation % 100L).toFloat() / 100f) * 0.65f
+        drawFrame(
+            canvas = canvas,
+            engineId = engineId,
+            size = size,
+            generation = generation,
+            phase = phase,
+            rotationDeg = rotationDeg,
+            pulse = pulse,
+            palette = palette,
+        )
+    }
 
+    /**
+     * Bakes one animated frame for preview videos (phase/pulse driven by the caller).
+     * Same polish path as [draw] so Auto stills and MP4 frames stay visually aligned.
+     */
+    fun drawFrame(
+        canvas: Canvas,
+        engineId: GenartEngineId,
+        size: Int,
+        generation: Long,
+        phase: Float,
+        rotationDeg: Float,
+        pulse: Float,
+        palette: AnimationPalette = AnimationPalettes.fromGeneration(generation),
+    ) {
         canvas.save()
         val cx = size * 0.5f
         val cy = size * 0.5f

@@ -262,6 +262,11 @@ val genartScreenshotOutputDir =
         .dir("screenshots")
         .asFile.absolutePath
 
+val genartPreviewFramesOutputDir =
+    rootProject.layout.projectDirectory
+        .dir("screenshots/genart-frames")
+        .asFile.absolutePath
+
 fun resolveScreenshotLocales(): String {
     val raw = (findProperty("screenshotLocales") as String?)?.trim().orEmpty()
     return when {
@@ -278,6 +283,7 @@ afterEvaluate {
     val screenOnly =
         !framedOnly && screenshotTasks.any { it.contains("generatePhoneScreenshots") }
     val genartOnly = screenshotTasks.any { it.contains("generateGenartScreenshots") }
+    val genartFramesOnly = screenshotTasks.any { it.contains("generateGenartPreviewFrames") }
 
     if (framedOnly) {
         tasks.named<Test>("testFullDebugUnitTest").configure {
@@ -319,7 +325,35 @@ afterEvaluate {
             )
         }
     }
-    if (!framedOnly && !screenOnly && !genartOnly) {
+    if (genartFramesOnly) {
+        tasks.named<Test>("testFullDebugUnitTest").configure {
+            filter {
+                includeTestsMatching("fr.geoking.arthur.preview.GenartPreviewFramesTest")
+            }
+            systemProperty("screenshot.outputDir", genartPreviewFramesOutputDir)
+            systemProperty(
+                "genart.video.size",
+                (findProperty("genartVideoSize") as String?) ?: "720",
+            )
+            systemProperty(
+                "genart.video.fps",
+                (findProperty("genartVideoFps") as String?) ?: "12",
+            )
+            systemProperty(
+                "genart.video.seconds",
+                (findProperty("genartVideoSeconds") as String?) ?: "4",
+            )
+            systemProperty(
+                "genart.video.generation",
+                (findProperty("genartVideoGeneration") as String?) ?: "7",
+            )
+            systemProperty(
+                "genart.video.engines",
+                (findProperty("genartVideoEngines") as String?) ?: "",
+            )
+        }
+    }
+    if (!framedOnly && !screenOnly && !genartOnly && !genartFramesOnly) {
         tasks.named<Test>("testFullDebugUnitTest").configure {
             filter {
                 excludeTestsMatching("fr.geoking.arthur.preview.*")
@@ -378,6 +412,15 @@ tasks.register("generateGenartScreenshots") {
     description =
         "Bakes genart still previews to screenshots/#N-Name.png " +
             "(-PgenartScreenshotSize=720, -PgenartScreenshotGeneration=7)"
+    dependsOn("testFullDebugUnitTest")
+}
+
+tasks.register("generateGenartPreviewFrames") {
+    group = "screenshots"
+    description =
+        "Bakes genart PNG frame sequences to screenshots/genart-frames/frames/<id>/ " +
+            "(-PgenartVideoSize=720 -PgenartVideoFps=12 -PgenartVideoSeconds=4 " +
+            "-PgenartVideoEngines=aurora,clouds)"
     dependsOn("testFullDebugUnitTest")
 }
 

@@ -2,6 +2,9 @@
 /.gradle/
 **/build/
 /local.properties
+
+# Genart preview frame sequences (ffmpeg input; regenerated locally)
+/screenshots/genart-frames/
 *.iml
 .idea/
 !.idea/vcs.xml

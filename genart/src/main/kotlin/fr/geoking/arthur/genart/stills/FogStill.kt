@@ -1,5 +1,6 @@
 package fr.geoking.arthur.genart.stills
 
+import android.graphics.BlurMaskFilter
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.LinearGradient
@@ -8,8 +9,8 @@ import android.graphics.RadialGradient
 import android.graphics.RectF
 import android.graphics.Shader
 import fr.geoking.arthur.genart.AnimationPalette
+import fr.geoking.arthur.genart.loopedFbm
 import kotlin.math.PI
-import kotlin.math.sin
 import kotlin.random.Random
 
 /** Bakes one frozen frame of Soft Fog for Auto/Ambient album art. */
@@ -28,6 +29,9 @@ internal object FogStill {
         val rnd = Random(generation)
         val w = size.toFloat()
         val h = size.toFloat()
+        val t01 = ((phase / (2f * PI.toFloat())) % 1f + 1f) % 1f
+
+        paint.maskFilter = null
         paint.shader = LinearGradient(
             0f, 0f, 0f, h,
             intArrayOf(0xFF101820.toInt(), 0xFF080C12.toInt()),
@@ -38,19 +42,24 @@ internal object FogStill {
         canvas.drawRect(0f, 0f, w, h, paint)
         paint.shader = null
 
-        val drift = phase + rotationDeg * PI.toFloat() / 180f
         val dim = 0.7f + 0.3f * pulse
-        for (i in 0 until 7) {
+        // Soft full-frame veil that breathes with the loop (car-safe).
+        val veil = (0.04f + 0.05f * loopedFbm(t01, radius = 1.3f, seedOffset = 3)) * dim
+        paint.color = Color.argb((veil * 255).toInt().coerceIn(0, 255), 200, 214, 230)
+        canvas.drawRect(0f, 0f, w, h, paint)
+
+        paint.maskFilter = BlurMaskFilter((size * 0.04f).coerceAtLeast(8f), BlurMaskFilter.Blur.NORMAL)
+        for (i in 0 until 8) {
             val x0 = rnd.nextFloat()
             val yFrac = 0.15f + rnd.nextFloat() * 0.7f
             val speedMul = 0.04f + rnd.nextFloat() * 0.1f
             val widthFrac = 0.35f + rnd.nextFloat() * 0.35f
             val heightFrac = 0.08f + rnd.nextFloat() * 0.14f
             val bobAmp = 0.004f + rnd.nextFloat() * 0.016f
-            val bobFreq = 0.2f + rnd.nextFloat() * 0.6f
             val alphaBase = 0.08f + rnd.nextFloat() * 0.14f
-            val x = (((x0 + drift * speedMul * 0.1f) % 1f) + 1f) % 1f * w
-            val y = yFrac * h + sin(drift * bobFreq) * bobAmp * h
+            val x = (((x0 + t01 * speedMul + rotationDeg / 720f) % 1f) + 1f) % 1f * w
+            val bobNoise = loopedFbm(t01, radius = 1.25f + i * 0.05f, seedOffset = i * 73) * 2f - 1f
+            val y = yFrac * h + bobNoise * bobAmp * h
             val rw = widthFrac * w
             val rh = heightFrac * h
             val tint = palette.colorAt(i)
@@ -70,6 +79,7 @@ internal object FogStill {
             paint.color = Color.argb((alpha * 0.7f).toInt(), r, g, b)
             canvas.drawOval(RectF(x - rw * 0.5f, y - rh * 0.5f, x + rw * 0.5f, y + rh * 0.5f), paint)
         }
+        paint.maskFilter = null
         paint.alpha = 255
     }
 }

@@ -199,7 +199,8 @@ class MainActivity : ComponentActivity() {
                         val ambientSoundComplexity by ambientAudioSettings.complexity.collectAsState()
                         val activeEntitlements by purchases.activeEntitlementIds.collectAsState()
                         val isPremium = premium.isPremium
-                        // Custom fractal authoring needs touch; TV uses remote only.
+                        // Overlay priority = stack order (top first). Parent flags stay set so
+                        // dismiss / system back returns to the previous overlay, not the Control Plane.
                         when {
                             showPaywall -> {
                                 PremiumPaywallScreen(
@@ -208,26 +209,6 @@ class MainActivity : ComponentActivity() {
                                     onPurchaseSuccess = {
                                         showPaywall = false
                                         catalogEpoch++
-                                    },
-                                )
-                            }
-                            showAccount -> {
-                                AccountScreen(
-                                    purchases = purchases,
-                                    ownership = packOwnership,
-                                    isPremium = isPremium,
-                                    onDismiss = {
-                                        showAccount = false
-                                        catalogEpoch++
-                                    },
-                                    onOpenPaywall = {
-                                        showAccount = false
-                                        showPaywall = true
-                                    },
-                                    onOpenMarketplace = {
-                                        showAccount = false
-                                        marketplaceHighlight = null
-                                        showMarketplace = true
                                     },
                                 )
                             }
@@ -283,6 +264,22 @@ class MainActivity : ComponentActivity() {
                                     canPurchaseOnDevice = true,
                                 )
                             }
+                            showAccount -> {
+                                AccountScreen(
+                                    purchases = purchases,
+                                    ownership = packOwnership,
+                                    isPremium = isPremium,
+                                    onDismiss = {
+                                        showAccount = false
+                                        catalogEpoch++
+                                    },
+                                    onOpenPaywall = { showPaywall = true },
+                                    onOpenMarketplace = {
+                                        marketplaceHighlight = null
+                                        showMarketplace = true
+                                    },
+                                )
+                            }
                             showSettings -> {
                                 SettingsScreen(
                                     onDismiss = { showSettings = false },
@@ -328,22 +325,12 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     onOpenMarketplace = { highlight ->
-                                        showSettings = false
                                         marketplaceHighlight = highlight
                                         showMarketplace = true
                                     },
-                                    onOpenAccount = {
-                                        showSettings = false
-                                        showAccount = true
-                                    },
-                                    onOpenPaywall = {
-                                        showSettings = false
-                                        showPaywall = true
-                                    },
-                                    onOpenPairing = {
-                                        showSettings = false
-                                        pairingRequested.value = true
-                                    },
+                                    onOpenAccount = { showAccount = true },
+                                    onOpenPaywall = { showPaywall = true },
+                                    onOpenPairing = { pairingRequested.value = true },
                                 )
                             }
                             showEditor && !isTelevision -> {
@@ -359,7 +346,6 @@ class MainActivity : ComponentActivity() {
                                         marketplaceHighlight = MarketplaceCatalog.genartPackId(
                                             GenartPackTopics.CUSTOM,
                                         )
-                                        showEditor = false
                                         showMarketplace = true
                                     },
                                 )

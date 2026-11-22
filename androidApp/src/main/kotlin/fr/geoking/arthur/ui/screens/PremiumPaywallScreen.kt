@@ -2,6 +2,7 @@ package fr.geoking.arthur.ui.screens
 
 import android.app.Activity
 import android.content.res.Configuration
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -76,6 +77,8 @@ fun PremiumPaywallScreen(
         purchases.refresh()
         if (isTelevision) buyFocus.requestFocus()
     }
+
+    BackHandler(onBack = onDismiss)
 
     Scaffold(
         modifier = modifier

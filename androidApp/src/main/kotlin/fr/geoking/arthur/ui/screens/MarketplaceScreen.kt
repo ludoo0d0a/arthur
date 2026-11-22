@@ -2,6 +2,7 @@ package fr.geoking.arthur.ui.screens
 
 import android.app.Activity
 import android.content.res.Configuration
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -100,6 +101,8 @@ fun MarketplaceScreen(
             buyFocus.requestFocus()
         }
     }
+
+    BackHandler(onBack = onDismiss)
 
     Scaffold(
         modifier = modifier

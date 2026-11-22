@@ -1,5 +1,6 @@
 package fr.geoking.arthur.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -52,6 +53,8 @@ fun CustomFractalEditorScreen(
     onRequestPremium: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    BackHandler(onBack = onClose)
+
     if (!isPremium) {
         CustomFractalUpsell(
             onClose = onClose,

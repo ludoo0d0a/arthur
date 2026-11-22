@@ -1,6 +1,7 @@
 package fr.geoking.arthur.ui.screens
 
 import android.content.res.Configuration
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -85,6 +86,8 @@ fun AccountScreen(
         purchases.refresh()
         if (isTelevision) primaryFocus.requestFocus()
     }
+
+    BackHandler(onBack = onDismiss)
 
     Scaffold(
         modifier = modifier

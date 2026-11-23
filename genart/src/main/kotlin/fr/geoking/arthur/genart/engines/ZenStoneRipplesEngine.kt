@@ -12,31 +12,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
 import fr.geoking.arthur.genart.loopedFbm
 import fr.geoking.arthur.genart.phase01
 import fr.geoking.arthur.genart.qualityCount
-import fr.geoking.arthur.genart.seededRange
-import fr.geoking.arthur.genart.seededUnit
 import kotlin.math.PI
-import kotlin.math.cos
 import kotlin.math.sin
 
-private data class ZenStoneRipplesMote(
-    val x0: Float,
-    val y0: Float,
-    val radius: Float,
-    val driftX: Float,
-    val driftY: Float,
-    val phaseOffset: Float,
-    val colorIndex: Int,
-)
-
-/** Soft Ambient Zen Stone Ripples — seamless loop via loopedFbm. */
+/** Soft Ambient Zen Stone Ripples — a quiet raked garden with a seamless ripple loop. */
 @Composable
 internal fun ZenStoneRipplesEngine(
     isActive: Boolean,
@@ -46,20 +35,8 @@ internal fun ZenStoneRipplesEngine(
     speed: Float,
     modifier: Modifier = Modifier,
 ) {
-    val count = qualityCount(quality, low = 4, medium = 7, high = 11)
-    val motes = remember(count) {
-        List(count) { i ->
-            ZenStoneRipplesMote(
-                x0 = seededUnit(i * 17 + 3),
-                y0 = seededUnit(i * 29 + 7),
-                radius = seededRange(i * 41 + 11, 0.04f, 0.14f),
-                driftX = seededRange(i * 53 + 13, 0.02f, 0.06f),
-                driftY = seededRange(i * 67 + 19, 0.015f, 0.05f),
-                phaseOffset = seededRange(i * 71 + 23, 0f, 2f * PI.toFloat()),
-                colorIndex = i,
-            )
-        }
-    }
+    val grooveCount = qualityCount(quality, low = 14, medium = 22, high = 32)
+    val grooveOffsets = remember(grooveCount) { List(grooveCount) { it / (grooveCount - 1f) } }
     val transition = rememberInfiniteTransition(label = "zenstoneripples")
     val t by transition.animateFloat(
         initialValue = 0f,
@@ -71,109 +48,94 @@ internal fun ZenStoneRipplesEngine(
         label = "zenstoneripples_t",
     )
     val dim = if (isActive) 1f else 0.55f
+
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
+        val minDim = minOf(w, h)
         val time = phase01(t)
-        val wash = loopedFbm(time, radius = 1.35f, octaves = 2, seedOffset = 11)
-        drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    TonalPalette.brightness(Color(0xFFD8E0D8), brightness * dim * (0.92f + 0.08f * wash)),
-                    TonalPalette.brightness(Color(0xFF8AA090), brightness * dim),
-                ),
-            ),
-        )
+        val tau = 2f * PI.toFloat()
+        val ebb = loopedFbm(time, radius = 1.2f, octaves = 2, seedOffset = 11)
+        val sand = TonalPalette.brightness(Color(0xFFD8E0D8), brightness * dim)
+        val sandShade = TonalPalette.brightness(Color(0xFFB7C6BB), brightness * dim)
+        val stone = TonalPalette.brightness(Color(0xFF8AA090), brightness * dim)
+        val deepStone = TonalPalette.brightness(Color(0xFF2E3A32), brightness * dim)
         val accent = TonalPalette.brightness(
-            TonalPalette.mix(Color(0xFF2E3A32), TonalPalette.pick(paletteColors, 0), 0.35f),
+            TonalPalette.mix(Color(0xFF2E3A32), TonalPalette.pick(paletteColors, 0), 0.22f),
             brightness * dim,
         )
-        // Soft focal glow
-        val cx = w * (0.35f + 0.3f * loopedFbm(time, radius = 1.2f, seedOffset = 29))
-        val cy = h * (0.3f + 0.25f * loopedFbm(time, radius = 1.4f, seedOffset = 47))
-        drawCircle(
+
+        drawRect(brush = Brush.verticalGradient(listOf(sand, sandShade, sand)))
+        // A subtle quieting vignette keeps the garden centered without a hard border.
+        drawRect(
             brush = Brush.radialGradient(
-                0f to TonalPalette.withAlpha(accent, 0.35f * dim),
-                1f to Color.Transparent,
-                center = Offset(cx, cy),
-                radius = minOf(w, h) * 0.55f,
+                0f to Color.Transparent,
+                1f to TonalPalette.withAlpha(deepStone, 0.18f * dim),
+                center = Offset(w * 0.5f, h * 0.52f),
+                radius = minDim * 0.78f,
             ),
-            radius = minOf(w, h) * 0.55f,
-            center = Offset(cx, cy),
         )
-        motes.forEach { mote ->
-            val n = loopedFbm(time, radius = 1.25f + mote.radius, seedOffset = mote.colorIndex * 97 + 5)
-            val x = (mote.x0 + mote.driftX * (n * 2f - 1f) + 1f) % 1f * w
-            val y = (mote.y0 + mote.driftY * sin(time * 2f * PI.toFloat() + mote.phaseOffset) * 0.5f + 1f) % 1f * h
-            val r = minOf(w, h) * mote.radius * (0.85f + 0.3f * n)
-            val col = TonalPalette.withAlpha(
-                TonalPalette.brightness(TonalPalette.pick(paletteColors, mote.colorIndex), brightness * dim),
-                (0.12f + 0.18f * n) * dim,
+
+        // Fine raked grooves, gently bending around three stones.
+        grooveOffsets.forEachIndexed { index, fraction ->
+            val y = h * (0.08f + fraction * 0.84f)
+            val wave = sin(fraction * tau * 2f + time * tau) * minDim * 0.004f * (0.85f + 0.15f * ebb)
+            val path = Path().apply {
+                moveTo(-w * 0.04f, y)
+                cubicTo(w * 0.26f, y + wave, w * 0.70f, y - wave, w * 1.04f, y)
+            }
+            drawPath(
+                path = path,
+                color = TonalPalette.withAlpha(if (index % 3 == 0) Color.White else deepStone, if (index % 3 == 0) 0.18f * dim else 0.12f * dim),
+                style = Stroke(width = minDim * 0.0018f),
             )
-            drawCircle(color = col, radius = r, center = Offset(x, y))
         }
-        // Pack-flavored silhouette accents
-        when ("zen") {
-            "kaleido" -> {
-                val rings = 4
-                for (i in 0 until rings) {
-                    val ang = time * 2f * PI.toFloat() * (0.15f + i * 0.03f)
-                    val rr = minOf(w, h) * (0.12f + i * 0.08f)
-                    for (k in 0 until 6) {
-                        val a = ang + k * (2f * PI.toFloat() / 6f)
-                        drawCircle(
-                            color = TonalPalette.withAlpha(accent, 0.2f * dim),
-                            radius = rr * 0.12f,
-                            center = Offset(w * 0.5f + cos(a) * rr, h * 0.5f + sin(a) * rr),
-                        )
-                    }
-                }
-            }
-            "zen" -> {
-                drawCircle(
-                    color = TonalPalette.withAlpha(accent, 0.22f * dim),
-                    radius = minOf(w, h) * (0.18f + 0.02f * wash),
-                    center = Offset(w * 0.5f, h * 0.52f),
-                    style = Stroke(width = minOf(w, h) * 0.018f),
+
+        val stones = listOf(
+            Triple(0.33f, 0.42f, 0.19f),
+            Triple(0.65f, 0.59f, 0.15f),
+            Triple(0.43f, 0.72f, 0.105f),
+        )
+        stones.forEachIndexed { index, (x, y, radius) ->
+            val center = Offset(w * x, h * y)
+            val rx = minDim * radius
+            val ry = rx * (0.54f + index * 0.025f)
+            val pulse = 0.5f + 0.5f * sin(time * tau + index * 1.7f)
+
+            // Soft cast shadow and smooth river stone.
+            drawOval(
+                color = TonalPalette.withAlpha(deepStone, 0.19f * dim),
+                topLeft = Offset(center.x - rx * 0.92f, center.y - ry * 0.32f),
+                size = Size(rx * 1.9f, ry * 1.35f),
+            )
+            drawOval(
+                brush = Brush.linearGradient(
+                    colors = listOf(TonalPalette.mix(stone, Color.White, 0.24f), stone, deepStone.copy(alpha = 0.72f)),
+                    start = Offset(center.x - rx, center.y - ry),
+                    end = Offset(center.x + rx, center.y + ry),
+                ),
+                topLeft = Offset(center.x - rx, center.y - ry),
+                size = Size(rx * 2f, ry * 2f),
+            )
+            drawOval(
+                color = TonalPalette.withAlpha(Color.White, 0.32f * dim),
+                topLeft = Offset(center.x - rx * 0.62f, center.y - ry * 0.65f),
+                size = Size(rx * 0.84f, ry * 0.32f),
+            )
+
+            // Concentric rings flow around each stone and expand gently in place.
+            val ringCount = 4
+            for (ring in 0 until ringCount) {
+                val ringPhase = (time + ring.toFloat() / ringCount + index * 0.17f) % 1f
+                val radiusScale = 1.12f + ringPhase * 0.75f
+                val alpha = (1f - ringPhase) * (0.18f + 0.08f * pulse) * dim
+                drawOval(
+                    color = TonalPalette.withAlpha(accent, alpha),
+                    topLeft = Offset(center.x - rx * radiusScale, center.y - ry * radiusScale),
+                    size = Size(rx * 2f * radiusScale, ry * 2f * radiusScale),
+                    style = Stroke(width = minDim * 0.0022f),
                 )
             }
-            "interior" -> {
-                // soft vertical light well
-                drawRect(
-                    brush = Brush.horizontalGradient(
-                        0f to Color.Transparent,
-                        0.45f to TonalPalette.withAlpha(accent, 0.18f * dim),
-                        0.55f to TonalPalette.withAlpha(accent, 0.18f * dim),
-                        1f to Color.Transparent,
-                    ),
-                    topLeft = Offset(w * 0.35f, 0f),
-                    size = androidx.compose.ui.geometry.Size(w * 0.3f, h),
-                )
-            }
-            "coast" -> {
-                val horizon = h * (0.58f + 0.02f * wash)
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        0f to Color.Transparent,
-                        1f to TonalPalette.withAlpha(accent, 0.25f * dim),
-                        startY = horizon - h * 0.05f,
-                        endY = h,
-                    ),
-                )
-            }
-            "fire" -> {
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        0f to TonalPalette.withAlpha(accent, 0.55f * dim),
-                        1f to Color.Transparent,
-                        center = Offset(w * 0.5f, h * 0.72f),
-                        radius = minOf(w, h) * 0.35f,
-                    ),
-                    radius = minOf(w, h) * 0.35f,
-                    center = Offset(w * 0.5f, h * 0.72f),
-                )
-            }
-            else -> {}
         }
     }
 }

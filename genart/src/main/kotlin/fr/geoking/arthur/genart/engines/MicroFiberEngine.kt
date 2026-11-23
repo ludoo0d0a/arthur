@@ -9,34 +9,22 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
 import fr.geoking.arthur.genart.loopedFbm
 import fr.geoking.arthur.genart.phase01
 import fr.geoking.arthur.genart.qualityCount
-import fr.geoking.arthur.genart.seededRange
-import fr.geoking.arthur.genart.seededUnit
 import kotlin.math.PI
-import kotlin.math.cos
 import kotlin.math.sin
 
-private data class MicroFiberMote(
-    val x0: Float,
-    val y0: Float,
-    val radius: Float,
-    val driftX: Float,
-    val driftY: Float,
-    val phaseOffset: Float,
-    val colorIndex: Int,
-)
-
-/** Soft Ambient Micro Fiber — seamless loop via loopedFbm. */
+/** A close-up woven fiber field with a slow, seamless breathing wave. */
 @Composable
 internal fun MicroFiberEngine(
     isActive: Boolean,
@@ -46,20 +34,7 @@ internal fun MicroFiberEngine(
     speed: Float,
     modifier: Modifier = Modifier,
 ) {
-    val count = qualityCount(quality, low = 4, medium = 7, high = 11)
-    val motes = remember(count) {
-        List(count) { i ->
-            MicroFiberMote(
-                x0 = seededUnit(i * 17 + 3),
-                y0 = seededUnit(i * 29 + 7),
-                radius = seededRange(i * 41 + 11, 0.04f, 0.14f),
-                driftX = seededRange(i * 53 + 13, 0.02f, 0.06f),
-                driftY = seededRange(i * 67 + 19, 0.015f, 0.05f),
-                phaseOffset = seededRange(i * 71 + 23, 0f, 2f * PI.toFloat()),
-                colorIndex = i,
-            )
-        }
-    }
+    val strandCount = qualityCount(quality, low = 20, medium = 34, high = 50)
     val transition = rememberInfiniteTransition(label = "microfiber")
     val t by transition.animateFloat(
         initialValue = 0f,
@@ -74,106 +49,84 @@ internal fun MicroFiberEngine(
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
+        val minDim = minOf(w, h)
         val time = phase01(t)
-        val wash = loopedFbm(time, radius = 1.35f, octaves = 2, seedOffset = 11)
-        drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    TonalPalette.brightness(Color(0xFF201818), brightness * dim * (0.92f + 0.08f * wash)),
-                    TonalPalette.brightness(Color(0xFF101010), brightness * dim),
-                ),
-            ),
-        )
+        val breathe = loopedFbm(time, radius = 1.3f, octaves = 2, seedOffset = 196)
         val accent = TonalPalette.brightness(
-            TonalPalette.mix(Color(0xFFE0C0A0), TonalPalette.pick(paletteColors, 0), 0.35f),
+            TonalPalette.mix(Color(0xFFE0C0A0), TonalPalette.pick(paletteColors, 0), 0.28f),
             brightness * dim,
         )
-        // Soft focal glow
-        val cx = w * (0.35f + 0.3f * loopedFbm(time, radius = 1.2f, seedOffset = 29))
-        val cy = h * (0.3f + 0.25f * loopedFbm(time, radius = 1.4f, seedOffset = 47))
+        val base = TonalPalette.brightness(Color(0xFF201818), brightness * dim)
+        val shadow = TonalPalette.brightness(Color(0xFF101010), brightness * dim)
+
+        drawRect(brush = Brush.verticalGradient(listOf(base, shadow)))
+
+        // Diffuse grazing light reveals the fine weave without a hard source.
+        val glowCenter = Offset(w * (0.46f + 0.08f * (breathe - 0.5f)), h * 0.47f)
         drawCircle(
             brush = Brush.radialGradient(
-                0f to TonalPalette.withAlpha(accent, 0.35f * dim),
+                0f to TonalPalette.withAlpha(accent, 0.22f * dim),
+                0.52f to TonalPalette.withAlpha(Color(0xFF806454), 0.08f * dim),
                 1f to Color.Transparent,
-                center = Offset(cx, cy),
-                radius = minOf(w, h) * 0.55f,
+                center = glowCenter,
+                radius = (minDim * 0.76f).coerceAtLeast(1f),
             ),
-            radius = minOf(w, h) * 0.55f,
-            center = Offset(cx, cy),
+            radius = (minDim * 0.76f).coerceAtLeast(1f),
+            center = glowCenter,
         )
-        motes.forEach { mote ->
-            val n = loopedFbm(time, radius = 1.25f + mote.radius, seedOffset = mote.colorIndex * 97 + 5)
-            val x = (mote.x0 + mote.driftX * (n * 2f - 1f) + 1f) % 1f * w
-            val y = (mote.y0 + mote.driftY * sin(time * 2f * PI.toFloat() + mote.phaseOffset) * 0.5f + 1f) % 1f * h
-            val r = minOf(w, h) * mote.radius * (0.85f + 0.3f * n)
-            val col = TonalPalette.withAlpha(
-                TonalPalette.brightness(TonalPalette.pick(paletteColors, mote.colorIndex), brightness * dim),
-                (0.12f + 0.18f * n) * dim,
-            )
-            drawCircle(color = col, radius = r, center = Offset(x, y))
-        }
-        // Pack-flavored silhouette accents
-        when ("micro") {
-            "kaleido" -> {
-                val rings = 4
-                for (i in 0 until rings) {
-                    val ang = time * 2f * PI.toFloat() * (0.15f + i * 0.03f)
-                    val rr = minOf(w, h) * (0.12f + i * 0.08f)
-                    for (k in 0 until 6) {
-                        val a = ang + k * (2f * PI.toFloat() / 6f)
-                        drawCircle(
-                            color = TonalPalette.withAlpha(accent, 0.2f * dim),
-                            radius = rr * 0.12f,
-                            center = Offset(w * 0.5f + cos(a) * rr, h * 0.5f + sin(a) * rr),
-                        )
-                    }
+
+        val verticalStep = w / strandCount
+        val horizontalStep = h / strandCount
+        val segments = 12
+        for (i in 0..strandCount) {
+            val u = i.toFloat() / strandCount
+            val centerLight = (1f - kotlin.math.abs(u - 0.5f) * 1.5f).coerceIn(0.12f, 1f)
+            val verticalPath = Path()
+            val horizontalPath = Path()
+            for (segment in 0..segments) {
+                val p = segment.toFloat() / segments
+                val waveV = sin((p * 2f * PI.toFloat()) + i * 0.71f + time * 2f * PI.toFloat())
+                val waveH = sin((p * 2f * PI.toFloat()) + i * 0.57f - time * 2f * PI.toFloat())
+                val warpV = (waveV * 0.0028f + (breathe - 0.5f) * 0.002f) * minDim
+                val warpH = (waveH * 0.0028f + (breathe - 0.5f) * 0.002f) * minDim
+                val vx = i * verticalStep + warpV
+                val hy = i * horizontalStep + warpH
+                val vy = p * h
+                val hx = p * w
+                if (segment == 0) {
+                    verticalPath.moveTo(vx, vy)
+                    horizontalPath.moveTo(hx, hy)
+                } else {
+                    verticalPath.lineTo(vx, vy)
+                    horizontalPath.lineTo(hx, hy)
                 }
             }
-            "zen" -> {
-                drawCircle(
-                    color = TonalPalette.withAlpha(accent, 0.22f * dim),
-                    radius = minOf(w, h) * (0.18f + 0.02f * wash),
-                    center = Offset(w * 0.5f, h * 0.52f),
-                    style = Stroke(width = minOf(w, h) * 0.018f),
-                )
-            }
-            "interior" -> {
-                // soft vertical light well
-                drawRect(
-                    brush = Brush.horizontalGradient(
-                        0f to Color.Transparent,
-                        0.45f to TonalPalette.withAlpha(accent, 0.18f * dim),
-                        0.55f to TonalPalette.withAlpha(accent, 0.18f * dim),
-                        1f to Color.Transparent,
-                    ),
-                    topLeft = Offset(w * 0.35f, 0f),
-                    size = androidx.compose.ui.geometry.Size(w * 0.3f, h),
-                )
-            }
-            "coast" -> {
-                val horizon = h * (0.58f + 0.02f * wash)
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        0f to Color.Transparent,
-                        1f to TonalPalette.withAlpha(accent, 0.25f * dim),
-                        startY = horizon - h * 0.05f,
-                        endY = h,
-                    ),
-                )
-            }
-            "fire" -> {
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        0f to TonalPalette.withAlpha(accent, 0.55f * dim),
-                        1f to Color.Transparent,
-                        center = Offset(w * 0.5f, h * 0.72f),
-                        radius = minOf(w, h) * 0.35f,
-                    ),
-                    radius = minOf(w, h) * 0.35f,
-                    center = Offset(w * 0.5f, h * 0.72f),
-                )
-            }
-            else -> {}
+
+            // Alternating strand brightness creates a fine over/under weave.
+            val verticalAlpha = (if (i % 2 == 0) 0.22f else 0.11f) * centerLight * dim
+            val horizontalAlpha = (if (i % 2 == 0) 0.12f else 0.24f) * centerLight * dim
+            drawPath(
+                path = verticalPath,
+                color = TonalPalette.withAlpha(if (i % 2 == 0) accent else Color(0xFF6A5145), verticalAlpha),
+                style = Stroke(width = (minDim * 0.0035f).coerceAtLeast(0.7f), cap = StrokeCap.Round),
+            )
+            drawPath(
+                path = horizontalPath,
+                color = TonalPalette.withAlpha(if (i % 2 == 0) Color(0xFF9B806D) else accent, horizontalAlpha),
+                style = Stroke(width = (minDim * 0.003f).coerceAtLeast(0.65f), cap = StrokeCap.Round),
+            )
+        }
+
+        // A fine, low-contrast diagonal grain gives the fabric a macro texture.
+        val grainAlpha = (0.08f + 0.04f * breathe) * dim
+        for (i in -strandCount..strandCount) {
+            val x = i * verticalStep
+            drawLine(
+                color = TonalPalette.withAlpha(Color(0xFFE8D4C0), grainAlpha),
+                start = Offset(x, 0f),
+                end = Offset(x + h * 0.26f, h),
+                strokeWidth = (minDim * 0.001f).coerceAtLeast(0.45f),
+            )
         }
     }
 }

@@ -15,7 +15,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
 import fr.geoking.arthur.genart.loopedFbm
@@ -24,20 +25,21 @@ import fr.geoking.arthur.genart.qualityCount
 import fr.geoking.arthur.genart.seededRange
 import fr.geoking.arthur.genart.seededUnit
 import kotlin.math.PI
-import kotlin.math.cos
 import kotlin.math.sin
 
-private data class AutoRainGlassMote(
-    val x0: Float,
-    val y0: Float,
-    val radius: Float,
-    val driftX: Float,
-    val driftY: Float,
-    val phaseOffset: Float,
-    val colorIndex: Int,
+private data class RainGlassTrail(
+    val x: Float,
+    val y: Float,
+    val length: Float,
+    val sway: Float,
+    val width: Float,
+    val speed: Float,
+    val phase: Float,
 )
 
-/** Soft Ambient POV Auto Rain on Glass — seamless loop via loopedFbm (no traffic sim). */
+private data class RainGlassLight(val x: Float, val y: Float, val radius: Float, val warm: Boolean)
+
+/** Night drive seen through rain-streaked glass; slow motion loops without simulating traffic. */
 @Composable
 internal fun AutoRainGlassEngine(
     isActive: Boolean,
@@ -48,16 +50,26 @@ internal fun AutoRainGlassEngine(
     modifier: Modifier = Modifier,
 ) {
     val count = qualityCount(quality, low = 4, medium = 7, high = 11)
-    val motes = remember(count) {
-        List(count) { i ->
-            AutoRainGlassMote(
-                x0 = seededUnit(i * 17 + 3),
-                y0 = seededUnit(i * 29 + 7),
-                radius = seededRange(i * 41 + 11, 0.03f, 0.12f),
-                driftX = seededRange(i * 53 + 13, 0.02f, 0.08f),
-                driftY = seededRange(i * 67 + 19, 0.01f, 0.04f),
-                phaseOffset = seededRange(i * 71 + 23, 0f, 2f * PI.toFloat()),
-                colorIndex = i,
+    val trails = remember(count) {
+        List(count * 2) { i ->
+            RainGlassTrail(
+                x = seededUnit(i * 17 + 3),
+                y = seededUnit(i * 29 + 7),
+                length = seededRange(i * 41 + 11, 0.10f, 0.34f),
+                sway = seededRange(i * 53 + 13, 0.006f, 0.026f),
+                width = seededRange(i * 67 + 19, 0.7f, 2.2f),
+                speed = seededRange(i * 79 + 23, 0.45f, 0.95f),
+                phase = seededUnit(i * 83 + 31),
+            )
+        }
+    }
+    val lights = remember {
+        List(9) { i ->
+            RainGlassLight(
+                x = seededRange(i * 23 + 5, 0.06f, 0.94f),
+                y = seededRange(i * 37 + 11, 0.24f, 0.62f),
+                radius = seededRange(i * 47 + 13, 0.018f, 0.05f),
+                warm = i % 3 != 0,
             )
         }
     }
@@ -75,106 +87,93 @@ internal fun AutoRainGlassEngine(
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
+        val m = minOf(w, h)
         val time = phase01(t)
-        val wash = loopedFbm(time, radius = 1.35f, octaves = 2, seedOffset = 11)
-        drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    TonalPalette.brightness(Color(0xFF0C1014), brightness * dim * (0.92f + 0.08f * wash)),
-                    TonalPalette.brightness(Color(0xFF182028), brightness * dim),
+        val atmosphere = loopedFbm(time, radius = 1.4f, octaves = 3, seedOffset = 11)
+        val glass = TonalPalette.brightness(Color(0xFF0C1014), brightness * dim)
+        val lowerNight = TonalPalette.brightness(Color(0xFF182028), brightness * dim)
+        drawRect(brush = Brush.verticalGradient(listOf(glass, Color(0xFF111820), lowerNight)))
+
+        // Distant city lights, kept soft to read as a view outside the windshield.
+        lights.forEachIndexed { i, light ->
+            val shimmer = loopedFbm(time, radius = 1.2f + light.radius, octaves = 2, seedOffset = i * 61 + 47)
+            val color = if (light.warm) Color(0xFFFFC98A) else Color(0xFFA0C8E0)
+            val center = Offset(light.x * w, light.y * h)
+            val r = m * light.radius * (0.9f + shimmer * 0.18f)
+            drawCircle(
+                brush = Brush.radialGradient(
+                    0f to TonalPalette.withAlpha(TonalPalette.brightness(color, brightness * dim), 0.38f * dim),
+                    0.35f to TonalPalette.withAlpha(color, 0.20f * dim),
+                    1f to Color.Transparent,
+                    center = center,
+                    radius = r * 3.2f,
                 ),
-            ),
-        )
-        val accent = TonalPalette.brightness(
-            TonalPalette.mix(Color(0xFFA0C8E0), TonalPalette.pick(paletteColors, 0), 0.35f),
-            brightness * dim,
-        )
-        // Soft horizon / vanishing point
-        val horizon = h * (0.55f + 0.04f * (wash - 0.5f))
+                radius = r * 3.2f,
+                center = center,
+            )
+            drawCircle(color = TonalPalette.withAlpha(color, (0.20f + shimmer * 0.12f) * dim), radius = r, center = center)
+        }
+
+        // Low, diffuse horizon wash; no distinct moving cars or traffic simulation.
+        val horizon = h * (0.54f + (atmosphere - 0.5f) * 0.025f)
         drawRect(
             brush = Brush.verticalGradient(
                 0f to Color.Transparent,
-                1f to TonalPalette.withAlpha(accent, 0.12f * dim),
-                startY = horizon - h * 0.08f,
-                endY = horizon + h * 0.08f,
+                1f to TonalPalette.withAlpha(Color(0xFFA0C8E0), 0.10f * dim),
+                startY = horizon - h * 0.09f,
+                endY = horizon + h * 0.09f,
             ),
+            topLeft = Offset(0f, horizon - h * 0.09f),
+            size = Size(w, h * 0.18f),
         )
-        motes.forEach { mote ->
-            val n = loopedFbm(time, radius = 1.2f + mote.radius, seedOffset = mote.colorIndex * 97 + 5)
-            val x = (mote.x0 + mote.driftX * (n * 2f - 1f) + time * 0.15f + 1f) % 1f * w
-            val y = (mote.y0 + mote.driftY * sin(time * 2f * PI.toFloat() + mote.phaseOffset) * 0.5f + 1f) % 1f * h
-            val r = minOf(w, h) * mote.radius * (0.85f + 0.3f * n)
+
+        // Fine rain rivulets slide down the glass on a wrapped phase.
+        trails.forEachIndexed { i, trail ->
+            val local = phase01(time * trail.speed + trail.phase)
+            val y0 = (trail.y + local * (1f + trail.length)) % 1f * h
+            val x0 = trail.x * w + sin(time * 2f * PI.toFloat() + trail.phase * 2f * PI.toFloat()) * trail.sway * w
+            val len = trail.length * h
+            val drift = sin(time * 2f * PI.toFloat() + trail.phase * 2f * PI.toFloat()) * trail.sway * w
+            val alpha = (0.11f + 0.09f * loopedFbm(time, radius = 1.1f, octaves = 2, seedOffset = i * 19 + 7)) * dim
+            val rainColor = TonalPalette.brightness(Color(0xFFA0C8E0), brightness * dim)
+            val path = Path().apply {
+                moveTo(x0, y0)
+                cubicTo(x0 + drift * 0.4f, y0 + len * 0.32f, x0 - drift * 0.2f, y0 + len * 0.68f, x0 + drift * 0.25f, y0 + len)
+            }
+            drawPath(path, TonalPalette.withAlpha(rainColor, alpha), style = androidx.compose.ui.graphics.drawscope.Stroke(width = trail.width, cap = StrokeCap.Round))
+            // Tiny bead at the leading end catches the outside light.
             drawCircle(
-                color = TonalPalette.withAlpha(
-                    TonalPalette.brightness(TonalPalette.pick(paletteColors, mote.colorIndex), brightness * dim),
-                    (0.10f + 0.16f * n) * dim,
+                brush = Brush.radialGradient(
+                    0f to TonalPalette.withAlpha(Color(0xFFDDF2FF), 0.32f * dim),
+                    1f to Color.Transparent,
+                    center = Offset(x0 + drift * 0.25f, y0 + len),
+                    radius = m * 0.009f,
                 ),
-                radius = r,
-                center = Offset(x, y),
+                radius = m * 0.009f,
+                center = Offset(x0 + drift * 0.25f, y0 + len),
             )
         }
-        when ("auto") {
-            "auto", "moto" -> {
-                // soft dash silhouette band
-                drawRect(
-                    color = TonalPalette.withAlpha(Color(0xFF080A0C), 0.45f * dim),
-                    topLeft = Offset(0f, h * 0.72f),
-                    size = Size(w, h * 0.28f),
-                )
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        0f to TonalPalette.withAlpha(accent, 0.4f * dim),
-                        1f to Color.Transparent,
-                        center = Offset(w * 0.5f, h * 0.62f),
-                        radius = minOf(w, h) * 0.25f,
-                    ),
-                    radius = minOf(w, h) * 0.25f,
-                    center = Offset(w * 0.5f, h * 0.62f),
-                )
-            }
-            "avion" -> {
-                // soft wing edge
-                drawRect(
-                    brush = Brush.horizontalGradient(
-                        0f to TonalPalette.withAlpha(accent, 0.2f * dim),
-                        1f to Color.Transparent,
-                    ),
-                    topLeft = Offset(0f, h * 0.62f),
-                    size = Size(w * 0.55f, h * 0.08f),
-                )
-            }
-            "velo" -> {
-                // path ribbon
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        0f to Color.Transparent,
-                        1f to TonalPalette.withAlpha(accent, 0.22f * dim),
-                    ),
-                    topLeft = Offset(w * 0.42f, horizon),
-                    size = Size(w * 0.16f, h - horizon),
-                )
-            }
-            "train" -> {
-                // window frame bars
-                for (i in 1..2) {
-                    val x = w * (0.28f * i)
-                    drawRect(
-                        color = TonalPalette.withAlpha(Color(0xFF0A0C10), 0.35f * dim),
-                        topLeft = Offset(x, 0f),
-                        size = Size(w * 0.02f, h),
-                    )
-                }
-            }
-            "us_vintage" -> {
-                // neon arc
-                drawCircle(
-                    color = TonalPalette.withAlpha(accent, 0.35f * dim),
-                    radius = minOf(w, h) * 0.22f,
-                    center = Offset(w * 0.5f, h * 0.38f),
-                    style = Stroke(width = minOf(w, h) * 0.02f),
-                )
-            }
-            else -> {}
-        }
+
+        // Soft lower dashboard silhouette and cool reflected glow on glass.
+        drawRect(
+            brush = Brush.verticalGradient(
+                0f to Color.Transparent,
+                1f to TonalPalette.withAlpha(Color(0xFF080A0C), 0.88f * dim),
+                startY = h * 0.78f,
+                endY = h,
+            ),
+            topLeft = Offset(0f, h * 0.78f),
+            size = Size(w, h * 0.22f),
+        )
+        drawCircle(
+            brush = Brush.radialGradient(
+                0f to TonalPalette.withAlpha(Color(0xFFA0C8E0), 0.11f * dim),
+                1f to Color.Transparent,
+                center = Offset(w * 0.5f, h * 0.86f),
+                radius = m * 0.42f,
+            ),
+            radius = m * 0.42f,
+            center = Offset(w * 0.5f, h * 0.86f),
+        )
     }
 }

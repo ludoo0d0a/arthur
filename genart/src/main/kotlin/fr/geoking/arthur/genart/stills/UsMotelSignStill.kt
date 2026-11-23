@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.RadialGradient
+import android.graphics.RectF
 import android.graphics.Shader
 import fr.geoking.arthur.genart.AnimationPalette
 import fr.geoking.arthur.genart.loopedFbm
@@ -14,6 +15,7 @@ import kotlin.math.sin
 /** Bakes one frozen frame of US Motel Sign for Auto/Ambient album art. */
 internal object UsMotelSignStill {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
+    private val rect = RectF()
 
     fun draw(
         canvas: Canvas,
@@ -26,57 +28,106 @@ internal object UsMotelSignStill {
     ) {
         val w = size.toFloat()
         val h = size.toFloat()
-        val t01 = ((phase % (2f * PI.toFloat())) / (2f * PI.toFloat())).let { v -> if (v < 0f) v + 1f else v }
-        val wash = loopedFbm(t01, radius = 1.35f, octaves = 2, seedOffset = 11)
-        val dim = 0.85f + 0.15f * pulse
+        val unit = minOf(w, h)
+        val time = ((phase % (2f * PI.toFloat())) / (2f * PI.toFloat())).let { if (it < 0f) it + 1f else it }
+        val wash = loopedFbm(time, radius = 1.35f, octaves = 3, seedOffset = 31)
+        val flicker = 0.92f + 0.08f * loopedFbm(time, radius = 2.1f, octaves = 2, seedOffset = 73)
+        val dim = (0.85f + 0.15f * pulse).coerceIn(0f, 1.2f)
+        val warm = mixArgb(0xFFFFE060.toInt(), palette.colorAt(0), 0.2f)
+        val red = 0xFFFF5A4E.toInt()
+        val cyan = 0xFF6EDDE8.toInt()
+        val horizon = h * (0.70f + 0.012f * (wash - 0.5f))
+        val cx = w * 0.66f
+        val cy = h * 0.39f
+        val sw = unit * 0.43f
+        val sh = unit * 0.31f
+
+        paint.style = Paint.Style.FILL
         paint.shader = LinearGradient(
             0f, 0f, 0f, h,
-            intArrayOf(0xFF0C1018.toInt(), 0xFF181828.toInt()),
-            floatArrayOf(0f, 1f),
-            Shader.TileMode.CLAMP,
+            intArrayOf(0xFF080A10.toInt(), 0xFF111321.toInt(), 0xFF17151A.toInt()),
+            floatArrayOf(0f, 0.55f, 1f), Shader.TileMode.CLAMP,
         )
-        paint.style = Paint.Style.FILL
         canvas.drawRect(0f, 0f, w, h, paint)
         paint.shader = null
-        val accent = mixArgb(0xFFFFE060.toInt(), palette.colorAt(0), 0.35f)
-        val horizon = h * (0.55f + 0.04f * (wash - 0.5f))
+
+        // A hazy desert horizon behind two low mesas.
         paint.shader = LinearGradient(
-            0f, horizon - h * 0.08f, 0f, horizon + h * 0.08f,
-            intArrayOf(Color.TRANSPARENT, withAlpha(accent, (0.18f * dim * 255).toInt())),
-            floatArrayOf(0f, 1f),
-            Shader.TileMode.CLAMP,
+            0f, horizon - h * 0.12f, 0f, horizon + h * 0.12f,
+            intArrayOf(Color.TRANSPARENT, withAlpha(warm, (0.14f * flicker * dim * 255).toInt())),
+            floatArrayOf(0f, 1f), Shader.TileMode.CLAMP,
         )
-        canvas.drawRect(0f, horizon - h * 0.08f, w, horizon + h * 0.08f, paint)
+        canvas.drawRect(0f, horizon - h * 0.12f, w, horizon + h * 0.12f, paint)
         paint.shader = null
-        for (i in 0 until 7) {
-            val n = loopedFbm(t01, radius = 1.2f + i * 0.04f, seedOffset = i * 97 + 5)
-            val x = ((0.1f + i * 0.12f + t01 * 0.15f) % 1f) * w
-            val y = ((0.2f + (i % 4) * 0.15f) + 0.03f * sin(t01 * 2f * PI.toFloat() + i)) * h
-            paint.color = withAlpha(mixArgb(palette.colorAt(i), accent, 0.4f), ((0.10f + 0.16f * n) * dim * 255).toInt())
-            canvas.drawCircle(x, y, minOf(w, h) * (0.03f + 0.05f * n), paint)
+        paint.color = 0xFF11131A.toInt()
+        canvas.drawOval(-w * 0.12f, horizon - h * 0.10f, w * 0.44f, horizon + h * 0.09f, paint)
+        paint.color = 0xFF0D1017.toInt()
+        canvas.drawOval(w * 0.48f, horizon - h * 0.08f, w * 1.20f, horizon + h * 0.08f, paint)
+        paint.color = 0xFF090B10.toInt()
+        canvas.drawRect(0f, horizon, w, h, paint)
+
+        // Faint road shoulders leading to the sign-lit horizon.
+        paint.color = 0xFF353039.toInt()
+        paint.strokeWidth = unit * 0.008f
+        canvas.drawLine(w * 0.43f, h, w * 0.48f, horizon, paint)
+        canvas.drawLine(w * 0.57f, h, w * 0.52f, horizon, paint)
+        paint.shader = LinearGradient(
+            0f, h * 0.78f, 0f, h,
+            intArrayOf(Color.TRANSPARENT, withAlpha(warm, (0.08f * flicker * dim * 255).toInt())),
+            floatArrayOf(0f, 1f), Shader.TileMode.CLAMP,
+        )
+        canvas.drawRect(0f, h * 0.78f, w, h, paint)
+        paint.shader = null
+
+        // Pole and muted red/cyan light bloom.
+        paint.color = 0xFF17191F.toInt()
+        paint.strokeWidth = unit * 0.025f
+        canvas.drawLine(cx, cy + sh * 0.45f, cx, h * 0.88f, paint)
+        paint.strokeWidth = unit * 0.014f
+        canvas.drawLine(cx - sw * 0.24f, h * 0.62f, cx + sw * 0.24f, h * 0.62f, paint)
+        paint.shader = RadialGradient(
+            cx, cy, unit * 0.48f,
+            intArrayOf(withAlpha(warm, (0.27f * flicker * dim * 255).toInt()), withAlpha(red, (0.12f * dim * 255).toInt()), Color.TRANSPARENT),
+            floatArrayOf(0f, 0.45f, 1f), Shader.TileMode.CLAMP,
+        )
+        canvas.drawCircle(cx, cy, unit * 0.48f, paint)
+        paint.shader = null
+
+        // Enamel sign face with neon frame.
+        val left = cx - sw / 2f
+        val top = cy - sh / 2f
+        rect.set(left, top, left + sw, top + sh)
+        paint.color = 0xFF18171C.toInt()
+        canvas.drawRoundRect(rect, unit * 0.035f, unit * 0.035f, paint)
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = unit * 0.009f
+        paint.color = withAlpha(red, (0.65f * flicker * dim * 255).toInt())
+        canvas.drawRoundRect(rect, unit * 0.035f, unit * 0.035f, paint)
+        paint.style = Paint.Style.FILL
+        rect.inset(unit * 0.025f, unit * 0.025f)
+        paint.color = withAlpha(warm, (0.18f * dim * 255).toInt())
+        canvas.drawRoundRect(rect, unit * 0.022f, unit * 0.022f, paint)
+
+        // Simple neon strokes suggest a header and room-number panel without literal copy.
+        paint.strokeCap = Paint.Cap.ROUND
+        paint.strokeWidth = unit * 0.020f
+        paint.color = withAlpha(warm, (0.92f * flicker * dim * 255).toInt())
+        canvas.drawLine(cx - sw * 0.29f, cy - sh * 0.19f, cx + sw * 0.29f, cy - sh * 0.19f, paint)
+        paint.strokeWidth = unit * 0.009f
+        paint.color = withAlpha(cyan, (0.8f * flicker * dim * 255).toInt())
+        canvas.drawLine(cx - sw * 0.21f, cy - sh * 0.01f, cx + sw * 0.21f, cy - sh * 0.01f, paint)
+        paint.strokeWidth = unit * 0.008f
+        paint.color = withAlpha(warm, (0.74f * flicker * dim * 255).toInt())
+        canvas.drawLine(cx - sw * 0.24f, cy + sh * 0.13f, cx + sw * 0.24f, cy + sh * 0.13f, paint)
+        for (i in -1..1) {
+            paint.color = withAlpha(warm, (0.8f * flicker * dim * 255).toInt())
+            canvas.drawCircle(cx + sw * i * 0.20f, cy + sh * 0.32f, unit * 0.018f, paint)
         }
-        when ("us_vintage") {
-            "auto", "moto" -> {
-                paint.color = withAlpha(0xFF080A0C.toInt(), (0.45f * dim * 255).toInt())
-                canvas.drawRect(0f, h * 0.72f, w, h, paint)
-                paint.shader = RadialGradient(
-                    w * 0.5f, h * 0.62f, minOf(w, h) * 0.25f,
-                    intArrayOf(withAlpha(accent, (0.4f * dim * 255).toInt()), Color.TRANSPARENT),
-                    floatArrayOf(0f, 1f),
-                    Shader.TileMode.CLAMP,
-                )
-                canvas.drawCircle(w * 0.5f, h * 0.62f, minOf(w, h) * 0.25f, paint)
-                paint.shader = null
-            }
-            "us_vintage" -> {
-                paint.style = Paint.Style.STROKE
-                paint.strokeWidth = minOf(w, h) * 0.02f
-                paint.color = withAlpha(accent, (0.4f * dim * 255).toInt())
-                canvas.drawCircle(w * 0.5f, h * 0.38f, minOf(w, h) * 0.22f, paint)
-                paint.style = Paint.Style.FILL
-            }
-            else -> Unit
-        }
+        paint.color = withAlpha(cyan, (0.75f * flicker * dim * 255).toInt())
+        canvas.drawCircle(cx + sw * 0.39f, cy - sh * 0.30f, unit * 0.022f, paint)
+
+        paint.style = Paint.Style.FILL
+        paint.color = Color.TRANSPARENT
     }
 
     private fun mixArgb(a: Int, b: Int, t: Float): Int {

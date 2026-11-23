@@ -14,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
 import fr.geoking.arthur.genart.loopedFbm
@@ -23,20 +22,19 @@ import fr.geoking.arthur.genart.qualityCount
 import fr.geoking.arthur.genart.seededRange
 import fr.geoking.arthur.genart.seededUnit
 import kotlin.math.PI
-import kotlin.math.cos
 import kotlin.math.sin
 
-private data class MicroDustMote(
-    val x0: Float,
-    val y0: Float,
-    val radius: Float,
-    val driftX: Float,
-    val driftY: Float,
-    val phaseOffset: Float,
+private data class DustGrain(
+    val x: Float,
+    val y: Float,
+    val size: Float,
+    val depth: Float,
+    val drift: Float,
+    val phase: Float,
     val colorIndex: Int,
 )
 
-/** Soft Ambient Micro Dust — seamless loop via loopedFbm. */
+/** Fine suspended particles floating through a dim, softly lit atmosphere. */
 @Composable
 internal fun MicroDustEngine(
     isActive: Boolean,
@@ -46,16 +44,16 @@ internal fun MicroDustEngine(
     speed: Float,
     modifier: Modifier = Modifier,
 ) {
-    val count = qualityCount(quality, low = 4, medium = 7, high = 11)
-    val motes = remember(count) {
-        List(count) { i ->
-            MicroDustMote(
-                x0 = seededUnit(i * 17 + 3),
-                y0 = seededUnit(i * 29 + 7),
-                radius = seededRange(i * 41 + 11, 0.04f, 0.14f),
-                driftX = seededRange(i * 53 + 13, 0.02f, 0.06f),
-                driftY = seededRange(i * 67 + 19, 0.015f, 0.05f),
-                phaseOffset = seededRange(i * 71 + 23, 0f, 2f * PI.toFloat()),
+    val qualityScale = qualityCount(quality, low = 4, medium = 7, high = 11)
+    val grains = remember(qualityScale) {
+        List(qualityScale * 9) { i ->
+            DustGrain(
+                x = seededUnit(i * 17 + 3),
+                y = seededUnit(i * 29 + 7),
+                size = seededRange(i * 41 + 11, 0.0008f, 0.0032f),
+                depth = seededRange(i * 53 + 13, 0.25f, 1f),
+                drift = seededRange(i * 67 + 19, 0.004f, 0.022f),
+                phase = seededRange(i * 71 + 23, 0f, 2f * PI.toFloat()),
                 colorIndex = i,
             )
         }
@@ -71,109 +69,63 @@ internal fun MicroDustEngine(
         label = "microdust_t",
     )
     val dim = if (isActive) 1f else 0.55f
+
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
+        val minDim = minOf(w, h)
         val time = phase01(t)
-        val wash = loopedFbm(time, radius = 1.35f, octaves = 2, seedOffset = 11)
-        drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    TonalPalette.brightness(Color(0xFF18161A), brightness * dim * (0.92f + 0.08f * wash)),
-                    TonalPalette.brightness(Color(0xFF0C0A10), brightness * dim),
-                ),
-            ),
-        )
+        val haze = loopedFbm(time, radius = 1.35f, octaves = 3, seedOffset = 11)
         val accent = TonalPalette.brightness(
-            TonalPalette.mix(Color(0xFFD0C8B0), TonalPalette.pick(paletteColors, 0), 0.35f),
+            TonalPalette.mix(Color(0xFFD0C8B0), TonalPalette.pick(paletteColors, 0), 0.28f),
             brightness * dim,
         )
-        // Soft focal glow
-        val cx = w * (0.35f + 0.3f * loopedFbm(time, radius = 1.2f, seedOffset = 29))
-        val cy = h * (0.3f + 0.25f * loopedFbm(time, radius = 1.4f, seedOffset = 47))
+        drawRect(
+            brush = Brush.verticalGradient(
+                0f to TonalPalette.brightness(Color(0xFF18161A), brightness * dim * (0.92f + 0.08f * haze)),
+                0.52f to TonalPalette.brightness(Color(0xFF111014), brightness * dim),
+                1f to TonalPalette.brightness(Color(0xFF0C0A10), brightness * dim),
+            ),
+        )
+
+        // Diffuse side light catches only a small region of the suspended dust.
+        val glowCenter = Offset(
+            w * (0.22f + 0.08f * loopedFbm(time, radius = 1.1f, seedOffset = 29)),
+            h * (0.28f + 0.08f * loopedFbm(time, radius = 1.3f, seedOffset = 47)),
+        )
+        val glowRadius = minDim * 0.68f
         drawCircle(
             brush = Brush.radialGradient(
-                0f to TonalPalette.withAlpha(accent, 0.35f * dim),
+                0f to TonalPalette.withAlpha(accent, 0.12f * dim),
+                0.45f to TonalPalette.withAlpha(Color(0xFF8C8068), 0.045f * dim),
                 1f to Color.Transparent,
-                center = Offset(cx, cy),
-                radius = minOf(w, h) * 0.55f,
+                center = glowCenter,
+                radius = glowRadius,
             ),
-            radius = minOf(w, h) * 0.55f,
-            center = Offset(cx, cy),
+            radius = glowRadius,
+            center = glowCenter,
         )
-        motes.forEach { mote ->
-            val n = loopedFbm(time, radius = 1.25f + mote.radius, seedOffset = mote.colorIndex * 97 + 5)
-            val x = (mote.x0 + mote.driftX * (n * 2f - 1f) + 1f) % 1f * w
-            val y = (mote.y0 + mote.driftY * sin(time * 2f * PI.toFloat() + mote.phaseOffset) * 0.5f + 1f) % 1f * h
-            val r = minOf(w, h) * mote.radius * (0.85f + 0.3f * n)
-            val col = TonalPalette.withAlpha(
-                TonalPalette.brightness(TonalPalette.pick(paletteColors, mote.colorIndex), brightness * dim),
-                (0.12f + 0.18f * n) * dim,
+
+        grains.forEach { grain ->
+            val noise = loopedFbm(time, radius = 1.15f + grain.depth, octaves = 2, seedOffset = grain.colorIndex * 97 + 5)
+            val angle = time * (2f * PI.toFloat()) + grain.phase
+            val x = (grain.x + sin(angle) * grain.drift + (noise - 0.5f) * grain.drift * 0.35f + 1f) % 1f * w
+            val y = (grain.y + sin(angle * 0.73f) * grain.drift * 0.7f + 1f) % 1f * h
+            val radius = minDim * grain.size * (0.8f + 0.35f * noise) * grain.depth
+            val color = TonalPalette.mix(accent, TonalPalette.pick(paletteColors, grain.colorIndex + 1), 0.3f)
+            val alpha = (0.08f + 0.16f * noise) * grain.depth * dim
+            if (grain.depth > 0.62f) {
+                drawCircle(
+                    color = TonalPalette.withAlpha(color, alpha * 0.28f),
+                    radius = radius * 3.2f,
+                    center = Offset(x, y),
+                )
+            }
+            drawCircle(
+                color = TonalPalette.withAlpha(color, alpha),
+                radius = radius.coerceAtLeast(0.45f),
+                center = Offset(x, y),
             )
-            drawCircle(color = col, radius = r, center = Offset(x, y))
-        }
-        // Pack-flavored silhouette accents
-        when ("micro") {
-            "kaleido" -> {
-                val rings = 4
-                for (i in 0 until rings) {
-                    val ang = time * 2f * PI.toFloat() * (0.15f + i * 0.03f)
-                    val rr = minOf(w, h) * (0.12f + i * 0.08f)
-                    for (k in 0 until 6) {
-                        val a = ang + k * (2f * PI.toFloat() / 6f)
-                        drawCircle(
-                            color = TonalPalette.withAlpha(accent, 0.2f * dim),
-                            radius = rr * 0.12f,
-                            center = Offset(w * 0.5f + cos(a) * rr, h * 0.5f + sin(a) * rr),
-                        )
-                    }
-                }
-            }
-            "zen" -> {
-                drawCircle(
-                    color = TonalPalette.withAlpha(accent, 0.22f * dim),
-                    radius = minOf(w, h) * (0.18f + 0.02f * wash),
-                    center = Offset(w * 0.5f, h * 0.52f),
-                    style = Stroke(width = minOf(w, h) * 0.018f),
-                )
-            }
-            "interior" -> {
-                // soft vertical light well
-                drawRect(
-                    brush = Brush.horizontalGradient(
-                        0f to Color.Transparent,
-                        0.45f to TonalPalette.withAlpha(accent, 0.18f * dim),
-                        0.55f to TonalPalette.withAlpha(accent, 0.18f * dim),
-                        1f to Color.Transparent,
-                    ),
-                    topLeft = Offset(w * 0.35f, 0f),
-                    size = androidx.compose.ui.geometry.Size(w * 0.3f, h),
-                )
-            }
-            "coast" -> {
-                val horizon = h * (0.58f + 0.02f * wash)
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        0f to Color.Transparent,
-                        1f to TonalPalette.withAlpha(accent, 0.25f * dim),
-                        startY = horizon - h * 0.05f,
-                        endY = h,
-                    ),
-                )
-            }
-            "fire" -> {
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        0f to TonalPalette.withAlpha(accent, 0.55f * dim),
-                        1f to Color.Transparent,
-                        center = Offset(w * 0.5f, h * 0.72f),
-                        radius = minOf(w, h) * 0.35f,
-                    ),
-                    radius = minOf(w, h) * 0.35f,
-                    center = Offset(w * 0.5f, h * 0.72f),
-                )
-            }
-            else -> {}
         }
     }
 }

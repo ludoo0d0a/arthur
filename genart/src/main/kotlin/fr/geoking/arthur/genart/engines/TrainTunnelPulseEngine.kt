@@ -9,35 +9,23 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
 import fr.geoking.arthur.genart.loopedFbm
 import fr.geoking.arthur.genart.phase01
 import fr.geoking.arthur.genart.qualityCount
-import fr.geoking.arthur.genart.seededRange
-import fr.geoking.arthur.genart.seededUnit
 import kotlin.math.PI
 import kotlin.math.cos
-import kotlin.math.sin
 
-private data class TrainTunnelPulseMote(
-    val x0: Float,
-    val y0: Float,
-    val radius: Float,
-    val driftX: Float,
-    val driftY: Float,
-    val phaseOffset: Float,
-    val colorIndex: Int,
-)
-
-/** Soft Ambient POV Train Tunnel Pulse — seamless loop via loopedFbm (no traffic sim). */
+/** Soft Ambient POV Train Tunnel Pulse — seamless tunnel-light rhythm. */
 @Composable
 internal fun TrainTunnelPulseEngine(
     isActive: Boolean,
@@ -47,21 +35,8 @@ internal fun TrainTunnelPulseEngine(
     speed: Float,
     modifier: Modifier = Modifier,
 ) {
-    val count = qualityCount(quality, low = 4, medium = 7, high = 11)
-    val motes = remember(count) {
-        List(count) { i ->
-            TrainTunnelPulseMote(
-                x0 = seededUnit(i * 17 + 3),
-                y0 = seededUnit(i * 29 + 7),
-                radius = seededRange(i * 41 + 11, 0.03f, 0.12f),
-                driftX = seededRange(i * 53 + 13, 0.02f, 0.08f),
-                driftY = seededRange(i * 67 + 19, 0.01f, 0.04f),
-                phaseOffset = seededRange(i * 71 + 23, 0f, 2f * PI.toFloat()),
-                colorIndex = i,
-            )
-        }
-    }
-    val transition = rememberInfiniteTransition(label = "traintunnelpulse")
+    val lampPairs = qualityCount(quality, low = 4, medium = 7, high = 10)
+    val transition = rememberInfiniteTransition(label = "trainTunnelPulse")
     val t by transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
@@ -69,112 +44,134 @@ internal fun TrainTunnelPulseEngine(
             animation = tween((68000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
-        label = "traintunnelpulse_t",
+        label = "trainTunnelPulse_t",
     )
     val dim = if (isActive) 1f else 0.55f
+
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
-        val time = phase01(t)
-        val wash = loopedFbm(time, radius = 1.35f, octaves = 2, seedOffset = 11)
-        drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    TonalPalette.brightness(Color(0xFF080A0E), brightness * dim * (0.92f + 0.08f * wash)),
-                    TonalPalette.brightness(Color(0xFF14181E), brightness * dim),
-                ),
-            ),
-        )
-        val accent = TonalPalette.brightness(
-            TonalPalette.mix(Color(0xFFE0E8F0), TonalPalette.pick(paletteColors, 0), 0.35f),
+        val minDim = minOf(w, h)
+        val cx = w * 0.5f
+        val vanishingY = h * 0.39f
+        val phase = phase01(t)
+        val warp = loopedFbm(phase, radius = 1.25f, octaves = 3, seedOffset = 29)
+        val pulse = 0.92f + 0.08f * warp
+        val wall = TonalPalette.brightness(Color(0xFF14181E), brightness * dim)
+        val dark = TonalPalette.brightness(Color(0xFF080A0E), brightness * dim)
+        val lamp = TonalPalette.brightness(
+            TonalPalette.mix(Color(0xFFE0E8F0), TonalPalette.pick(paletteColors, 0), 0.28f),
             brightness * dim,
         )
-        // Soft horizon / vanishing point
-        val horizon = h * (0.55f + 0.04f * (wash - 0.5f))
-        drawRect(
+
+        drawRect(brush = Brush.verticalGradient(listOf(dark, wall, dark)))
+        drawCircle(
+            brush = Brush.radialGradient(
+                0f to TonalPalette.withAlpha(lamp, 0.12f * pulse * dim),
+                0.5f to TonalPalette.withAlpha(Color(0xFF8593A3), 0.055f * dim),
+                1f to Color.Transparent,
+                center = Offset(cx, vanishingY),
+                radius = (minDim * 0.7f),
+            ),
+            radius = minDim * 0.7f,
+            center = Offset(cx, vanishingY),
+        )
+
+        // Dark floor recedes to the tunnel's vanishing point.
+        val floor = Path().apply {
+            moveTo(cx - w * 0.035f, vanishingY)
+            lineTo(cx + w * 0.035f, vanishingY)
+            lineTo(w * 0.92f, h)
+            lineTo(w * 0.08f, h)
+            close()
+        }
+        drawPath(
+            floor,
             brush = Brush.verticalGradient(
-                0f to Color.Transparent,
-                1f to TonalPalette.withAlpha(accent, 0.12f * dim),
-                startY = horizon - h * 0.08f,
-                endY = horizon + h * 0.08f,
+                0f to Color(0xFF10141A),
+                1f to Color(0xFF050609),
+                startY = vanishingY,
+                endY = h,
             ),
         )
-        motes.forEach { mote ->
-            val n = loopedFbm(time, radius = 1.2f + mote.radius, seedOffset = mote.colorIndex * 97 + 5)
-            val x = (mote.x0 + mote.driftX * (n * 2f - 1f) + time * 0.15f + 1f) % 1f * w
-            val y = (mote.y0 + mote.driftY * sin(time * 2f * PI.toFloat() + mote.phaseOffset) * 0.5f + 1f) % 1f * h
-            val r = minOf(w, h) * mote.radius * (0.85f + 0.3f * n)
-            drawCircle(
-                color = TonalPalette.withAlpha(
-                    TonalPalette.brightness(TonalPalette.pick(paletteColors, mote.colorIndex), brightness * dim),
-                    (0.10f + 0.16f * n) * dim,
-                ),
-                radius = r,
-                center = Offset(x, y),
+
+        // Repeated arch ribs define the tunnel and give the lights their rhythm.
+        for (i in 0..5) {
+            val depth = 0.12f + i * 0.16f
+            val halfWidth = w * (0.025f + 0.48f * depth)
+            val baseY = vanishingY + (h - vanishingY) * depth * 0.86f
+            val crownY = vanishingY - h * (0.015f + 0.34f * depth)
+            val arch = Path().apply {
+                moveTo(cx - halfWidth, baseY)
+                cubicTo(cx - halfWidth, crownY + h * 0.03f, cx - halfWidth * 0.46f, crownY, cx, crownY)
+                cubicTo(cx + halfWidth * 0.46f, crownY, cx + halfWidth, crownY + h * 0.03f, cx + halfWidth, baseY)
+            }
+            drawPath(
+                path = arch,
+                color = TonalPalette.withAlpha(Color(0xFF7C8794), (0.11f + 0.07f * depth) * dim),
+                style = Stroke(width = minDim * (0.003f + 0.003f * depth), cap = StrokeCap.Round),
             )
         }
-        when ("train") {
-            "auto", "moto" -> {
-                // soft dash silhouette band
-                drawRect(
-                    color = TonalPalette.withAlpha(Color(0xFF080A0C), 0.45f * dim),
-                    topLeft = Offset(0f, h * 0.72f),
-                    size = Size(w, h * 0.28f),
-                )
+
+        // Rails and sleepers converge into the center, reinforcing the train POV.
+        for (side in -1..1 step 2) {
+            drawLine(
+                color = TonalPalette.withAlpha(lamp, 0.13f * dim),
+                start = Offset(cx + side * w * 0.018f, vanishingY),
+                end = Offset(cx + side * w * 0.30f, h),
+                strokeWidth = minDim * 0.004f,
+            )
+        }
+        for (i in 0..9) {
+            val depth = ((i / 10f + phase) % 1f).coerceIn(0f, 1f)
+            val y = vanishingY + (h - vanishingY) * depth * depth
+            val half = w * (0.025f + 0.27f * depth * depth)
+            val alpha = (0.04f + 0.08f * depth) * dim
+            drawLine(
+                color = TonalPalette.withAlpha(Color(0xFF9AA3AD), alpha),
+                start = Offset(cx - half, y),
+                end = Offset(cx + half, y),
+                strokeWidth = minDim * (0.002f + 0.004f * depth),
+            )
+        }
+
+        // Paired lamps flow toward and away from the viewer at a constant loop rate.
+        for (i in 0 until lampPairs) {
+            val z = ((i / lampPairs.toFloat() + phase) % 1f)
+            val depth = 0.06f + 0.88f * z * z
+            val y = vanishingY + (h - vanishingY) * depth * 0.82f
+            val xOffset = w * (0.025f + 0.46f * depth)
+            val radius = minDim * (0.003f + 0.013f * depth)
+            val flicker = 0.78f + 0.22f * (0.5f + 0.5f * cos(2f * PI.toFloat() * phase + i * 0.8f))
+            for (side in -1..1 step 2) {
+                val center = Offset(cx + side * xOffset, y - minDim * (0.025f + 0.015f * depth))
                 drawCircle(
                     brush = Brush.radialGradient(
-                        0f to TonalPalette.withAlpha(accent, 0.4f * dim),
+                        0f to TonalPalette.withAlpha(lamp, (0.23f * flicker * dim)),
+                        0.32f to TonalPalette.withAlpha(lamp, (0.11f * flicker * dim)),
                         1f to Color.Transparent,
-                        center = Offset(w * 0.5f, h * 0.62f),
-                        radius = minOf(w, h) * 0.25f,
+                        center = center,
+                        radius = radius * 5f,
                     ),
-                    radius = minOf(w, h) * 0.25f,
-                    center = Offset(w * 0.5f, h * 0.62f),
+                    radius = radius * 5f,
+                    center = center,
+                )
+                drawOval(
+                    color = TonalPalette.withAlpha(lamp, (0.34f * flicker * dim)),
+                    topLeft = Offset(center.x - radius, center.y - radius * 0.45f),
+                    size = Size(radius * 2f, radius * 0.9f),
                 )
             }
-            "avion" -> {
-                // soft wing edge
-                drawRect(
-                    brush = Brush.horizontalGradient(
-                        0f to TonalPalette.withAlpha(accent, 0.2f * dim),
-                        1f to Color.Transparent,
-                    ),
-                    topLeft = Offset(0f, h * 0.62f),
-                    size = Size(w * 0.55f, h * 0.08f),
-                )
-            }
-            "velo" -> {
-                // path ribbon
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        0f to Color.Transparent,
-                        1f to TonalPalette.withAlpha(accent, 0.22f * dim),
-                    ),
-                    topLeft = Offset(w * 0.42f, horizon),
-                    size = Size(w * 0.16f, h - horizon),
-                )
-            }
-            "train" -> {
-                // window frame bars
-                for (i in 1..2) {
-                    val x = w * (0.28f * i)
-                    drawRect(
-                        color = TonalPalette.withAlpha(Color(0xFF0A0C10), 0.35f * dim),
-                        topLeft = Offset(x, 0f),
-                        size = Size(w * 0.02f, h),
-                    )
-                }
-            }
-            "us_vintage" -> {
-                // neon arc
-                drawCircle(
-                    color = TonalPalette.withAlpha(accent, 0.35f * dim),
-                    radius = minOf(w, h) * 0.22f,
-                    center = Offset(w * 0.5f, h * 0.38f),
-                    style = Stroke(width = minOf(w, h) * 0.02f),
-                )
-            }
-            else -> {}
         }
+
+        // Soft edge falloff keeps attention on the distant tunnel glow.
+        drawRect(
+            brush = Brush.horizontalGradient(
+                0f to TonalPalette.withAlpha(Color(0xFF050609), 0.52f * dim),
+                0.22f to Color.Transparent,
+                0.78f to Color.Transparent,
+                1f to TonalPalette.withAlpha(Color(0xFF050609), 0.52f * dim),
+            ),
+        )
     }
 }

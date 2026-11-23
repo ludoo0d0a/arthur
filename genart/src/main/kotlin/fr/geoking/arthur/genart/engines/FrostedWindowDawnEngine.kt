@@ -12,31 +12,25 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
 import fr.geoking.arthur.genart.loopedFbm
 import fr.geoking.arthur.genart.phase01
+import fr.geoking.arthur.genart.positiveRadius
 import fr.geoking.arthur.genart.qualityCount
 import fr.geoking.arthur.genart.seededRange
 import fr.geoking.arthur.genart.seededUnit
 import kotlin.math.PI
-import kotlin.math.cos
 import kotlin.math.sin
 
-private data class FrostedWindowDawnMote(
-    val x0: Float,
-    val y0: Float,
-    val radius: Float,
-    val driftX: Float,
-    val driftY: Float,
-    val phaseOffset: Float,
-    val colorIndex: Int,
-)
+private data class FrostCrystal(val x: Float, val y: Float, val scale: Float, val seed: Int)
 
-/** Soft Ambient Frosted Window Dawn — seamless loop via loopedFbm. */
+/** A softly glowing dawn seen through a window laced with frost. */
 @Composable
 internal fun FrostedWindowDawnEngine(
     isActive: Boolean,
@@ -46,17 +40,14 @@ internal fun FrostedWindowDawnEngine(
     speed: Float,
     modifier: Modifier = Modifier,
 ) {
-    val count = qualityCount(quality, low = 4, medium = 7, high = 11)
-    val motes = remember(count) {
-        List(count) { i ->
-            FrostedWindowDawnMote(
-                x0 = seededUnit(i * 17 + 3),
-                y0 = seededUnit(i * 29 + 7),
-                radius = seededRange(i * 41 + 11, 0.04f, 0.14f),
-                driftX = seededRange(i * 53 + 13, 0.02f, 0.06f),
-                driftY = seededRange(i * 67 + 19, 0.015f, 0.05f),
-                phaseOffset = seededRange(i * 71 + 23, 0f, 2f * PI.toFloat()),
-                colorIndex = i,
+    val crystalCount = qualityCount(quality, low = 7, medium = 12, high = 18)
+    val crystals = remember(crystalCount) {
+        List(crystalCount) { i ->
+            FrostCrystal(
+                x = seededUnit(i * 31 + 3),
+                y = seededUnit(i * 37 + 7),
+                scale = seededRange(i * 41 + 11, 0.025f, 0.075f),
+                seed = i * 97 + 5,
             )
         }
     }
@@ -71,109 +62,138 @@ internal fun FrostedWindowDawnEngine(
         label = "frostedwindowdawn_t",
     )
     val dim = if (isActive) 1f else 0.55f
+
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
+        val shortSide = minOf(w, h)
         val time = phase01(t)
-        val wash = loopedFbm(time, radius = 1.35f, octaves = 2, seedOffset = 11)
-        drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    TonalPalette.brightness(Color(0xFFE8F0F8), brightness * dim * (0.92f + 0.08f * wash)),
-                    TonalPalette.brightness(Color(0xFF9BB4C8), brightness * dim),
-                ),
-            ),
-        )
-        val accent = TonalPalette.brightness(
-            TonalPalette.mix(Color(0xFFFFE6C0), TonalPalette.pick(paletteColors, 0), 0.35f),
+        val dawn = loopedFbm(time, radius = 1.2f, octaves = 2, seedOffset = 29)
+        val glowX = w * (0.28f + dawn * 0.44f)
+        val glowY = h * (0.23f + loopedFbm(time, radius = 1.4f, seedOffset = 47) * 0.16f)
+        val warm = TonalPalette.brightness(
+            TonalPalette.mix(Color(0xFFFFE6C0), TonalPalette.pick(paletteColors, 0), 0.22f),
             brightness * dim,
         )
-        // Soft focal glow
-        val cx = w * (0.35f + 0.3f * loopedFbm(time, radius = 1.2f, seedOffset = 29))
-        val cy = h * (0.3f + 0.25f * loopedFbm(time, radius = 1.4f, seedOffset = 47))
+        val frost = TonalPalette.brightness(Color(0xFFE8F0F8), brightness * dim)
+        val pane = TonalPalette.brightness(Color(0xFF9BB4C8), brightness * dim)
+
+        drawRect(brush = Brush.verticalGradient(listOf(Color(0xFF667F9B), frost, pane)))
+
+        // Pale, hazy sky and the soft first glow of sunrise behind the glass.
         drawCircle(
             brush = Brush.radialGradient(
-                0f to TonalPalette.withAlpha(accent, 0.35f * dim),
+                0f to TonalPalette.withAlpha(warm, 0.62f * dim),
+                0.36f to TonalPalette.withAlpha(Color(0xFFFFDDB0), 0.30f * dim),
                 1f to Color.Transparent,
-                center = Offset(cx, cy),
-                radius = minOf(w, h) * 0.55f,
+                center = Offset(glowX, glowY),
+                radius = (shortSide * 0.72f).positiveRadius(),
             ),
-            radius = minOf(w, h) * 0.55f,
-            center = Offset(cx, cy),
+            radius = (shortSide * 0.72f).positiveRadius(),
+            center = Offset(glowX, glowY),
         )
-        motes.forEach { mote ->
-            val n = loopedFbm(time, radius = 1.25f + mote.radius, seedOffset = mote.colorIndex * 97 + 5)
-            val x = (mote.x0 + mote.driftX * (n * 2f - 1f) + 1f) % 1f * w
-            val y = (mote.y0 + mote.driftY * sin(time * 2f * PI.toFloat() + mote.phaseOffset) * 0.5f + 1f) % 1f * h
-            val r = minOf(w, h) * mote.radius * (0.85f + 0.3f * n)
-            val col = TonalPalette.withAlpha(
-                TonalPalette.brightness(TonalPalette.pick(paletteColors, mote.colorIndex), brightness * dim),
-                (0.12f + 0.18f * n) * dim,
+        drawRect(
+            brush = Brush.verticalGradient(
+                0f to Color.Transparent,
+                0.46f to TonalPalette.withAlpha(Color(0xFFFFE3BE), 0.09f * dim),
+                1f to TonalPalette.withAlpha(Color(0xFF6B8195), 0.30f * dim),
+            ),
+        )
+
+        // Frost gathers around the perimeter, leaving the dawn visible in the center.
+        drawRect(
+            brush = Brush.horizontalGradient(
+                0f to TonalPalette.withAlpha(Color(0xFFF4FAFF), 0.76f * dim),
+                0.10f to TonalPalette.withAlpha(frost, 0.36f * dim),
+                0.28f to Color.Transparent,
+                0.72f to Color.Transparent,
+                0.90f to TonalPalette.withAlpha(frost, 0.36f * dim),
+                1f to TonalPalette.withAlpha(Color(0xFFF4FAFF), 0.76f * dim),
+            ),
+        )
+        drawRect(
+            brush = Brush.verticalGradient(
+                0f to TonalPalette.withAlpha(Color(0xFFF4FAFF), 0.58f * dim),
+                0.12f to TonalPalette.withAlpha(frost, 0.25f * dim),
+                0.34f to Color.Transparent,
+                0.68f to Color.Transparent,
+                0.90f to TonalPalette.withAlpha(frost, 0.32f * dim),
+                1f to TonalPalette.withAlpha(Color(0xFFF4FAFF), 0.72f * dim),
+            ),
+        )
+
+        // Icy fern-like dendrites grow inward from scattered frost anchors.
+        crystals.forEach { crystal ->
+            val x = crystal.x * w
+            val y = crystal.y * h
+            val size = shortSide * crystal.scale
+            val shimmer = 0.75f + 0.25f * loopedFbm(time, radius = 1.1f, octaves = 2, seedOffset = crystal.seed)
+            val alpha = 0.30f * shimmer * dim
+            val direction = if (crystal.seed % 2 == 0) 1f else -1f
+            val path = Path().apply {
+                moveTo(x, y + size)
+                lineTo(x, y - size)
+                moveTo(x, y - size * 0.15f)
+                lineTo(x + direction * size * 0.50f, y - size * 0.58f)
+                moveTo(x, y - size * 0.15f)
+                lineTo(x - direction * size * 0.50f, y - size * 0.58f)
+                moveTo(x, y + size * 0.28f)
+                lineTo(x + direction * size * 0.34f, y - size * 0.02f)
+                moveTo(x, y + size * 0.28f)
+                lineTo(x - direction * size * 0.34f, y - size * 0.02f)
+            }
+            drawPath(
+                path = path,
+                color = TonalPalette.withAlpha(Color(0xFFFFFFFF), alpha),
+                style = Stroke(width = (shortSide * 0.0022f).coerceAtLeast(1f)),
             )
-            drawCircle(color = col, radius = r, center = Offset(x, y))
+            drawCircle(
+                color = TonalPalette.withAlpha(Color(0xFFFFFFFF), alpha * 0.65f),
+                radius = (shortSide * 0.004f).positiveRadius(),
+                center = Offset(x, y),
+            )
         }
-        // Pack-flavored silhouette accents
-        when ("light") {
-            "kaleido" -> {
-                val rings = 4
-                for (i in 0 until rings) {
-                    val ang = time * 2f * PI.toFloat() * (0.15f + i * 0.03f)
-                    val rr = minOf(w, h) * (0.12f + i * 0.08f)
-                    for (k in 0 until 6) {
-                        val a = ang + k * (2f * PI.toFloat() / 6f)
-                        drawCircle(
-                            color = TonalPalette.withAlpha(accent, 0.2f * dim),
-                            radius = rr * 0.12f,
-                            center = Offset(w * 0.5f + cos(a) * rr, h * 0.5f + sin(a) * rr),
-                        )
-                    }
-                }
-            }
-            "zen" -> {
-                drawCircle(
-                    color = TonalPalette.withAlpha(accent, 0.22f * dim),
-                    radius = minOf(w, h) * (0.18f + 0.02f * wash),
-                    center = Offset(w * 0.5f, h * 0.52f),
-                    style = Stroke(width = minOf(w, h) * 0.018f),
-                )
-            }
-            "interior" -> {
-                // soft vertical light well
-                drawRect(
-                    brush = Brush.horizontalGradient(
-                        0f to Color.Transparent,
-                        0.45f to TonalPalette.withAlpha(accent, 0.18f * dim),
-                        0.55f to TonalPalette.withAlpha(accent, 0.18f * dim),
-                        1f to Color.Transparent,
-                    ),
-                    topLeft = Offset(w * 0.35f, 0f),
-                    size = androidx.compose.ui.geometry.Size(w * 0.3f, h),
-                )
-            }
-            "coast" -> {
-                val horizon = h * (0.58f + 0.02f * wash)
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        0f to Color.Transparent,
-                        1f to TonalPalette.withAlpha(accent, 0.25f * dim),
-                        startY = horizon - h * 0.05f,
-                        endY = h,
-                    ),
-                )
-            }
-            "fire" -> {
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        0f to TonalPalette.withAlpha(accent, 0.55f * dim),
-                        1f to Color.Transparent,
-                        center = Offset(w * 0.5f, h * 0.72f),
-                        radius = minOf(w, h) * 0.35f,
-                    ),
-                    radius = minOf(w, h) * 0.35f,
-                    center = Offset(w * 0.5f, h * 0.72f),
-                )
-            }
-            else -> {}
+
+        // Window muntins: slim, cool shadows with a warm reflected edge.
+        val frame = shortSide * 0.035f
+        val vertical = w * 0.5f
+        val horizontal = h * 0.52f
+        drawRect(
+            color = TonalPalette.withAlpha(Color(0xFF63798D), 0.65f * dim),
+            topLeft = Offset(vertical - frame * 0.5f, 0f),
+            size = Size(frame, h),
+        )
+        drawRect(
+            color = TonalPalette.withAlpha(Color(0xFF63798D), 0.60f * dim),
+            topLeft = Offset(0f, horizontal - frame * 0.5f),
+            size = Size(w, frame),
+        )
+        drawLine(
+            color = TonalPalette.withAlpha(warm, 0.28f * dim),
+            start = Offset(vertical + frame * 0.5f, 0f),
+            end = Offset(vertical + frame * 0.5f, h),
+            strokeWidth = shortSide * 0.004f,
+        )
+        drawLine(
+            color = TonalPalette.withAlpha(warm, 0.24f * dim),
+            start = Offset(0f, horizontal + frame * 0.5f),
+            end = Offset(w, horizontal + frame * 0.5f),
+            strokeWidth = shortSide * 0.004f,
+        )
+
+        // Fine condensation beads catch a faint, slow-moving dawn shimmer.
+        repeat(qualityCount(quality, low = 8, medium = 14, high = 22)) { i ->
+            val x0 = seededUnit(i * 53 + 19)
+            val y0 = seededUnit(i * 67 + 23)
+            val drift = loopedFbm(time, radius = 1.3f, octaves = 2, seedOffset = i * 79 + 31) - 0.5f
+            val x = (x0 + drift * 0.025f) * w
+            val y = (y0 + 0.012f * sin(time * 2f * PI.toFloat() + i)) * h
+            val sparkle = 0.5f + 0.5f * loopedFbm(time, radius = 1.4f, seedOffset = i * 89 + 37)
+            drawCircle(
+                color = TonalPalette.withAlpha(Color.White, (0.10f + 0.18f * sparkle) * dim),
+                radius = (shortSide * 0.0025f).positiveRadius(),
+                center = Offset(x, y),
+            )
         }
     }
 }

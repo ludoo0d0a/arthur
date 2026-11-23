@@ -9,34 +9,21 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
 import fr.geoking.arthur.genart.loopedFbm
 import fr.geoking.arthur.genart.phase01
 import fr.geoking.arthur.genart.qualityCount
-import fr.geoking.arthur.genart.seededRange
-import fr.geoking.arthur.genart.seededUnit
 import kotlin.math.PI
-import kotlin.math.cos
 import kotlin.math.sin
 
-private data class TideFoamMote(
-    val x0: Float,
-    val y0: Float,
-    val radius: Float,
-    val driftX: Float,
-    val driftY: Float,
-    val phaseOffset: Float,
-    val colorIndex: Int,
-)
-
-/** Soft Ambient Tide Foam — seamless loop via loopedFbm. */
+/** A quiet, moonlit tide drawing lace-like foam along a dark shore. */
 @Composable
 internal fun TideFoamEngine(
     isActive: Boolean,
@@ -46,20 +33,7 @@ internal fun TideFoamEngine(
     speed: Float,
     modifier: Modifier = Modifier,
 ) {
-    val count = qualityCount(quality, low = 4, medium = 7, high = 11)
-    val motes = remember(count) {
-        List(count) { i ->
-            TideFoamMote(
-                x0 = seededUnit(i * 17 + 3),
-                y0 = seededUnit(i * 29 + 7),
-                radius = seededRange(i * 41 + 11, 0.04f, 0.14f),
-                driftX = seededRange(i * 53 + 13, 0.02f, 0.06f),
-                driftY = seededRange(i * 67 + 19, 0.015f, 0.05f),
-                phaseOffset = seededRange(i * 71 + 23, 0f, 2f * PI.toFloat()),
-                colorIndex = i,
-            )
-        }
-    }
+    val detail = qualityCount(quality, low = 4, medium = 7, high = 11)
     val transition = rememberInfiniteTransition(label = "tidefoam")
     val t by transition.animateFloat(
         initialValue = 0f,
@@ -71,109 +45,152 @@ internal fun TideFoamEngine(
         label = "tidefoam_t",
     )
     val dim = if (isActive) 1f else 0.55f
+
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
+        val minDim = minOf(w, h)
         val time = phase01(t)
-        val wash = loopedFbm(time, radius = 1.35f, octaves = 2, seedOffset = 11)
-        drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    TonalPalette.brightness(Color(0xFF1A3040), brightness * dim * (0.92f + 0.08f * wash)),
-                    TonalPalette.brightness(Color(0xFF0E1C28), brightness * dim),
-                ),
-            ),
-        )
-        val accent = TonalPalette.brightness(
-            TonalPalette.mix(Color(0xFFE8F0F8), TonalPalette.pick(paletteColors, 0), 0.35f),
+        val sea = TonalPalette.brightness(Color(0xFF1A3040), brightness * dim)
+        val deepSea = TonalPalette.brightness(Color(0xFF0E1C28), brightness * dim)
+        val foam = TonalPalette.brightness(
+            TonalPalette.mix(Color(0xFFE8F0F8), TonalPalette.pick(paletteColors, 0), 0.18f),
             brightness * dim,
         )
-        // Soft focal glow
-        val cx = w * (0.35f + 0.3f * loopedFbm(time, radius = 1.2f, seedOffset = 29))
-        val cy = h * (0.3f + 0.25f * loopedFbm(time, radius = 1.4f, seedOffset = 47))
+
+        // Deep dusk sky and shadowed rocks frame the water.
+        drawRect(
+            brush = Brush.verticalGradient(
+                0f to Color(0xFF101820),
+                0.48f to Color(0xFF192833),
+                1f to deepSea,
+            ),
+        )
+        val horizonGlow = Offset(w * 0.55f, h * 0.57f)
         drawCircle(
             brush = Brush.radialGradient(
-                0f to TonalPalette.withAlpha(accent, 0.35f * dim),
+                0f to TonalPalette.withAlpha(foam, 0.10f * dim),
+                0.45f to TonalPalette.withAlpha(sea, 0.15f * dim),
                 1f to Color.Transparent,
-                center = Offset(cx, cy),
-                radius = minOf(w, h) * 0.55f,
+                center = horizonGlow,
+                radius = (minDim * 0.72f).coerceAtLeast(1f),
             ),
-            radius = minOf(w, h) * 0.55f,
-            center = Offset(cx, cy),
+            radius = (minDim * 0.72f).coerceAtLeast(1f),
+            center = horizonGlow,
         )
-        motes.forEach { mote ->
-            val n = loopedFbm(time, radius = 1.25f + mote.radius, seedOffset = mote.colorIndex * 97 + 5)
-            val x = (mote.x0 + mote.driftX * (n * 2f - 1f) + 1f) % 1f * w
-            val y = (mote.y0 + mote.driftY * sin(time * 2f * PI.toFloat() + mote.phaseOffset) * 0.5f + 1f) % 1f * h
-            val r = minOf(w, h) * mote.radius * (0.85f + 0.3f * n)
-            val col = TonalPalette.withAlpha(
-                TonalPalette.brightness(TonalPalette.pick(paletteColors, mote.colorIndex), brightness * dim),
-                (0.12f + 0.18f * n) * dim,
-            )
-            drawCircle(color = col, radius = r, center = Offset(x, y))
+
+        fun shoreY(x: Float, offset: Float = 0f): Float {
+            val x01 = x / w
+            val swell = sin(x01 * 2f * PI.toFloat() + time * 2f * PI.toFloat())
+            val ripple = sin(x01 * 5f * PI.toFloat() - time * 2f * PI.toFloat())
+            val warp = loopedFbm(time + x01 * 0.12f, radius = 1.15f, octaves = 2, seedOffset = 61)
+            return h * (0.61f + 0.052f * swell + 0.014f * ripple + 0.022f * (warp - 0.5f)) + offset
         }
-        // Pack-flavored silhouette accents
-        when ("coast") {
-            "kaleido" -> {
-                val rings = 4
-                for (i in 0 until rings) {
-                    val ang = time * 2f * PI.toFloat() * (0.15f + i * 0.03f)
-                    val rr = minOf(w, h) * (0.12f + i * 0.08f)
-                    for (k in 0 until 6) {
-                        val a = ang + k * (2f * PI.toFloat() / 6f)
-                        drawCircle(
-                            color = TonalPalette.withAlpha(accent, 0.2f * dim),
-                            radius = rr * 0.12f,
-                            center = Offset(w * 0.5f + cos(a) * rr, h * 0.5f + sin(a) * rr),
-                        )
-                    }
+
+        fun wavePath(offset: Float, closeDown: Boolean): Path = Path().apply {
+            val segments = (detail * 5).coerceAtLeast(24)
+            for (i in 0..segments) {
+                val x = w * i / segments
+                val y = shoreY(x, offset)
+                if (i == 0) moveTo(x, y) else lineTo(x, y)
+            }
+            if (closeDown) {
+                lineTo(w, h)
+                lineTo(0f, h)
+                close()
+            }
+        }
+
+        val shorePath = Path().apply {
+            val segments = (detail * 5).coerceAtLeast(24)
+            moveTo(0f, 0f)
+            lineTo(w, 0f)
+            for (i in segments downTo 0) {
+                val x = w * i / segments
+                lineTo(x, shoreY(x, -minDim * 0.01f))
+            }
+            close()
+        }
+        drawPath(
+            path = shorePath,
+            brush = Brush.verticalGradient(
+                0f to Color(0xFF101820),
+                0.75f to Color(0xFF1A2934),
+                1f to Color(0xFF263844),
+                startY = 0f,
+                endY = h * 0.68f,
+            ),
+        )
+        // Scattered dark pebbles keep the land edge readable without a hard silhouette.
+        for (i in 0 until detail + 2) {
+            val x = w * (0.08f + i * 0.84f / (detail + 1))
+            val y = shoreY(x, -minDim * (0.035f + (i % 3) * 0.014f))
+            val radius = minDim * (0.006f + (i % 3) * 0.002f)
+            drawCircle(
+                color = TonalPalette.withAlpha(Color(0xFF080F15), 0.55f * dim),
+                radius = radius,
+                center = Offset(x, y),
+            )
+        }
+
+        // Moving tidal sheet.
+        drawPath(
+            path = wavePath(0f, closeDown = true),
+            brush = Brush.verticalGradient(
+                0f to TonalPalette.brightness(Color(0xFF24475A), brightness * dim),
+                0.45f to sea,
+                1f to deepSea,
+                startY = h * 0.58f,
+                endY = h,
+            ),
+        )
+
+        // Several broken, soft lines echo the foam as it thins over wet sand.
+        for (band in 1..3) {
+            val offset = minDim * (0.016f + band * 0.025f)
+            val path = wavePath(offset, closeDown = false)
+            drawPath(
+                path = path,
+                color = TonalPalette.withAlpha(foam, (0.16f / band) * dim),
+                style = Stroke(width = minDim * (0.012f / band)),
+            )
+            drawPath(
+                path = path,
+                color = TonalPalette.withAlpha(foam, (0.22f / band) * dim),
+                style = Stroke(width = minDim * (0.0025f / band)),
+            )
+        }
+
+        // The leading lace edge: short scallops sit just above the waterline.
+        val lace = Path().apply {
+            val count = (detail * 8).coerceAtLeast(32)
+            for (i in 0 until count) {
+                val x = w * i / (count - 1)
+                val y = shoreY(x, -minDim * 0.006f)
+                val scallop = sin(i * PI.toFloat() * 0.92f) * minDim * 0.005f
+                if (i == 0) moveTo(x, y + scallop) else lineTo(x, y + scallop)
+            }
+        }
+        drawPath(lace, TonalPalette.withAlpha(foam, 0.52f * dim), style = Stroke(minDim * 0.009f))
+        drawPath(lace, TonalPalette.withAlpha(Color.White, 0.42f * dim), style = Stroke(minDim * 0.002f))
+
+        // Long shallow ripples catch a little moonlight below the breaking wave.
+        for (i in 0 until detail) {
+            val yBase = h * (0.72f + i * 0.045f)
+            val ripple = Path().apply {
+                val segments = 24
+                for (step in 0..segments) {
+                    val x = w * step / segments
+                    val x01 = x / w
+                    val y = yBase + minDim * 0.008f * sin(x01 * 4f * PI.toFloat() + time * 2f * PI.toFloat() + i)
+                    if (step == 0) moveTo(x, y) else lineTo(x, y)
                 }
             }
-            "zen" -> {
-                drawCircle(
-                    color = TonalPalette.withAlpha(accent, 0.22f * dim),
-                    radius = minOf(w, h) * (0.18f + 0.02f * wash),
-                    center = Offset(w * 0.5f, h * 0.52f),
-                    style = Stroke(width = minOf(w, h) * 0.018f),
-                )
-            }
-            "interior" -> {
-                // soft vertical light well
-                drawRect(
-                    brush = Brush.horizontalGradient(
-                        0f to Color.Transparent,
-                        0.45f to TonalPalette.withAlpha(accent, 0.18f * dim),
-                        0.55f to TonalPalette.withAlpha(accent, 0.18f * dim),
-                        1f to Color.Transparent,
-                    ),
-                    topLeft = Offset(w * 0.35f, 0f),
-                    size = androidx.compose.ui.geometry.Size(w * 0.3f, h),
-                )
-            }
-            "coast" -> {
-                val horizon = h * (0.58f + 0.02f * wash)
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        0f to Color.Transparent,
-                        1f to TonalPalette.withAlpha(accent, 0.25f * dim),
-                        startY = horizon - h * 0.05f,
-                        endY = h,
-                    ),
-                )
-            }
-            "fire" -> {
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        0f to TonalPalette.withAlpha(accent, 0.55f * dim),
-                        1f to Color.Transparent,
-                        center = Offset(w * 0.5f, h * 0.72f),
-                        radius = minOf(w, h) * 0.35f,
-                    ),
-                    radius = minOf(w, h) * 0.35f,
-                    center = Offset(w * 0.5f, h * 0.72f),
-                )
-            }
-            else -> {}
+            drawPath(
+                path = ripple,
+                color = TonalPalette.withAlpha(foam, (0.10f + 0.02f * (i % 3)) * dim),
+                style = Stroke(width = minDim * 0.0018f),
+            )
         }
     }
 }

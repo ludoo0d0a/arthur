@@ -15,6 +15,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
@@ -24,7 +26,6 @@ import fr.geoking.arthur.genart.qualityCount
 import fr.geoking.arthur.genart.seededRange
 import fr.geoking.arthur.genart.seededUnit
 import kotlin.math.PI
-import kotlin.math.cos
 import kotlin.math.sin
 
 private data class AvionContrailMote(
@@ -77,20 +78,34 @@ internal fun AvionContrailEngine(
         val h = size.height
         val time = phase01(t)
         val wash = loopedFbm(time, radius = 1.35f, octaves = 2, seedOffset = 11)
-        drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    TonalPalette.brightness(Color(0xFF5A90C8), brightness * dim * (0.92f + 0.08f * wash)),
-                    TonalPalette.brightness(Color(0xFFB8D4EC), brightness * dim),
-                ),
-            ),
-        )
+        drawRect(brush = Brush.verticalGradient(
+            0f to TonalPalette.brightness(Color(0xFF5A90C8), brightness * dim * (0.92f + 0.08f * wash)),
+            0.58f to TonalPalette.brightness(Color(0xFFB8D4EC), brightness * dim),
+            1f to TonalPalette.brightness(Color(0xFF829FBD), brightness * dim),
+        ))
         val accent = TonalPalette.brightness(
             TonalPalette.mix(Color(0xFFF0F6FC), TonalPalette.pick(paletteColors, 0), 0.35f),
             brightness * dim,
         )
-        // Soft horizon / vanishing point
-        val horizon = h * (0.55f + 0.04f * (wash - 0.5f))
+        // High-altitude cloud deck, with broad soft bands rather than a ground horizon.
+        val cloudDrift = (loopedFbm(time, radius = 1.15f, octaves = 2, seedOffset = 37) - 0.5f) * w * 0.025f
+        for (i in 0..3) {
+            val y = h * (0.56f + i * 0.105f) + (loopedFbm(time, radius = 1.2f, octaves = 2, seedOffset = 51 + i * 13) - 0.5f) * h * 0.025f
+            val bandAlpha = (0.09f - i * 0.012f) * dim
+            drawOval(
+                brush = Brush.horizontalGradient(
+                    0f to Color.Transparent,
+                    0.2f to TonalPalette.withAlpha(Color(0xFFF0F6FC), bandAlpha),
+                    0.72f to TonalPalette.withAlpha(Color(0xFFE4EFF9), bandAlpha * 0.8f),
+                    1f to Color.Transparent,
+                    startX = -w * 0.15f + cloudDrift,
+                    endX = w * 1.1f + cloudDrift,
+                ),
+                topLeft = Offset(-w * 0.08f + cloudDrift, y),
+                size = Size(w * 1.16f, h * (0.10f + i * 0.012f)),
+            )
+        }
+        val horizon = h * (0.52f + 0.025f * (wash - 0.5f))
         drawRect(
             brush = Brush.verticalGradient(
                 0f to Color.Transparent,
@@ -101,80 +116,36 @@ internal fun AvionContrailEngine(
         )
         motes.forEach { mote ->
             val n = loopedFbm(time, radius = 1.2f + mote.radius, seedOffset = mote.colorIndex * 97 + 5)
-            val x = (mote.x0 + mote.driftX * (n * 2f - 1f) + time * 0.15f + 1f) % 1f * w
+            val x = (mote.x0 + mote.driftX * (n * 2f - 1f) + time * 0.05f + 1f) % 1f * w
             val y = (mote.y0 + mote.driftY * sin(time * 2f * PI.toFloat() + mote.phaseOffset) * 0.5f + 1f) % 1f * h
-            val r = minOf(w, h) * mote.radius * (0.85f + 0.3f * n)
             drawCircle(
-                color = TonalPalette.withAlpha(
-                    TonalPalette.brightness(TonalPalette.pick(paletteColors, mote.colorIndex), brightness * dim),
-                    (0.10f + 0.16f * n) * dim,
-                ),
-                radius = r,
+                color = TonalPalette.withAlpha(Color(0xFFEAF4FC), (0.10f + 0.14f * n) * dim),
+                radius = minOf(w, h) * (0.0015f + 0.002f * n),
                 center = Offset(x, y),
             )
         }
-        when ("avion") {
-            "auto", "moto" -> {
-                // soft dash silhouette band
-                drawRect(
-                    color = TonalPalette.withAlpha(Color(0xFF080A0C), 0.45f * dim),
-                    topLeft = Offset(0f, h * 0.72f),
-                    size = Size(w, h * 0.28f),
-                )
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        0f to TonalPalette.withAlpha(accent, 0.4f * dim),
-                        1f to Color.Transparent,
-                        center = Offset(w * 0.5f, h * 0.62f),
-                        radius = minOf(w, h) * 0.25f,
-                    ),
-                    radius = minOf(w, h) * 0.25f,
-                    center = Offset(w * 0.5f, h * 0.62f),
-                )
-            }
-            "avion" -> {
-                // soft wing edge
-                drawRect(
-                    brush = Brush.horizontalGradient(
-                        0f to TonalPalette.withAlpha(accent, 0.2f * dim),
-                        1f to Color.Transparent,
-                    ),
-                    topLeft = Offset(0f, h * 0.62f),
-                    size = Size(w * 0.55f, h * 0.08f),
-                )
-            }
-            "velo" -> {
-                // path ribbon
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        0f to Color.Transparent,
-                        1f to TonalPalette.withAlpha(accent, 0.22f * dim),
-                    ),
-                    topLeft = Offset(w * 0.42f, horizon),
-                    size = Size(w * 0.16f, h - horizon),
-                )
-            }
-            "train" -> {
-                // window frame bars
-                for (i in 1..2) {
-                    val x = w * (0.28f * i)
-                    drawRect(
-                        color = TonalPalette.withAlpha(Color(0xFF0A0C10), 0.35f * dim),
-                        topLeft = Offset(x, 0f),
-                        size = Size(w * 0.02f, h),
-                    )
-                }
-            }
-            "us_vintage" -> {
-                // neon arc
-                drawCircle(
-                    color = TonalPalette.withAlpha(accent, 0.35f * dim),
-                    radius = minOf(w, h) * 0.22f,
-                    center = Offset(w * 0.5f, h * 0.38f),
-                    style = Stroke(width = minOf(w, h) * 0.02f),
-                )
-            }
-            else -> {}
+
+        // A long white contrail curves gently across the sky and softens as it disperses.
+        val bend = (loopedFbm(time, radius = 1.1f, octaves = 2, seedOffset = 83) - 0.5f) * h * 0.035f
+        val trail = Path().apply {
+            moveTo(w * 0.08f, h * 0.29f + bend * 0.45f)
+            cubicTo(w * 0.35f, h * 0.24f + bend, w * 0.63f, h * 0.35f - bend * 0.35f, w * 0.94f, h * 0.27f - bend * 0.15f)
+        }
+        drawPath(trail, color = TonalPalette.withAlpha(Color(0xFFF0F6FC), 0.13f * dim), style = Stroke(width = minOf(w, h) * 0.042f, cap = StrokeCap.Round))
+        drawPath(trail, color = TonalPalette.withAlpha(Color(0xFFF0F6FC), 0.36f * dim), style = Stroke(width = minOf(w, h) * 0.014f, cap = StrokeCap.Round))
+        drawPath(trail, color = TonalPalette.withAlpha(Color.White, 0.78f * dim), style = Stroke(width = minOf(w, h) * 0.0035f, cap = StrokeCap.Round))
+        // Fine feathering wisps soften the trail edges.
+        for (i in 0 until qualityCount(quality, low = 3, medium = 5, high = 8)) {
+            val f = (i + 1f) / (qualityCount(quality, low = 3, medium = 5, high = 8) + 1f)
+            val x = w * (0.12f + f * 0.74f)
+            val y = h * (0.29f + 0.015f * sin(f * 2f * PI.toFloat()) + bend / h)
+            drawLine(
+                color = TonalPalette.withAlpha(Color(0xFFF0F6FC), 0.13f * dim),
+                start = Offset(x, y),
+                end = Offset(x + w * 0.045f, y - h * 0.018f),
+                strokeWidth = minOf(w, h) * 0.003f,
+                cap = StrokeCap.Round,
+            )
         }
     }
 }

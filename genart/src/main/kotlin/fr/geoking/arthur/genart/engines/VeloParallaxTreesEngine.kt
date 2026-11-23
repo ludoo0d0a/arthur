@@ -15,29 +15,17 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.Path
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
 import fr.geoking.arthur.genart.loopedFbm
 import fr.geoking.arthur.genart.phase01
 import fr.geoking.arthur.genart.qualityCount
 import fr.geoking.arthur.genart.seededRange
-import fr.geoking.arthur.genart.seededUnit
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
 
-private data class VeloParallaxTreesMote(
-    val x0: Float,
-    val y0: Float,
-    val radius: Float,
-    val driftX: Float,
-    val driftY: Float,
-    val phaseOffset: Float,
-    val colorIndex: Int,
-)
+private data class RoadsideTree(val x: Float, val width: Float, val height: Float, val layer: Int)
 
-/** Soft Ambient POV Velo Parallax Trees — seamless loop via loopedFbm (no traffic sim). */
+/** Soft Ambient POV Velo Parallax Trees — seamless loop via loopedFbm. */
 @Composable
 internal fun VeloParallaxTreesEngine(
     isActive: Boolean,
@@ -48,16 +36,14 @@ internal fun VeloParallaxTreesEngine(
     modifier: Modifier = Modifier,
 ) {
     val count = qualityCount(quality, low = 4, medium = 7, high = 11)
-    val motes = remember(count) {
-        List(count) { i ->
-            VeloParallaxTreesMote(
-                x0 = seededUnit(i * 17 + 3),
-                y0 = seededUnit(i * 29 + 7),
-                radius = seededRange(i * 41 + 11, 0.03f, 0.12f),
-                driftX = seededRange(i * 53 + 13, 0.02f, 0.08f),
-                driftY = seededRange(i * 67 + 19, 0.01f, 0.04f),
-                phaseOffset = seededRange(i * 71 + 23, 0f, 2f * PI.toFloat()),
-                colorIndex = i,
+    val trees = remember(count) {
+        List(count * 2) { i ->
+            val layer = i % 2
+            RoadsideTree(
+                x = seededRange(i * 17 + 3, 0f, 1f),
+                width = seededRange(i * 29 + 7, 0.055f, 0.11f),
+                height = seededRange(i * 41 + 11, 0.12f, 0.25f) * if (layer == 0) 0.72f else 1f,
+                layer = layer,
             )
         }
     }
@@ -72,109 +58,97 @@ internal fun VeloParallaxTreesEngine(
         label = "veloparallaxtrees_t",
     )
     val dim = if (isActive) 1f else 0.55f
+
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
+        val minDim = minOf(w, h)
         val time = phase01(t)
         val wash = loopedFbm(time, radius = 1.35f, octaves = 2, seedOffset = 11)
-        drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    TonalPalette.brightness(Color(0xFF2A4030), brightness * dim * (0.92f + 0.08f * wash)),
-                    TonalPalette.brightness(Color(0xFF1A281C), brightness * dim),
-                ),
-            ),
-        )
-        val accent = TonalPalette.brightness(
-            TonalPalette.mix(Color(0xFF80A070), TonalPalette.pick(paletteColors, 0), 0.35f),
-            brightness * dim,
-        )
-        // Soft horizon / vanishing point
-        val horizon = h * (0.55f + 0.04f * (wash - 0.5f))
+        val sky = TonalPalette.brightness(Color(0xFF2A4030), brightness * dim)
+        val ground = TonalPalette.brightness(Color(0xFF1A281C), brightness * dim)
+        val horizonGlow = TonalPalette.brightness(Color(0xFF80A070), brightness * dim)
+        val horizon = h * (0.53f + 0.025f * (wash - 0.5f))
+
+        drawRect(brush = Brush.verticalGradient(listOf(sky, ground)))
         drawRect(
             brush = Brush.verticalGradient(
                 0f to Color.Transparent,
-                1f to TonalPalette.withAlpha(accent, 0.12f * dim),
-                startY = horizon - h * 0.08f,
-                endY = horizon + h * 0.08f,
+                0.48f to TonalPalette.withAlpha(horizonGlow, 0.24f * dim),
+                1f to Color.Transparent,
+                startY = horizon - h * 0.13f,
+                endY = horizon + h * 0.13f,
             ),
         )
-        motes.forEach { mote ->
-            val n = loopedFbm(time, radius = 1.2f + mote.radius, seedOffset = mote.colorIndex * 97 + 5)
-            val x = (mote.x0 + mote.driftX * (n * 2f - 1f) + time * 0.15f + 1f) % 1f * w
-            val y = (mote.y0 + mote.driftY * sin(time * 2f * PI.toFloat() + mote.phaseOffset) * 0.5f + 1f) % 1f * h
-            val r = minOf(w, h) * mote.radius * (0.85f + 0.3f * n)
-            drawCircle(
-                color = TonalPalette.withAlpha(
-                    TonalPalette.brightness(TonalPalette.pick(paletteColors, mote.colorIndex), brightness * dim),
-                    (0.10f + 0.16f * n) * dim,
-                ),
-                radius = r,
-                center = Offset(x, y),
+
+        // Far tree line moves slowly against the warm distant horizon.
+        trees.filter { it.layer == 0 }.forEach { tree ->
+            val x = ((tree.x - time * 0.12f + 1f) % 1f) * w
+            val baseY = horizon + h * 0.065f
+            val treeH = h * tree.height * 0.55f
+            val treeW = minDim * tree.width * 0.78f
+            drawPath(
+                path = Path().apply {
+                    moveTo(x - treeW * 0.5f, baseY)
+                    lineTo(x, baseY - treeH)
+                    lineTo(x + treeW * 0.5f, baseY)
+                    close()
+                },
+                color = TonalPalette.withAlpha(Color(0xFF1A2A20), 0.72f * dim),
             )
         }
-        when ("velo") {
-            "auto", "moto" -> {
-                // soft dash silhouette band
-                drawRect(
-                    color = TonalPalette.withAlpha(Color(0xFF080A0C), 0.45f * dim),
-                    topLeft = Offset(0f, h * 0.72f),
-                    size = Size(w, h * 0.28f),
-                )
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        0f to TonalPalette.withAlpha(accent, 0.4f * dim),
-                        1f to Color.Transparent,
-                        center = Offset(w * 0.5f, h * 0.62f),
-                        radius = minOf(w, h) * 0.25f,
-                    ),
-                    radius = minOf(w, h) * 0.25f,
-                    center = Offset(w * 0.5f, h * 0.62f),
-                )
-            }
-            "avion" -> {
-                // soft wing edge
-                drawRect(
-                    brush = Brush.horizontalGradient(
-                        0f to TonalPalette.withAlpha(accent, 0.2f * dim),
-                        1f to Color.Transparent,
-                    ),
-                    topLeft = Offset(0f, h * 0.62f),
-                    size = Size(w * 0.55f, h * 0.08f),
-                )
-            }
-            "velo" -> {
-                // path ribbon
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        0f to Color.Transparent,
-                        1f to TonalPalette.withAlpha(accent, 0.22f * dim),
-                    ),
-                    topLeft = Offset(w * 0.42f, horizon),
-                    size = Size(w * 0.16f, h - horizon),
-                )
-            }
-            "train" -> {
-                // window frame bars
-                for (i in 1..2) {
-                    val x = w * (0.28f * i)
-                    drawRect(
-                        color = TonalPalette.withAlpha(Color(0xFF0A0C10), 0.35f * dim),
-                        topLeft = Offset(x, 0f),
-                        size = Size(w * 0.02f, h),
-                    )
-                }
-            }
-            "us_vintage" -> {
-                // neon arc
-                drawCircle(
-                    color = TonalPalette.withAlpha(accent, 0.35f * dim),
-                    radius = minOf(w, h) * 0.22f,
-                    center = Offset(w * 0.5f, h * 0.38f),
-                    style = Stroke(width = minOf(w, h) * 0.02f),
+
+        // Low fields and a perspective path draw the rider's direction of travel.
+        drawRect(
+            brush = Brush.verticalGradient(
+                0f to TonalPalette.withAlpha(Color(0xFF263326), 0f),
+                1f to TonalPalette.withAlpha(Color(0xFF182018), 0.85f * dim),
+                startY = horizon + h * 0.12f,
+                endY = h,
+            ),
+            topLeft = Offset(0f, horizon + h * 0.12f),
+            size = Size(w, h - (horizon + h * 0.12f)),
+        )
+        val path = Path().apply {
+            moveTo(w * 0.43f, horizon + h * 0.13f)
+            lineTo(w * 0.57f, horizon + h * 0.13f)
+            lineTo(w * 0.86f, h)
+            lineTo(w * 0.14f, h)
+            close()
+        }
+        drawPath(path, color = TonalPalette.withAlpha(Color(0xFF101712), 0.64f * dim))
+        drawLine(
+            color = TonalPalette.withAlpha(horizonGlow, 0.38f * dim),
+            start = Offset(w * 0.5f, horizon + h * 0.17f),
+            end = Offset(w * 0.5f, h),
+            strokeWidth = minDim * 0.003f,
+        )
+
+        // Near trees sweep past faster, creating a clear second parallax plane.
+        trees.filter { it.layer == 1 }.forEach { tree ->
+            val x = ((tree.x - time * 0.34f + 1f) % 1f) * w
+            val baseY = horizon + h * 0.24f + tree.height * h * 0.2f
+            val treeH = h * tree.height
+            val treeW = minDim * tree.width
+            val trunkW = treeW * 0.11f
+            drawRect(
+                color = TonalPalette.withAlpha(Color(0xFF111912), 0.76f * dim),
+                topLeft = Offset(x - trunkW * 0.5f, baseY - treeH * 0.18f),
+                size = Size(trunkW, treeH * 0.18f),
+            )
+            for (branch in 0..2) {
+                val top = baseY - treeH * (0.42f + branch * 0.18f)
+                val halfW = treeW * (0.5f - branch * 0.10f)
+                drawPath(
+                    path = Path().apply {
+                        moveTo(x - halfW, top + treeH * 0.16f)
+                        lineTo(x, top - treeH * 0.30f)
+                        lineTo(x + halfW, top + treeH * 0.16f)
+                        close()
+                    },
+                    color = TonalPalette.withAlpha(Color(0xFF101A13), 0.84f * dim),
                 )
             }
-            else -> {}
         }
     }
 }

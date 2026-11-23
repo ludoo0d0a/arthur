@@ -12,8 +12,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
@@ -23,20 +25,11 @@ import fr.geoking.arthur.genart.qualityCount
 import fr.geoking.arthur.genart.seededRange
 import fr.geoking.arthur.genart.seededUnit
 import kotlin.math.PI
-import kotlin.math.cos
 import kotlin.math.sin
 
-private data class MicroPollenCloseMote(
-    val x0: Float,
-    val y0: Float,
-    val radius: Float,
-    val driftX: Float,
-    val driftY: Float,
-    val phaseOffset: Float,
-    val colorIndex: Int,
-)
+private data class PollenGrain(val x: Float, val y: Float, val radius: Float)
 
-/** Soft Ambient Micro Pollen Close — seamless loop via loopedFbm. */
+/** Macro pollen grains suspended in warm botanical backlight. */
 @Composable
 internal fun MicroPollenCloseEngine(
     isActive: Boolean,
@@ -47,16 +40,12 @@ internal fun MicroPollenCloseEngine(
     modifier: Modifier = Modifier,
 ) {
     val count = qualityCount(quality, low = 4, medium = 7, high = 11)
-    val motes = remember(count) {
+    val grains = remember(count) {
         List(count) { i ->
-            MicroPollenCloseMote(
-                x0 = seededUnit(i * 17 + 3),
-                y0 = seededUnit(i * 29 + 7),
-                radius = seededRange(i * 41 + 11, 0.04f, 0.14f),
-                driftX = seededRange(i * 53 + 13, 0.02f, 0.06f),
-                driftY = seededRange(i * 67 + 19, 0.015f, 0.05f),
-                phaseOffset = seededRange(i * 71 + 23, 0f, 2f * PI.toFloat()),
-                colorIndex = i,
+            PollenGrain(
+                x = seededUnit(i * 31 + 9),
+                y = seededUnit(i * 47 + 3),
+                radius = seededRange(i * 59 + 5, 0.012f, 0.035f),
             )
         }
     }
@@ -74,106 +63,94 @@ internal fun MicroPollenCloseEngine(
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
+        val unit = minOf(w, h)
         val time = phase01(t)
-        val wash = loopedFbm(time, radius = 1.35f, octaves = 2, seedOffset = 11)
-        drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    TonalPalette.brightness(Color(0xFF2A2210), brightness * dim * (0.92f + 0.08f * wash)),
-                    TonalPalette.brightness(Color(0xFF18140A), brightness * dim),
-                ),
-            ),
-        )
+        val breeze = loopedFbm(time, radius = 1.2f, octaves = 3, seedOffset = 43)
         val accent = TonalPalette.brightness(
-            TonalPalette.mix(Color(0xFFFFE080), TonalPalette.pick(paletteColors, 0), 0.35f),
+            TonalPalette.mix(Color(0xFFFFE080), TonalPalette.pick(paletteColors, 0), 0.25f),
             brightness * dim,
         )
-        // Soft focal glow
-        val cx = w * (0.35f + 0.3f * loopedFbm(time, radius = 1.2f, seedOffset = 29))
-        val cy = h * (0.3f + 0.25f * loopedFbm(time, radius = 1.4f, seedOffset = 47))
+        drawRect(
+            brush = Brush.verticalGradient(
+                0f to TonalPalette.brightness(Color(0xFF2A2210), brightness * dim),
+                0.58f to TonalPalette.brightness(Color(0xFF18140A), brightness * dim),
+                1f to TonalPalette.brightness(Color(0xFF0C100A), brightness * dim),
+            ),
+        )
+
+        // Broad defocused leaf forms frame a shallow macro depth of field.
+        val leaf = Path().apply {
+            moveTo(-w * 0.08f, h * 0.82f)
+            cubicTo(w * 0.16f, h * 0.56f, w * 0.36f, h * 0.63f, w * 0.54f, h * 1.08f)
+            cubicTo(w * 0.30f, h * 0.93f, w * 0.08f, h * 0.91f, -w * 0.08f, h * 0.82f)
+            close()
+        }
+        drawPath(leaf, TonalPalette.withAlpha(Color(0xFF35451C), 0.5f * dim))
+        drawPath(
+            path = leaf,
+            color = TonalPalette.withAlpha(Color(0xFF819344), 0.28f * dim),
+            style = Stroke(width = unit * 0.004f),
+        )
+        drawLine(
+            color = TonalPalette.withAlpha(Color(0xFF9DAD54), 0.26f * dim),
+            start = Offset(w * 0.04f, h * 0.84f),
+            end = Offset(w * 0.43f, h * 0.96f),
+            strokeWidth = unit * 0.003f,
+        )
+
+        val glowCenter = Offset(w * 0.47f, h * (0.38f + 0.025f * sin(time * 2f * PI.toFloat())))
         drawCircle(
             brush = Brush.radialGradient(
-                0f to TonalPalette.withAlpha(accent, 0.35f * dim),
+                0f to TonalPalette.withAlpha(accent, 0.48f * dim),
+                0.38f to TonalPalette.withAlpha(Color(0xFFB87828), 0.18f * dim),
                 1f to Color.Transparent,
-                center = Offset(cx, cy),
-                radius = minOf(w, h) * 0.55f,
+                center = glowCenter,
+                radius = unit * 0.72f,
             ),
-            radius = minOf(w, h) * 0.55f,
-            center = Offset(cx, cy),
+            radius = unit * 0.72f,
+            center = glowCenter,
         )
-        motes.forEach { mote ->
-            val n = loopedFbm(time, radius = 1.25f + mote.radius, seedOffset = mote.colorIndex * 97 + 5)
-            val x = (mote.x0 + mote.driftX * (n * 2f - 1f) + 1f) % 1f * w
-            val y = (mote.y0 + mote.driftY * sin(time * 2f * PI.toFloat() + mote.phaseOffset) * 0.5f + 1f) % 1f * h
-            val r = minOf(w, h) * mote.radius * (0.85f + 0.3f * n)
-            val col = TonalPalette.withAlpha(
-                TonalPalette.brightness(TonalPalette.pick(paletteColors, mote.colorIndex), brightness * dim),
-                (0.12f + 0.18f * n) * dim,
+
+        // A few oversized pollen grains sit close to the lens.
+        for (i in 0 until 3) {
+            val x = w * (0.27f + i * 0.24f) + unit * 0.012f * sin(time * 2f * PI.toFloat() + i)
+            val y = h * (0.40f + (i % 2) * 0.12f) + unit * 0.008f * sin(time * 2f * PI.toFloat() + i * 1.7f)
+            val r = unit * (0.047f + i * 0.009f) * (0.96f + 0.04f * breeze)
+            drawCircle(
+                brush = Brush.radialGradient(
+                    0f to TonalPalette.withAlpha(Color(0xFFFFF2B0), 0.96f * dim),
+                    0.3f to TonalPalette.withAlpha(Color(0xFFFFD45A), 0.94f * dim),
+                    0.78f to TonalPalette.withAlpha(Color(0xFFB56A1C), 0.86f * dim),
+                    1f to TonalPalette.withAlpha(Color(0xFF58310F), 0.7f * dim),
+                    center = Offset(x - r * 0.22f, y - r * 0.28f),
+                    radius = r * 1.45f,
+                ),
+                radius = r,
+                center = Offset(x, y),
             )
-            drawCircle(color = col, radius = r, center = Offset(x, y))
+            drawCircle(
+                color = TonalPalette.withAlpha(Color.White, 0.78f * dim),
+                radius = r * 0.12f,
+                center = Offset(x - r * 0.25f, y - r * 0.31f),
+            )
         }
-        // Pack-flavored silhouette accents
-        when ("micro") {
-            "kaleido" -> {
-                val rings = 4
-                for (i in 0 until rings) {
-                    val ang = time * 2f * PI.toFloat() * (0.15f + i * 0.03f)
-                    val rr = minOf(w, h) * (0.12f + i * 0.08f)
-                    for (k in 0 until 6) {
-                        val a = ang + k * (2f * PI.toFloat() / 6f)
-                        drawCircle(
-                            color = TonalPalette.withAlpha(accent, 0.2f * dim),
-                            radius = rr * 0.12f,
-                            center = Offset(w * 0.5f + cos(a) * rr, h * 0.5f + sin(a) * rr),
-                        )
-                    }
-                }
-            }
-            "zen" -> {
-                drawCircle(
-                    color = TonalPalette.withAlpha(accent, 0.22f * dim),
-                    radius = minOf(w, h) * (0.18f + 0.02f * wash),
-                    center = Offset(w * 0.5f, h * 0.52f),
-                    style = Stroke(width = minOf(w, h) * 0.018f),
-                )
-            }
-            "interior" -> {
-                // soft vertical light well
-                drawRect(
-                    brush = Brush.horizontalGradient(
-                        0f to Color.Transparent,
-                        0.45f to TonalPalette.withAlpha(accent, 0.18f * dim),
-                        0.55f to TonalPalette.withAlpha(accent, 0.18f * dim),
-                        1f to Color.Transparent,
-                    ),
-                    topLeft = Offset(w * 0.35f, 0f),
-                    size = androidx.compose.ui.geometry.Size(w * 0.3f, h),
-                )
-            }
-            "coast" -> {
-                val horizon = h * (0.58f + 0.02f * wash)
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        0f to Color.Transparent,
-                        1f to TonalPalette.withAlpha(accent, 0.25f * dim),
-                        startY = horizon - h * 0.05f,
-                        endY = h,
-                    ),
-                )
-            }
-            "fire" -> {
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        0f to TonalPalette.withAlpha(accent, 0.55f * dim),
-                        1f to Color.Transparent,
-                        center = Offset(w * 0.5f, h * 0.72f),
-                        radius = minOf(w, h) * 0.35f,
-                    ),
-                    radius = minOf(w, h) * 0.35f,
-                    center = Offset(w * 0.5f, h * 0.72f),
-                )
-            }
-            else -> {}
+
+        grains.forEachIndexed { i, grain ->
+            val drift = loopedFbm(time, radius = 1.1f, octaves = 2, seedOffset = i * 97 + 17)
+            val x = ((grain.x + 0.018f * (drift - 0.5f) + 1f) % 1f) * w
+            val y = ((grain.y - time * 0.035f + 1f) % 1f) * h
+            val r = unit * grain.radius * (0.85f + 0.2f * drift)
+            drawOval(
+                brush = Brush.radialGradient(
+                    0f to TonalPalette.withAlpha(Color(0xFFFFE894), (0.85f * dim)),
+                    0.7f to TonalPalette.withAlpha(Color(0xFFE3A63B), (0.72f * dim)),
+                    1f to Color.Transparent,
+                    center = Offset(x - r * 0.18f, y - r * 0.2f),
+                    radius = r,
+                ),
+                topLeft = Offset(x - r, y - r * 0.72f),
+                size = Size(r * 2f, r * 1.44f),
+            )
         }
     }
 }

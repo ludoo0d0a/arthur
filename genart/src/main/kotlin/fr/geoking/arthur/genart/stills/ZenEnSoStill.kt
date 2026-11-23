@@ -27,66 +27,79 @@ internal object ZenEnSoStill {
     ) {
         val w = size.toFloat()
         val h = size.toFloat()
-        val t01 = ((phase % (2f * PI.toFloat())) / (2f * PI.toFloat())).let { v -> if (v < 0f) v + 1f else v }
-        val wash = loopedFbm(t01, radius = 1.35f, octaves = 2, seedOffset = 11)
+        val minDim = minOf(w, h)
+        val t01 = ((phase % (2f * PI.toFloat())) / (2f * PI.toFloat())).let { if (it < 0f) it + 1f else it }
+        val bleed = loopedFbm(t01, radius = 1.2f, octaves = 2, seedOffset = 31)
         val dim = 0.85f + 0.15f * pulse
+
+        paint.style = Paint.Style.FILL
         paint.shader = LinearGradient(
             0f, 0f, 0f, h,
             intArrayOf(0xFFF5F2EA.toInt(), 0xFFE0D8C8.toInt()),
             floatArrayOf(0f, 1f),
             Shader.TileMode.CLAMP,
         )
-        paint.style = Paint.Style.FILL
         canvas.drawRect(0f, 0f, w, h, paint)
         paint.shader = null
-        val accent = mixArgb(0xFF2A2A28.toInt(), palette.colorAt(0), 0.35f)
-        val cx = w * (0.35f + 0.3f * loopedFbm(t01, radius = 1.2f, seedOffset = 29))
-        val cy = h * (0.3f + 0.25f * loopedFbm(t01, radius = 1.4f, seedOffset = 47))
+
+        val cx = w * 0.5f
+        val cy = h * 0.51f
         paint.shader = RadialGradient(
-            cx, cy, minOf(w, h) * 0.55f,
-            intArrayOf(withAlpha(accent, (0.35f * dim * 255).toInt()), Color.TRANSPARENT),
+            cx, cy, minDim * 0.47f,
+            intArrayOf(withAlpha(0xFFC5B8A2.toInt(), (0.11f * dim * 255).toInt()), Color.TRANSPARENT),
             floatArrayOf(0f, 1f),
             Shader.TileMode.CLAMP,
         )
-        canvas.drawCircle(cx, cy, minOf(w, h) * 0.55f, paint)
+        canvas.drawCircle(cx, cy, minDim * 0.47f, paint)
         paint.shader = null
-        for (i in 0 until 7) {
-            val n = loopedFbm(t01, radius = 1.25f + i * 0.04f, seedOffset = i * 97 + 5)
-            val x = ((0.1f + i * 0.12f) + 0.04f * (n * 2f - 1f) + 1f) % 1f * w
-            val y = ((0.15f + (i % 5) * 0.15f) + 0.03f * sin(t01 * 2f * PI.toFloat() + i) + 1f) % 1f * h
-            val r = minOf(w, h) * (0.04f + 0.06f * n)
-            paint.color = withAlpha(mixArgb(palette.colorAt(i), accent, 0.4f), ((0.12f + 0.18f * n) * dim * 255).toInt())
-            canvas.drawCircle(x, y, r, paint)
-        }
-        when ("zen") {
-            "zen" -> {
-                paint.style = Paint.Style.STROKE
-                paint.strokeWidth = minOf(w, h) * 0.018f
-                paint.color = withAlpha(accent, (0.35f * dim * 255).toInt())
-                canvas.drawCircle(w * 0.5f, h * 0.52f, minOf(w, h) * (0.18f + 0.02f * wash), paint)
-                paint.style = Paint.Style.FILL
-            }
-            "fire" -> {
-                paint.shader = RadialGradient(
-                    w * 0.5f, h * 0.72f, minOf(w, h) * 0.35f,
-                    intArrayOf(withAlpha(accent, (0.55f * dim * 255).toInt()), Color.TRANSPARENT),
-                    floatArrayOf(0f, 1f),
-                    Shader.TileMode.CLAMP,
+
+        val ink = mixArgb(0xFF2A2A28.toInt(), palette.colorAt(0), 0.12f)
+        val radius = minDim * 0.285f
+        val start = -PI.toFloat() * 0.77f + (bleed - 0.5f) * 0.018f
+        val sweep = PI.toFloat() * 1.72f
+
+        // Diffused ink underneath the dry, incomplete brush circle.
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = minDim * 0.025f
+        paint.color = withAlpha(ink, ((0.10f + bleed * 0.06f) * dim * 255).toInt())
+        canvas.drawCircle(cx, cy, radius, paint)
+        paint.style = Paint.Style.FILL
+
+        val samples = 120
+        for (i in 0..samples) {
+            val u = i / samples.toFloat()
+            val angle = start + sweep * u
+            val breath = loopedFbm(t01, radius = 1.15f + u * 0.2f, octaves = 2, seedOffset = 73 + i / 8)
+            val wobble = (breath - 0.5f) * minDim * 0.012f
+            val taper = 0.48f + 0.52f * sin(PI.toFloat() * u).coerceAtLeast(0f)
+            val bristle = 0.82f + 0.18f * loopedFbm(t01, radius = 1.4f, octaves = 1, seedOffset = 211 + i * 3)
+            val dotRadius = minDim * 0.0105f * taper * bristle
+            val x = cx + cos(angle) * (radius + wobble)
+            val y = cy + sin(angle) * (radius + wobble)
+            paint.color = withAlpha(ink, ((0.84f + 0.12f * breath) * dim * 255).toInt())
+            canvas.drawCircle(x, y, dotRadius, paint)
+            if (i % 4 == 0 && (u < 0.2f || u > 0.8f)) {
+                val fiberOffset = minDim * 0.015f * (0.5f + 0.5f * breath)
+                paint.color = withAlpha(ink, (0.17f * dim * 255).toInt())
+                canvas.drawCircle(
+                    cx + cos(angle) * (radius + wobble + fiberOffset),
+                    cy + sin(angle) * (radius + wobble + fiberOffset),
+                    dotRadius * 0.22f,
+                    paint,
                 )
-                canvas.drawCircle(w * 0.5f, h * 0.72f, minOf(w, h) * 0.35f, paint)
-                paint.shader = null
             }
-            "kaleido" -> {
-                paint.color = withAlpha(accent, (0.25f * dim * 255).toInt())
-                for (i in 0 until 4) {
-                    val rr = minOf(w, h) * (0.12f + i * 0.08f)
-                    for (k in 0 until 6) {
-                        val a = t01 * 2f * PI.toFloat() * 0.2f + k * (2f * PI.toFloat() / 6f)
-                        canvas.drawCircle(w * 0.5f + cos(a) * rr, h * 0.5f + sin(a) * rr, rr * 0.12f, paint)
-                    }
-                }
-            }
-            else -> Unit
+        }
+
+        // Slightly pooled ends make the open brush stroke read as hand painted.
+        paint.color = withAlpha(ink, ((0.22f + 0.04f * bleed) * dim * 255).toInt())
+        for (i in 0..1) {
+            val angle = if (i == 0) start else start + sweep
+            canvas.drawCircle(
+                cx + cos(angle) * radius,
+                cy + sin(angle) * radius,
+                minDim * if (i == 0) 0.014f else 0.010f,
+                paint,
+            )
         }
     }
 

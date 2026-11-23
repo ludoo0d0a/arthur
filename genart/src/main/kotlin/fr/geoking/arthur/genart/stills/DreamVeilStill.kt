@@ -4,6 +4,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.LinearGradient
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.RadialGradient
 import android.graphics.Shader
 import fr.geoking.arthur.genart.AnimationPalette
@@ -15,6 +16,7 @@ import kotlin.math.sin
 /** Bakes one frozen frame of Dream Veil for Auto/Ambient album art. */
 internal object DreamVeilStill {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
+    private val path = Path()
 
     fun draw(
         canvas: Canvas,
@@ -27,67 +29,71 @@ internal object DreamVeilStill {
     ) {
         val w = size.toFloat()
         val h = size.toFloat()
-        val t01 = ((phase % (2f * PI.toFloat())) / (2f * PI.toFloat())).let { v -> if (v < 0f) v + 1f else v }
-        val wash = loopedFbm(t01, radius = 1.35f, octaves = 2, seedOffset = 11)
+        val minDim = minOf(w, h)
+        val t01 = ((phase % (2f * PI.toFloat())) / (2f * PI.toFloat())).let { if (it < 0f) it + 1f else it }
         val dim = 0.85f + 0.15f * pulse
+        val drift = loopedFbm(t01, radius = 1.25f, octaves = 3, seedOffset = 13)
+        paint.style = Paint.Style.FILL
         paint.shader = LinearGradient(
             0f, 0f, 0f, h,
-            intArrayOf(0xFF1A1430.toInt(), 0xFF2A2048.toInt()),
-            floatArrayOf(0f, 1f),
+            intArrayOf(0xFF1A1430.toInt(), 0xFF2A2048.toInt(), 0xFF17142A.toInt()),
+            floatArrayOf(0f, 0.58f, 1f),
             Shader.TileMode.CLAMP,
         )
-        paint.style = Paint.Style.FILL
         canvas.drawRect(0f, 0f, w, h, paint)
         paint.shader = null
-        val accent = mixArgb(0xFFC0A0E8.toInt(), palette.colorAt(0), 0.35f)
-        val cx = w * (0.35f + 0.3f * loopedFbm(t01, radius = 1.2f, seedOffset = 29))
-        val cy = h * (0.3f + 0.25f * loopedFbm(t01, radius = 1.4f, seedOffset = 47))
+
+        val accent = mixArgb(0xFFC0A0E8.toInt(), palette.colorAt(0), 0.22f)
+        val focusX = w * (0.48f + 0.10f * (drift - 0.5f))
+        val focusY = h * (0.43f + 0.06f * (loopedFbm(t01, radius = 1.3f, seedOffset = 53) - 0.5f))
+        val pulseGlow = 0.88f + 0.12f * loopedFbm(t01, radius = 1.5f, octaves = 2, seedOffset = 37)
         paint.shader = RadialGradient(
-            cx, cy, minOf(w, h) * 0.55f,
-            intArrayOf(withAlpha(accent, (0.35f * dim * 255).toInt()), Color.TRANSPARENT),
-            floatArrayOf(0f, 1f),
-            Shader.TileMode.CLAMP,
+            focusX, focusY, minDim * 0.62f,
+            intArrayOf(withAlpha(accent, (0.25f * pulseGlow * dim * 255).toInt()), withAlpha(0xFF8670B8.toInt(), (0.11f * dim * 255).toInt()), Color.TRANSPARENT),
+            floatArrayOf(0f, 0.48f, 1f), Shader.TileMode.CLAMP,
         )
-        canvas.drawCircle(cx, cy, minOf(w, h) * 0.55f, paint)
+        canvas.drawCircle(focusX, focusY, minDim * 0.62f, paint)
         paint.shader = null
-        for (i in 0 until 7) {
-            val n = loopedFbm(t01, radius = 1.25f + i * 0.04f, seedOffset = i * 97 + 5)
-            val x = ((0.1f + i * 0.12f) + 0.04f * (n * 2f - 1f) + 1f) % 1f * w
-            val y = ((0.15f + (i % 5) * 0.15f) + 0.03f * sin(t01 * 2f * PI.toFloat() + i) + 1f) % 1f * h
-            val r = minOf(w, h) * (0.04f + 0.06f * n)
-            paint.color = withAlpha(mixArgb(palette.colorAt(i), accent, 0.4f), ((0.12f + 0.18f * n) * dim * 255).toInt())
-            canvas.drawCircle(x, y, r, paint)
+        for (i in 0..2) {
+            val x = w * (0.22f + i * 0.28f + 0.025f * sin(t01 * 2f * PI.toFloat() + i))
+            val y = h * (0.28f + i * 0.20f)
+            val radius = minDim * (0.23f + 0.04f * i)
+            val glow = if (i % 2 == 0) accent else 0xFF8870C0.toInt()
+            paint.shader = RadialGradient(
+                x, y, radius,
+                intArrayOf(withAlpha(glow, (0.12f * pulseGlow * dim * 255).toInt()), Color.TRANSPARENT),
+                floatArrayOf(0f, 1f), Shader.TileMode.CLAMP,
+            )
+            canvas.drawCircle(x, y, radius, paint)
+            paint.shader = null
         }
-        when ("dream") {
-            "zen" -> {
-                paint.style = Paint.Style.STROKE
-                paint.strokeWidth = minOf(w, h) * 0.018f
-                paint.color = withAlpha(accent, (0.35f * dim * 255).toInt())
-                canvas.drawCircle(w * 0.5f, h * 0.52f, minOf(w, h) * (0.18f + 0.02f * wash), paint)
-                paint.style = Paint.Style.FILL
-            }
-            "fire" -> {
-                paint.shader = RadialGradient(
-                    w * 0.5f, h * 0.72f, minOf(w, h) * 0.35f,
-                    intArrayOf(withAlpha(accent, (0.55f * dim * 255).toInt()), Color.TRANSPARENT),
-                    floatArrayOf(0f, 1f),
-                    Shader.TileMode.CLAMP,
-                )
-                canvas.drawCircle(w * 0.5f, h * 0.72f, minOf(w, h) * 0.35f, paint)
-                paint.shader = null
-            }
-            "kaleido" -> {
-                paint.color = withAlpha(accent, (0.25f * dim * 255).toInt())
-                for (i in 0 until 4) {
-                    val rr = minOf(w, h) * (0.12f + i * 0.08f)
-                    for (k in 0 until 6) {
-                        val a = t01 * 2f * PI.toFloat() * 0.2f + k * (2f * PI.toFloat() / 6f)
-                        canvas.drawCircle(w * 0.5f + cos(a) * rr, h * 0.5f + sin(a) * rr, rr * 0.12f, paint)
-                    }
-                }
-            }
-            else -> Unit
+
+        val veilCount = 7
+        for (i in 0 until veilCount) {
+            val layerTime = t01 * 2f * PI.toFloat() + i * 2.399f
+            val y = h * (0.16f + 0.68f * ((i + 0.5f) / veilCount) + 0.04f * sin(layerTime))
+            val amplitude = h * (0.045f + 0.025f * ((i % 3) / 2f))
+            path.reset()
+            path.moveTo(-w * 0.08f, y)
+            path.cubicTo(
+                w * 0.28f, y - amplitude * (0.45f + 0.2f * drift),
+                w * 0.68f, y + amplitude * (0.45f + 0.2f * drift),
+                w * 1.08f, y + amplitude * 0.15f,
+            )
+            val veilColor = mixArgb(accent, palette.colorAt(i), 0.18f)
+            paint.style = Paint.Style.STROKE
+            paint.strokeCap = Paint.Cap.ROUND
+            paint.color = withAlpha(veilColor, (0.035f * dim * 255).toInt())
+            paint.strokeWidth = minDim * (0.34f + 0.04f * (i % 4))
+            canvas.drawPath(path, paint)
+            paint.color = withAlpha(veilColor, (0.065f * dim * 255).toInt())
+            paint.strokeWidth = minDim * (0.15f + 0.025f * (i % 4))
+            canvas.drawPath(path, paint)
+            paint.color = withAlpha(0xFFE8DCFF.toInt(), (0.08f * dim * 255).toInt())
+            paint.strokeWidth = minDim * 0.012f
+            canvas.drawPath(path, paint)
         }
+        paint.style = Paint.Style.FILL
     }
 
     private fun mixArgb(a: Int, b: Int, t: Float): Int {

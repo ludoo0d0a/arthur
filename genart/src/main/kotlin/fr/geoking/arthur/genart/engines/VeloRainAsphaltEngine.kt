@@ -15,7 +15,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
 import fr.geoking.arthur.genart.loopedFbm
@@ -24,20 +23,18 @@ import fr.geoking.arthur.genart.qualityCount
 import fr.geoking.arthur.genart.seededRange
 import fr.geoking.arthur.genart.seededUnit
 import kotlin.math.PI
-import kotlin.math.cos
 import kotlin.math.sin
 
-private data class VeloRainAsphaltMote(
-    val x0: Float,
-    val y0: Float,
-    val radius: Float,
-    val driftX: Float,
-    val driftY: Float,
-    val phaseOffset: Float,
-    val colorIndex: Int,
+private data class RainAsphaltStreak(
+    val x: Float,
+    val y: Float,
+    val width: Float,
+    val speed: Float,
+    val phase: Float,
+    val cool: Boolean,
 )
 
-/** Soft Ambient POV Velo Rain Asphalt — seamless loop via loopedFbm (no traffic sim). */
+/** Wet road reflections from a quiet bicycle POV, with no traffic simulation. */
 @Composable
 internal fun VeloRainAsphaltEngine(
     isActive: Boolean,
@@ -47,17 +44,16 @@ internal fun VeloRainAsphaltEngine(
     speed: Float,
     modifier: Modifier = Modifier,
 ) {
-    val count = qualityCount(quality, low = 4, medium = 7, high = 11)
-    val motes = remember(count) {
+    val count = qualityCount(quality, low = 10, medium = 18, high = 28)
+    val streaks = remember(count) {
         List(count) { i ->
-            VeloRainAsphaltMote(
-                x0 = seededUnit(i * 17 + 3),
-                y0 = seededUnit(i * 29 + 7),
-                radius = seededRange(i * 41 + 11, 0.03f, 0.12f),
-                driftX = seededRange(i * 53 + 13, 0.02f, 0.08f),
-                driftY = seededRange(i * 67 + 19, 0.01f, 0.04f),
-                phaseOffset = seededRange(i * 71 + 23, 0f, 2f * PI.toFloat()),
-                colorIndex = i,
+            RainAsphaltStreak(
+                x = seededUnit(i * 17 + 3),
+                y = seededRange(i * 29 + 7, 0.48f, 1.02f),
+                width = seededRange(i * 41 + 11, 0.008f, 0.045f),
+                speed = seededRange(i * 53 + 13, 0.32f, 0.82f),
+                phase = seededUnit(i * 67 + 19),
+                cool = i % 3 == 0,
             )
         }
     }
@@ -72,109 +68,119 @@ internal fun VeloRainAsphaltEngine(
         label = "velorainasphalt_t",
     )
     val dim = if (isActive) 1f else 0.55f
+
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
+        val minDim = minOf(w, h)
         val time = phase01(t)
-        val wash = loopedFbm(time, radius = 1.35f, octaves = 2, seedOffset = 11)
+        val wash = loopedFbm(time, radius = 1.35f, octaves = 3, seedOffset = 11)
+        val warp = loopedFbm(time, radius = 1.15f, octaves = 2, seedOffset = 37)
+        val horizonY = h * (0.43f + 0.012f * (wash - 0.5f))
+        val cool = TonalPalette.brightness(Color(0xFF90B0C0), brightness * dim)
+        val amber = TonalPalette.brightness(Color(0xFFC89A70), brightness * dim)
+        val asphalt = TonalPalette.brightness(Color(0xFF14181C), brightness * dim)
+
         drawRect(
             brush = Brush.verticalGradient(
-                colors = listOf(
-                    TonalPalette.brightness(Color(0xFF2A3038), brightness * dim * (0.92f + 0.08f * wash)),
-                    TonalPalette.brightness(Color(0xFF14181C), brightness * dim),
-                ),
+                0f to TonalPalette.brightness(Color(0xFF2A3038), brightness * dim * (0.92f + 0.08f * wash)),
+                0.43f to TonalPalette.brightness(Color(0xFF202830), brightness * dim),
+                0.60f to asphalt,
+                1f to TonalPalette.brightness(Color(0xFF080A0C), brightness * dim),
             ),
         )
-        val accent = TonalPalette.brightness(
-            TonalPalette.mix(Color(0xFF90B0C0), TonalPalette.pick(paletteColors, 0), 0.35f),
-            brightness * dim,
-        )
-        // Soft horizon / vanishing point
-        val horizon = h * (0.55f + 0.04f * (wash - 0.5f))
+
+        // Distant rain-softened glow above the road.
         drawRect(
             brush = Brush.verticalGradient(
                 0f to Color.Transparent,
-                1f to TonalPalette.withAlpha(accent, 0.12f * dim),
-                startY = horizon - h * 0.08f,
-                endY = horizon + h * 0.08f,
+                1f to TonalPalette.withAlpha(cool, 0.14f * dim),
+                startY = horizonY - h * 0.09f,
+                endY = horizonY + h * 0.09f,
             ),
         )
-        motes.forEach { mote ->
-            val n = loopedFbm(time, radius = 1.2f + mote.radius, seedOffset = mote.colorIndex * 97 + 5)
-            val x = (mote.x0 + mote.driftX * (n * 2f - 1f) + time * 0.15f + 1f) % 1f * w
-            val y = (mote.y0 + mote.driftY * sin(time * 2f * PI.toFloat() + mote.phaseOffset) * 0.5f + 1f) % 1f * h
-            val r = minOf(w, h) * mote.radius * (0.85f + 0.3f * n)
-            drawCircle(
-                color = TonalPalette.withAlpha(
-                    TonalPalette.brightness(TonalPalette.pick(paletteColors, mote.colorIndex), brightness * dim),
-                    (0.10f + 0.16f * n) * dim,
-                ),
-                radius = r,
-                center = Offset(x, y),
+        drawCircle(
+            brush = Brush.radialGradient(
+                0f to TonalPalette.withAlpha(amber, 0.18f * dim),
+                0.45f to TonalPalette.withAlpha(cool, 0.08f * dim),
+                1f to Color.Transparent,
+                center = Offset(w * (0.55f + 0.06f * (warp - 0.5f)), horizonY),
+                radius = minDim * 0.34f,
+            ),
+            radius = minDim * 0.34f,
+            center = Offset(w * (0.55f + 0.06f * (warp - 0.5f)), horizonY),
+        )
+
+        // Road shoulders and short center marks narrow into the distance.
+        drawLine(
+            color = TonalPalette.withAlpha(cool, 0.15f * dim),
+            start = Offset(w * 0.47f, horizonY),
+            end = Offset(-w * 0.16f, h),
+            strokeWidth = minDim * 0.004f,
+        )
+        drawLine(
+            color = TonalPalette.withAlpha(cool, 0.15f * dim),
+            start = Offset(w * 0.53f, horizonY),
+            end = Offset(w * 1.16f, h),
+            strokeWidth = minDim * 0.004f,
+        )
+        for (i in 0 until 6) {
+            val depth = (i + 1) / 7f
+            val y = horizonY + (h - horizonY) * depth * depth
+            val dashW = minDim * (0.004f + 0.010f * depth)
+            val dashH = minDim * (0.008f + 0.026f * depth)
+            drawRoundRect(
+                color = TonalPalette.withAlpha(Color(0xFFB8C0C0), 0.13f * depth * dim),
+                topLeft = Offset(w * 0.5f - dashW * 0.5f, y),
+                size = Size(dashW, dashH),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(dashW),
             )
         }
-        when ("velo") {
-            "auto", "moto" -> {
-                // soft dash silhouette band
-                drawRect(
-                    color = TonalPalette.withAlpha(Color(0xFF080A0C), 0.45f * dim),
-                    topLeft = Offset(0f, h * 0.72f),
-                    size = Size(w, h * 0.28f),
-                )
+
+        // Wet asphalt carries broken, elongated reflections toward the viewer.
+        streaks.forEachIndexed { index, streak ->
+            val phase = (time * streak.speed + streak.phase) % 1f
+            val depth = 0.18f + 0.82f * phase
+            val y = horizonY + (h - horizonY) * depth * depth
+            val spread = (streak.x - 0.5f) * (0.08f + 0.95f * depth)
+            val x = w * (0.5f + spread) + sin((time + streak.phase) * 2f * PI.toFloat()) * minDim * 0.008f
+            val streakW = minDim * streak.width * (0.28f + depth * 1.7f)
+            val streakH = minDim * (0.003f + depth * 0.018f) * (0.75f + 0.25f * wash)
+            val light = if (streak.cool) cool else amber
+            val alpha = (0.05f + 0.16f * depth) * dim
+            drawRoundRect(
+                brush = Brush.horizontalGradient(
+                    0f to Color.Transparent,
+                    0.42f to TonalPalette.withAlpha(light, alpha),
+                    1f to Color.Transparent,
+                    startX = x - streakW,
+                    endX = x + streakW,
+                ),
+                topLeft = Offset(x - streakW, y),
+                size = Size(streakW * 2f, streakH),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(streakH),
+            )
+            if (index % 4 == 0) {
                 drawCircle(
-                    brush = Brush.radialGradient(
-                        0f to TonalPalette.withAlpha(accent, 0.4f * dim),
-                        1f to Color.Transparent,
-                        center = Offset(w * 0.5f, h * 0.62f),
-                        radius = minOf(w, h) * 0.25f,
-                    ),
-                    radius = minOf(w, h) * 0.25f,
-                    center = Offset(w * 0.5f, h * 0.62f),
+                    color = TonalPalette.withAlpha(Color(0xFFC8D8E0), 0.12f * depth * dim),
+                    radius = minDim * (0.0015f + 0.0025f * depth),
+                    center = Offset(x, y + streakH * 1.6f),
                 )
             }
-            "avion" -> {
-                // soft wing edge
-                drawRect(
-                    brush = Brush.horizontalGradient(
-                        0f to TonalPalette.withAlpha(accent, 0.2f * dim),
-                        1f to Color.Transparent,
-                    ),
-                    topLeft = Offset(0f, h * 0.62f),
-                    size = Size(w * 0.55f, h * 0.08f),
-                )
-            }
-            "velo" -> {
-                // path ribbon
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        0f to Color.Transparent,
-                        1f to TonalPalette.withAlpha(accent, 0.22f * dim),
-                    ),
-                    topLeft = Offset(w * 0.42f, horizon),
-                    size = Size(w * 0.16f, h - horizon),
-                )
-            }
-            "train" -> {
-                // window frame bars
-                for (i in 1..2) {
-                    val x = w * (0.28f * i)
-                    drawRect(
-                        color = TonalPalette.withAlpha(Color(0xFF0A0C10), 0.35f * dim),
-                        topLeft = Offset(x, 0f),
-                        size = Size(w * 0.02f, h),
-                    )
-                }
-            }
-            "us_vintage" -> {
-                // neon arc
-                drawCircle(
-                    color = TonalPalette.withAlpha(accent, 0.35f * dim),
-                    radius = minOf(w, h) * 0.22f,
-                    center = Offset(w * 0.5f, h * 0.38f),
-                    style = Stroke(width = minOf(w, h) * 0.02f),
-                )
-            }
-            else -> {}
+        }
+
+        // Fine rain stipple across the foreground asphalt.
+        for (i in 0 until count) {
+            val phase = (time * (0.18f + i % 5 * 0.025f) + streaks[i].phase) % 1f
+            val depth = 0.35f + phase * 0.65f
+            val x = w * (0.5f + (streaks[i].x - 0.5f) * depth * 1.8f)
+            val y = horizonY + (h - horizonY) * depth
+            drawLine(
+                color = TonalPalette.withAlpha(cool, 0.08f * depth * dim),
+                start = Offset(x, y),
+                end = Offset(x - minDim * 0.002f, y + minDim * (0.008f + 0.012f * depth)),
+                strokeWidth = minDim * 0.0012f,
+            )
         }
     }
 }

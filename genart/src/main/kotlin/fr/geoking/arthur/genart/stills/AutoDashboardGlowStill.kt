@@ -9,6 +9,7 @@ import android.graphics.Shader
 import fr.geoking.arthur.genart.AnimationPalette
 import fr.geoking.arthur.genart.loopedFbm
 import kotlin.math.PI
+import kotlin.math.cos
 import kotlin.math.sin
 
 /** Bakes one frozen frame of Auto Dashboard Glow for Auto/Ambient album art. */
@@ -55,28 +56,95 @@ internal object AutoDashboardGlowStill {
             paint.color = withAlpha(mixArgb(palette.colorAt(i), accent, 0.4f), ((0.10f + 0.16f * n) * dim * 255).toInt())
             canvas.drawCircle(x, y, minOf(w, h) * (0.03f + 0.05f * n), paint)
         }
-        when ("auto") {
-            "auto", "moto" -> {
-                paint.color = withAlpha(0xFF080A0C.toInt(), (0.45f * dim * 255).toInt())
-                canvas.drawRect(0f, h * 0.72f, w, h, paint)
-                paint.shader = RadialGradient(
-                    w * 0.5f, h * 0.62f, minOf(w, h) * 0.25f,
-                    intArrayOf(withAlpha(accent, (0.4f * dim * 255).toInt()), Color.TRANSPARENT),
-                    floatArrayOf(0f, 1f),
-                    Shader.TileMode.CLAMP,
+        val minDim = minOf(w, h)
+        val dashboardTop = h * 0.70f
+        paint.shader = LinearGradient(
+            0f, dashboardTop, 0f, h,
+            intArrayOf(withAlpha(0xFF0A0C10.toInt(), (0.82f * dim * 255).toInt()), withAlpha(0xFF050609.toInt(), (0.98f * dim * 255).toInt())),
+            floatArrayOf(0f, 1f),
+            Shader.TileMode.CLAMP,
+        )
+        canvas.drawRect(0f, dashboardTop, w, h, paint)
+        paint.shader = null
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = minDim * 0.008f
+        paint.color = withAlpha(0xFF29343A.toInt(), (0.48f * dim * 255).toInt())
+        canvas.drawLine(0f, dashboardTop, w, dashboardTop, paint)
+        paint.style = Paint.Style.FILL
+
+        val cyan = accent
+        val amber = mixArgb(0xFFE6A45A.toInt(), palette.colorAt(1), 0.22f)
+        // Instrument colors softly spill onto the lower windscreen.
+        paint.shader = RadialGradient(
+            w * 0.30f, h * 0.70f, minDim * 0.30f,
+            intArrayOf(withAlpha(cyan, (0.22f * dim * 255).toInt()), withAlpha(cyan, (0.07f * dim * 255).toInt()), Color.TRANSPARENT),
+            floatArrayOf(0f, 0.55f, 1f), Shader.TileMode.CLAMP,
+        )
+        canvas.drawCircle(w * 0.30f, h * 0.70f, minDim * 0.30f, paint)
+        paint.shader = RadialGradient(
+            w * 0.72f, h * 0.72f, minDim * 0.24f,
+            intArrayOf(withAlpha(amber, (0.17f * dim * 255).toInt()), Color.TRANSPARENT),
+            floatArrayOf(0f, 1f), Shader.TileMode.CLAMP,
+        )
+        canvas.drawCircle(w * 0.72f, h * 0.72f, minDim * 0.24f, paint)
+        paint.shader = null
+
+        // Recessed circular gauges with fine tick marks and subtly shifting needles.
+        val gaugeY = h * 0.81f
+        val gaugeRadius = minDim * 0.105f
+        for (index in 0..1) {
+            val gaugeX = w * if (index == 0) 0.27f else 0.73f
+            val gaugeColor = if (index == 0) cyan else amber
+            paint.color = 0xFF07090C.toInt()
+            canvas.drawCircle(gaugeX, gaugeY, gaugeRadius, paint)
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = minDim * 0.006f
+            paint.color = withAlpha(0xFF54616A.toInt(), (0.72f * dim * 255).toInt())
+            canvas.drawCircle(gaugeX, gaugeY, gaugeRadius, paint)
+            paint.strokeWidth = minDim * 0.004f
+            paint.color = withAlpha(gaugeColor, (0.55f * dim * 255).toInt())
+            canvas.drawCircle(gaugeX, gaugeY, gaugeRadius * 0.82f, paint)
+            paint.style = Paint.Style.FILL
+            for (tick in 0..8) {
+                val angle = (-PI * 0.82 + tick * (PI * 1.64 / 8.0)).toFloat()
+                val inner = gaugeRadius * 0.66f
+                val outer = gaugeRadius * 0.76f
+                paint.color = withAlpha(gaugeColor, (0.55f * dim * 255).toInt())
+                paint.strokeWidth = minDim * 0.003f
+                canvas.drawLine(
+                    gaugeX + cos(angle) * inner, gaugeY + sin(angle) * inner,
+                    gaugeX + cos(angle) * outer, gaugeY + sin(angle) * outer,
+                    paint,
                 )
-                canvas.drawCircle(w * 0.5f, h * 0.62f, minOf(w, h) * 0.25f, paint)
-                paint.shader = null
             }
-            "us_vintage" -> {
-                paint.style = Paint.Style.STROKE
-                paint.strokeWidth = minOf(w, h) * 0.02f
-                paint.color = withAlpha(accent, (0.4f * dim * 255).toInt())
-                canvas.drawCircle(w * 0.5f, h * 0.38f, minOf(w, h) * 0.22f, paint)
-                paint.style = Paint.Style.FILL
-            }
-            else -> Unit
+            val needleAngle = (-PI * 0.60 + (0.42 + 0.06 * sin(t01 * 2f * PI.toFloat() + index)) * PI * 1.2).toFloat()
+            paint.color = withAlpha(gaugeColor, (0.95f * dim * 255).toInt())
+            paint.strokeWidth = minDim * 0.004f
+            canvas.drawLine(
+                gaugeX, gaugeY,
+                gaugeX + cos(needleAngle) * gaugeRadius * 0.60f,
+                gaugeY + sin(needleAngle) * gaugeRadius * 0.60f,
+                paint,
+            )
+            paint.style = Paint.Style.FILL
+            canvas.drawCircle(gaugeX, gaugeY, minDim * 0.008f, paint)
         }
+
+        // Center console and softly illuminated switches.
+        paint.color = 0xFF0B0D11.toInt()
+        val console = android.graphics.RectF(w * 0.43f, h * 0.74f, w * 0.57f, h * 0.99f)
+        canvas.drawRoundRect(console, minDim * 0.035f, minDim * 0.035f, paint)
+        paint.color = withAlpha(cyan, (0.28f * dim * 255).toInt())
+        canvas.drawRoundRect(w * 0.455f, h * 0.77f, w * 0.545f, h * 0.805f, minDim * 0.008f, minDim * 0.008f, paint)
+        for (i in 0..2) {
+            paint.color = withAlpha(if (i == 1) amber else cyan, (0.74f * dim * 255).toInt())
+            canvas.drawCircle(w * (0.46f + 0.04f * i), h * 0.84f, minDim * 0.009f, paint)
+        }
+        paint.color = withAlpha(0xFF42474A.toInt(), (0.65f * dim * 255).toInt())
+        paint.strokeWidth = minDim * 0.018f
+        canvas.drawLine(w * 0.59f, h * 0.92f, w * 0.63f, h * 0.82f, paint)
+        paint.color = 0xFF22272A.toInt()
+        canvas.drawCircle(w * 0.635f, h * 0.81f, minDim * 0.022f, paint)
     }
 
     private fun mixArgb(a: Int, b: Int, t: Float): Int {

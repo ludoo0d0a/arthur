@@ -14,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
 import fr.geoking.arthur.genart.loopedFbm
@@ -34,6 +33,7 @@ private data class LucidOrbsMote(
     val driftY: Float,
     val phaseOffset: Float,
     val colorIndex: Int,
+    val depth: Float,
 )
 
 /** Soft Ambient Lucid Orbs — seamless loop via loopedFbm. */
@@ -57,6 +57,7 @@ internal fun LucidOrbsEngine(
                 driftY = seededRange(i * 67 + 19, 0.015f, 0.05f),
                 phaseOffset = seededRange(i * 71 + 23, 0f, 2f * PI.toFloat()),
                 colorIndex = i,
+                depth = seededRange(i * 83 + 31, 0.55f, 1f),
             )
         }
     }
@@ -76,104 +77,79 @@ internal fun LucidOrbsEngine(
         val h = size.height
         val time = phase01(t)
         val wash = loopedFbm(time, radius = 1.35f, octaves = 2, seedOffset = 11)
+        val minDim = minOf(w, h)
         drawRect(
             brush = Brush.verticalGradient(
-                colors = listOf(
-                    TonalPalette.brightness(Color(0xFF121828), brightness * dim * (0.92f + 0.08f * wash)),
-                    TonalPalette.brightness(Color(0xFF1C2840), brightness * dim),
-                ),
+                0f to TonalPalette.brightness(Color(0xFF0B1020), brightness * dim),
+                0.55f to TonalPalette.brightness(Color(0xFF121828), brightness * dim * (0.92f + 0.08f * wash)),
+                1f to TonalPalette.brightness(Color(0xFF1C2840), brightness * dim),
             ),
         )
         val accent = TonalPalette.brightness(
-            TonalPalette.mix(Color(0xFF80D0FF), TonalPalette.pick(paletteColors, 0), 0.35f),
+            TonalPalette.mix(Color(0xFF80D0FF), TonalPalette.pick(paletteColors, 0), 0.18f),
             brightness * dim,
         )
-        // Soft focal glow
-        val cx = w * (0.35f + 0.3f * loopedFbm(time, radius = 1.2f, seedOffset = 29))
-        val cy = h * (0.3f + 0.25f * loopedFbm(time, radius = 1.4f, seedOffset = 47))
+        val violet = TonalPalette.brightness(Color(0xFF9F8CFF), brightness * dim)
+        val focalX = w * (0.35f + 0.3f * loopedFbm(time, radius = 1.2f, seedOffset = 29))
+        val focalY = h * (0.3f + 0.25f * loopedFbm(time, radius = 1.4f, seedOffset = 47))
         drawCircle(
             brush = Brush.radialGradient(
-                0f to TonalPalette.withAlpha(accent, 0.35f * dim),
+                0f to TonalPalette.withAlpha(accent, 0.22f * dim),
+                0.5f to TonalPalette.withAlpha(violet, 0.08f * dim),
                 1f to Color.Transparent,
-                center = Offset(cx, cy),
-                radius = minOf(w, h) * 0.55f,
+                center = Offset(focalX, focalY),
+                radius = minDim * 0.7f,
             ),
-            radius = minOf(w, h) * 0.55f,
-            center = Offset(cx, cy),
+            radius = minDim * 0.7f,
+            center = Offset(focalX, focalY),
         )
         motes.forEach { mote ->
-            val n = loopedFbm(time, radius = 1.25f + mote.radius, seedOffset = mote.colorIndex * 97 + 5)
-            val x = (mote.x0 + mote.driftX * (n * 2f - 1f) + 1f) % 1f * w
-            val y = (mote.y0 + mote.driftY * sin(time * 2f * PI.toFloat() + mote.phaseOffset) * 0.5f + 1f) % 1f * h
-            val r = minOf(w, h) * mote.radius * (0.85f + 0.3f * n)
-            val col = TonalPalette.withAlpha(
-                TonalPalette.brightness(TonalPalette.pick(paletteColors, mote.colorIndex), brightness * dim),
-                (0.12f + 0.18f * n) * dim,
+            val n = loopedFbm(time, radius = 1.25f + mote.radius, octaves = 3, seedOffset = mote.colorIndex * 97 + 5)
+            val phase = time * 2f * PI.toFloat() + mote.phaseOffset
+            val x = (mote.x0 + mote.driftX * sin(phase) + (n - 0.5f) * 0.025f) * w
+            val y = (mote.y0 + mote.driftY * cos(phase * 0.72f) + (n - 0.5f) * 0.02f) * h
+            val r = minDim * mote.radius * (0.76f + 0.42f * n)
+            val center = Offset(x, y)
+            val orbColor = if (mote.colorIndex % 2 == 0) accent else violet
+            val glowRadius = r * (2.5f + 0.8f * n)
+
+            // Wide bloom keeps the spheres suspended in the dark atmosphere.
+            drawCircle(
+                brush = Brush.radialGradient(
+                    0f to TonalPalette.withAlpha(orbColor, 0.16f * dim * mote.depth),
+                    0.45f to TonalPalette.withAlpha(orbColor, 0.06f * dim * mote.depth),
+                    1f to Color.Transparent,
+                    center = center,
+                    radius = glowRadius,
+                ),
+                radius = glowRadius,
+                center = center,
             )
-            drawCircle(color = col, radius = r, center = Offset(x, y))
+            // Translucent orb body with a brighter upper-left rim and shaded lower edge.
+            drawCircle(
+                brush = Brush.radialGradient(
+                    0f to TonalPalette.withAlpha(Color(0xFFE5F5FF), (0.52f + 0.12f * n) * dim),
+                    0.22f to TonalPalette.withAlpha(orbColor, 0.32f * dim),
+                    0.72f to TonalPalette.withAlpha(orbColor, 0.13f * dim),
+                    1f to TonalPalette.withAlpha(orbColor, 0.38f * dim),
+                    center = Offset(x - r * 0.32f, y - r * 0.35f),
+                    radius = r * 1.7f,
+                ),
+                radius = r,
+                center = center,
+            )
+            drawCircle(
+                color = TonalPalette.withAlpha(Color(0xFFDFF7FF), (0.36f + 0.2f * n) * dim),
+                radius = r * 0.11f,
+                center = Offset(x - r * 0.32f, y - r * 0.36f),
+            )
         }
-        // Pack-flavored silhouette accents
-        when ("dream") {
-            "kaleido" -> {
-                val rings = 4
-                for (i in 0 until rings) {
-                    val ang = time * 2f * PI.toFloat() * (0.15f + i * 0.03f)
-                    val rr = minOf(w, h) * (0.12f + i * 0.08f)
-                    for (k in 0 until 6) {
-                        val a = ang + k * (2f * PI.toFloat() / 6f)
-                        drawCircle(
-                            color = TonalPalette.withAlpha(accent, 0.2f * dim),
-                            radius = rr * 0.12f,
-                            center = Offset(w * 0.5f + cos(a) * rr, h * 0.5f + sin(a) * rr),
-                        )
-                    }
-                }
-            }
-            "zen" -> {
-                drawCircle(
-                    color = TonalPalette.withAlpha(accent, 0.22f * dim),
-                    radius = minOf(w, h) * (0.18f + 0.02f * wash),
-                    center = Offset(w * 0.5f, h * 0.52f),
-                    style = Stroke(width = minOf(w, h) * 0.018f),
-                )
-            }
-            "interior" -> {
-                // soft vertical light well
-                drawRect(
-                    brush = Brush.horizontalGradient(
-                        0f to Color.Transparent,
-                        0.45f to TonalPalette.withAlpha(accent, 0.18f * dim),
-                        0.55f to TonalPalette.withAlpha(accent, 0.18f * dim),
-                        1f to Color.Transparent,
-                    ),
-                    topLeft = Offset(w * 0.35f, 0f),
-                    size = androidx.compose.ui.geometry.Size(w * 0.3f, h),
-                )
-            }
-            "coast" -> {
-                val horizon = h * (0.58f + 0.02f * wash)
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        0f to Color.Transparent,
-                        1f to TonalPalette.withAlpha(accent, 0.25f * dim),
-                        startY = horizon - h * 0.05f,
-                        endY = h,
-                    ),
-                )
-            }
-            "fire" -> {
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        0f to TonalPalette.withAlpha(accent, 0.55f * dim),
-                        1f to Color.Transparent,
-                        center = Offset(w * 0.5f, h * 0.72f),
-                        radius = minOf(w, h) * 0.35f,
-                    ),
-                    radius = minOf(w, h) * 0.35f,
-                    center = Offset(w * 0.5f, h * 0.72f),
-                )
-            }
-            else -> {}
+        // Fine bokeh pinpricks strengthen the sense of depth without competing with the orbs.
+        for (i in 0 until count) {
+            val bx = (seededUnit(i * 137 + 41) + 0.02f * sin(time * 2f * PI.toFloat() + i)) * w
+            val by = (seededUnit(i * 149 + 43) + 0.015f * cos(time * 2f * PI.toFloat() + i)) * h
+            val bokehAlpha = (0.12f + 0.1f * loopedFbm(time, radius = 1.1f, seedOffset = i * 31 + 7)) * dim
+            drawCircle(TonalPalette.withAlpha(accent, bokehAlpha), radius = minDim * 0.0025f, center = Offset(bx, by))
         }
     }
 }

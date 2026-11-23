@@ -9,34 +9,22 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
 import fr.geoking.arthur.genart.loopedFbm
 import fr.geoking.arthur.genart.phase01
 import fr.geoking.arthur.genart.qualityCount
-import fr.geoking.arthur.genart.seededRange
-import fr.geoking.arthur.genart.seededUnit
 import kotlin.math.PI
-import kotlin.math.cos
 import kotlin.math.sin
 
-private data class KaleidoPetalMote(
-    val x0: Float,
-    val y0: Float,
-    val radius: Float,
-    val driftX: Float,
-    val driftY: Float,
-    val phaseOffset: Float,
-    val colorIndex: Int,
-)
-
-/** Soft Ambient Kaleido Petal — seamless loop via loopedFbm. */
+/** Soft Ambient Kaleido Petal — mirrored radial petals in a slow seamless loop. */
 @Composable
 internal fun KaleidoPetalEngine(
     isActive: Boolean,
@@ -46,20 +34,7 @@ internal fun KaleidoPetalEngine(
     speed: Float,
     modifier: Modifier = Modifier,
 ) {
-    val count = qualityCount(quality, low = 4, medium = 7, high = 11)
-    val motes = remember(count) {
-        List(count) { i ->
-            KaleidoPetalMote(
-                x0 = seededUnit(i * 17 + 3),
-                y0 = seededUnit(i * 29 + 7),
-                radius = seededRange(i * 41 + 11, 0.04f, 0.14f),
-                driftX = seededRange(i * 53 + 13, 0.02f, 0.06f),
-                driftY = seededRange(i * 67 + 19, 0.015f, 0.05f),
-                phaseOffset = seededRange(i * 71 + 23, 0f, 2f * PI.toFloat()),
-                colorIndex = i,
-            )
-        }
-    }
+    val detail = qualityCount(quality, low = 4, medium = 7, high = 11)
     val transition = rememberInfiniteTransition(label = "kaleidopetal")
     val t by transition.animateFloat(
         initialValue = 0f,
@@ -71,109 +46,123 @@ internal fun KaleidoPetalEngine(
         label = "kaleidopetal_t",
     )
     val dim = if (isActive) 1f else 0.55f
+
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
+        val minDim = minOf(w, h)
+        val center = Offset(w * 0.5f, h * 0.5f)
         val time = phase01(t)
-        val wash = loopedFbm(time, radius = 1.35f, octaves = 2, seedOffset = 11)
-        drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    TonalPalette.brightness(Color(0xFF140C18), brightness * dim * (0.92f + 0.08f * wash)),
-                    TonalPalette.brightness(Color(0xFF2A1830), brightness * dim),
-                ),
-            ),
-        )
-        val accent = TonalPalette.brightness(
-            TonalPalette.mix(Color(0xFFFF80C0), TonalPalette.pick(paletteColors, 0), 0.35f),
+        val motion = loopedFbm(time, radius = 1.3f, octaves = 3, seedOffset = 183)
+        val pulse = 0.96f + 0.04f * sin(time * 2f * PI.toFloat())
+        val rotation = 4f * sin(time * 2f * PI.toFloat())
+        val dark = TonalPalette.brightness(Color(0xFF140C18), brightness * dim * (0.94f + motion * 0.06f))
+        val plum = TonalPalette.brightness(Color(0xFF2A1830), brightness * dim)
+        val rose = TonalPalette.brightness(
+            TonalPalette.mix(Color(0xFFFF80C0), TonalPalette.pick(paletteColors, 0), 0.22f),
             brightness * dim,
         )
-        // Soft focal glow
-        val cx = w * (0.35f + 0.3f * loopedFbm(time, radius = 1.2f, seedOffset = 29))
-        val cy = h * (0.3f + 0.25f * loopedFbm(time, radius = 1.4f, seedOffset = 47))
+        val lavender = TonalPalette.brightness(Color(0xFFB080D0), brightness * dim)
+        val petalCount = 8
+        val outerRadius = minDim * 0.43f * pulse
+
+        drawRect(brush = Brush.verticalGradient(listOf(dark, plum)))
         drawCircle(
             brush = Brush.radialGradient(
-                0f to TonalPalette.withAlpha(accent, 0.35f * dim),
+                0f to TonalPalette.withAlpha(rose, 0.24f * dim),
+                0.55f to TonalPalette.withAlpha(lavender, 0.10f * dim),
                 1f to Color.Transparent,
-                center = Offset(cx, cy),
-                radius = minOf(w, h) * 0.55f,
+                center = center,
+                radius = minDim * 0.68f,
             ),
-            radius = minOf(w, h) * 0.55f,
-            center = Offset(cx, cy),
+            radius = minDim * 0.68f,
+            center = center,
         )
-        motes.forEach { mote ->
-            val n = loopedFbm(time, radius = 1.25f + mote.radius, seedOffset = mote.colorIndex * 97 + 5)
-            val x = (mote.x0 + mote.driftX * (n * 2f - 1f) + 1f) % 1f * w
-            val y = (mote.y0 + mote.driftY * sin(time * 2f * PI.toFloat() + mote.phaseOffset) * 0.5f + 1f) % 1f * h
-            val r = minOf(w, h) * mote.radius * (0.85f + 0.3f * n)
-            val col = TonalPalette.withAlpha(
-                TonalPalette.brightness(TonalPalette.pick(paletteColors, mote.colorIndex), brightness * dim),
-                (0.12f + 0.18f * n) * dim,
+
+        // The single leaf silhouette is reflected around the center eight times.
+        // Keeping all lobes tied to the same radius gives the mandala a clean symmetry.
+        val petal = Path().apply {
+            moveTo(center.x, center.y - minDim * 0.055f)
+            cubicTo(
+                center.x - minDim * 0.12f, center.y - minDim * 0.20f,
+                center.x - minDim * 0.12f, center.y - outerRadius * 0.76f,
+                center.x, center.y - outerRadius,
             )
-            drawCircle(color = col, radius = r, center = Offset(x, y))
+            cubicTo(
+                center.x + minDim * 0.12f, center.y - outerRadius * 0.76f,
+                center.x + minDim * 0.12f, center.y - minDim * 0.20f,
+                center.x, center.y - minDim * 0.055f,
+            )
+            close()
         }
-        // Pack-flavored silhouette accents
-        when ("kaleido") {
-            "kaleido" -> {
-                val rings = 4
-                for (i in 0 until rings) {
-                    val ang = time * 2f * PI.toFloat() * (0.15f + i * 0.03f)
-                    val rr = minOf(w, h) * (0.12f + i * 0.08f)
-                    for (k in 0 until 6) {
-                        val a = ang + k * (2f * PI.toFloat() / 6f)
-                        drawCircle(
-                            color = TonalPalette.withAlpha(accent, 0.2f * dim),
-                            radius = rr * 0.12f,
-                            center = Offset(w * 0.5f + cos(a) * rr, h * 0.5f + sin(a) * rr),
-                        )
-                    }
+        for (i in 0 until petalCount) {
+            rotate(rotation + i * 360f / petalCount, center) {
+                drawPath(
+                    path = petal,
+                    brush = Brush.verticalGradient(
+                        0f to TonalPalette.withAlpha(rose, 0.08f * dim),
+                        0.42f to TonalPalette.withAlpha(lavender, 0.32f * dim),
+                        1f to TonalPalette.withAlpha(rose, 0.56f * dim),
+                        startY = center.y - outerRadius,
+                        endY = center.y,
+                    ),
+                )
+                drawPath(
+                    path = petal,
+                    color = TonalPalette.withAlpha(rose, 0.45f * dim),
+                    style = Stroke(width = minDim * 0.0025f),
+                )
+            }
+        }
+
+        // Petal veins and concentric mirrored rings provide detail without hard points.
+        val veinCount = minOf(detail, 7)
+        for (i in 0 until petalCount) {
+            rotate(rotation + i * 360f / petalCount, center) {
+                drawLine(
+                    color = TonalPalette.withAlpha(Color(0xFFFFC0E0), 0.26f * dim),
+                    start = Offset(center.x, center.y - minDim * 0.09f),
+                    end = Offset(center.x, center.y - outerRadius * 0.82f),
+                    strokeWidth = minDim * 0.0018f,
+                )
+                for (v in 1..veinCount) {
+                    val fraction = v / (veinCount + 1f)
+                    val y = center.y - minDim * (0.12f + fraction * 0.25f)
+                    val spread = minDim * (0.015f + fraction * 0.045f)
+                    drawLine(
+                        color = TonalPalette.withAlpha(lavender, 0.18f * dim),
+                        start = Offset(center.x, y),
+                        end = Offset(center.x - spread, y - minDim * 0.018f),
+                        strokeWidth = minDim * 0.0014f,
+                    )
+                    drawLine(
+                        color = TonalPalette.withAlpha(lavender, 0.18f * dim),
+                        start = Offset(center.x, y),
+                        end = Offset(center.x + spread, y - minDim * 0.018f),
+                        strokeWidth = minDim * 0.0014f,
+                    )
                 }
             }
-            "zen" -> {
-                drawCircle(
-                    color = TonalPalette.withAlpha(accent, 0.22f * dim),
-                    radius = minOf(w, h) * (0.18f + 0.02f * wash),
-                    center = Offset(w * 0.5f, h * 0.52f),
-                    style = Stroke(width = minOf(w, h) * 0.018f),
-                )
-            }
-            "interior" -> {
-                // soft vertical light well
-                drawRect(
-                    brush = Brush.horizontalGradient(
-                        0f to Color.Transparent,
-                        0.45f to TonalPalette.withAlpha(accent, 0.18f * dim),
-                        0.55f to TonalPalette.withAlpha(accent, 0.18f * dim),
-                        1f to Color.Transparent,
-                    ),
-                    topLeft = Offset(w * 0.35f, 0f),
-                    size = androidx.compose.ui.geometry.Size(w * 0.3f, h),
-                )
-            }
-            "coast" -> {
-                val horizon = h * (0.58f + 0.02f * wash)
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        0f to Color.Transparent,
-                        1f to TonalPalette.withAlpha(accent, 0.25f * dim),
-                        startY = horizon - h * 0.05f,
-                        endY = h,
-                    ),
-                )
-            }
-            "fire" -> {
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        0f to TonalPalette.withAlpha(accent, 0.55f * dim),
-                        1f to Color.Transparent,
-                        center = Offset(w * 0.5f, h * 0.72f),
-                        radius = minOf(w, h) * 0.35f,
-                    ),
-                    radius = minOf(w, h) * 0.35f,
-                    center = Offset(w * 0.5f, h * 0.72f),
-                )
-            }
-            else -> {}
         }
+
+        for (ring in 1..3) {
+            drawCircle(
+                color = TonalPalette.withAlpha(rose, (0.20f - ring * 0.035f) * dim),
+                radius = minDim * (0.095f + ring * 0.035f),
+                center = center,
+                style = Stroke(width = minDim * 0.002f),
+            )
+        }
+        drawCircle(
+            brush = Brush.radialGradient(
+                0f to TonalPalette.withAlpha(Color(0xFFFFD0E8), 0.88f * dim),
+                0.35f to TonalPalette.withAlpha(rose, 0.56f * dim),
+                1f to TonalPalette.withAlpha(plum, 0.02f * dim),
+                center = center,
+                radius = minDim * 0.075f,
+            ),
+            radius = minDim * 0.075f,
+            center = center,
+        )
     }
 }

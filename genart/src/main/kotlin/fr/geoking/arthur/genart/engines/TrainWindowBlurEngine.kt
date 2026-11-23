@@ -9,7 +9,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -22,22 +21,18 @@ import fr.geoking.arthur.genart.loopedFbm
 import fr.geoking.arthur.genart.phase01
 import fr.geoking.arthur.genart.qualityCount
 import fr.geoking.arthur.genart.seededRange
-import fr.geoking.arthur.genart.seededUnit
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
 
-private data class TrainWindowBlurMote(
-    val x0: Float,
-    val y0: Float,
-    val radius: Float,
-    val driftX: Float,
-    val driftY: Float,
-    val phaseOffset: Float,
+private data class WindowLight(
+    val y: Float,
+    val height: Float,
+    val width: Float,
+    val speed: Float,
+    val offset: Float,
     val colorIndex: Int,
+    val alpha: Float,
 )
 
-/** Soft Ambient POV Train Window Blur — seamless loop via loopedFbm (no traffic sim). */
+/** Soft Ambient POV Train Window Blur — passing countryside lights through glass. */
 @Composable
 internal fun TrainWindowBlurEngine(
     isActive: Boolean,
@@ -48,16 +43,16 @@ internal fun TrainWindowBlurEngine(
     modifier: Modifier = Modifier,
 ) {
     val count = qualityCount(quality, low = 4, medium = 7, high = 11)
-    val motes = remember(count) {
+    val lights = androidx.compose.runtime.remember(count) {
         List(count) { i ->
-            TrainWindowBlurMote(
-                x0 = seededUnit(i * 17 + 3),
-                y0 = seededUnit(i * 29 + 7),
-                radius = seededRange(i * 41 + 11, 0.03f, 0.12f),
-                driftX = seededRange(i * 53 + 13, 0.02f, 0.08f),
-                driftY = seededRange(i * 67 + 19, 0.01f, 0.04f),
-                phaseOffset = seededRange(i * 71 + 23, 0f, 2f * PI.toFloat()),
+            WindowLight(
+                y = seededRange(i * 17 + 3, 0.12f, 0.82f),
+                height = seededRange(i * 29 + 7, 0.012f, 0.055f),
+                width = seededRange(i * 41 + 11, 0.16f, 0.48f),
+                speed = seededRange(i * 53 + 13, 0.75f, 1.55f),
+                offset = seededRange(i * 67 + 19, 0f, 1f),
                 colorIndex = i,
+                alpha = seededRange(i * 71 + 23, 0.12f, 0.34f),
             )
         }
     }
@@ -75,106 +70,94 @@ internal fun TrainWindowBlurEngine(
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
+        val minDim = minOf(w, h)
         val time = phase01(t)
         val wash = loopedFbm(time, radius = 1.35f, octaves = 2, seedOffset = 11)
-        drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    TonalPalette.brightness(Color(0xFF1A1E28), brightness * dim * (0.92f + 0.08f * wash)),
-                    TonalPalette.brightness(Color(0xFF0E1018), brightness * dim),
-                ),
-            ),
-        )
+        val cool = TonalPalette.brightness(Color(0xFF1A1E28), brightness * dim)
+        val deep = TonalPalette.brightness(Color(0xFF0E1018), brightness * dim)
         val accent = TonalPalette.brightness(
             TonalPalette.mix(Color(0xFF80A0C0), TonalPalette.pick(paletteColors, 0), 0.35f),
             brightness * dim,
         )
-        // Soft horizon / vanishing point
-        val horizon = h * (0.55f + 0.04f * (wash - 0.5f))
+
+        // Dark interior and a soft horizon beyond the window.
+        drawRect(brush = Brush.verticalGradient(listOf(cool, deep, Color(0xFF080A0C))))
+        val horizon = h * (0.53f + (wash - 0.5f) * 0.035f)
         drawRect(
             brush = Brush.verticalGradient(
                 0f to Color.Transparent,
-                1f to TonalPalette.withAlpha(accent, 0.12f * dim),
-                startY = horizon - h * 0.08f,
-                endY = horizon + h * 0.08f,
+                0.48f to TonalPalette.withAlpha(accent, 0.12f * dim),
+                1f to Color.Transparent,
+                startY = horizon - h * 0.18f,
+                endY = horizon + h * 0.18f,
             ),
         )
-        motes.forEach { mote ->
-            val n = loopedFbm(time, radius = 1.2f + mote.radius, seedOffset = mote.colorIndex * 97 + 5)
-            val x = (mote.x0 + mote.driftX * (n * 2f - 1f) + time * 0.15f + 1f) % 1f * w
-            val y = (mote.y0 + mote.driftY * sin(time * 2f * PI.toFloat() + mote.phaseOffset) * 0.5f + 1f) % 1f * h
-            val r = minOf(w, h) * mote.radius * (0.85f + 0.3f * n)
-            drawCircle(
-                color = TonalPalette.withAlpha(
-                    TonalPalette.brightness(TonalPalette.pick(paletteColors, mote.colorIndex), brightness * dim),
-                    (0.10f + 0.16f * n) * dim,
+
+        // Broad horizontal bands read as blurred fields, hedgerows and distant lights.
+        val bands = 8
+        for (i in 0 until bands) {
+            val n = loopedFbm(time, radius = 1.15f + i * 0.08f, octaves = 2, seedOffset = 73 + i * 31)
+            val y = h * (0.17f + i * 0.096f) + (n - 0.5f) * h * 0.035f
+            val bandH = h * (0.014f + 0.024f * n)
+            val tint = if (i % 3 == 0) Color(0xFF657080) else Color(0xFF343A45)
+            drawRect(
+                brush = Brush.verticalGradient(
+                    0f to Color.Transparent,
+                    0.5f to TonalPalette.withAlpha(tint, 0.09f * dim),
+                    1f to Color.Transparent,
+                    startY = y - bandH,
+                    endY = y + bandH,
                 ),
-                radius = r,
-                center = Offset(x, y),
+                topLeft = Offset(0f, y - bandH),
+                size = Size(w, bandH * 2f),
             )
         }
-        when ("train") {
-            "auto", "moto" -> {
-                // soft dash silhouette band
-                drawRect(
-                    color = TonalPalette.withAlpha(Color(0xFF080A0C), 0.45f * dim),
-                    topLeft = Offset(0f, h * 0.72f),
-                    size = Size(w, h * 0.28f),
-                )
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        0f to TonalPalette.withAlpha(accent, 0.4f * dim),
-                        1f to Color.Transparent,
-                        center = Offset(w * 0.5f, h * 0.62f),
-                        radius = minOf(w, h) * 0.25f,
-                    ),
-                    radius = minOf(w, h) * 0.25f,
-                    center = Offset(w * 0.5f, h * 0.62f),
-                )
-            }
-            "avion" -> {
-                // soft wing edge
-                drawRect(
-                    brush = Brush.horizontalGradient(
-                        0f to TonalPalette.withAlpha(accent, 0.2f * dim),
-                        1f to Color.Transparent,
-                    ),
-                    topLeft = Offset(0f, h * 0.62f),
-                    size = Size(w * 0.55f, h * 0.08f),
-                )
-            }
-            "velo" -> {
-                // path ribbon
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        0f to Color.Transparent,
-                        1f to TonalPalette.withAlpha(accent, 0.22f * dim),
-                    ),
-                    topLeft = Offset(w * 0.42f, horizon),
-                    size = Size(w * 0.16f, h - horizon),
-                )
-            }
-            "train" -> {
-                // window frame bars
-                for (i in 1..2) {
-                    val x = w * (0.28f * i)
-                    drawRect(
-                        color = TonalPalette.withAlpha(Color(0xFF0A0C10), 0.35f * dim),
-                        topLeft = Offset(x, 0f),
-                        size = Size(w * 0.02f, h),
-                    )
-                }
-            }
-            "us_vintage" -> {
-                // neon arc
-                drawCircle(
-                    color = TonalPalette.withAlpha(accent, 0.35f * dim),
-                    radius = minOf(w, h) * 0.22f,
-                    center = Offset(w * 0.5f, h * 0.38f),
-                    style = Stroke(width = minOf(w, h) * 0.02f),
-                )
-            }
-            else -> {}
+
+        // Passing lights move laterally and wrap cleanly at the loop boundary.
+        lights.forEach { light ->
+            val travel = (time * light.speed + light.offset) % 1f
+            val x = travel * (w + light.width * w) - light.width * w
+            val y = light.y * h + (loopedFbm(time, radius = 1.2f, octaves = 2, seedOffset = 151 + light.colorIndex * 23) - 0.5f) * h * 0.025f
+            val color = TonalPalette.brightness(
+                if (light.colorIndex % 3 == 0) Color(0xFFB5A28B) else TonalPalette.pick(paletteColors, light.colorIndex),
+                brightness * dim,
+            )
+            val glow = light.width * w
+            drawOval(
+                brush = Brush.radialGradient(
+                    0f to TonalPalette.withAlpha(color, light.alpha * dim),
+                    0.55f to TonalPalette.withAlpha(color, light.alpha * 0.32f * dim),
+                    1f to Color.Transparent,
+                    center = Offset(x + glow * 0.5f, y),
+                    radius = (glow * 0.7f).coerceAtLeast(1f),
+                ),
+                topLeft = Offset(x, y - light.height * h * 2f),
+                size = Size(glow, light.height * h * 4f),
+            )
         }
+
+        // Soft pane reflections and a barely visible rounded frame.
+        drawRect(
+            brush = Brush.horizontalGradient(
+                0f to TonalPalette.withAlpha(Color(0xFF080A0C), 0.42f * dim),
+                0.035f to Color.Transparent,
+                0.965f to Color.Transparent,
+                1f to TonalPalette.withAlpha(Color(0xFF080A0C), 0.42f * dim),
+            ),
+        )
+        drawRect(
+            color = TonalPalette.withAlpha(Color(0xFF080A0C), 0.28f * dim),
+            topLeft = Offset(w * 0.035f, h * 0.025f),
+            size = Size(w * 0.93f, h * 0.95f),
+            style = Stroke(width = minDim * 0.018f),
+        )
+        drawRect(
+            brush = Brush.verticalGradient(
+                0f to Color.Transparent,
+                1f to TonalPalette.withAlpha(Color(0xFF080A0C), 0.35f * dim),
+                startY = h * 0.78f,
+                endY = h,
+            ),
+        )
     }
 }

@@ -9,11 +9,12 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
@@ -23,20 +24,9 @@ import fr.geoking.arthur.genart.qualityCount
 import fr.geoking.arthur.genart.seededRange
 import fr.geoking.arthur.genart.seededUnit
 import kotlin.math.PI
-import kotlin.math.cos
 import kotlin.math.sin
 
-private data class ZenIncenseMote(
-    val x0: Float,
-    val y0: Float,
-    val radius: Float,
-    val driftX: Float,
-    val driftY: Float,
-    val phaseOffset: Float,
-    val colorIndex: Int,
-)
-
-/** Soft Ambient Zen Incense — seamless loop via loopedFbm. */
+/** Soft Ambient Zen Incense — a glowing stick and slowly curling smoke. */
 @Composable
 internal fun ZenIncenseEngine(
     isActive: Boolean,
@@ -46,20 +36,7 @@ internal fun ZenIncenseEngine(
     speed: Float,
     modifier: Modifier = Modifier,
 ) {
-    val count = qualityCount(quality, low = 4, medium = 7, high = 11)
-    val motes = remember(count) {
-        List(count) { i ->
-            ZenIncenseMote(
-                x0 = seededUnit(i * 17 + 3),
-                y0 = seededUnit(i * 29 + 7),
-                radius = seededRange(i * 41 + 11, 0.04f, 0.14f),
-                driftX = seededRange(i * 53 + 13, 0.02f, 0.06f),
-                driftY = seededRange(i * 67 + 19, 0.015f, 0.05f),
-                phaseOffset = seededRange(i * 71 + 23, 0f, 2f * PI.toFloat()),
-                colorIndex = i,
-            )
-        }
-    }
+    val moteCount = qualityCount(quality, low = 4, medium = 7, high = 11)
     val transition = rememberInfiniteTransition(label = "zenincense")
     val t by transition.animateFloat(
         initialValue = 0f,
@@ -74,106 +51,140 @@ internal fun ZenIncenseEngine(
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
+        val unit = minOf(w, h)
         val time = phase01(t)
-        val wash = loopedFbm(time, radius = 1.35f, octaves = 2, seedOffset = 11)
-        drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    TonalPalette.brightness(Color(0xFF1A1612), brightness * dim * (0.92f + 0.08f * wash)),
-                    TonalPalette.brightness(Color(0xFF2E2820), brightness * dim),
-                ),
-            ),
-        )
+        val flow = loopedFbm(time, radius = 1.3f, octaves = 3, seedOffset = 19)
+        val sway = sin(time * 2f * PI.toFloat())
+        val background = TonalPalette.brightness(Color(0xFF1A1612), brightness * dim)
+        val shadow = TonalPalette.brightness(Color(0xFF2E2820), brightness * dim)
         val accent = TonalPalette.brightness(
-            TonalPalette.mix(Color(0xFFC8B090), TonalPalette.pick(paletteColors, 0), 0.35f),
+            TonalPalette.mix(Color(0xFFC8B090), TonalPalette.pick(paletteColors, 0), 0.2f),
             brightness * dim,
         )
-        // Soft focal glow
-        val cx = w * (0.35f + 0.3f * loopedFbm(time, radius = 1.2f, seedOffset = 29))
-        val cy = h * (0.3f + 0.25f * loopedFbm(time, radius = 1.4f, seedOffset = 47))
+        val smoke = TonalPalette.mix(Color(0xFFB8B0A4), accent, 0.3f)
+        val cx = w * 0.5f
+        val stickTip = Offset(cx - unit * 0.08f, h * 0.73f)
+
+        drawRect(
+            brush = Brush.verticalGradient(
+                0f to background,
+                0.68f to shadow,
+                1f to Color(0xFF120F0C),
+            ),
+        )
         drawCircle(
             brush = Brush.radialGradient(
-                0f to TonalPalette.withAlpha(accent, 0.35f * dim),
+                0f to TonalPalette.withAlpha(accent, 0.13f * (0.9f + 0.1f * flow) * dim),
+                0.5f to TonalPalette.withAlpha(accent, 0.055f * dim),
                 1f to Color.Transparent,
-                center = Offset(cx, cy),
-                radius = minOf(w, h) * 0.55f,
+                center = stickTip,
+                radius = unit * 0.52f,
             ),
-            radius = minOf(w, h) * 0.55f,
-            center = Offset(cx, cy),
+            radius = unit * 0.52f,
+            center = stickTip,
         )
-        motes.forEach { mote ->
-            val n = loopedFbm(time, radius = 1.25f + mote.radius, seedOffset = mote.colorIndex * 97 + 5)
-            val x = (mote.x0 + mote.driftX * (n * 2f - 1f) + 1f) % 1f * w
-            val y = (mote.y0 + mote.driftY * sin(time * 2f * PI.toFloat() + mote.phaseOffset) * 0.5f + 1f) % 1f * h
-            val r = minOf(w, h) * mote.radius * (0.85f + 0.3f * n)
-            val col = TonalPalette.withAlpha(
-                TonalPalette.brightness(TonalPalette.pick(paletteColors, mote.colorIndex), brightness * dim),
-                (0.12f + 0.18f * n) * dim,
+
+        // Quiet altar ledge and an unlit incense bowl.
+        drawLine(
+            color = TonalPalette.withAlpha(Color(0xFF080706), 0.42f * dim),
+            start = Offset(w * 0.14f, h * 0.91f),
+            end = Offset(w * 0.86f, h * 0.91f),
+            strokeWidth = unit * 0.018f,
+            cap = StrokeCap.Round,
+        )
+        drawOval(
+            color = TonalPalette.brightness(Color(0xFF342D24), brightness * dim),
+            topLeft = Offset(cx - unit * 0.16f, h * 0.865f),
+            size = androidx.compose.ui.geometry.Size(unit * 0.32f, unit * 0.055f),
+        )
+        drawOval(
+            color = Color(0xFF191612),
+            topLeft = Offset(cx - unit * 0.115f, h * 0.868f),
+            size = androidx.compose.ui.geometry.Size(unit * 0.23f, unit * 0.034f),
+        )
+
+        // Incense stick rises from the bowl at a slight, calm angle.
+        drawLine(
+            color = TonalPalette.withAlpha(Color(0xFF8C6848), 0.9f * dim),
+            start = Offset(cx + unit * 0.11f, h * 0.87f),
+            end = stickTip,
+            strokeWidth = unit * 0.012f,
+            cap = StrokeCap.Round,
+        )
+        drawLine(
+            color = TonalPalette.withAlpha(Color(0xFFD1A876), 0.25f * dim),
+            start = Offset(cx + unit * 0.105f, h * 0.86f),
+            end = stickTip,
+            strokeWidth = unit * 0.0025f,
+            cap = StrokeCap.Round,
+        )
+
+        // A warm ember with a restrained halo.
+        val emberPulse = 0.86f + 0.14f * (0.5f + 0.5f * sway)
+        drawCircle(
+            color = TonalPalette.withAlpha(Color(0xFFE9A65F), 0.22f * emberPulse * dim),
+            radius = unit * 0.027f,
+            center = stickTip,
+        )
+        drawCircle(
+            brush = Brush.radialGradient(
+                0f to Color(0xFFFFE2A1),
+                0.35f to Color(0xFFEAA15A),
+                1f to Color.Transparent,
+                center = stickTip,
+                radius = unit * 0.012f,
+            ),
+            radius = unit * 0.012f,
+            center = stickTip,
+        )
+
+        // Three translucent strands share a slow phase-driven curl.
+        for (strand in 0..2) {
+            val offset = (strand - 1) * unit * 0.018f
+            val path = Path().apply {
+                moveTo(stickTip.x + offset * 0.25f, stickTip.y - unit * 0.012f)
+                cubicTo(
+                    stickTip.x - unit * (0.015f + 0.025f * sway) + offset,
+                    stickTip.y - unit * 0.08f,
+                    stickTip.x + unit * (0.04f + 0.02f * sway) + offset,
+                    stickTip.y - unit * 0.15f,
+                    stickTip.x - unit * (0.01f - 0.018f * sway) + offset,
+                    stickTip.y - unit * 0.22f,
+                )
+                cubicTo(
+                    stickTip.x - unit * (0.06f - 0.025f * flow) + offset,
+                    stickTip.y - unit * 0.31f,
+                    stickTip.x + unit * (0.045f + 0.025f * flow) + offset,
+                    stickTip.y - unit * 0.37f,
+                    stickTip.x + unit * (0.015f + 0.035f * sway) + offset,
+                    stickTip.y - unit * (0.46f + 0.025f * flow),
+                )
+            }
+            val alpha = (0.13f + strand * 0.035f) * dim
+            drawPath(
+                path = path,
+                color = TonalPalette.withAlpha(smoke, alpha * 0.45f),
+                style = Stroke(width = unit * (0.026f - strand * 0.004f), cap = StrokeCap.Round),
             )
-            drawCircle(color = col, radius = r, center = Offset(x, y))
+            drawPath(
+                path = path,
+                color = TonalPalette.withAlpha(smoke, alpha),
+                style = Stroke(width = unit * (0.007f - strand * 0.001f), cap = StrokeCap.Round),
+            )
         }
-        // Pack-flavored silhouette accents
-        when ("zen") {
-            "kaleido" -> {
-                val rings = 4
-                for (i in 0 until rings) {
-                    val ang = time * 2f * PI.toFloat() * (0.15f + i * 0.03f)
-                    val rr = minOf(w, h) * (0.12f + i * 0.08f)
-                    for (k in 0 until 6) {
-                        val a = ang + k * (2f * PI.toFloat() / 6f)
-                        drawCircle(
-                            color = TonalPalette.withAlpha(accent, 0.2f * dim),
-                            radius = rr * 0.12f,
-                            center = Offset(w * 0.5f + cos(a) * rr, h * 0.5f + sin(a) * rr),
-                        )
-                    }
-                }
-            }
-            "zen" -> {
-                drawCircle(
-                    color = TonalPalette.withAlpha(accent, 0.22f * dim),
-                    radius = minOf(w, h) * (0.18f + 0.02f * wash),
-                    center = Offset(w * 0.5f, h * 0.52f),
-                    style = Stroke(width = minOf(w, h) * 0.018f),
-                )
-            }
-            "interior" -> {
-                // soft vertical light well
-                drawRect(
-                    brush = Brush.horizontalGradient(
-                        0f to Color.Transparent,
-                        0.45f to TonalPalette.withAlpha(accent, 0.18f * dim),
-                        0.55f to TonalPalette.withAlpha(accent, 0.18f * dim),
-                        1f to Color.Transparent,
-                    ),
-                    topLeft = Offset(w * 0.35f, 0f),
-                    size = androidx.compose.ui.geometry.Size(w * 0.3f, h),
-                )
-            }
-            "coast" -> {
-                val horizon = h * (0.58f + 0.02f * wash)
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        0f to Color.Transparent,
-                        1f to TonalPalette.withAlpha(accent, 0.25f * dim),
-                        startY = horizon - h * 0.05f,
-                        endY = h,
-                    ),
-                )
-            }
-            "fire" -> {
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        0f to TonalPalette.withAlpha(accent, 0.55f * dim),
-                        1f to Color.Transparent,
-                        center = Offset(w * 0.5f, h * 0.72f),
-                        radius = minOf(w, h) * 0.35f,
-                    ),
-                    radius = minOf(w, h) * 0.35f,
-                    center = Offset(w * 0.5f, h * 0.72f),
-                )
-            }
-            else -> {}
+
+        // Sparse floating ash motes drift in a closed, looping path.
+        repeat(moteCount) { i ->
+            val n = loopedFbm(time, radius = 1.2f, octaves = 2, seedOffset = i * 71 + 5)
+            val side = if (i % 2 == 0) -1f else 1f
+            val x = w * (0.5f + (seededUnit(i * 17 + 3) - 0.5f) * 0.62f + 0.025f * sway * side)
+            val y = h * (0.22f + seededUnit(i * 29 + 7) * 0.64f + 0.018f * sin(time * 2f * PI.toFloat() + i))
+            val r = unit * seededRange(i * 41 + 11, 0.002f, 0.004f) * (0.75f + n * 0.5f)
+            drawCircle(
+                color = TonalPalette.withAlpha(accent, (0.16f + 0.18f * n) * dim),
+                radius = r,
+                center = Offset(x, y),
+            )
         }
     }
 }

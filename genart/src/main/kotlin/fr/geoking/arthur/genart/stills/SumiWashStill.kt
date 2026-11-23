@@ -4,12 +4,12 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.LinearGradient
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.RadialGradient
 import android.graphics.Shader
 import fr.geoking.arthur.genart.AnimationPalette
 import fr.geoking.arthur.genart.loopedFbm
 import kotlin.math.PI
-import kotlin.math.cos
 import kotlin.math.sin
 
 /** Bakes one frozen frame of Sumi Wash for Auto/Ambient album art. */
@@ -27,67 +27,74 @@ internal object SumiWashStill {
     ) {
         val w = size.toFloat()
         val h = size.toFloat()
-        val t01 = ((phase % (2f * PI.toFloat())) / (2f * PI.toFloat())).let { v -> if (v < 0f) v + 1f else v }
-        val wash = loopedFbm(t01, radius = 1.35f, octaves = 2, seedOffset = 11)
+        val unit = minOf(w, h)
+        val t = ((phase % (2f * PI.toFloat())) / (2f * PI.toFloat())).let { if (it < 0f) it + 1f else it }
+        val drift = loopedFbm(t, radius = 1.1f, octaves = 2, seedOffset = 61) - 0.5f
+        val breathe = 0.94f + 0.06f * sin(t * 2f * PI.toFloat())
         val dim = 0.85f + 0.15f * pulse
+        val ink = mixArgb(0xFF17191D.toInt(), palette.colorAt(0), 0.12f)
+
+        paint.style = Paint.Style.FILL
         paint.shader = LinearGradient(
             0f, 0f, 0f, h,
-            intArrayOf(0xFFF2EDE4.toInt(), 0xFFD8D0C4.toInt()),
+            intArrayOf(0xFFF5F0E7.toInt(), 0xFFE6DED1.toInt()),
             floatArrayOf(0f, 1f),
             Shader.TileMode.CLAMP,
         )
-        paint.style = Paint.Style.FILL
         canvas.drawRect(0f, 0f, w, h, paint)
         paint.shader = null
-        val accent = mixArgb(0xFF2A2A32.toInt(), palette.colorAt(0), 0.35f)
-        val cx = w * (0.35f + 0.3f * loopedFbm(t01, radius = 1.2f, seedOffset = 29))
-        val cy = h * (0.3f + 0.25f * loopedFbm(t01, radius = 1.4f, seedOffset = 47))
+
+        // Diffused pools of ink soften into the warm paper.
+        val cx = w * (0.53f + drift * 0.035f)
+        val cy = h * 0.48f
+        val radius = unit * 0.42f
         paint.shader = RadialGradient(
-            cx, cy, minOf(w, h) * 0.55f,
-            intArrayOf(withAlpha(accent, (0.35f * dim * 255).toInt()), Color.TRANSPARENT),
-            floatArrayOf(0f, 1f),
+            cx, cy, radius,
+            intArrayOf(withAlpha(ink, (0.14f * breathe * dim * 255).toInt()), withAlpha(ink, (0.06f * dim * 255).toInt()), Color.TRANSPARENT),
+            floatArrayOf(0f, 0.58f, 1f),
             Shader.TileMode.CLAMP,
         )
-        canvas.drawCircle(cx, cy, minOf(w, h) * 0.55f, paint)
+        canvas.drawOval(cx - radius * 0.78f, cy - radius, cx + radius * 0.78f, cy + radius, paint)
         paint.shader = null
-        for (i in 0 until 7) {
-            val n = loopedFbm(t01, radius = 1.25f + i * 0.04f, seedOffset = i * 97 + 5)
-            val x = ((0.1f + i * 0.12f) + 0.04f * (n * 2f - 1f) + 1f) % 1f * w
-            val y = ((0.15f + (i % 5) * 0.15f) + 0.03f * sin(t01 * 2f * PI.toFloat() + i) + 1f) % 1f * h
-            val r = minOf(w, h) * (0.04f + 0.06f * n)
-            paint.color = withAlpha(mixArgb(palette.colorAt(i), accent, 0.4f), ((0.12f + 0.18f * n) * dim * 255).toInt())
-            canvas.drawCircle(x, y, r, paint)
+
+        // Broad imperfect brush gestures with a feathery underlayer.
+        val sway = drift * unit * 0.06f
+        for (i in 0..2) {
+            val x = w * listOf(0.22f, 0.55f, 0.84f)[i] + sway * (i - 1)
+            val y = h * (0.68f + i * 0.015f)
+            val tipX = x + unit * (0.12f + i * 0.025f)
+            val tipY = y - unit * listOf(0.60f, 0.75f, 0.50f)[i]
+            val path = Path().apply {
+                moveTo(x, y)
+                cubicTo(x - unit * 0.10f, y - unit * 0.14f, tipX + unit * 0.08f, tipY + unit * 0.18f, tipX, tipY)
+            }
+            paint.style = Paint.Style.STROKE
+            paint.strokeCap = Paint.Cap.ROUND
+            paint.color = withAlpha(ink, (0.10f * dim * 255).toInt())
+            paint.strokeWidth = unit * 0.11f
+            canvas.drawPath(path, paint)
+            paint.color = withAlpha(ink, (0.30f * dim * 255).toInt())
+            paint.strokeWidth = unit * (0.035f + i * 0.006f)
+            canvas.drawPath(path, paint)
         }
-        when ("ink") {
-            "zen" -> {
-                paint.style = Paint.Style.STROKE
-                paint.strokeWidth = minOf(w, h) * 0.018f
-                paint.color = withAlpha(accent, (0.35f * dim * 255).toInt())
-                canvas.drawCircle(w * 0.5f, h * 0.52f, minOf(w, h) * (0.18f + 0.02f * wash), paint)
-                paint.style = Paint.Style.FILL
+
+        // Delicate reed-like branches emerge from the diluted central wash.
+        paint.color = withAlpha(ink, (0.13f * dim * 255).toInt())
+        paint.strokeWidth = unit * 0.006f
+        paint.strokeCap = Paint.Cap.ROUND
+        for (i in 0 until 5) {
+            val side = if (i % 2 == 0) -1f else 1f
+            val progress = 0.20f + (i / 2) * 0.17f
+            val x = cx + side * unit * (0.06f + progress * 0.08f) + sway * 0.2f
+            val y = cy + unit * (0.20f - progress * 0.55f)
+            val path = Path().apply {
+                moveTo(x, y)
+                quadTo(x + side * unit * 0.10f, y - unit * 0.08f, x + side * unit * 0.16f, y - unit * 0.24f)
             }
-            "fire" -> {
-                paint.shader = RadialGradient(
-                    w * 0.5f, h * 0.72f, minOf(w, h) * 0.35f,
-                    intArrayOf(withAlpha(accent, (0.55f * dim * 255).toInt()), Color.TRANSPARENT),
-                    floatArrayOf(0f, 1f),
-                    Shader.TileMode.CLAMP,
-                )
-                canvas.drawCircle(w * 0.5f, h * 0.72f, minOf(w, h) * 0.35f, paint)
-                paint.shader = null
-            }
-            "kaleido" -> {
-                paint.color = withAlpha(accent, (0.25f * dim * 255).toInt())
-                for (i in 0 until 4) {
-                    val rr = minOf(w, h) * (0.12f + i * 0.08f)
-                    for (k in 0 until 6) {
-                        val a = t01 * 2f * PI.toFloat() * 0.2f + k * (2f * PI.toFloat() / 6f)
-                        canvas.drawCircle(w * 0.5f + cos(a) * rr, h * 0.5f + sin(a) * rr, rr * 0.12f, paint)
-                    }
-                }
-            }
-            else -> Unit
+            canvas.drawPath(path, paint)
         }
+        paint.style = Paint.Style.FILL
+        paint.shader = null
     }
 
     private fun mixArgb(a: Int, b: Int, t: Float): Int {

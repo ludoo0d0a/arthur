@@ -20,17 +20,16 @@ import fr.geoking.arthur.genart.loopedFbm
 import fr.geoking.arthur.genart.phase01
 import fr.geoking.arthur.genart.qualityCount
 import fr.geoking.arthur.genart.seededRange
-import fr.geoking.arthur.genart.seededUnit
 import kotlin.math.PI
 import kotlin.math.exp
 import kotlin.math.sin
 
-private data class StormStrobeSheetBolt(
-    val x0: Float,
-    val y0: Float,
-    val length: Float,
-    val phaseOffset: Float,
-    val colorIndex: Int,
+private data class StormCloudBank(
+    val x: Float,
+    val y: Float,
+    val width: Float,
+    val height: Float,
+    val phase: Float,
 )
 
 /** Controlled storm strobe (phone-only) — brief flashes, not continuous flicker. */
@@ -44,14 +43,14 @@ internal fun StormStrobeSheetEngine(
     modifier: Modifier = Modifier,
 ) {
     val count = qualityCount(quality, low = 2, medium = 3, high = 5)
-    val bolts = remember(count) {
+    val clouds = remember(count) {
         List(count) { i ->
-            StormStrobeSheetBolt(
-                x0 = seededUnit(i * 19 + 5),
-                y0 = seededRange(i * 31 + 9, 0.05f, 0.35f),
-                length = seededRange(i * 43 + 13, 0.35f, 0.7f),
-                phaseOffset = seededUnit(i * 53 + 17),
-                colorIndex = i,
+            StormCloudBank(
+                x = seededRange(i * 19 + 5, -0.18f, 0.92f),
+                y = seededRange(i * 31 + 9, 0.22f, 0.72f),
+                width = seededRange(i * 43 + 13, 0.38f, 0.72f),
+                height = seededRange(i * 53 + 17, 0.10f, 0.24f),
+                phase = seededRange(i * 61 + 21, 0f, 2f * PI.toFloat()),
             )
         }
     }
@@ -70,7 +69,7 @@ internal fun StormStrobeSheetEngine(
         val w = size.width
         val h = size.height
         val time = phase01(t)
-        val cloud = loopedFbm(time, radius = 1.4f, octaves = 2, seedOffset = 7)
+        val cloud = loopedFbm(time, radius = 1.4f, octaves = 3, seedOffset = 7)
         drawRect(
             brush = Brush.verticalGradient(
                 listOf(
@@ -79,26 +78,53 @@ internal fun StormStrobeSheetEngine(
                 ),
             ),
         )
-        // Rare controlled flash envelope (narrow peaks)
+        // A brief, diffuse horizontal sheet flash behind the cloud banks.
         val flashPhase = (time + 0.37f) % 1f
         val flash = exp(-((flashPhase - 0.12f) * (flashPhase - 0.12f)) / 0.0018f)
         val flash2 = exp(-((flashPhase - 0.62f) * (flashPhase - 0.62f)) / 0.0012f)
-        val flashAmt = (flash + 0.55f * flash2) * dim
-        if (flashAmt > 0.05f) {
-            drawRect(color = TonalPalette.withAlpha(Color(0xFFE8F0FF), 0.55f * flashAmt * brightness))
-        }
-        bolts.forEach { bolt ->
-            val local = ((time + bolt.phaseOffset) % 1f)
-            val boltFlash = exp(-((local - 0.15f) * (local - 0.15f)) / 0.0009f) * dim
-            if (boltFlash < 0.08f) return@forEach
-            val x = bolt.x0 * w
-            val y0 = bolt.y0 * h
-            val y1 = y0 + bolt.length * h
-            val col = TonalPalette.withAlpha(
-                TonalPalette.brightness(TonalPalette.pick(paletteColors, bolt.colorIndex), brightness),
-                0.75f * boltFlash,
+        val flashAmt = (flash + 0.45f * flash2).coerceIn(0f, 1f) * dim
+        if (flashAmt > 0.025f) {
+            val bandY = h * (0.36f + 0.035f * (cloud - 0.5f))
+            drawRect(
+                brush = Brush.verticalGradient(
+                    0f to Color.Transparent,
+                    0.30f to TonalPalette.withAlpha(Color(0xFFE8F0FF), 0.035f * flashAmt * brightness),
+                    0.50f to TonalPalette.withAlpha(Color(0xFFE8F0FF), 0.22f * flashAmt * brightness),
+                    0.70f to TonalPalette.withAlpha(Color(0xFFD3E2FA), 0.07f * flashAmt * brightness),
+                    1f to Color.Transparent,
+                    startY = bandY - h * 0.25f,
+                    endY = bandY + h * 0.25f,
+                ),
             )
-            drawLine(color = col, start = Offset(x, y0), end = Offset(x + (loopedFbm(time, seedOffset = bolt.colorIndex * 13) - 0.5f) * w * 0.08f, y1), strokeWidth = minOf(w, h) * 0.008f)
+        }
+
+        clouds.forEachIndexed { index, bank ->
+            val drift = (loopedFbm(time, radius = 1.15f, octaves = 2, seedOffset = index * 37 + 19) - 0.5f) * w * 0.055f
+            val bob = sin(time * 2f * PI.toFloat() + bank.phase) * h * 0.008f
+            val cx = ((bank.x * w + drift + w) % (w + bank.width * w)) - bank.width * w * 0.25f
+            val cy = bank.y * h + bob
+            val cloudAlpha = (0.42f + flashAmt * 0.16f) * dim
+            val cloudColor = TonalPalette.brightness(Color(0xFF1A2230), brightness * (0.92f + 0.08f * cloud))
+            // Broad, soft cloud body with a faint illuminated upper edge during flashes.
+            drawOval(
+                brush = Brush.radialGradient(
+                    0f to TonalPalette.withAlpha(cloudColor, cloudAlpha),
+                    0.72f to TonalPalette.withAlpha(Color(0xFF101827), cloudAlpha * 0.82f),
+                    1f to Color.Transparent,
+                    center = Offset(cx + bank.width * w * 0.5f, cy + bank.height * h * 0.55f),
+                    radius = bank.width * w * 0.58f,
+                ),
+                topLeft = Offset(cx, cy),
+                size = androidx.compose.ui.geometry.Size(bank.width * w, bank.height * h),
+            )
+            if (flashAmt > 0.04f) {
+                drawLine(
+                    color = TonalPalette.withAlpha(Color(0xFFE8F0FF), 0.13f * flashAmt * brightness),
+                    start = Offset(cx + bank.width * w * 0.18f, cy + bank.height * h * 0.16f),
+                    end = Offset(cx + bank.width * w * 0.82f, cy + bank.height * h * 0.16f),
+                    strokeWidth = minOf(w, h) * 0.006f,
+                )
+            }
         }
     }
 }

@@ -9,34 +9,21 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
 import fr.geoking.arthur.genart.loopedFbm
 import fr.geoking.arthur.genart.phase01
-import fr.geoking.arthur.genart.qualityCount
-import fr.geoking.arthur.genart.seededRange
-import fr.geoking.arthur.genart.seededUnit
 import kotlin.math.PI
-import kotlin.math.cos
 import kotlin.math.sin
 
-private data class SumiWashMote(
-    val x0: Float,
-    val y0: Float,
-    val radius: Float,
-    val driftX: Float,
-    val driftY: Float,
-    val phaseOffset: Float,
-    val colorIndex: Int,
-)
-
-/** Soft Ambient Sumi Wash — seamless loop via loopedFbm. */
+/** Soft Ambient Sumi Wash — slow, seamless ink diffusion on warm handmade paper. */
 @Composable
 internal fun SumiWashEngine(
     isActive: Boolean,
@@ -46,20 +33,6 @@ internal fun SumiWashEngine(
     speed: Float,
     modifier: Modifier = Modifier,
 ) {
-    val count = qualityCount(quality, low = 4, medium = 7, high = 11)
-    val motes = remember(count) {
-        List(count) { i ->
-            SumiWashMote(
-                x0 = seededUnit(i * 17 + 3),
-                y0 = seededUnit(i * 29 + 7),
-                radius = seededRange(i * 41 + 11, 0.04f, 0.14f),
-                driftX = seededRange(i * 53 + 13, 0.02f, 0.06f),
-                driftY = seededRange(i * 67 + 19, 0.015f, 0.05f),
-                phaseOffset = seededRange(i * 71 + 23, 0f, 2f * PI.toFloat()),
-                colorIndex = i,
-            )
-        }
-    }
     val transition = rememberInfiniteTransition(label = "sumiwash")
     val t by transition.animateFloat(
         initialValue = 0f,
@@ -71,109 +44,79 @@ internal fun SumiWashEngine(
         label = "sumiwash_t",
     )
     val dim = if (isActive) 1f else 0.55f
+
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
+        val unit = minOf(w, h)
         val time = phase01(t)
-        val wash = loopedFbm(time, radius = 1.35f, octaves = 2, seedOffset = 11)
-        drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    TonalPalette.brightness(Color(0xFFF2EDE4), brightness * dim * (0.92f + 0.08f * wash)),
-                    TonalPalette.brightness(Color(0xFFD8D0C4), brightness * dim),
-                ),
-            ),
-        )
-        val accent = TonalPalette.brightness(
-            TonalPalette.mix(Color(0xFF2A2A32), TonalPalette.pick(paletteColors, 0), 0.35f),
+        val drift = loopedFbm(time, radius = 1.1f, octaves = 2, seedOffset = 61) - 0.5f
+        val breathe = 0.94f + 0.06f * sin(time * 2f * PI.toFloat())
+        val paper = TonalPalette.brightness(Color(0xFFF5F0E7), brightness * dim)
+        val ink = TonalPalette.brightness(
+            TonalPalette.mix(Color(0xFF17191D), TonalPalette.pick(paletteColors, 0), 0.12f),
             brightness * dim,
         )
-        // Soft focal glow
-        val cx = w * (0.35f + 0.3f * loopedFbm(time, radius = 1.2f, seedOffset = 29))
-        val cy = h * (0.3f + 0.25f * loopedFbm(time, radius = 1.4f, seedOffset = 47))
-        drawCircle(
-            brush = Brush.radialGradient(
-                0f to TonalPalette.withAlpha(accent, 0.35f * dim),
-                1f to Color.Transparent,
-                center = Offset(cx, cy),
-                radius = minOf(w, h) * 0.55f,
-            ),
-            radius = minOf(w, h) * 0.55f,
-            center = Offset(cx, cy),
-        )
-        motes.forEach { mote ->
-            val n = loopedFbm(time, radius = 1.25f + mote.radius, seedOffset = mote.colorIndex * 97 + 5)
-            val x = (mote.x0 + mote.driftX * (n * 2f - 1f) + 1f) % 1f * w
-            val y = (mote.y0 + mote.driftY * sin(time * 2f * PI.toFloat() + mote.phaseOffset) * 0.5f + 1f) % 1f * h
-            val r = minOf(w, h) * mote.radius * (0.85f + 0.3f * n)
-            val col = TonalPalette.withAlpha(
-                TonalPalette.brightness(TonalPalette.pick(paletteColors, mote.colorIndex), brightness * dim),
-                (0.12f + 0.18f * n) * dim,
+        drawRect(brush = Brush.verticalGradient(listOf(paper, TonalPalette.brightness(Color(0xFFE6DED1), brightness * dim))))
+
+        // Diffused ink pools: layered translucent blooms create soft, feathered edges.
+        val bloomX = w * (0.53f + drift * 0.035f)
+        val bloomY = h * 0.48f
+        listOf(0.28f to 0.10f, 0.20f to 0.12f, 0.12f to 0.15f).forEachIndexed { index, (radius, alpha) ->
+            val r = unit * (radius + index * 0.07f)
+            drawOval(
+                brush = Brush.radialGradient(
+                    0f to TonalPalette.withAlpha(ink, alpha * breathe),
+                    0.58f to TonalPalette.withAlpha(ink, alpha * 0.58f),
+                    1f to Color.Transparent,
+                    center = Offset(bloomX, bloomY),
+                    radius = r,
+                ),
+                topLeft = Offset(bloomX - r * 0.78f, bloomY - r),
+                size = androidx.compose.ui.geometry.Size(r * 1.56f, r * 2f),
             )
-            drawCircle(color = col, radius = r, center = Offset(x, y))
         }
-        // Pack-flavored silhouette accents
-        when ("ink") {
-            "kaleido" -> {
-                val rings = 4
-                for (i in 0 until rings) {
-                    val ang = time * 2f * PI.toFloat() * (0.15f + i * 0.03f)
-                    val rr = minOf(w, h) * (0.12f + i * 0.08f)
-                    for (k in 0 until 6) {
-                        val a = ang + k * (2f * PI.toFloat() / 6f)
-                        drawCircle(
-                            color = TonalPalette.withAlpha(accent, 0.2f * dim),
-                            radius = rr * 0.12f,
-                            center = Offset(w * 0.5f + cos(a) * rr, h * 0.5f + sin(a) * rr),
-                        )
-                    }
-                }
-            }
-            "zen" -> {
-                drawCircle(
-                    color = TonalPalette.withAlpha(accent, 0.22f * dim),
-                    radius = minOf(w, h) * (0.18f + 0.02f * wash),
-                    center = Offset(w * 0.5f, h * 0.52f),
-                    style = Stroke(width = minOf(w, h) * 0.018f),
+
+        // Three uneven brush gestures, with a pale feather halo and a denser ink spine.
+        val sway = drift * unit * 0.06f
+        val strokes = listOf(
+            Triple(0.22f, 0.50f, 0.60f),
+            Triple(0.55f, 0.43f, 0.75f),
+            Triple(0.84f, 0.53f, 0.50f),
+        )
+        strokes.forEachIndexed { index, (x, y, reach) ->
+            val startX = w * x + sway * (index - 1)
+            val startY = h * (y + 0.18f)
+            val tipX = startX + unit * (0.12f + index * 0.025f)
+            val tipY = startY - unit * reach
+            val path = Path().apply {
+                moveTo(startX, startY)
+                cubicTo(
+                    startX - unit * 0.10f, startY - unit * reach * 0.22f,
+                    tipX + unit * 0.08f, tipY + unit * reach * 0.35f,
+                    tipX, tipY,
                 )
             }
-            "interior" -> {
-                // soft vertical light well
-                drawRect(
-                    brush = Brush.horizontalGradient(
-                        0f to Color.Transparent,
-                        0.45f to TonalPalette.withAlpha(accent, 0.18f * dim),
-                        0.55f to TonalPalette.withAlpha(accent, 0.18f * dim),
-                        1f to Color.Transparent,
-                    ),
-                    topLeft = Offset(w * 0.35f, 0f),
-                    size = androidx.compose.ui.geometry.Size(w * 0.3f, h),
-                )
+            drawPath(path, TonalPalette.withAlpha(ink, 0.10f), style = Stroke(unit * 0.11f, cap = StrokeCap.Round))
+            drawPath(path, TonalPalette.withAlpha(ink, 0.30f * dim), style = Stroke(unit * (0.035f + index * 0.006f), cap = StrokeCap.Round))
+        }
+
+        // Fine branch strokes grow out of the central wash like reeds or winter branches.
+        val branchCount = when (quality) {
+            GenartQuality.Low -> 3
+            GenartQuality.Medium -> 5
+            GenartQuality.High -> 7
+        }
+        repeat(branchCount) { i ->
+            val side = if (i % 2 == 0) -1f else 1f
+            val progress = 0.20f + (i / 2) * 0.17f
+            val baseX = bloomX + side * unit * (0.06f + progress * 0.08f) + sway * 0.2f
+            val baseY = bloomY + unit * (0.20f - progress * 0.55f)
+            val branch = Path().apply {
+                moveTo(baseX, baseY)
+                quadraticTo(baseX + side * unit * 0.10f, baseY - unit * 0.08f, baseX + side * unit * 0.16f, baseY - unit * 0.24f)
             }
-            "coast" -> {
-                val horizon = h * (0.58f + 0.02f * wash)
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        0f to Color.Transparent,
-                        1f to TonalPalette.withAlpha(accent, 0.25f * dim),
-                        startY = horizon - h * 0.05f,
-                        endY = h,
-                    ),
-                )
-            }
-            "fire" -> {
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        0f to TonalPalette.withAlpha(accent, 0.55f * dim),
-                        1f to Color.Transparent,
-                        center = Offset(w * 0.5f, h * 0.72f),
-                        radius = minOf(w, h) * 0.35f,
-                    ),
-                    radius = minOf(w, h) * 0.35f,
-                    center = Offset(w * 0.5f, h * 0.72f),
-                )
-            }
-            else -> {}
+            drawPath(branch, TonalPalette.withAlpha(ink, 0.12f * dim), style = Stroke(unit * 0.006f, cap = StrokeCap.Round))
         }
     }
 }

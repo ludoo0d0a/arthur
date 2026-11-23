@@ -9,35 +9,19 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
 import fr.geoking.arthur.genart.loopedFbm
 import fr.geoking.arthur.genart.phase01
 import fr.geoking.arthur.genart.qualityCount
-import fr.geoking.arthur.genart.seededRange
-import fr.geoking.arthur.genart.seededUnit
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
 
-private data class AutoTunnelLightMote(
-    val x0: Float,
-    val y0: Float,
-    val radius: Float,
-    val driftX: Float,
-    val driftY: Float,
-    val phaseOffset: Float,
-    val colorIndex: Int,
-)
-
-/** Soft Ambient POV Auto Tunnel Light Rhythm — seamless loop via loopedFbm (no traffic sim). */
+/** Soft Ambient POV Auto Tunnel Light Rhythm — a seamless, slow forward glide. */
 @Composable
 internal fun AutoTunnelLightEngine(
     isActive: Boolean,
@@ -47,20 +31,7 @@ internal fun AutoTunnelLightEngine(
     speed: Float,
     modifier: Modifier = Modifier,
 ) {
-    val count = qualityCount(quality, low = 4, medium = 7, high = 11)
-    val motes = remember(count) {
-        List(count) { i ->
-            AutoTunnelLightMote(
-                x0 = seededUnit(i * 17 + 3),
-                y0 = seededUnit(i * 29 + 7),
-                radius = seededRange(i * 41 + 11, 0.03f, 0.12f),
-                driftX = seededRange(i * 53 + 13, 0.02f, 0.08f),
-                driftY = seededRange(i * 67 + 19, 0.01f, 0.04f),
-                phaseOffset = seededRange(i * 71 + 23, 0f, 2f * PI.toFloat()),
-                colorIndex = i,
-            )
-        }
-    }
+    val bandCount = qualityCount(quality, low = 4, medium = 7, high = 11)
     val transition = rememberInfiniteTransition(label = "autotunnellight")
     val t by transition.animateFloat(
         initialValue = 0f,
@@ -72,109 +43,119 @@ internal fun AutoTunnelLightEngine(
         label = "autotunnellight_t",
     )
     val dim = if (isActive) 1f else 0.55f
+
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
+        val minDim = minOf(w, h)
         val time = phase01(t)
         val wash = loopedFbm(time, radius = 1.35f, octaves = 2, seedOffset = 11)
-        drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    TonalPalette.brightness(Color(0xFF0A0A0E), brightness * dim * (0.92f + 0.08f * wash)),
-                    TonalPalette.brightness(Color(0xFF16161C), brightness * dim),
-                ),
-            ),
-        )
+        val drift = loopedFbm(time, radius = 1.15f, octaves = 2, seedOffset = 37)
+        val cx = w * (0.5f + (drift - 0.5f) * 0.012f)
+        val horizonY = h * (0.34f + wash * 0.025f)
         val accent = TonalPalette.brightness(
-            TonalPalette.mix(Color(0xFFFFD080), TonalPalette.pick(paletteColors, 0), 0.35f),
+            TonalPalette.mix(Color(0xFFFFD080), TonalPalette.pick(paletteColors, 0), 0.24f),
             brightness * dim,
         )
-        // Soft horizon / vanishing point
-        val horizon = h * (0.55f + 0.04f * (wash - 0.5f))
+        val cool = TonalPalette.brightness(Color(0xFF849BB8), brightness * dim)
+
+        drawRect(
+            brush = Brush.verticalGradient(
+                0f to TonalPalette.brightness(Color(0xFF0A0A0E), brightness * dim),
+                0.55f to TonalPalette.brightness(Color(0xFF16161C), brightness * dim),
+                1f to TonalPalette.brightness(Color(0xFF080A0C), brightness * dim),
+            ),
+        )
+
+        // Deep, soft glow at the tunnel mouth and a dim center lane.
+        drawCircle(
+            brush = Brush.radialGradient(
+                0f to TonalPalette.withAlpha(accent, 0.30f * dim),
+                0.38f to TonalPalette.withAlpha(cool, 0.12f * dim),
+                1f to Color.Transparent,
+                center = Offset(cx, horizonY),
+                radius = (minDim * 0.48f).coerceAtLeast(1f),
+            ),
+            radius = (minDim * 0.48f).coerceAtLeast(1f),
+            center = Offset(cx, horizonY),
+        )
         drawRect(
             brush = Brush.verticalGradient(
                 0f to Color.Transparent,
-                1f to TonalPalette.withAlpha(accent, 0.12f * dim),
-                startY = horizon - h * 0.08f,
-                endY = horizon + h * 0.08f,
+                0.48f to TonalPalette.withAlpha(cool, 0.06f * dim),
+                1f to Color.Transparent,
+                startY = horizonY,
+                endY = h,
             ),
+            topLeft = Offset(cx - w * 0.12f, horizonY),
+            size = androidx.compose.ui.geometry.Size(w * 0.24f, h - horizonY),
         )
-        motes.forEach { mote ->
-            val n = loopedFbm(time, radius = 1.2f + mote.radius, seedOffset = mote.colorIndex * 97 + 5)
-            val x = (mote.x0 + mote.driftX * (n * 2f - 1f) + time * 0.15f + 1f) % 1f * w
-            val y = (mote.y0 + mote.driftY * sin(time * 2f * PI.toFloat() + mote.phaseOffset) * 0.5f + 1f) % 1f * h
-            val r = minOf(w, h) * mote.radius * (0.85f + 0.3f * n)
-            drawCircle(
-                color = TonalPalette.withAlpha(
-                    TonalPalette.brightness(TonalPalette.pick(paletteColors, mote.colorIndex), brightness * dim),
-                    (0.10f + 0.16f * n) * dim,
-                ),
-                radius = r,
-                center = Offset(x, y),
+
+        // Softly lit tunnel ribs. Even spacing makes the phase reset seamless.
+        for (i in 0 until bandCount) {
+            val depth = ((i.toFloat() / bandCount + time) % 1f)
+            val perspective = depth * depth
+            val yTop = horizonY + h * (0.025f + perspective * 0.48f)
+            val yBottom = horizonY + h * (0.06f + perspective * 0.70f)
+            val halfWidth = w * (0.025f + depth * 0.48f)
+            val halfHeight = h * (0.018f + depth * 0.11f)
+            val left = cx - halfWidth
+            val right = cx + halfWidth
+            val top = yTop
+            val bottom = yBottom
+            val bandAlpha = (0.12f + 0.36f * depth) * dim
+            val bandColor = accent
+
+            val rib = Path().apply {
+                moveTo(left, bottom)
+                lineTo(left, top + halfHeight * 0.45f)
+                cubicTo(left, top - halfHeight * 0.50f, cx - halfWidth * 0.48f, top - halfHeight, cx, top - halfHeight)
+                cubicTo(cx + halfWidth * 0.48f, top - halfHeight, right, top - halfHeight * 0.50f, right, top + halfHeight * 0.45f)
+                lineTo(right, bottom)
+            }
+            drawPath(
+                path = rib,
+                color = TonalPalette.withAlpha(bandColor, bandAlpha * 0.38f),
+                style = Stroke(width = minDim * (0.018f - depth * 0.010f).coerceAtLeast(0.004f)),
+            )
+            drawPath(
+                path = rib,
+                color = TonalPalette.withAlpha(bandColor, bandAlpha),
+                style = Stroke(width = minDim * (0.0048f - depth * 0.002f).coerceAtLeast(0.0015f)),
             )
         }
-        when ("auto") {
-            "auto", "moto" -> {
-                // soft dash silhouette band
-                drawRect(
-                    color = TonalPalette.withAlpha(Color(0xFF080A0C), 0.45f * dim),
-                    topLeft = Offset(0f, h * 0.72f),
-                    size = Size(w, h * 0.28f),
-                )
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        0f to TonalPalette.withAlpha(accent, 0.4f * dim),
-                        1f to Color.Transparent,
-                        center = Offset(w * 0.5f, h * 0.62f),
-                        radius = minOf(w, h) * 0.25f,
-                    ),
-                    radius = minOf(w, h) * 0.25f,
-                    center = Offset(w * 0.5f, h * 0.62f),
-                )
-            }
-            "avion" -> {
-                // soft wing edge
-                drawRect(
-                    brush = Brush.horizontalGradient(
-                        0f to TonalPalette.withAlpha(accent, 0.2f * dim),
-                        1f to Color.Transparent,
-                    ),
-                    topLeft = Offset(0f, h * 0.62f),
-                    size = Size(w * 0.55f, h * 0.08f),
-                )
-            }
-            "velo" -> {
-                // path ribbon
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        0f to Color.Transparent,
-                        1f to TonalPalette.withAlpha(accent, 0.22f * dim),
-                    ),
-                    topLeft = Offset(w * 0.42f, horizon),
-                    size = Size(w * 0.16f, h - horizon),
-                )
-            }
-            "train" -> {
-                // window frame bars
-                for (i in 1..2) {
-                    val x = w * (0.28f * i)
-                    drawRect(
-                        color = TonalPalette.withAlpha(Color(0xFF0A0C10), 0.35f * dim),
-                        topLeft = Offset(x, 0f),
-                        size = Size(w * 0.02f, h),
-                    )
-                }
-            }
-            "us_vintage" -> {
-                // neon arc
-                drawCircle(
-                    color = TonalPalette.withAlpha(accent, 0.35f * dim),
-                    radius = minOf(w, h) * 0.22f,
-                    center = Offset(w * 0.5f, h * 0.38f),
-                    style = Stroke(width = minOf(w, h) * 0.02f),
-                )
-            }
-            else -> {}
-        }
+
+        // Side rails and the central road perspective cue.
+        val railAlpha = 0.12f * dim
+        drawLine(
+            color = TonalPalette.withAlpha(cool, railAlpha),
+            start = Offset(cx, horizonY),
+            end = Offset(-w * 0.12f, h * 1.05f),
+            strokeWidth = minDim * 0.006f,
+        )
+        drawLine(
+            color = TonalPalette.withAlpha(cool, railAlpha),
+            start = Offset(cx, horizonY),
+            end = Offset(w * 1.12f, h * 1.05f),
+            strokeWidth = minDim * 0.006f,
+        )
+        drawLine(
+            color = TonalPalette.withAlpha(accent, 0.10f * dim),
+            start = Offset(cx, horizonY + h * 0.06f),
+            end = Offset(cx, h * 1.03f),
+            strokeWidth = minDim * 0.003f,
+        )
+
+        // Dim lower dashboard silhouette frames the point-of-view composition.
+        drawRect(
+            brush = Brush.verticalGradient(
+                0f to Color.Transparent,
+                1f to TonalPalette.withAlpha(Color(0xFF080A0C), 0.76f * dim),
+                startY = h * 0.78f,
+                endY = h,
+            ),
+            topLeft = Offset(0f, h * 0.78f),
+            size = androidx.compose.ui.geometry.Size(w, h * 0.22f),
+        )
     }
 }

@@ -4,17 +4,19 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.LinearGradient
 import android.graphics.Paint
-import android.graphics.RadialGradient
+import android.graphics.Path
+import android.graphics.RectF
 import android.graphics.Shader
 import fr.geoking.arthur.genart.AnimationPalette
 import fr.geoking.arthur.genart.loopedFbm
 import kotlin.math.PI
-import kotlin.math.cos
 import kotlin.math.sin
 
-/** Bakes one frozen frame of Zen Stone Ripples for Auto/Ambient album art. */
+/** Bakes one frozen frame of a quiet raked garden with smooth stones and ripples. */
 internal object ZenStoneRipplesStill {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
+    private val rect = RectF()
+    private val path = Path()
 
     fun draw(
         canvas: Canvas,
@@ -27,67 +29,86 @@ internal object ZenStoneRipplesStill {
     ) {
         val w = size.toFloat()
         val h = size.toFloat()
-        val t01 = ((phase % (2f * PI.toFloat())) / (2f * PI.toFloat())).let { v -> if (v < 0f) v + 1f else v }
-        val wash = loopedFbm(t01, radius = 1.35f, octaves = 2, seedOffset = 11)
+        val minDim = minOf(w, h)
+        val tau = 2f * PI.toFloat()
+        val t01 = ((phase % tau) / tau).let { if (it < 0f) it + 1f else it }
+        val ebb = loopedFbm(t01, radius = 1.2f, octaves = 2, seedOffset = 11)
         val dim = 0.85f + 0.15f * pulse
+        val sand = 0xFFD8E0D8.toInt()
+        val sandShade = mixArgb(sand, 0xFF8AA090.toInt(), 0.25f)
+        val stone = 0xFF8AA090.toInt()
+        val deepStone = mixArgb(0xFF2E3A32.toInt(), palette.colorAt(0), 0.22f)
+
         paint.shader = LinearGradient(
             0f, 0f, 0f, h,
-            intArrayOf(0xFFD8E0D8.toInt(), 0xFF8AA090.toInt()),
-            floatArrayOf(0f, 1f),
+            intArrayOf(sand, sandShade, sand),
+            floatArrayOf(0f, 0.55f, 1f),
             Shader.TileMode.CLAMP,
         )
         paint.style = Paint.Style.FILL
         canvas.drawRect(0f, 0f, w, h, paint)
         paint.shader = null
-        val accent = mixArgb(0xFF2E3A32.toInt(), palette.colorAt(0), 0.35f)
-        val cx = w * (0.35f + 0.3f * loopedFbm(t01, radius = 1.2f, seedOffset = 29))
-        val cy = h * (0.3f + 0.25f * loopedFbm(t01, radius = 1.4f, seedOffset = 47))
-        paint.shader = RadialGradient(
-            cx, cy, minOf(w, h) * 0.55f,
-            intArrayOf(withAlpha(accent, (0.35f * dim * 255).toInt()), Color.TRANSPARENT),
-            floatArrayOf(0f, 1f),
-            Shader.TileMode.CLAMP,
+
+        // Fine raked grooves crossing the sand in long, quiet curves.
+        val grooveCount = 22
+        for (i in 0 until grooveCount) {
+            val fraction = i / (grooveCount - 1f)
+            val y = h * (0.08f + fraction * 0.84f)
+            val wave = sin(fraction * tau * 2f + t01 * tau) * minDim * 0.004f * (0.85f + 0.15f * ebb)
+            path.reset()
+            path.moveTo(-w * 0.04f, y)
+            path.cubicTo(w * 0.26f, y + wave, w * 0.70f, y - wave, w * 1.04f, y)
+            paint.color = withAlpha(if (i % 3 == 0) Color.WHITE else deepStone, ((if (i % 3 == 0) 0.18f else 0.12f) * dim * 255).toInt())
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = minDim * 0.0018f
+            canvas.drawPath(path, paint)
+        }
+
+        val stones = listOf(
+            Triple(0.33f, 0.42f, 0.19f),
+            Triple(0.65f, 0.59f, 0.15f),
+            Triple(0.43f, 0.72f, 0.105f),
         )
-        canvas.drawCircle(cx, cy, minOf(w, h) * 0.55f, paint)
-        paint.shader = null
-        for (i in 0 until 7) {
-            val n = loopedFbm(t01, radius = 1.25f + i * 0.04f, seedOffset = i * 97 + 5)
-            val x = ((0.1f + i * 0.12f) + 0.04f * (n * 2f - 1f) + 1f) % 1f * w
-            val y = ((0.15f + (i % 5) * 0.15f) + 0.03f * sin(t01 * 2f * PI.toFloat() + i) + 1f) % 1f * h
-            val r = minOf(w, h) * (0.04f + 0.06f * n)
-            paint.color = withAlpha(mixArgb(palette.colorAt(i), accent, 0.4f), ((0.12f + 0.18f * n) * dim * 255).toInt())
-            canvas.drawCircle(x, y, r, paint)
-        }
-        when ("zen") {
-            "zen" -> {
+        stones.forEachIndexed { index, (x, y, radius) ->
+            val cx = w * x
+            val cy = h * y
+            val rx = minDim * radius
+            val ry = rx * (0.54f + index * 0.025f)
+            val pulseWave = 0.5f + 0.5f * sin(t01 * tau + index * 1.7f)
+
+            paint.style = Paint.Style.FILL
+            paint.color = withAlpha(deepStone, (0.19f * dim * 255).toInt())
+            rect.set(cx - rx * 0.92f, cy - ry * 0.32f, cx + rx * 0.98f, cy + ry * 1.03f)
+            canvas.drawOval(rect, paint)
+
+            rect.set(cx - rx, cy - ry, cx + rx, cy + ry)
+            paint.shader = LinearGradient(
+                cx - rx, cy - ry, cx + rx, cy + ry,
+                intArrayOf(mixArgb(stone, Color.WHITE, 0.24f), stone, deepStone),
+                floatArrayOf(0f, 0.55f, 1f),
+                Shader.TileMode.CLAMP,
+            )
+            canvas.drawOval(rect, paint)
+            paint.shader = null
+
+            rect.set(cx - rx * 0.62f, cy - ry * 0.65f, cx + rx * 0.22f, cy - ry * 0.33f)
+            paint.color = withAlpha(Color.WHITE, (0.32f * dim * 255).toInt())
+            canvas.drawOval(rect, paint)
+
+            // Four soft expanding rings cycle seamlessly around each stone.
+            for (ring in 0 until 4) {
+                val ringPhase = (t01 + ring / 4f + index * 0.17f) % 1f
+                val scale = 1.12f + ringPhase * 0.75f
+                val alpha = (1f - ringPhase) * (0.18f + 0.08f * pulseWave) * dim
+                rect.set(cx - rx * scale, cy - ry * scale, cx + rx * scale, cy + ry * scale)
+                paint.color = withAlpha(deepStone, (alpha * 255).toInt())
                 paint.style = Paint.Style.STROKE
-                paint.strokeWidth = minOf(w, h) * 0.018f
-                paint.color = withAlpha(accent, (0.35f * dim * 255).toInt())
-                canvas.drawCircle(w * 0.5f, h * 0.52f, minOf(w, h) * (0.18f + 0.02f * wash), paint)
-                paint.style = Paint.Style.FILL
+                paint.strokeWidth = minDim * 0.0022f
+                canvas.drawOval(rect, paint)
             }
-            "fire" -> {
-                paint.shader = RadialGradient(
-                    w * 0.5f, h * 0.72f, minOf(w, h) * 0.35f,
-                    intArrayOf(withAlpha(accent, (0.55f * dim * 255).toInt()), Color.TRANSPARENT),
-                    floatArrayOf(0f, 1f),
-                    Shader.TileMode.CLAMP,
-                )
-                canvas.drawCircle(w * 0.5f, h * 0.72f, minOf(w, h) * 0.35f, paint)
-                paint.shader = null
-            }
-            "kaleido" -> {
-                paint.color = withAlpha(accent, (0.25f * dim * 255).toInt())
-                for (i in 0 until 4) {
-                    val rr = minOf(w, h) * (0.12f + i * 0.08f)
-                    for (k in 0 until 6) {
-                        val a = t01 * 2f * PI.toFloat() * 0.2f + k * (2f * PI.toFloat() / 6f)
-                        canvas.drawCircle(w * 0.5f + cos(a) * rr, h * 0.5f + sin(a) * rr, rr * 0.12f, paint)
-                    }
-                }
-            }
-            else -> Unit
         }
+        paint.style = Paint.Style.FILL
+        paint.shader = null
     }
 
     private fun mixArgb(a: Int, b: Int, t: Float): Int {

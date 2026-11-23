@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.Path
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
 import fr.geoking.arthur.genart.loopedFbm
@@ -23,7 +23,6 @@ import fr.geoking.arthur.genart.qualityCount
 import fr.geoking.arthur.genart.seededRange
 import fr.geoking.arthur.genart.seededUnit
 import kotlin.math.PI
-import kotlin.math.cos
 import kotlin.math.sin
 
 private data class SleepParallaxMote(
@@ -36,7 +35,7 @@ private data class SleepParallaxMote(
     val colorIndex: Int,
 )
 
-/** Soft Ambient Sleep Parallax — seamless loop via loopedFbm. */
+/** Soft Ambient Sleep Parallax — layered night ridges and lucid lights in a seamless loop. */
 @Composable
 internal fun SleepParallaxEngine(
     isActive: Boolean,
@@ -76,10 +75,13 @@ internal fun SleepParallaxEngine(
         val h = size.height
         val time = phase01(t)
         val wash = loopedFbm(time, radius = 1.35f, octaves = 2, seedOffset = 11)
+        val minDim = minOf(w, h)
+        val driftFar = loopedFbm(time, radius = 0.95f, octaves = 2, seedOffset = 61) - 0.5f
+        val driftNear = loopedFbm(time, radius = 1.2f, octaves = 2, seedOffset = 89) - 0.5f
         drawRect(
             brush = Brush.verticalGradient(
                 colors = listOf(
-                    TonalPalette.brightness(Color(0xFF0E1020), brightness * dim * (0.92f + 0.08f * wash)),
+                    TonalPalette.brightness(Color(0xFF0E1020), brightness * dim * (0.94f + 0.06f * wash)),
                     TonalPalette.brightness(Color(0xFF1A1830), brightness * dim),
                 ),
             ),
@@ -88,92 +90,100 @@ internal fun SleepParallaxEngine(
             TonalPalette.mix(Color(0xFFA090C8), TonalPalette.pick(paletteColors, 0), 0.35f),
             brightness * dim,
         )
-        // Soft focal glow
-        val cx = w * (0.35f + 0.3f * loopedFbm(time, radius = 1.2f, seedOffset = 29))
-        val cy = h * (0.3f + 0.25f * loopedFbm(time, radius = 1.4f, seedOffset = 47))
+        // Distant moon-like orb and a broad halo above the layered night ridges.
+        val cx = w * (0.5f + 0.12f * driftFar)
+        val cy = h * (0.28f + 0.025f * (loopedFbm(time, radius = 1.4f, seedOffset = 47) - 0.5f))
+        val orbRadius = minDim * 0.075f
         drawCircle(
             brush = Brush.radialGradient(
-                0f to TonalPalette.withAlpha(accent, 0.35f * dim),
+                0f to TonalPalette.withAlpha(accent, 0.15f * dim),
+                0.45f to TonalPalette.withAlpha(accent, 0.08f * dim),
                 1f to Color.Transparent,
                 center = Offset(cx, cy),
-                radius = minOf(w, h) * 0.55f,
+                radius = minDim * 0.43f,
             ),
-            radius = minOf(w, h) * 0.55f,
+            radius = minDim * 0.43f,
             center = Offset(cx, cy),
         )
+        drawCircle(
+            brush = Brush.radialGradient(
+                0f to TonalPalette.withAlpha(Color(0xFFE0D8FF), 0.46f * dim),
+                0.62f to TonalPalette.withAlpha(accent, 0.20f * dim),
+                1f to TonalPalette.withAlpha(accent, 0.02f * dim),
+                center = Offset(cx, cy),
+                radius = orbRadius,
+            ),
+            radius = orbRadius,
+            center = Offset(cx, cy),
+        )
+
+        // Three hazy ridge planes move at different rates to create gentle parallax.
+        fun ridgePath(baseY: Float, amplitude: Float, offset: Float): Path = Path().apply {
+            moveTo(0f, h)
+            lineTo(0f, baseY)
+            for (step in 0..12) {
+                val x = w * step / 12f
+                val envelope = sin((step / 12f + offset + 1f) * PI.toFloat())
+                val ripple = loopedFbm(time, radius = 1.05f + step * 0.025f, octaves = 2, seedOffset = 120 + step * 13) - 0.5f
+                lineTo(x, baseY + envelope * amplitude * 0.38f + ripple * amplitude * 0.32f)
+            }
+            lineTo(w, h)
+            close()
+        }
+        drawPath(
+            path = ridgePath(h * 0.64f, h * 0.075f, driftFar * 0.18f),
+            brush = Brush.verticalGradient(
+                0f to TonalPalette.withAlpha(Color(0xFF3B3D68), 0.42f * dim),
+                1f to TonalPalette.withAlpha(Color(0xFF22233F), 0.70f * dim),
+                startY = h * 0.58f,
+                endY = h,
+            ),
+        )
+        drawPath(
+            path = ridgePath(h * 0.74f, h * 0.09f, driftNear * 0.3f + 0.36f),
+            brush = Brush.verticalGradient(
+                0f to TonalPalette.withAlpha(Color(0xFF292B4C), 0.82f * dim),
+                1f to TonalPalette.withAlpha(Color(0xFF17182B), 0.96f * dim),
+                startY = h * 0.68f,
+                endY = h,
+            ),
+        )
+        drawPath(
+            path = ridgePath(h * 0.86f, h * 0.045f, driftNear * 0.52f + 0.71f),
+            color = TonalPalette.withAlpha(Color(0xFF101222), 0.96f * dim),
+        )
+        // A fine soft horizon glow separates the far plane without a hard light source.
+        drawRect(
+            brush = Brush.verticalGradient(
+                0f to Color.Transparent,
+                0.5f to TonalPalette.withAlpha(accent, 0.08f * dim),
+                1f to Color.Transparent,
+                startY = h * 0.58f,
+                endY = h * 0.78f,
+            ),
+        )
+
         motes.forEach { mote ->
             val n = loopedFbm(time, radius = 1.25f + mote.radius, seedOffset = mote.colorIndex * 97 + 5)
             val x = (mote.x0 + mote.driftX * (n * 2f - 1f) + 1f) % 1f * w
-            val y = (mote.y0 + mote.driftY * sin(time * 2f * PI.toFloat() + mote.phaseOffset) * 0.5f + 1f) % 1f * h
-            val r = minOf(w, h) * mote.radius * (0.85f + 0.3f * n)
+            val depth = 0.35f + (mote.colorIndex % 4) * 0.18f
+            val y = (mote.y0 * 0.58f + 0.18f + mote.driftY * sin(time * 2f * PI.toFloat() + mote.phaseOffset) * 0.35f + 1f) % 1f * h
+            val r = minDim * (0.006f + 0.009f * depth) * (0.8f + 0.35f * n)
             val col = TonalPalette.withAlpha(
-                TonalPalette.brightness(TonalPalette.pick(paletteColors, mote.colorIndex), brightness * dim),
-                (0.12f + 0.18f * n) * dim,
+                TonalPalette.brightness(TonalPalette.mix(accent, TonalPalette.pick(paletteColors, mote.colorIndex), 0.25f), brightness * dim),
+                (0.22f + 0.22f * n) * dim,
+            )
+            drawCircle(
+                brush = Brush.radialGradient(
+                    0f to TonalPalette.withAlpha(col, 0.8f),
+                    1f to Color.Transparent,
+                    center = Offset(x, y),
+                    radius = r * 3.5f,
+                ),
+                radius = r * 3.5f,
+                center = Offset(x, y),
             )
             drawCircle(color = col, radius = r, center = Offset(x, y))
-        }
-        // Pack-flavored silhouette accents
-        when ("dream") {
-            "kaleido" -> {
-                val rings = 4
-                for (i in 0 until rings) {
-                    val ang = time * 2f * PI.toFloat() * (0.15f + i * 0.03f)
-                    val rr = minOf(w, h) * (0.12f + i * 0.08f)
-                    for (k in 0 until 6) {
-                        val a = ang + k * (2f * PI.toFloat() / 6f)
-                        drawCircle(
-                            color = TonalPalette.withAlpha(accent, 0.2f * dim),
-                            radius = rr * 0.12f,
-                            center = Offset(w * 0.5f + cos(a) * rr, h * 0.5f + sin(a) * rr),
-                        )
-                    }
-                }
-            }
-            "zen" -> {
-                drawCircle(
-                    color = TonalPalette.withAlpha(accent, 0.22f * dim),
-                    radius = minOf(w, h) * (0.18f + 0.02f * wash),
-                    center = Offset(w * 0.5f, h * 0.52f),
-                    style = Stroke(width = minOf(w, h) * 0.018f),
-                )
-            }
-            "interior" -> {
-                // soft vertical light well
-                drawRect(
-                    brush = Brush.horizontalGradient(
-                        0f to Color.Transparent,
-                        0.45f to TonalPalette.withAlpha(accent, 0.18f * dim),
-                        0.55f to TonalPalette.withAlpha(accent, 0.18f * dim),
-                        1f to Color.Transparent,
-                    ),
-                    topLeft = Offset(w * 0.35f, 0f),
-                    size = androidx.compose.ui.geometry.Size(w * 0.3f, h),
-                )
-            }
-            "coast" -> {
-                val horizon = h * (0.58f + 0.02f * wash)
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        0f to Color.Transparent,
-                        1f to TonalPalette.withAlpha(accent, 0.25f * dim),
-                        startY = horizon - h * 0.05f,
-                        endY = h,
-                    ),
-                )
-            }
-            "fire" -> {
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        0f to TonalPalette.withAlpha(accent, 0.55f * dim),
-                        1f to Color.Transparent,
-                        center = Offset(w * 0.5f, h * 0.72f),
-                        radius = minOf(w, h) * 0.35f,
-                    ),
-                    radius = minOf(w, h) * 0.35f,
-                    center = Offset(w * 0.5f, h * 0.72f),
-                )
-            }
-            else -> {}
         }
     }
 }

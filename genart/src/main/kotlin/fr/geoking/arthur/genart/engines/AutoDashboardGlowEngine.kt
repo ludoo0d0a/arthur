@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -113,68 +114,118 @@ internal fun AutoDashboardGlowEngine(
                 center = Offset(x, y),
             )
         }
-        when ("auto") {
-            "auto", "moto" -> {
-                // soft dash silhouette band
-                drawRect(
-                    color = TonalPalette.withAlpha(Color(0xFF080A0C), 0.45f * dim),
-                    topLeft = Offset(0f, h * 0.72f),
-                    size = Size(w, h * 0.28f),
-                )
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        0f to TonalPalette.withAlpha(accent, 0.4f * dim),
-                        1f to Color.Transparent,
-                        center = Offset(w * 0.5f, h * 0.62f),
-                        radius = minOf(w, h) * 0.25f,
-                    ),
-                    radius = minOf(w, h) * 0.25f,
-                    center = Offset(w * 0.5f, h * 0.62f),
+        // Low dashboard silhouette and windscreen edge.
+        val dashboardTop = h * 0.70f
+        drawRect(
+            brush = Brush.verticalGradient(
+                0f to TonalPalette.withAlpha(Color(0xFF0A0C10), 0.78f * dim),
+                1f to TonalPalette.withAlpha(Color(0xFF050609), 0.98f * dim),
+                startY = dashboardTop,
+                endY = h,
+            ),
+            topLeft = Offset(0f, dashboardTop),
+            size = Size(w, h - dashboardTop),
+        )
+        drawLine(
+            color = TonalPalette.withAlpha(Color(0xFF29343A), 0.48f * dim),
+            start = Offset(0f, dashboardTop),
+            end = Offset(w, dashboardTop),
+            strokeWidth = minOf(w, h) * 0.008f,
+        )
+
+        // Soft instrument spill reflected upward onto the windshield.
+        val cyan = TonalPalette.brightness(Color(0xFF40E0A0), brightness * dim)
+        val amber = TonalPalette.brightness(Color(0xFFE6A45A), brightness * dim)
+        drawCircle(
+            brush = Brush.radialGradient(
+                0f to TonalPalette.withAlpha(cyan, 0.22f * dim),
+                0.55f to TonalPalette.withAlpha(cyan, 0.07f * dim),
+                1f to Color.Transparent,
+                center = Offset(w * 0.30f, h * 0.70f),
+                radius = minOf(w, h) * 0.30f,
+            ),
+            radius = minOf(w, h) * 0.30f,
+            center = Offset(w * 0.30f, h * 0.70f),
+        )
+        drawCircle(
+            brush = Brush.radialGradient(
+                0f to TonalPalette.withAlpha(amber, 0.17f * dim),
+                1f to Color.Transparent,
+                center = Offset(w * 0.72f, h * 0.72f),
+                radius = minOf(w, h) * 0.24f,
+            ),
+            radius = minOf(w, h) * 0.24f,
+            center = Offset(w * 0.72f, h * 0.72f),
+        )
+
+        // Two recessed gauges with subtle animated needles and tick marks.
+        val gaugeY = h * 0.81f
+        val gaugeRadius = minOf(w, h) * 0.105f
+        listOf(w * 0.27f, w * 0.73f).forEachIndexed { index, gaugeX ->
+            val gaugeColor = if (index == 0) cyan else amber
+            drawCircle(Color(0xFF07090C), gaugeRadius, Offset(gaugeX, gaugeY))
+            drawCircle(
+                TonalPalette.withAlpha(Color(0xFF54616A), 0.72f * dim),
+                gaugeRadius,
+                Offset(gaugeX, gaugeY),
+                style = Stroke(width = minOf(w, h) * 0.006f),
+            )
+            drawCircle(
+                TonalPalette.withAlpha(gaugeColor, 0.18f * dim),
+                gaugeRadius * 0.82f,
+                Offset(gaugeX, gaugeY),
+                style = Stroke(width = minOf(w, h) * 0.004f),
+            )
+            for (tick in 0..8) {
+                val angle = (-PI * 0.82 + tick * (PI * 1.64 / 8.0)).toFloat()
+                val inner = gaugeRadius * 0.66f
+                val outer = gaugeRadius * 0.76f
+                drawLine(
+                    color = TonalPalette.withAlpha(gaugeColor, 0.55f * dim),
+                    start = Offset(gaugeX + cos(angle) * inner, gaugeY + sin(angle) * inner),
+                    end = Offset(gaugeX + cos(angle) * outer, gaugeY + sin(angle) * outer),
+                    strokeWidth = minOf(w, h) * 0.003f,
                 )
             }
-            "avion" -> {
-                // soft wing edge
-                drawRect(
-                    brush = Brush.horizontalGradient(
-                        0f to TonalPalette.withAlpha(accent, 0.2f * dim),
-                        1f to Color.Transparent,
-                    ),
-                    topLeft = Offset(0f, h * 0.62f),
-                    size = Size(w * 0.55f, h * 0.08f),
-                )
-            }
-            "velo" -> {
-                // path ribbon
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        0f to Color.Transparent,
-                        1f to TonalPalette.withAlpha(accent, 0.22f * dim),
-                    ),
-                    topLeft = Offset(w * 0.42f, horizon),
-                    size = Size(w * 0.16f, h - horizon),
-                )
-            }
-            "train" -> {
-                // window frame bars
-                for (i in 1..2) {
-                    val x = w * (0.28f * i)
-                    drawRect(
-                        color = TonalPalette.withAlpha(Color(0xFF0A0C10), 0.35f * dim),
-                        topLeft = Offset(x, 0f),
-                        size = Size(w * 0.02f, h),
-                    )
-                }
-            }
-            "us_vintage" -> {
-                // neon arc
-                drawCircle(
-                    color = TonalPalette.withAlpha(accent, 0.35f * dim),
-                    radius = minOf(w, h) * 0.22f,
-                    center = Offset(w * 0.5f, h * 0.38f),
-                    style = Stroke(width = minOf(w, h) * 0.02f),
-                )
-            }
-            else -> {}
+            val needleAngle = (-PI * 0.60 + (0.42 + 0.06 * sin(time * 2f * PI.toFloat() + index)) * PI * 1.2).toFloat()
+            drawLine(
+                color = TonalPalette.withAlpha(gaugeColor, 0.95f * dim),
+                start = Offset(gaugeX, gaugeY),
+                end = Offset(
+                    gaugeX + cos(needleAngle) * gaugeRadius * 0.60f,
+                    gaugeY + sin(needleAngle) * gaugeRadius * 0.60f,
+                ),
+                strokeWidth = minOf(w, h) * 0.004f,
+            )
+            drawCircle(gaugeColor, minOf(w, h) * 0.008f, Offset(gaugeX, gaugeY))
         }
+
+        // Central console, softly lit controls, and a small shifter silhouette.
+        drawRoundRect(
+            color = Color(0xFF0B0D11),
+            topLeft = Offset(w * 0.43f, h * 0.74f),
+            size = Size(w * 0.14f, h * 0.25f),
+            cornerRadius = CornerRadius(minOf(w, h) * 0.035f),
+        )
+        drawRoundRect(
+            color = TonalPalette.withAlpha(cyan, 0.28f * dim),
+            topLeft = Offset(w * 0.455f, h * 0.77f),
+            size = Size(w * 0.09f, h * 0.035f),
+            cornerRadius = CornerRadius(minOf(w, h) * 0.008f),
+        )
+        for (i in 0..2) {
+            drawCircle(
+                color = TonalPalette.withAlpha(if (i == 1) amber else cyan, 0.74f * dim),
+                radius = minOf(w, h) * 0.009f,
+                center = Offset(w * (0.46f + 0.04f * i), h * 0.84f),
+            )
+        }
+        drawLine(
+            color = TonalPalette.withAlpha(Color(0xFF42474A), 0.65f * dim),
+            start = Offset(w * 0.59f, h * 0.92f),
+            end = Offset(w * 0.63f, h * 0.82f),
+            strokeWidth = minOf(w, h) * 0.018f,
+        )
+        drawCircle(Color(0xFF22272A), minOf(w, h) * 0.022f, Offset(w * 0.635f, h * 0.81f))
     }
 }

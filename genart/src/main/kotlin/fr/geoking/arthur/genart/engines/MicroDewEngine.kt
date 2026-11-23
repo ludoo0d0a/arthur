@@ -14,29 +14,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
 import fr.geoking.arthur.genart.loopedFbm
 import fr.geoking.arthur.genart.phase01
 import fr.geoking.arthur.genart.qualityCount
-import fr.geoking.arthur.genart.seededRange
-import fr.geoking.arthur.genart.seededUnit
 import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
 
-private data class MicroDewMote(
-    val x0: Float,
-    val y0: Float,
+private data class DewDrop(
+    val x: Float,
+    val y: Float,
     val radius: Float,
-    val driftX: Float,
-    val driftY: Float,
-    val phaseOffset: Float,
-    val colorIndex: Int,
+    val phase: Int,
 )
 
-/** Soft Ambient Micro Dew — seamless loop via loopedFbm. */
+/** Macro dew on a deep green leaf with a soft, seamless shimmer. */
 @Composable
 internal fun MicroDewEngine(
     isActive: Boolean,
@@ -47,18 +42,16 @@ internal fun MicroDewEngine(
     modifier: Modifier = Modifier,
 ) {
     val count = qualityCount(quality, low = 4, medium = 7, high = 11)
-    val motes = remember(count) {
-        List(count) { i ->
-            MicroDewMote(
-                x0 = seededUnit(i * 17 + 3),
-                y0 = seededUnit(i * 29 + 7),
-                radius = seededRange(i * 41 + 11, 0.04f, 0.14f),
-                driftX = seededRange(i * 53 + 13, 0.02f, 0.06f),
-                driftY = seededRange(i * 67 + 19, 0.015f, 0.05f),
-                phaseOffset = seededRange(i * 71 + 23, 0f, 2f * PI.toFloat()),
-                colorIndex = i,
-            )
-        }
+    val drops = remember(count) {
+        val positions = listOf(
+            Triple(0.24f, 0.30f, 0.075f), Triple(0.56f, 0.23f, 0.105f),
+            Triple(0.77f, 0.38f, 0.064f), Triple(0.40f, 0.54f, 0.052f),
+            Triple(0.69f, 0.66f, 0.086f), Triple(0.18f, 0.72f, 0.048f),
+            Triple(0.88f, 0.80f, 0.04f), Triple(0.51f, 0.84f, 0.057f),
+            Triple(0.34f, 0.41f, 0.032f), Triple(0.84f, 0.56f, 0.037f),
+            Triple(0.12f, 0.48f, 0.03f),
+        )
+        List(count) { i -> DewDrop(positions[i].first, positions[i].second, positions[i].third, i * 37 + 9) }
     }
     val transition = rememberInfiniteTransition(label = "microdew")
     val t by transition.animateFloat(
@@ -71,109 +64,116 @@ internal fun MicroDewEngine(
         label = "microdew_t",
     )
     val dim = if (isActive) 1f else 0.55f
+
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
+        val minDim = minOf(w, h)
         val time = phase01(t)
-        val wash = loopedFbm(time, radius = 1.35f, octaves = 2, seedOffset = 11)
-        drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    TonalPalette.brightness(Color(0xFF1A2820), brightness * dim * (0.92f + 0.08f * wash)),
-                    TonalPalette.brightness(Color(0xFF0E1814), brightness * dim),
-                ),
-            ),
-        )
+        val pulse = loopedFbm(time, radius = 1.25f, octaves = 3, seedOffset = 11)
         val accent = TonalPalette.brightness(
             TonalPalette.mix(Color(0xFFA0E8C8), TonalPalette.pick(paletteColors, 0), 0.35f),
             brightness * dim,
         )
-        // Soft focal glow
-        val cx = w * (0.35f + 0.3f * loopedFbm(time, radius = 1.2f, seedOffset = 29))
-        val cy = h * (0.3f + 0.25f * loopedFbm(time, radius = 1.4f, seedOffset = 47))
+        val deep = TonalPalette.brightness(Color(0xFF0E1814), brightness * dim)
+        val green = TonalPalette.brightness(Color(0xFF1A2820), brightness * dim)
+
+        drawRect(
+            brush = Brush.verticalGradient(
+                0f to TonalPalette.mix(green, Color(0xFF314B39), 0.24f + pulse * 0.06f),
+                0.52f to green,
+                1f to deep,
+            ),
+        )
+
+        // Soft macro leaf blade angled through the frame.
+        val leaf = Path().apply {
+            moveTo(-w * 0.12f, h * 0.78f)
+            cubicTo(w * 0.08f, h * 0.42f, w * 0.56f, h * 0.10f, w * 1.10f, h * 0.22f)
+            cubicTo(w * 0.88f, h * 0.57f, w * 0.39f, h * 0.91f, -w * 0.12f, h * 0.78f)
+            close()
+        }
+        drawPath(
+            path = leaf,
+            brush = Brush.linearGradient(
+                0f to TonalPalette.brightness(Color(0xFF355B3D), brightness * dim),
+                0.55f to TonalPalette.brightness(Color(0xFF1E3B2B), brightness * dim),
+                1f to deep,
+                start = Offset(w * 0.12f, h * 0.28f),
+                end = Offset(w * 0.88f, h * 0.80f),
+            ),
+        )
+
+        val midrib = Path().apply {
+            moveTo(-w * 0.04f, h * 0.80f)
+            cubicTo(w * 0.28f, h * 0.62f, w * 0.60f, h * 0.38f, w * 1.02f, h * 0.24f)
+        }
+        drawPath(
+            path = midrib,
+            color = TonalPalette.withAlpha(TonalPalette.brightness(Color(0xFF8FC29A), brightness * dim), 0.34f * dim),
+            style = Stroke(width = minDim * 0.008f, cap = StrokeCap.Round),
+        )
+        for (i in 0 until 7) {
+            val v = (i + 1) / 8f
+            val x = w * (0.04f + v * 0.88f)
+            val y = h * (0.77f - v * 0.48f)
+            val side = if (i % 2 == 0) -1f else 1f
+            drawLine(
+                color = TonalPalette.withAlpha(Color(0xFF80AC88), 0.18f * dim),
+                start = Offset(x, y),
+                end = Offset(x + side * w * 0.15f, y - h * 0.12f),
+                strokeWidth = minDim * 0.003f,
+                cap = StrokeCap.Round,
+            )
+        }
+
+        // Broad diffuse green bounce light, kept soft around the droplets.
         drawCircle(
             brush = Brush.radialGradient(
-                0f to TonalPalette.withAlpha(accent, 0.35f * dim),
+                0f to TonalPalette.withAlpha(accent, (0.10f + 0.06f * pulse) * dim),
                 1f to Color.Transparent,
-                center = Offset(cx, cy),
-                radius = minOf(w, h) * 0.55f,
+                center = Offset(w * 0.55f, h * 0.44f),
+                radius = minDim * 0.72f,
             ),
-            radius = minOf(w, h) * 0.55f,
-            center = Offset(cx, cy),
+            radius = minDim * 0.72f,
+            center = Offset(w * 0.55f, h * 0.44f),
         )
-        motes.forEach { mote ->
-            val n = loopedFbm(time, radius = 1.25f + mote.radius, seedOffset = mote.colorIndex * 97 + 5)
-            val x = (mote.x0 + mote.driftX * (n * 2f - 1f) + 1f) % 1f * w
-            val y = (mote.y0 + mote.driftY * sin(time * 2f * PI.toFloat() + mote.phaseOffset) * 0.5f + 1f) % 1f * h
-            val r = minOf(w, h) * mote.radius * (0.85f + 0.3f * n)
-            val col = TonalPalette.withAlpha(
-                TonalPalette.brightness(TonalPalette.pick(paletteColors, mote.colorIndex), brightness * dim),
-                (0.12f + 0.18f * n) * dim,
+
+        drops.forEach { drop ->
+            val shimmer = loopedFbm(time, radius = 1.2f, octaves = 2, seedOffset = drop.phase)
+            val cx = w * drop.x
+            val cy = h * drop.y
+            val r = minDim * drop.radius * (0.98f + shimmer * 0.04f)
+            val lightAlpha = (0.58f + shimmer * 0.18f) * dim
+
+            // Soft shadow anchors each spherical bead to the leaf surface.
+            drawCircle(
+                color = Color(0xFF06110C).copy(alpha = 0.26f * dim),
+                radius = r * 0.96f,
+                center = Offset(cx + r * 0.12f, cy + r * 0.22f),
             )
-            drawCircle(color = col, radius = r, center = Offset(x, y))
-        }
-        // Pack-flavored silhouette accents
-        when ("micro") {
-            "kaleido" -> {
-                val rings = 4
-                for (i in 0 until rings) {
-                    val ang = time * 2f * PI.toFloat() * (0.15f + i * 0.03f)
-                    val rr = minOf(w, h) * (0.12f + i * 0.08f)
-                    for (k in 0 until 6) {
-                        val a = ang + k * (2f * PI.toFloat() / 6f)
-                        drawCircle(
-                            color = TonalPalette.withAlpha(accent, 0.2f * dim),
-                            radius = rr * 0.12f,
-                            center = Offset(w * 0.5f + cos(a) * rr, h * 0.5f + sin(a) * rr),
-                        )
-                    }
-                }
-            }
-            "zen" -> {
-                drawCircle(
-                    color = TonalPalette.withAlpha(accent, 0.22f * dim),
-                    radius = minOf(w, h) * (0.18f + 0.02f * wash),
-                    center = Offset(w * 0.5f, h * 0.52f),
-                    style = Stroke(width = minOf(w, h) * 0.018f),
-                )
-            }
-            "interior" -> {
-                // soft vertical light well
-                drawRect(
-                    brush = Brush.horizontalGradient(
-                        0f to Color.Transparent,
-                        0.45f to TonalPalette.withAlpha(accent, 0.18f * dim),
-                        0.55f to TonalPalette.withAlpha(accent, 0.18f * dim),
-                        1f to Color.Transparent,
-                    ),
-                    topLeft = Offset(w * 0.35f, 0f),
-                    size = androidx.compose.ui.geometry.Size(w * 0.3f, h),
-                )
-            }
-            "coast" -> {
-                val horizon = h * (0.58f + 0.02f * wash)
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        0f to Color.Transparent,
-                        1f to TonalPalette.withAlpha(accent, 0.25f * dim),
-                        startY = horizon - h * 0.05f,
-                        endY = h,
-                    ),
-                )
-            }
-            "fire" -> {
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        0f to TonalPalette.withAlpha(accent, 0.55f * dim),
-                        1f to Color.Transparent,
-                        center = Offset(w * 0.5f, h * 0.72f),
-                        radius = minOf(w, h) * 0.35f,
-                    ),
-                    radius = minOf(w, h) * 0.35f,
-                    center = Offset(w * 0.5f, h * 0.72f),
-                )
-            }
-            else -> {}
+            drawCircle(
+                brush = Brush.radialGradient(
+                    0f to Color(0xFFE9FFF5).copy(alpha = 0.18f * dim),
+                    0.48f to accent.copy(alpha = 0.16f * dim),
+                    0.82f to Color(0xFF8BCFB0).copy(alpha = 0.32f * dim),
+                    1f to Color(0xFFD9FFF0).copy(alpha = 0.68f * dim),
+                    center = Offset(cx - r * 0.25f, cy - r * 0.28f),
+                    radius = r * 1.42f,
+                ),
+                radius = r,
+                center = Offset(cx, cy),
+            )
+            drawCircle(
+                color = Color(0xFFE8FFF5).copy(alpha = lightAlpha),
+                radius = r * 0.13f,
+                center = Offset(cx - r * 0.34f, cy - r * 0.39f),
+            )
+            drawCircle(
+                color = Color.White.copy(alpha = (0.34f + shimmer * 0.24f) * dim),
+                radius = r * 0.045f,
+                center = Offset(cx - r * 0.08f, cy - r * 0.54f),
+            )
         }
     }
 }

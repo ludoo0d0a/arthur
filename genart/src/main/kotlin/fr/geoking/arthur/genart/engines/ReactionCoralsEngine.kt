@@ -14,6 +14,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ShaderBrush
 import fr.geoking.arthur.genart.GenartQuality
@@ -24,6 +26,7 @@ import fr.geoking.arthur.genart.qualityCount
 import fr.geoking.arthur.genart.seededRange
 import fr.geoking.arthur.genart.seededUnit
 import kotlin.math.PI
+import kotlin.math.cos
 import kotlin.math.sin
 
 private data class ReactionCoralsBlob(
@@ -33,6 +36,45 @@ private data class ReactionCoralsBlob(
     val phaseOffset: Float,
     val colorIndex: Int,
 )
+
+private const val REACTION_CORALS_AGSL = """
+uniform float2 iResolution;
+uniform float iTime;
+uniform float iEnergy;
+uniform float3 iColor0;
+uniform float3 iColor1;
+
+half4 main(float2 fragCoord) {
+    float2 uv = fragCoord / iResolution;
+    float2 p = (uv - 0.5) * float2(iResolution.x / iResolution.y, 1.0);
+    float t = iTime;
+    float2 warp = float2(
+        sin(p.y * 5.2 + t * 0.45) + cos(p.x * 4.1 - t * 0.35),
+        cos(p.x * 5.6 + t * 0.38) + sin(p.y * 3.8 - t * 0.42)
+    ) * 0.085;
+    float2 q = p + warp;
+    float field = 0.0;
+    for (int i = 0; i < 7; i++) {
+        float fi = float(i);
+        float a = fi * 0.897 + t * 0.18;
+        float2 c = float2(cos(a) * 0.38, sin(a * 1.31) * 0.38);
+        float2 d = q - c;
+        float ang = atan(d.y, d.x);
+        float r = length(d);
+        float branch = abs(sin(ang * (3.0 + mod(fi, 3.0)) + r * 8.0 + fi));
+        float vein = 1.0 - smoothstep(0.0, 0.16, abs(branch - 0.18) * 0.055 + abs(r - (0.16 + 0.05 * sin(ang * 3.0 + t * 0.22))) * 0.18);
+        float pool = exp(-r * r * 18.0);
+        field = max(field, vein * 0.72 + pool * 0.28);
+    }
+    float contour = smoothstep(0.08, 0.42, field);
+    float glow = smoothstep(0.02, 0.22, field) * iEnergy;
+    float3 base = float3(0.031, 0.024, 0.047);
+    float3 coral = mix(iColor0, iColor1, clamp(0.5 + 0.5 * sin(q.x * 4.0 + q.y * 3.0), 0.0, 1.0));
+    float3 col = base + coral * (contour * 0.82 + glow * 0.32);
+    col += iColor1 * exp(-length(q) * 3.0) * 0.08;
+    return half4(col, 1.0);
+}
+"""
 
 @Composable
 internal fun ReactionCoralsEngine(
@@ -69,7 +111,7 @@ internal fun ReactionCoralsEngine(
     val c0 = TonalPalette.brightness(paletteColors.getOrElse(0) { Color(0xFFFF80C8) }, brightness * dim)
     val c1 = TonalPalette.brightness(paletteColors.getOrElse(1) { Color(0xFF80E0FF) }, brightness * dim)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        val shader = remember { RuntimeShader(REACTION_SOFT_AGSL) }
+        val shader = remember { RuntimeShader(REACTION_CORALS_AGSL) }
         val brush = remember(shader) { ShaderBrush(shader) }
         Canvas(modifier = modifier) {
             shader.setFloatUniform("iResolution", size.width, size.height)
@@ -85,14 +127,53 @@ internal fun ReactionCoralsEngine(
             val h = size.height
             val time = phase01(t)
             drawRect(color = TonalPalette.brightness(Color(0xFF08060C), brightness * dim))
+            val minDim = minOf(w, h)
             blobs.forEach { blob ->
-                val n = loopedFbm(time, radius = 1.25f, seedOffset = blob.colorIndex * 23)
-                val x = (blob.x0 + 0.05f * (n * 2f - 1f) + 1f) % 1f * w
-                val y = (blob.y0 + 0.04f * sin(time * 2f * PI.toFloat() + blob.phaseOffset) + 1f) % 1f * h
-                val r = minOf(w, h) * blob.radius * (0.85f + 0.25f * n)
-                val col = if (blob.colorIndex % 2 == 0) c0 else c1
-                drawCircle(color = TonalPalette.withAlpha(col, 0.28f * dim), radius = r, center = Offset(x, y))
-                drawCircle(color = TonalPalette.withAlpha(col, 0.45f * dim), radius = r * 0.45f, center = Offset(x, y))
+                val n = loopedFbm(time, radius = 1.3f, octaves = 3, seedOffset = blob.colorIndex * 31 + 7)
+                val cx = blob.x0 * w
+                val cy = blob.y0 * h
+                val baseAngle = blob.phaseOffset + time * 2f * PI.toFloat() * 0.08f
+                val branchCount = 3 + blob.colorIndex % 3
+                for (branch in 0 until branchCount) {
+                    val angle = baseAngle + branch * (2f * PI.toFloat() / branchCount)
+                    val length = minDim * blob.radius * (1.35f + n * 0.35f)
+                    val path = Path().apply {
+                        moveTo(cx, cy)
+                        val segments = 7
+                        for (step in 1..segments) {
+                            val f = step / segments.toFloat()
+                            val bend = sin(f * PI.toFloat() * 1.5f + baseAngle) * minDim * 0.018f
+                            val x = cx + cos(angle) * length * f - sin(angle) * bend
+                            val y = cy + sin(angle) * length * f + cos(angle) * bend
+                            if (step == 1) lineTo(x, y) else {
+                                val prevF = (step - 0.5f) / segments
+                                val prevBend = sin(prevF * PI.toFloat() * 1.5f + baseAngle) * minDim * 0.018f
+                                quadraticTo(
+                                    cx + cos(angle) * length * prevF - sin(angle) * prevBend,
+                                    cy + sin(angle) * length * prevF + cos(angle) * prevBend,
+                                    x,
+                                    y,
+                                )
+                            }
+                        }
+                    }
+                    val col = if ((blob.colorIndex + branch) % 2 == 0) c0 else c1
+                    drawPath(
+                        path = path,
+                        color = TonalPalette.withAlpha(col, 0.12f * dim),
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = minDim * 0.028f, cap = StrokeCap.Round),
+                    )
+                    drawPath(
+                        path = path,
+                        color = TonalPalette.withAlpha(col, 0.72f * dim),
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = minDim * 0.0045f, cap = StrokeCap.Round),
+                    )
+                    val tipX = cx + cos(angle) * length
+                    val tipY = cy + sin(angle) * length
+                    drawCircle(color = TonalPalette.withAlpha(c1, 0.45f * dim), radius = minDim * 0.012f, center = Offset(tipX, tipY))
+                }
+                drawCircle(color = TonalPalette.withAlpha(c1, 0.18f * dim), radius = minDim * 0.07f, center = Offset(cx, cy))
+                drawCircle(color = TonalPalette.withAlpha(c0, 0.7f * dim), radius = minDim * 0.009f, center = Offset(cx, cy))
             }
         }
     }

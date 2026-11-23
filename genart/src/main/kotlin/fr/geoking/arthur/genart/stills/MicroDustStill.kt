@@ -8,8 +8,9 @@ import android.graphics.RadialGradient
 import android.graphics.Shader
 import fr.geoking.arthur.genart.AnimationPalette
 import fr.geoking.arthur.genart.loopedFbm
+import fr.geoking.arthur.genart.seededRange
+import fr.geoking.arthur.genart.seededUnit
 import kotlin.math.PI
-import kotlin.math.cos
 import kotlin.math.sin
 
 /** Bakes one frozen frame of Micro Dust for Auto/Ambient album art. */
@@ -27,66 +28,60 @@ internal object MicroDustStill {
     ) {
         val w = size.toFloat()
         val h = size.toFloat()
+        val minDim = minOf(w, h)
         val t01 = ((phase % (2f * PI.toFloat())) / (2f * PI.toFloat())).let { v -> if (v < 0f) v + 1f else v }
-        val wash = loopedFbm(t01, radius = 1.35f, octaves = 2, seedOffset = 11)
         val dim = 0.85f + 0.15f * pulse
+        val haze = loopedFbm(t01, radius = 1.35f, octaves = 3, seedOffset = 11)
+
+        paint.style = Paint.Style.FILL
         paint.shader = LinearGradient(
             0f, 0f, 0f, h,
-            intArrayOf(0xFF18161A.toInt(), 0xFF0C0A10.toInt()),
-            floatArrayOf(0f, 1f),
+            intArrayOf(
+                brightness(0xFF18161A.toInt(), 0.92f + 0.08f * haze),
+                0xFF111014.toInt(),
+                0xFF0C0A10.toInt(),
+            ),
+            floatArrayOf(0f, 0.52f, 1f),
             Shader.TileMode.CLAMP,
         )
-        paint.style = Paint.Style.FILL
         canvas.drawRect(0f, 0f, w, h, paint)
         paint.shader = null
-        val accent = mixArgb(0xFFD0C8B0.toInt(), palette.colorAt(0), 0.35f)
-        val cx = w * (0.35f + 0.3f * loopedFbm(t01, radius = 1.2f, seedOffset = 29))
-        val cy = h * (0.3f + 0.25f * loopedFbm(t01, radius = 1.4f, seedOffset = 47))
+
+        val accent = mixArgb(0xFFD0C8B0.toInt(), palette.colorAt(0), 0.28f)
+        val glowX = w * (0.22f + 0.08f * loopedFbm(t01, radius = 1.1f, seedOffset = 29))
+        val glowY = h * (0.28f + 0.08f * loopedFbm(t01, radius = 1.3f, seedOffset = 47))
+        val glowRadius = minDim * 0.68f
         paint.shader = RadialGradient(
-            cx, cy, minOf(w, h) * 0.55f,
-            intArrayOf(withAlpha(accent, (0.35f * dim * 255).toInt()), Color.TRANSPARENT),
-            floatArrayOf(0f, 1f),
+            glowX, glowY, glowRadius,
+            intArrayOf(withAlpha(accent, (0.12f * dim * 255).toInt()), withAlpha(0xFF8C8068.toInt(), (0.045f * dim * 255).toInt()), Color.TRANSPARENT),
+            floatArrayOf(0f, 0.45f, 1f),
             Shader.TileMode.CLAMP,
         )
-        canvas.drawCircle(cx, cy, minOf(w, h) * 0.55f, paint)
+        canvas.drawCircle(glowX, glowY, glowRadius, paint)
         paint.shader = null
-        for (i in 0 until 7) {
-            val n = loopedFbm(t01, radius = 1.25f + i * 0.04f, seedOffset = i * 97 + 5)
-            val x = ((0.1f + i * 0.12f) + 0.04f * (n * 2f - 1f) + 1f) % 1f * w
-            val y = ((0.15f + (i % 5) * 0.15f) + 0.03f * sin(t01 * 2f * PI.toFloat() + i) + 1f) % 1f * h
-            val r = minOf(w, h) * (0.04f + 0.06f * n)
-            paint.color = withAlpha(mixArgb(palette.colorAt(i), accent, 0.4f), ((0.12f + 0.18f * n) * dim * 255).toInt())
-            canvas.drawCircle(x, y, r, paint)
-        }
-        when ("micro") {
-            "zen" -> {
-                paint.style = Paint.Style.STROKE
-                paint.strokeWidth = minOf(w, h) * 0.018f
-                paint.color = withAlpha(accent, (0.35f * dim * 255).toInt())
-                canvas.drawCircle(w * 0.5f, h * 0.52f, minOf(w, h) * (0.18f + 0.02f * wash), paint)
-                paint.style = Paint.Style.FILL
+
+        val grainCount = 90
+        for (i in 0 until grainCount) {
+            val x0 = seededUnit(i * 17 + 3)
+            val y0 = seededUnit(i * 29 + 7)
+            val depth = seededRange(i * 53 + 13, 0.25f, 1f)
+            val drift = seededRange(i * 67 + 19, 0.004f, 0.022f)
+            val phaseOffset = seededRange(i * 71 + 23, 0f, 2f * PI.toFloat())
+            val noise = loopedFbm(t01, radius = 1.15f + depth, octaves = 2, seedOffset = i * 97 + 5)
+            val angle = t01 * (2f * PI.toFloat()) + phaseOffset
+            val x = (x0 + sin(angle) * drift + (noise - 0.5f) * drift * 0.35f + 1f) % 1f * w
+            val y = (y0 + sin(angle * 0.73f) * drift * 0.7f + 1f) % 1f * h
+            val baseSize = seededRange(i * 41 + 11, 0.0008f, 0.0032f)
+            val radius = (minDim * baseSize * (0.8f + 0.35f * noise) * depth).coerceAtLeast(0.45f)
+            val grainColor = mixArgb(accent, palette.colorAt(i + 1), 0.3f)
+            val alpha = (0.08f + 0.16f * noise) * depth * dim
+
+            if (depth > 0.62f) {
+                paint.color = withAlpha(grainColor, (alpha * 0.26f * 255).toInt())
+                canvas.drawCircle(x, y, radius * 3.2f, paint)
             }
-            "fire" -> {
-                paint.shader = RadialGradient(
-                    w * 0.5f, h * 0.72f, minOf(w, h) * 0.35f,
-                    intArrayOf(withAlpha(accent, (0.55f * dim * 255).toInt()), Color.TRANSPARENT),
-                    floatArrayOf(0f, 1f),
-                    Shader.TileMode.CLAMP,
-                )
-                canvas.drawCircle(w * 0.5f, h * 0.72f, minOf(w, h) * 0.35f, paint)
-                paint.shader = null
-            }
-            "kaleido" -> {
-                paint.color = withAlpha(accent, (0.25f * dim * 255).toInt())
-                for (i in 0 until 4) {
-                    val rr = minOf(w, h) * (0.12f + i * 0.08f)
-                    for (k in 0 until 6) {
-                        val a = t01 * 2f * PI.toFloat() * 0.2f + k * (2f * PI.toFloat() / 6f)
-                        canvas.drawCircle(w * 0.5f + cos(a) * rr, h * 0.5f + sin(a) * rr, rr * 0.12f, paint)
-                    }
-                }
-            }
-            else -> Unit
+            paint.color = withAlpha(grainColor, (alpha * 255).toInt())
+            canvas.drawCircle(x, y, radius, paint)
         }
     }
 
@@ -100,4 +95,11 @@ internal object MicroDustStill {
 
     private fun withAlpha(rgb: Int, alpha: Int): Int =
         Color.argb(alpha.coerceIn(0, 255), Color.red(rgb), Color.green(rgb), Color.blue(rgb))
+
+    private fun brightness(argb: Int, factor: Float): Int {
+        val r = (Color.red(argb) * factor).toInt().coerceIn(0, 255)
+        val g = (Color.green(argb) * factor).toInt().coerceIn(0, 255)
+        val b = (Color.blue(argb) * factor).toInt().coerceIn(0, 255)
+        return Color.rgb(r, g, b)
+    }
 }

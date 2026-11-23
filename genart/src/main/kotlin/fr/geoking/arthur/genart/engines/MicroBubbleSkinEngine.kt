@@ -23,20 +23,17 @@ import fr.geoking.arthur.genart.qualityCount
 import fr.geoking.arthur.genart.seededRange
 import fr.geoking.arthur.genart.seededUnit
 import kotlin.math.PI
-import kotlin.math.cos
 import kotlin.math.sin
 
-private data class MicroBubbleSkinMote(
-    val x0: Float,
-    val y0: Float,
+private data class Bubble(
+    val x: Float,
+    val y: Float,
     val radius: Float,
-    val driftX: Float,
-    val driftY: Float,
-    val phaseOffset: Float,
-    val colorIndex: Int,
+    val phase: Float,
+    val tint: Int,
 )
 
-/** Soft Ambient Micro Bubble Skin — seamless loop via loopedFbm. */
+/** Close-up iridescent bubble membranes with a slow seamless shimmer. */
 @Composable
 internal fun MicroBubbleSkinEngine(
     isActive: Boolean,
@@ -46,17 +43,17 @@ internal fun MicroBubbleSkinEngine(
     speed: Float,
     modifier: Modifier = Modifier,
 ) {
-    val count = qualityCount(quality, low = 4, medium = 7, high = 11)
-    val motes = remember(count) {
-        List(count) { i ->
-            MicroBubbleSkinMote(
-                x0 = seededUnit(i * 17 + 3),
-                y0 = seededUnit(i * 29 + 7),
-                radius = seededRange(i * 41 + 11, 0.04f, 0.14f),
-                driftX = seededRange(i * 53 + 13, 0.02f, 0.06f),
-                driftY = seededRange(i * 67 + 19, 0.015f, 0.05f),
-                phaseOffset = seededRange(i * 71 + 23, 0f, 2f * PI.toFloat()),
-                colorIndex = i,
+    val detailCount = qualityCount(quality, low = 4, medium = 7, high = 11)
+    val bubbles = remember(detailCount) {
+        List(30) { i ->
+            val col = i % 6
+            val row = i / 6
+            Bubble(
+                x = (col + 0.42f + seededRange(i * 17 + 3, -0.16f, 0.16f)) / 6f,
+                y = (row + 0.52f + seededRange(i * 29 + 7, -0.14f, 0.14f)) / 5f,
+                radius = seededRange(i * 41 + 11, 0.082f, 0.115f),
+                phase = seededUnit(i * 53 + 13) * (2f * PI.toFloat()),
+                tint = i % 3,
             )
         }
     }
@@ -71,109 +68,118 @@ internal fun MicroBubbleSkinEngine(
         label = "microbubbleskin_t",
     )
     val dim = if (isActive) 1f else 0.55f
+
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
+        val minDim = minOf(w, h)
         val time = phase01(t)
-        val wash = loopedFbm(time, radius = 1.35f, octaves = 2, seedOffset = 11)
-        drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    TonalPalette.brightness(Color(0xFF102028), brightness * dim * (0.92f + 0.08f * wash)),
-                    TonalPalette.brightness(Color(0xFF081018), brightness * dim),
-                ),
-            ),
-        )
-        val accent = TonalPalette.brightness(
-            TonalPalette.mix(Color(0xFF80E0FF), TonalPalette.pick(paletteColors, 0), 0.35f),
+        val drift = loopedFbm(time, radius = 1.2f, octaves = 3, seedOffset = 11)
+        val warp = loopedFbm(time, radius = 1.45f, octaves = 2, seedOffset = 37)
+        val deep = TonalPalette.brightness(Color(0xFF081018), brightness * dim)
+        val teal = TonalPalette.brightness(Color(0xFF102028), brightness * dim * (0.94f + 0.06f * drift))
+        val cyan = TonalPalette.brightness(
+            TonalPalette.mix(Color(0xFF80E0FF), TonalPalette.pick(paletteColors, 0), 0.22f),
             brightness * dim,
         )
-        // Soft focal glow
-        val cx = w * (0.35f + 0.3f * loopedFbm(time, radius = 1.2f, seedOffset = 29))
-        val cy = h * (0.3f + 0.25f * loopedFbm(time, radius = 1.4f, seedOffset = 47))
+
+        drawRect(
+            brush = Brush.verticalGradient(
+                0f to teal,
+                0.48f to deep,
+                1f to TonalPalette.brightness(Color(0xFF0B1B24), brightness * dim),
+            ),
+        )
         drawCircle(
             brush = Brush.radialGradient(
-                0f to TonalPalette.withAlpha(accent, 0.35f * dim),
+                0f to TonalPalette.withAlpha(cyan, 0.16f * dim),
+                0.55f to TonalPalette.withAlpha(Color(0xFF256078), 0.08f * dim),
                 1f to Color.Transparent,
-                center = Offset(cx, cy),
-                radius = minOf(w, h) * 0.55f,
+                center = Offset(w * (0.43f + 0.08f * (warp - 0.5f)), h * 0.47f),
+                radius = minDim * 0.82f,
             ),
-            radius = minOf(w, h) * 0.55f,
-            center = Offset(cx, cy),
+            radius = minDim * 0.82f,
+            center = Offset(w * (0.43f + 0.08f * (warp - 0.5f)), h * 0.47f),
         )
-        motes.forEach { mote ->
-            val n = loopedFbm(time, radius = 1.25f + mote.radius, seedOffset = mote.colorIndex * 97 + 5)
-            val x = (mote.x0 + mote.driftX * (n * 2f - 1f) + 1f) % 1f * w
-            val y = (mote.y0 + mote.driftY * sin(time * 2f * PI.toFloat() + mote.phaseOffset) * 0.5f + 1f) % 1f * h
-            val r = minOf(w, h) * mote.radius * (0.85f + 0.3f * n)
-            val col = TonalPalette.withAlpha(
-                TonalPalette.brightness(TonalPalette.pick(paletteColors, mote.colorIndex), brightness * dim),
-                (0.12f + 0.18f * n) * dim,
+
+        bubbles.forEachIndexed { i, bubble ->
+            val pulse = 0.96f + 0.04f * sin(time * 2f * PI.toFloat() + bubble.phase)
+            val r = minDim * bubble.radius * pulse
+            val x = w * bubble.x + minDim * 0.006f * sin(time * 2f * PI.toFloat() + bubble.phase)
+            val y = h * bubble.y + minDim * 0.004f * sin(time * 2f * PI.toFloat() + bubble.phase + 1f)
+            val center = Offset(x, y)
+            val hue = when (bubble.tint) {
+                0 -> Color(0xFF55D8E8)
+                1 -> Color(0xFF799AFF)
+                else -> Color(0xFF8CE8D2)
+            }
+
+            // A quiet pool of reflected light beneath each thin membrane.
+            drawCircle(
+                brush = Brush.radialGradient(
+                    0f to TonalPalette.withAlpha(hue, 0.22f * dim),
+                    0.72f to TonalPalette.withAlpha(Color(0xFF173D4B), 0.13f * dim),
+                    1f to Color.Transparent,
+                    center = center,
+                    radius = r * 1.18f,
+                ),
+                radius = r * 1.18f,
+                center = center,
             )
-            drawCircle(color = col, radius = r, center = Offset(x, y))
-        }
-        // Pack-flavored silhouette accents
-        when ("micro") {
-            "kaleido" -> {
-                val rings = 4
-                for (i in 0 until rings) {
-                    val ang = time * 2f * PI.toFloat() * (0.15f + i * 0.03f)
-                    val rr = minOf(w, h) * (0.12f + i * 0.08f)
-                    for (k in 0 until 6) {
-                        val a = ang + k * (2f * PI.toFloat() / 6f)
-                        drawCircle(
-                            color = TonalPalette.withAlpha(accent, 0.2f * dim),
-                            radius = rr * 0.12f,
-                            center = Offset(w * 0.5f + cos(a) * rr, h * 0.5f + sin(a) * rr),
-                        )
-                    }
-                }
-            }
-            "zen" -> {
-                drawCircle(
-                    color = TonalPalette.withAlpha(accent, 0.22f * dim),
-                    radius = minOf(w, h) * (0.18f + 0.02f * wash),
-                    center = Offset(w * 0.5f, h * 0.52f),
-                    style = Stroke(width = minOf(w, h) * 0.018f),
-                )
-            }
-            "interior" -> {
-                // soft vertical light well
-                drawRect(
-                    brush = Brush.horizontalGradient(
-                        0f to Color.Transparent,
-                        0.45f to TonalPalette.withAlpha(accent, 0.18f * dim),
-                        0.55f to TonalPalette.withAlpha(accent, 0.18f * dim),
-                        1f to Color.Transparent,
-                    ),
-                    topLeft = Offset(w * 0.35f, 0f),
-                    size = androidx.compose.ui.geometry.Size(w * 0.3f, h),
-                )
-            }
-            "coast" -> {
-                val horizon = h * (0.58f + 0.02f * wash)
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        0f to Color.Transparent,
-                        1f to TonalPalette.withAlpha(accent, 0.25f * dim),
-                        startY = horizon - h * 0.05f,
-                        endY = h,
-                    ),
-                )
-            }
-            "fire" -> {
+            drawCircle(
+                brush = Brush.radialGradient(
+                    0f to TonalPalette.withAlpha(Color(0xFF8EEBFF), 0.13f * dim),
+                    0.58f to TonalPalette.withAlpha(hue, 0.09f * dim),
+                    1f to TonalPalette.withAlpha(Color(0xFF07131B), 0.28f * dim),
+                    center = Offset(x - r * 0.16f, y - r * 0.12f),
+                    radius = r * 1.05f,
+                ),
+                radius = r,
+                center = center,
+            )
+            drawCircle(
+                color = TonalPalette.withAlpha(cyan, (0.32f + 0.12f * warp) * dim),
+                radius = r,
+                center = center,
+                style = Stroke(width = minDim * 0.0032f),
+            )
+            // Asymmetric curved glint makes each sphere read as a glossy membrane.
+            drawArc(
+                color = TonalPalette.withAlpha(Color(0xFFC7F8FF), (0.50f + 0.22f * warp) * dim),
+                startAngle = 202f + bubble.tint * 13f,
+                sweepAngle = 88f,
+                useCenter = false,
+                topLeft = Offset(x - r * 0.82f, y - r * 0.82f),
+                size = androidx.compose.ui.geometry.Size(r * 1.64f, r * 1.64f),
+                style = Stroke(width = minDim * 0.006f),
+            )
+            drawCircle(
+                color = TonalPalette.withAlpha(Color.White, 0.42f * dim),
+                radius = minDim * 0.004f,
+                center = Offset(x - r * 0.38f, y - r * 0.42f),
+            )
+            if (i % 4 == 0) {
                 drawCircle(
                     brush = Brush.radialGradient(
-                        0f to TonalPalette.withAlpha(accent, 0.55f * dim),
+                        0f to TonalPalette.withAlpha(Color(0xFFB8F5FF), 0.22f * dim),
                         1f to Color.Transparent,
-                        center = Offset(w * 0.5f, h * 0.72f),
-                        radius = minOf(w, h) * 0.35f,
+                        center = Offset(x - r * 0.35f, y - r * 0.38f),
+                        radius = r * 0.24f,
                     ),
-                    radius = minOf(w, h) * 0.35f,
-                    center = Offset(w * 0.5f, h * 0.72f),
+                    radius = r * 0.24f,
+                    center = Offset(x - r * 0.35f, y - r * 0.38f),
                 )
             }
-            else -> {}
+        }
+        repeat(detailCount) { i ->
+            val x = w * (0.08f + seededUnit(i * 83 + 19) * 0.84f)
+            val y = h * (0.08f + seededUnit(i * 97 + 31) * 0.84f)
+            val twinkle = 0.45f + 0.55f * loopedFbm(time, radius = 1.1f, seedOffset = i * 109 + 47)
+            drawCircle(
+                color = TonalPalette.withAlpha(Color(0xFFA8F2FF), 0.42f * twinkle * dim),
+                radius = minDim * 0.0025f,
+                center = Offset(x, y),
+            )
         }
     }
 }

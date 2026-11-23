@@ -122,9 +122,9 @@ internal fun PhysarumFilamentEngine(
             }
             val color = if (index % 5 == 0) coral else teal
             val stroke = minDim * filament.width
-            drawPath(path, TonalPalette.withAlpha(color, 0.13f * dim), style = Stroke(strokeWidth = stroke * 6f, cap = StrokeCap.Round))
-            drawPath(path, TonalPalette.withAlpha(color, 0.30f * dim), style = Stroke(strokeWidth = stroke * 2.7f, cap = StrokeCap.Round))
-            drawPath(path, TonalPalette.withAlpha(color, 0.78f * dim), style = Stroke(strokeWidth = stroke, cap = StrokeCap.Round))
+            drawPath(path, TonalPalette.withAlpha(color, 0.13f * dim), style = Stroke(width = stroke * 6f, cap = StrokeCap.Round))
+            drawPath(path, TonalPalette.withAlpha(color, 0.30f * dim), style = Stroke(width = stroke * 2.7f, cap = StrokeCap.Round))
+            drawPath(path, TonalPalette.withAlpha(color, 0.78f * dim), style = Stroke(width = stroke, cap = StrokeCap.Round))
 
             // Fine side branches grow from the main filament, tapering into the dark substrate.
             for (branch in 0..1) {
@@ -144,8 +144,8 @@ internal fun PhysarumFilamentEngine(
                         by + reach * branchSide * 1.18f,
                     )
                 }
-                drawPath(branchPath, TonalPalette.withAlpha(color, 0.12f * dim), style = Stroke(strokeWidth = stroke * 3.5f, cap = StrokeCap.Round))
-                drawPath(branchPath, TonalPalette.withAlpha(color, 0.60f * dim), style = Stroke(strokeWidth = stroke * 0.68f, cap = StrokeCap.Round))
+                drawPath(branchPath, TonalPalette.withAlpha(color, 0.12f * dim), style = Stroke(width = stroke * 3.5f, cap = StrokeCap.Round))
+                drawPath(branchPath, TonalPalette.withAlpha(color, 0.60f * dim), style = Stroke(width = stroke * 0.68f, cap = StrokeCap.Round))
             }
 
             val beadRadius = minDim * (0.0035f + 0.002f * noise)

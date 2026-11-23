@@ -124,7 +124,7 @@ internal object MotoHeadlightStill {
         fairingPath.quadTo(w * 0.34f, h * 0.84f, lampX, h * 0.86f)
         fairingPath.quadTo(w * 0.66f, h * 0.84f, w * 0.72f, h)
         fairingPath.close()
-        paint.shader = LinearGradient(0f, h * 0.84f, 0f, h, intArrayOf(0xFF15191E.toInt(), 0xFF050609.toInt()), Shader.TileMode.CLAMP)
+        paint.shader = LinearGradient(0f, h * 0.84f, 0f, h, intArrayOf(0xFF15191E.toInt(), 0xFF050609.toInt()), null, Shader.TileMode.CLAMP)
         canvas.drawPath(fairingPath, paint)
         paint.shader = null
 

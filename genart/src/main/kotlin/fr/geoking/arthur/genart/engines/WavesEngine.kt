@@ -12,6 +12,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -91,8 +92,12 @@ internal fun WavesEngine(
         brightness,
     )
     val lowQuality = quality == GenartQuality.Low
+    val fillPath = remember { Path() }
+    val outlinePath = remember { Path() }
 
     Canvas(modifier = modifier) {
+        if (size.width <= 0f || size.height <= 0f) return@Canvas
+        val segments = wavesSegments(size.width, quality)
         val centerX = size.width / 2
         val centerY = size.height / 2
 
@@ -110,6 +115,7 @@ internal fun WavesEngine(
         )
 
         drawWaveLayer(
+            fillPath = fillPath, outlinePath = outlinePath, segments = segments,
             phase = phase1,
             amplitude = 40f * amplitudeAnim,
             frequency = 0.015f,
@@ -119,6 +125,7 @@ internal fun WavesEngine(
             alpha = 0.6f,
         )
         drawWaveLayer(
+            fillPath = fillPath, outlinePath = outlinePath, segments = segments,
             phase = phase2,
             amplitude = 50f * amplitudeAnim,
             frequency = 0.012f,
@@ -128,6 +135,7 @@ internal fun WavesEngine(
             alpha = 0.5f,
         )
         drawWaveLayer(
+            fillPath = fillPath, outlinePath = outlinePath, segments = segments,
             phase = phase3,
             amplitude = 45f * amplitudeAnim,
             frequency = 0.010f,
@@ -139,7 +147,8 @@ internal fun WavesEngine(
 
         if (isActive && !lowQuality) {
             drawWaveLayer(
-                phase = phase1 * 1.3f,
+                fillPath = fillPath, outlinePath = outlinePath, segments = segments,
+                phase = phase1,
                 amplitude = 35f * amplitudeAnim,
                 frequency = 0.018f,
                 color = quaternaryColor,
@@ -148,7 +157,8 @@ internal fun WavesEngine(
                 alpha = 0.3f,
             )
             drawWaveLayer(
-                phase = phase2 * 0.8f,
+                fillPath = fillPath, outlinePath = outlinePath, segments = segments,
+                phase = phase2,
                 amplitude = 55f * amplitudeAnim,
                 frequency = 0.008f,
                 color = quinaryColor,
@@ -171,6 +181,9 @@ internal fun WavesEngine(
 }
 
 private fun DrawScope.drawWaveLayer(
+    fillPath: Path,
+    outlinePath: Path,
+    segments: Int,
     phase: Float,
     amplitude: Float,
     frequency: Float,
@@ -179,7 +192,8 @@ private fun DrawScope.drawWaveLayer(
     isActive: Boolean,
     alpha: Float,
 ) {
-    val path = Path()
+    fillPath.reset()
+    outlinePath.reset()
     val waveColor = if (isActive) {
         Color(
             red = (color.red * 0.7f + 0.3f).coerceIn(0f, 1f),
@@ -191,20 +205,24 @@ private fun DrawScope.drawWaveLayer(
         color.copy(alpha = alpha)
     }
 
-    val segments = size.width.toInt().coerceAtLeast(2)
     val step = size.width / segments
-    path.moveTo(0f, centerY)
     for (i in 0..segments) {
         val x = i * step
-        val y = centerY + sin(x * frequency + phase) * amplitude
-        path.lineTo(x, y)
+        val y = wavesHeight(x, centerY, amplitude, frequency, phase)
+        if (i == 0) {
+            fillPath.moveTo(x, y)
+            outlinePath.moveTo(x, y)
+        } else {
+            fillPath.lineTo(x, y)
+            outlinePath.lineTo(x, y)
+        }
     }
-    path.lineTo(size.width, size.height)
-    path.lineTo(0f, size.height)
-    path.close()
+    fillPath.lineTo(size.width, size.height)
+    fillPath.lineTo(0f, size.height)
+    fillPath.close()
 
     drawPath(
-        path = path,
+        path = fillPath,
         brush = Brush.verticalGradient(
             colors = listOf(
                 waveColor,
@@ -216,13 +234,6 @@ private fun DrawScope.drawWaveLayer(
         ),
     )
 
-    val outlinePath = Path()
-    outlinePath.moveTo(0f, centerY + sin(phase) * amplitude)
-    for (i in 1..segments) {
-        val x = i * step
-        val y = centerY + sin(x * frequency + phase) * amplitude
-        outlinePath.lineTo(x, y)
-    }
     drawPath(
         path = outlinePath,
         color = waveColor.copy(alpha = (alpha + 0.2f).coerceIn(0f, 1f)),

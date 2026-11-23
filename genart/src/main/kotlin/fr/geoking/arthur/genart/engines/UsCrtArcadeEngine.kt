@@ -70,7 +70,7 @@ internal fun UsCrtArcadeEngine(
         val cx = w * 0.5f
         val cy = screenTop + screenHeight * 0.47f
 
-        drawRect(brush = Brush.verticalGradient(Color(0xFF050609), Color(0xFF11151A)))
+        drawRect(brush = Brush.verticalGradient(listOf(Color(0xFF050609), Color(0xFF11151A))))
         drawRoundRect(
             color = frame,
             topLeft = Offset(w * 0.045f, h * 0.075f),
@@ -78,7 +78,7 @@ internal fun UsCrtArcadeEngine(
             cornerRadius = CornerRadius(minDim * 0.055f),
         )
         drawRoundRect(
-            brush = Brush.verticalGradient(Color(0xFF222831), bezel, Color(0xFF080A0C)),
+            brush = Brush.verticalGradient(listOf(Color(0xFF222831), bezel, Color(0xFF080A0C))),
             topLeft = Offset(w * 0.065f, h * 0.095f),
             size = Size(w * 0.87f, h * 0.75f),
             cornerRadius = CornerRadius(minDim * 0.045f),

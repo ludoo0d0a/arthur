@@ -28,7 +28,7 @@ import fr.geoking.arthur.genart.seededUnit
 import kotlin.math.PI
 import kotlin.math.sin
 
-private data class FrostCrystal(val x: Float, val y: Float, val scale: Float, val seed: Int)
+private data class WindowFrostCrystal(val x: Float, val y: Float, val scale: Float, val seed: Int)
 
 /** A softly glowing dawn seen through a window laced with frost. */
 @Composable
@@ -43,7 +43,7 @@ internal fun FrostedWindowDawnEngine(
     val crystalCount = qualityCount(quality, low = 7, medium = 12, high = 18)
     val crystals = remember(crystalCount) {
         List(crystalCount) { i ->
-            FrostCrystal(
+            WindowFrostCrystal(
                 x = seededUnit(i * 31 + 3),
                 y = seededUnit(i * 37 + 7),
                 scale = seededRange(i * 41 + 11, 0.025f, 0.075f),

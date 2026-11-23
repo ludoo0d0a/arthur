@@ -116,8 +116,10 @@ internal fun StormStrobeHorizonEngine(
         drawPath(
             path = farPath,
             brush = Brush.verticalGradient(
-                TonalPalette.withAlpha(Color(0xFF384354), (0.30f + 0.10f * flashAmt) * dim),
-                TonalPalette.withAlpha(Color(0xFF18202D), 0.80f * dim),
+                colors = listOf(
+                    TonalPalette.withAlpha(Color(0xFF384354), (0.30f + 0.10f * flashAmt) * dim),
+                    TonalPalette.withAlpha(Color(0xFF18202D), 0.80f * dim),
+                ),
                 startY = h * 0.53f,
                 endY = h * 0.84f,
             ),

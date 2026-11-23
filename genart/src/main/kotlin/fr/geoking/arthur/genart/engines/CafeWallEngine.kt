@@ -22,7 +22,8 @@ import fr.geoking.arthur.genart.sin01
 import kotlin.math.PI
 
 /**
- * Café wall illusion — staggered soft brick rows; mortar lines drift slowly (ambient-safe).
+ * Café wall illusion — offset black/white brick rows with continuous thin mortar;
+ * very slow horizontal drift + soft mortar brightness pulse.
  */
 @Composable
 internal fun CafeWallEngine(
@@ -34,13 +35,13 @@ internal fun CafeWallEngine(
     modifier: Modifier = Modifier,
 ) {
     val rows = qualityCount(quality, low = 10, medium = 14, high = 18)
-    val cols = qualityCount(quality, low = 8, medium = 11, high = 14)
+    val cols = qualityCount(quality, low = 8, medium = 12, high = 16)
     val transition = rememberInfiniteTransition(label = "cafe_wall")
     val t by transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((45000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween((48000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "cafe_wall_t",
@@ -51,43 +52,49 @@ internal fun CafeWallEngine(
         drawRect(
             brush = Brush.verticalGradient(
                 colors = listOf(
-                    TonalPalette.brightness(Color(0xFF2A2D35), brightness * 0.45f),
+                    TonalPalette.brightness(Color(0xFF2A2D35), brightness * 0.42f),
                     Color(0xFF12141A),
                 ),
             ),
         )
         val time = phase01(t) * 2f * PI.toFloat()
-        val mortarPhase = sin01(time) * 0.42f
+        val drift = phase01(t) // seamless horizontal loop
+        val mortarPulse = 0.72f + 0.28f * sin01(time)
         val dim = if (isActive) 1f else 0.65f
-        val mortarH = h / (rows * 2.15f)
-        val brickH = mortarH * 1.55f
+        val mortarH = (h / rows) * 0.14f
+        val brickH = (h / rows) - mortarH
         val brickW = w / cols
+        val gap = brickW * 0.045f
         val lightBrick = TonalPalette.mix(
             TonalPalette.brightness(TonalPalette.pick(paletteColors, 2), brightness),
-            Color(0xFFE8EAED),
-            0.62f,
+            Color(0xFFF1F3F5),
+            0.72f,
         )
         val darkBrick = TonalPalette.mix(
-            TonalPalette.brightness(TonalPalette.pick(paletteColors, 4), brightness * 0.7f),
-            Color(0xFF101218),
-            0.55f,
+            TonalPalette.brightness(TonalPalette.pick(paletteColors, 4), brightness * 0.65f),
+            Color(0xFF0E1014),
+            0.62f,
         )
-        val mortar = TonalPalette.mix(Color(0xFF9CA3AF), Color(0xFF6B7280), 0.35f)
+        val mortarBase = TonalPalette.mix(Color(0xFFB0B6C0), Color(0xFF8B919C), 0.35f)
+        val mortar = TonalPalette.mix(mortarBase, Color.White, (mortarPulse - 0.72f) * 0.55f)
         for (row in 0 until rows) {
-            val y = row * (brickH + mortarH) + mortarH * 0.5f
-            val stagger = if (row % 2 == 0) 0f else brickW * (0.5f + mortarPhase * 0.08f)
+            val y = row * (brickH + mortarH)
+            val stagger = if (row % 2 == 0) 0f else brickW * 0.5f
+            val driftX = drift * brickW
+            // Continuous mortar strip (the wedge-looking line)
             drawRect(
-                color = TonalPalette.withAlpha(mortar, 0.85f * dim),
+                color = TonalPalette.withAlpha(mortar, 0.92f * dim * mortarPulse),
                 topLeft = Offset(0f, y + brickH),
                 size = Size(w, mortarH),
             )
             for (col in -1..cols) {
-                val x = col * brickW + stagger - mortarPhase * brickW * 0.06f
-                val brick = if ((row + col) % 2 == 0) lightBrick else darkBrick
+                val x = col * brickW + stagger + driftX
+                val isLight = (col + if (row % 2 == 0) 0 else 1) % 2 == 0
+                val brick = if (isLight) lightBrick else darkBrick
                 drawRect(
-                    color = TonalPalette.withAlpha(brick, 0.92f * dim),
-                    topLeft = Offset(x, y),
-                    size = Size(brickW * 0.96f, brickH),
+                    color = TonalPalette.withAlpha(brick, 0.94f * dim),
+                    topLeft = Offset(x + gap * 0.5f, y),
+                    size = Size(brickW - gap, brickH),
                 )
             }
         }

@@ -1,12 +1,7 @@
 # Mocked genarts
 
-Scaffolded / template Ambient engines registered in `GenartRegistry` with catalog number **> #154** (101 entries).
+Scaffolded / template Ambient engines registered in `GenartRegistry` with catalog number **> #154** (96 entries).
 
-- #155 - Impossible Cube
-- #156 - Necker Cube
-- #157 - Café Wall
-- #158 - Kanizsa Triangle
-- #159 - Checker Shadow
 - #160 - Cat at Window
 - #161 - Sleeping Cat
 - #162 - Dog Nap

@@ -28,7 +28,7 @@ internal object NeckerCubeStill {
         val h = size.toFloat()
         val minDim = min(w, h)
         paint.shader = RadialGradient(
-            w * 0.5f, h * 0.5f, maxOf(w, h) * 0.9f,
+            w * 0.5f, h * 0.5f, maxOf(w, h) * 0.92f,
             intArrayOf(0xFF141820.toInt(), 0xFF0A0C12.toInt(), 0xFF030408.toInt()),
             floatArrayOf(0f, 0.55f, 1f),
             Shader.TileMode.CLAMP,
@@ -39,35 +39,40 @@ internal object NeckerCubeStill {
 
         val time = phase + rotationDeg * PI.toFloat() / 180f * 0.08f
         val loop = ((time / (2f * PI.toFloat())) % 1f + 1f) % 1f
-        val flip = (sin(loop * 2f * PI.toFloat()) + 1f) * 0.5f
+        val raw = (sin(loop * 2f * PI.toFloat()) + 1f) * 0.5f
+        val flip = smoothstep(0.12f, 0.88f, raw)
+        val yaw = 0.08f * sin(loop * 2f * PI.toFloat() * 0.35f)
         val dim = 0.62f + 0.38f * pulse
         val cx = w * 0.5f
         val cy = h * 0.5f
-        val scale = minDim * 0.22f
+        val scale = minDim * 0.24f
         val accent = palette.colorAt(0)
-        val ghost = mixArgb(accent, 0xFF64748B.toInt(), 0.45f)
-        val screenVerts = verts.map { projectNecker(it, cx, cy, scale) }
+        val ghost = mixArgb(accent, 0xFF64748B.toInt(), 0.5f)
+        val screenVerts = verts.map { projectNecker(it, cx, cy, scale, yaw, flip) }
         paint.strokeCap = Paint.Cap.ROUND
         paint.style = Paint.Style.STROKE
-        val strokeBase = minDim * 0.008f
+        val strokeBase = minDim * 0.009f
         edges.forEach { edge ->
             val aFlip = if (edge[2] == 1) flip else 1f - flip
             val bFlip = if (edge[3] == 1) flip else 1f - flip
             val frontBias = (aFlip + bFlip) * 0.5f
             val p0 = screenVerts[edge[0]]
             val p1 = screenVerts[edge[1]]
-            paint.strokeWidth = strokeBase
-            paint.color = withAlpha(ghost, (0.22f + 0.18f * (1f - frontBias)) * dim)
+            paint.strokeWidth = strokeBase * 0.9f
+            paint.color = withAlpha(ghost, (0.2f + 0.2f * (1f - frontBias)) * dim)
             canvas.drawLine(p0.first, p0.second, p1.first, p1.second, paint)
-            paint.strokeWidth = strokeBase * (0.85f + 0.35f * frontBias)
-            paint.color = withAlpha(accent, (0.55f + 0.4f * frontBias) * dim)
+            paint.strokeWidth = strokeBase * (0.8f + 0.45f * frontBias)
+            paint.color = withAlpha(accent, (0.48f + 0.48f * frontBias) * dim)
             canvas.drawLine(p0.first, p0.second, p1.first, p1.second, paint)
-            if (frontBias > 0.62f) {
-                val mx = (p0.first + p1.first) * 0.5f
-                val my = (p0.second + p1.second) * 0.5f
+            if (frontBias > 0.58f) {
                 paint.style = Paint.Style.FILL
-                paint.color = withAlpha(mixArgb(accent, Color.WHITE, 0.35f), 0.28f * dim * frontBias)
-                canvas.drawCircle(mx, my, strokeBase * 1.8f, paint)
+                paint.color = withAlpha(mixArgb(accent, Color.WHITE, 0.4f), 0.26f * dim * frontBias)
+                canvas.drawCircle(
+                    (p0.first + p1.first) * 0.5f,
+                    (p0.second + p1.second) * 0.5f,
+                    strokeBase * 1.7f,
+                    paint,
+                )
                 paint.style = Paint.Style.STROKE
             }
         }
@@ -100,9 +105,26 @@ internal object NeckerCubeStill {
         intArrayOf(3, 7, 1, 0),
     )
 
-    private fun projectNecker(v: Triple<Float, Float, Float>, cx: Float, cy: Float, scale: Float): Pair<Float, Float> {
-        val px = (v.first - v.third) * cos(PI.toFloat() / 6f) * scale + cx
-        val py = -(v.second + (v.first + v.third) * 0.35f) * scale + cy
+    private fun smoothstep(edge0: Float, edge1: Float, x: Float): Float {
+        val t = ((x - edge0) / (edge1 - edge0)).coerceIn(0f, 1f)
+        return t * t * (3f - 2f * t)
+    }
+
+    private fun projectNecker(
+        v: Triple<Float, Float, Float>,
+        cx: Float,
+        cy: Float,
+        scale: Float,
+        yaw: Float,
+        flip: Float,
+    ): Pair<Float, Float> {
+        val depthBias = (1f - flip) * (-v.third) * 0.12f + flip * v.third * 0.12f
+        val cosY = cos(yaw)
+        val sinY = sin(yaw)
+        val x = v.first * cosY - v.third * sinY
+        val z = v.first * sinY + v.third * cosY + depthBias
+        val px = (x - z) * cos(PI.toFloat() / 6f) * scale + cx
+        val py = -(v.second + (x + z) * 0.34f) * scale + cy
         return px to py
     }
 

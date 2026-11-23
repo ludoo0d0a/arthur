@@ -17,6 +17,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
 import fr.geoking.arthur.genart.phase01
@@ -34,7 +36,7 @@ private data class CatSleepMote(
     val phaseOffset: Float,
 )
 
-/** Curled sleeping cat silhouette with pointed ears, breathing slowly. */
+/** Curled sleeping cat silhouette with pointed ears, breathing slowly on a warm ambient rug. */
 @Composable
 internal fun CatSleepEngine(
     isActive: Boolean,
@@ -44,7 +46,7 @@ internal fun CatSleepEngine(
     speed: Float,
     modifier: Modifier = Modifier,
 ) {
-    val moteCount = qualityCount(quality, low = 0, medium = 1, high = 3)
+    val moteCount = qualityCount(quality, low = 2, medium = 4, high = 7)
     val motes = remember(moteCount) {
         List(moteCount) { i ->
             CatSleepMote(
@@ -84,6 +86,7 @@ internal fun CatSleepEngine(
         val cx = w * 0.5f
         val cy = h * 0.58f
 
+        // Warm dark ambient background
         drawRect(
             brush = Brush.radialGradient(
                 0f to Color(0xFF2C221C),
@@ -94,6 +97,21 @@ internal fun CatSleepEngine(
             ),
         )
 
+        // Cozy rug / soft pool under sleeping cat
+        val rugRx = minDim * 0.44f
+        val rugRy = minDim * 0.22f
+        drawOval(
+            brush = Brush.radialGradient(
+                0f to TonalPalette.withAlpha(TonalPalette.pick(paletteColors, 2), 0.28f * restingDim),
+                0.65f to TonalPalette.withAlpha(Color(0xFF38291F), 0.35f * restingDim),
+                1f to Color.Transparent,
+                center = Offset(cx, cy + minDim * 0.04f),
+                radius = rugRx,
+            ),
+            topLeft = Offset(cx - rugRx, cy + minDim * 0.04f - rugRy),
+            size = Size(rugRx * 2f, rugRy * 2f),
+        )
+
         val breathT = phase01(breathAnim)
         val breath = sin(breathT * 2f * PI.toFloat()) * 0.5f + 0.5f
         val scale = 1f + (if (isActive) 0.03f else 0.01f) * breath
@@ -102,6 +120,7 @@ internal fun CatSleepEngine(
             brightness * restingDim,
         )
 
+        // Curled cat body
         val bodyRx = minDim * 0.28f * scale
         val bodyRy = minDim * 0.18f * scale
         drawOval(
@@ -109,12 +128,17 @@ internal fun CatSleepEngine(
             topLeft = Offset(cx - bodyRx, cy - bodyRy),
             size = Size(bodyRx * 2f, bodyRy * 2f),
         )
+
+        // Head nestled into the curled flank
         val headR = minDim * 0.13f * scale
         val head = Offset(cx - bodyRx * 0.55f, cy - bodyRy * 0.45f)
         drawCircle(color = bodyColor, radius = headR, center = head)
+
+        // Tucked paws curve
         val tuckR = minDim * 0.10f * scale
         drawCircle(color = bodyColor, radius = tuckR, center = Offset(cx + bodyRx * 0.4f, cy - bodyRy * 0.2f))
 
+        // Cute ears
         val ears = Path().apply {
             moveTo(head.x - headR * 0.7f, head.y - headR * 0.15f)
             lineTo(head.x - headR * 0.95f, head.y - headR * 1.4f)
@@ -127,13 +151,47 @@ internal fun CatSleepEngine(
         }
         drawPath(ears, color = bodyColor)
 
+        // Tail curled around the sleeping body
+        val tail = Path().apply {
+            val base = Offset(cx + bodyRx * 0.78f, cy - bodyRy * 0.1f)
+            val tip = Offset(cx - bodyRx * 0.1f, cy + bodyRy * 0.82f)
+            moveTo(base.x, base.y)
+            cubicTo(
+                base.x + minDim * 0.14f,
+                base.y + bodyRy * 1.1f,
+                cx + bodyRx * 0.35f,
+                cy + bodyRy * 1.05f,
+                tip.x,
+                tip.y,
+            )
+        }
+        drawPath(
+            path = tail,
+            color = bodyColor,
+            style = Stroke(width = minDim * 0.038f, cap = StrokeCap.Round),
+        )
+
+        // Sleeping eye curve on the nestled face
+        val eyePath = Path().apply {
+            val ex = head.x - headR * 0.2f
+            val ey = head.y + headR * 0.15f
+            moveTo(ex - headR * 0.25f, ey - headR * 0.05f)
+            quadraticTo(ex, ey + headR * 0.12f, ex + headR * 0.25f, ey - headR * 0.05f)
+        }
+        drawPath(
+            path = eyePath,
+            color = TonalPalette.withAlpha(TonalPalette.pick(paletteColors, 1), 0.35f * restingDim),
+            style = Stroke(width = minDim * 0.008f, cap = StrokeCap.Round),
+        )
+
+        // Floating ambient motes
         val time = phase01(driftAnim)
         motes.forEach { mote ->
             val mx = phase01(mote.x0 + time * mote.driftX) * w
             val my = phase01(mote.y0 + time * mote.driftY) * h
             val glow = TonalPalette.brightness(TonalPalette.pick(paletteColors, 1), brightness)
-            val alpha = (0.12f + 0.08f * (0.5f + 0.5f * sin(time * 2f * PI.toFloat() + mote.phaseOffset))) * restingDim
-            val r = minDim * 0.05f
+            val alpha = (0.15f + 0.10f * (0.5f + 0.5f * sin(time * 2f * PI.toFloat() + mote.phaseOffset))) * restingDim
+            val r = minDim * 0.045f
             drawCircle(
                 brush = Brush.radialGradient(
                     0f to TonalPalette.withAlpha(glow, alpha),

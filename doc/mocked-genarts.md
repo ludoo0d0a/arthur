@@ -1,10 +1,7 @@
 # Mocked genarts
 
-Scaffolded / template Ambient engines registered in `GenartRegistry` with catalog number **> #154** (96 entries).
+Scaffolded / template Ambient engines registered in `GenartRegistry` with catalog number **> #154** (93 entries).
 
-- #160 - Cat at Window
-- #161 - Sleeping Cat
-- #162 - Dog Nap
 - #163 - Distant Dog Walk
 - #164 - Sitting Panda
 - #165 - Panda and Bamboo

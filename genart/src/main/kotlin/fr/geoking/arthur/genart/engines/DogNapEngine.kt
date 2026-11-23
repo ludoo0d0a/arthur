@@ -72,6 +72,21 @@ internal fun DogNapEngine(
             ),
         )
 
+        // Soft floor mat / shadow pool
+        val matRx = minDim * 0.46f
+        val matRy = minDim * 0.24f
+        drawOval(
+            brush = Brush.radialGradient(
+                0f to TonalPalette.withAlpha(TonalPalette.pick(paletteColors, 1), 0.22f * restingDim),
+                0.6f to TonalPalette.withAlpha(Color(0xFF33251B), 0.35f * restingDim),
+                1f to Color.Transparent,
+                center = Offset(cx, cy + minDim * 0.05f),
+                radius = matRx,
+            ),
+            topLeft = Offset(cx - matRx, cy + minDim * 0.05f - matRy),
+            size = Size(matRx * 2f, matRy * 2f),
+        )
+
         val breath = sin(phase01(breathAnim) * 2f * PI.toFloat()) * 0.5f + 0.5f
         val scale = 1f + (if (isActive) 0.028f else 0.01f) * breath
         val bodyColor = TonalPalette.brightness(
@@ -79,6 +94,7 @@ internal fun DogNapEngine(
             brightness * restingDim,
         )
 
+        // Curled body
         val bodyRx = minDim * 0.30f * scale
         val bodyRy = minDim * 0.20f * scale
         drawOval(
@@ -86,16 +102,27 @@ internal fun DogNapEngine(
             topLeft = Offset(cx - bodyRx, cy - bodyRy),
             size = Size(bodyRx * 2f, bodyRy * 2f),
         )
+
+        // Head resting on ground
         val headR = minDim * 0.14f * scale
         val head = Offset(cx - bodyRx * 0.5f, cy - bodyRy * 0.25f)
         drawCircle(color = bodyColor, radius = headR, center = head)
-        // Soft snout
+
+        // Snout
         drawOval(
             color = bodyColor,
             topLeft = Offset(head.x - headR * 1.15f, head.y - headR * 0.25f),
             size = Size(headR * 0.7f, headR * 0.55f),
         )
-        // Floppy ear
+
+        // Front paw tucked under snout
+        drawOval(
+            color = bodyColor,
+            topLeft = Offset(head.x - headR * 0.9f, head.y + headR * 0.25f),
+            size = Size(headR * 0.65f, headR * 0.35f),
+        )
+
+        // Floppy ear with gentle breathing sway
         val earSwing = sin(phase01(earAnim) * 2f * PI.toFloat()) * (if (isActive) 0.08f else 0.03f)
         val ear = Path().apply {
             moveTo(head.x + headR * 0.2f, head.y - headR * 0.4f)
@@ -115,22 +142,36 @@ internal fun DogNapEngine(
         }
         drawPath(ear, color = bodyColor)
 
-        if (quality != GenartQuality.Low) {
-            val tail = Path().apply {
-                val base = Offset(cx + bodyRx * 0.75f, cy)
-                moveTo(base.x, base.y)
-                quadraticTo(
-                    base.x + minDim * 0.06f,
-                    base.y - minDim * 0.08f,
-                    base.x + minDim * 0.04f,
-                    base.y - minDim * 0.14f,
-                )
-            }
-            drawPath(
-                path = tail,
-                color = bodyColor,
-                style = Stroke(width = minDim * 0.028f, cap = StrokeCap.Round),
+        // Sleeping eye curve
+        val eyePath = Path().apply {
+            val ex = head.x - headR * 0.35f
+            val ey = head.y - headR * 0.05f
+            moveTo(ex - headR * 0.2f, ey)
+            quadraticTo(ex, ey + headR * 0.12f, ex + headR * 0.2f, ey)
+        }
+        drawPath(
+            path = eyePath,
+            color = TonalPalette.withAlpha(TonalPalette.pick(paletteColors, 2), 0.35f * restingDim),
+            style = Stroke(width = minDim * 0.008f, cap = StrokeCap.Round),
+        )
+
+        // Curled tail along hind flank
+        val tail = Path().apply {
+            val base = Offset(cx + bodyRx * 0.75f, cy)
+            val tipX = base.x + minDim * 0.05f
+            val tipY = base.y - minDim * (0.12f + 0.02f * breath)
+            moveTo(base.x, base.y)
+            quadraticTo(
+                base.x + minDim * 0.07f,
+                base.y - minDim * 0.06f,
+                tipX,
+                tipY,
             )
         }
+        drawPath(
+            path = tail,
+            color = bodyColor,
+            style = Stroke(width = minDim * 0.032f, cap = StrokeCap.Round),
+        )
     }
 }

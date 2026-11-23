@@ -2,6 +2,7 @@ package fr.geoking.arthur.genart.stills
 
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RadialGradient
@@ -29,39 +30,58 @@ internal object CatWindowStill {
         val h = size.toFloat()
         val minDim = w.coerceAtMost(h)
 
-        paint.shader = null
+        // Room interior wall (deep midnight blue-gray)
+        paint.shader = LinearGradient(
+            0f, 0f, 0f, h,
+            intArrayOf(0xFF141926.toInt(), 0xFF1A2030.toInt(), 0xFF0F121C.toInt()),
+            floatArrayOf(0f, 0.55f, 1f),
+            Shader.TileMode.CLAMP,
+        )
         paint.style = Paint.Style.FILL
-        paint.color = 0xFF1A2238.toInt()
-        canvas.drawRect(0f, 0f, w, h * 0.45f, paint)
-        paint.color = 0xFF12161F.toInt()
-        canvas.drawRect(0f, h * 0.45f, w, h, paint)
+        canvas.drawRect(0f, 0f, w, h, paint)
+        paint.shader = null
 
         val paneLeft = w * 0.12f
         val paneTop = h * 0.08f
         val paneW = w * 0.76f
         val paneH = h * 0.62f
+
+        // Outside dawn sky gradient seen through glass
+        paint.shader = LinearGradient(
+            0f, paneTop, 0f, paneTop + paneH,
+            intArrayOf(0xFF1C2844.toInt(), 0xFF384766.toInt(), 0xFF6B5868.toInt(), 0xFF9E6B65.toInt()),
+            floatArrayOf(0f, 0.45f, 0.85f, 1f),
+            Shader.TileMode.CLAMP,
+        )
+        canvas.drawRect(paneLeft, paneTop, paneLeft + paneW, paneTop + paneH, paint)
+
+        // Soft rising sun glow through window
         val dawn = mixArgb(0xFFFFD8A8.toInt(), palette.colorAt(1), 0.25f)
         paint.shader = RadialGradient(
-            paneLeft + paneW * 0.55f,
-            paneTop + paneH * 0.35f,
-            paneW * 0.7f,
+            paneLeft + paneW * 0.58f,
+            paneTop + paneH * 0.45f,
+            paneW * 0.68f,
             intArrayOf(
-                Color.argb(140, Color.red(dawn), Color.green(dawn), Color.blue(dawn)),
-                Color.argb(90, 0x6B, 0x8A, 0xB8),
+                Color.argb((160 * pulse).toInt().coerceIn(100, 200), Color.red(dawn), Color.green(dawn), Color.blue(dawn)),
+                Color.argb(90, 0xE8, 0xA8, 0x7C),
+                Color.argb(40, 0x6B, 0x8A, 0xB8),
                 Color.TRANSPARENT,
             ),
-            floatArrayOf(0f, 0.55f, 1f),
+            floatArrayOf(0f, 0.5f, 0.85f, 1f),
             Shader.TileMode.CLAMP,
         )
         canvas.drawRect(paneLeft, paneTop, paneLeft + paneW, paneTop + paneH, paint)
         paint.shader = null
 
-        paint.color = 0xFF1C1410.toInt()
+        // Window frame & mullions
+        paint.color = 0xFF181310.toInt()
         val fs = minDim * 0.018f
+        // Outer border
         canvas.drawRect(paneLeft, paneTop, paneLeft + paneW, paneTop + fs, paint)
         canvas.drawRect(paneLeft, paneTop + paneH - fs, paneLeft + paneW, paneTop + paneH, paint)
         canvas.drawRect(paneLeft, paneTop, paneLeft + fs, paneTop + paneH, paint)
         canvas.drawRect(paneLeft + paneW - fs, paneTop, paneLeft + paneW, paneTop + paneH, paint)
+        // Center vertical mullion
         canvas.drawRect(
             paneLeft + paneW * 0.5f - fs * 0.5f,
             paneTop,
@@ -69,25 +89,44 @@ internal object CatWindowStill {
             paneTop + paneH,
             paint,
         )
+        // Horizontal transom divider
+        canvas.drawRect(
+            paneLeft,
+            paneTop + paneH * 0.44f - fs * 0.5f,
+            paneLeft + paneW,
+            paneTop + paneH * 0.44f + fs * 0.5f,
+            paint,
+        )
 
+        // Window sill
         val sillY = paneTop + paneH
-        paint.color = 0xFF2A211C.toInt()
-        canvas.drawRect(paneLeft - minDim * 0.02f, sillY, paneLeft + paneW + minDim * 0.02f, sillY + minDim * 0.06f, paint)
+        paint.color = 0xFF261D18.toInt()
+        canvas.drawRect(paneLeft - minDim * 0.03f, sillY, paneLeft + paneW + minDim * 0.03f, sillY + minDim * 0.065f, paint)
+        paint.color = 0xFF332720.toInt()
+        canvas.drawRect(paneLeft - minDim * 0.03f, sillY, paneLeft + paneW + minDim * 0.03f, sillY + minDim * 0.012f, paint)
 
+        // Cat silhouette
         val breath = sin(phase) * 0.5f + 0.5f
         val scale = 1f + 0.025f * breath * pulse
-        val bodyColor = mixArgb(0xFF1A1412.toInt(), palette.colorAt(0), 0.2f)
+        val bodyColor = mixArgb(0xFF16110F.toInt(), palette.colorAt(0), 0.2f)
         paint.color = bodyColor
+
         val cx = w * 0.58f
         val cy = sillY - minDim * 0.02f
         val bodyRx = minDim * 0.14f * scale
         val bodyRy = minDim * 0.10f * scale
+
+        // Body oval
         rect.set(cx - bodyRx, cy - bodyRy * 1.6f, cx + bodyRx, cy + bodyRy * 0.4f)
         canvas.drawOval(rect, paint)
+
+        // Head circle
         val headR = minDim * 0.075f * scale
         val hx = cx - bodyRx * 0.15f
         val hy = cy - bodyRy * 2.15f
         canvas.drawCircle(hx, hy, headR, paint)
+
+        // Pointed ears
         path.reset()
         path.moveTo(hx - headR * 0.75f, hy - headR * 0.2f)
         path.lineTo(hx - headR * 0.95f, hy - headR * 1.35f)
@@ -98,6 +137,30 @@ internal object CatWindowStill {
         path.lineTo(hx + headR * 0.75f, hy - headR * 0.2f)
         path.close()
         canvas.drawPath(path, paint)
+
+        // Tail
+        val sway = sin(phase) * pulse
+        path.reset()
+        val baseX = cx + bodyRx * 0.82f
+        val baseY = cy - bodyRy * 0.85f
+        val tipX = baseX + minDim * (0.07f + 0.03f * sway)
+        val tipY = baseY - minDim * (0.07f + 0.025f * sway)
+        path.moveTo(baseX, baseY)
+        path.quadTo(baseX + minDim * 0.06f, baseY - minDim * 0.09f, tipX, tipY)
+
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = minDim * 0.022f
+        paint.strokeCap = Paint.Cap.ROUND
+        canvas.drawPath(path, paint)
+        paint.style = Paint.Style.FILL
+
+        // Dust motes
+        paint.color = Color.argb(100, Color.red(dawn), Color.green(dawn), Color.blue(dawn))
+        for (i in 0 until 4) {
+            val mx = paneLeft + paneW * (0.35f + 0.12f * i)
+            val my = paneTop + paneH * (0.32f + 0.09f * i)
+            canvas.drawCircle(mx, my, minDim * 0.006f, paint)
+        }
     }
 
     private fun mixArgb(a: Int, b: Int, t: Float): Int {

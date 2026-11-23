@@ -29,10 +29,38 @@ internal object PandaSitStill {
         val cx = w * 0.5f
         val cy = h * 0.55f
 
+        // Deep forest clearing
+        paint.shader = RadialGradient(
+            cx, cy - h * 0.1f, w.coerceAtLeast(h) * 0.85f,
+            intArrayOf(0xFF1E2A22.toInt(), 0xFF162018.toInt(), 0xFF0E1410.toInt()),
+            floatArrayOf(0f, 0.5f, 1f),
+            Shader.TileMode.CLAMP,
+        )
         paint.style = Paint.Style.FILL
-        paint.shader = null
-        paint.color = 0xFF1E2A22.toInt()
         canvas.drawRect(0f, 0f, w, h, paint)
+        paint.shader = null
+
+        // Tree silhouettes
+        paint.color = 0xFF0E180E.toInt()
+        for (i in 0 until 5) {
+            val tx = w * (0.08f + i * 0.22f)
+            val th = h * (0.28f + i * 0.04f)
+            rect.set(tx - minDim * 0.06f, h * 0.18f - th * 0.1f * i, tx + minDim * 0.06f, h * 0.18f - th * 0.1f * i + th)
+            canvas.drawOval(rect, paint)
+        }
+
+        // Moonlight glow
+        val moonGlow = mixArgb(0xFFC8D4E8.toInt(), palette.colorAt(1), 0.15f)
+        paint.shader = RadialGradient(
+            w * 0.78f, h * 0.12f, w * 0.45f,
+            intArrayOf(Color.argb(64, Color.red(moonGlow), Color.green(moonGlow), Color.blue(moonGlow)), Color.TRANSPARENT),
+            null,
+            Shader.TileMode.CLAMP,
+        )
+        canvas.drawCircle(w * 0.78f, h * 0.12f, w * 0.45f, paint)
+        paint.shader = null
+
+        // Moss ground
         paint.shader = RadialGradient(
             cx, h * 0.78f, minDim * 0.45f,
             intArrayOf(Color.argb(115, 0x2A, 0x3A, 0x28), Color.TRANSPARENT),
@@ -67,10 +95,21 @@ internal object PandaSitStill {
         canvas.drawOval(rect, paint)
         rect.set(cx + headR * 0.2f, hy - headR * 0.25f, cx + headR * 0.75f, hy + headR * 0.2f)
         canvas.drawOval(rect, paint)
+        // Nose
+        canvas.drawCircle(cx, hy + headR * 0.15f, headR * 0.08f, paint)
+        // Limbs
         canvas.drawCircle(cx - bodyRx * 0.85f, cy + bodyRy * 0.35f, minDim * 0.055f * scale, paint)
         canvas.drawCircle(cx + bodyRx * 0.85f, cy + bodyRy * 0.35f, minDim * 0.055f * scale, paint)
         canvas.drawCircle(cx - bodyRx * 0.35f, cy + bodyRy * 1.35f, minDim * 0.06f * scale, paint)
         canvas.drawCircle(cx + bodyRx * 0.35f, cy + bodyRy * 1.35f, minDim * 0.06f * scale, paint)
+
+        // Fireflies
+        paint.color = Color.argb(55, 0xE8, 0xF0, 0xC8)
+        for (i in 0 until 3) {
+            val mx = w * (0.2f + 0.25f * i)
+            val my = h * (0.25f + 0.12f * i)
+            canvas.drawCircle(mx, my, minDim * 0.008f, paint)
+        }
     }
 
     private fun mixArgb(a: Int, b: Int, t: Float): Int {

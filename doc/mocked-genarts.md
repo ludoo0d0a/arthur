@@ -1,13 +1,7 @@
 # Mocked genarts
 
-Scaffolded / template Ambient engines registered in `GenartRegistry` with catalog number **> #154** (93 entries).
+Scaffolded / template Ambient engines registered in `GenartRegistry` with catalog number **> #154** (87 entries).
 
-- #163 - Distant Dog Walk
-- #164 - Sitting Panda
-- #165 - Panda and Bamboo
-- #166 - Cat Tail Sway
-- #167 - Dog Stretch
-- #168 - Panda Roll
 - #169 - Season Spring Wash
 - #170 - Season Autumn Wash
 - #171 - Season Winter Wash

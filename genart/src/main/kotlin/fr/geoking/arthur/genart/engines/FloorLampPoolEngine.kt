@@ -129,7 +129,14 @@ internal fun FloorLampPoolEngine(
             quadraticTo(poleX, h * 0.39f, poleX - m * 0.15f, h * 0.37f)
             close()
         }
-        drawPath(shade, brush = Brush.verticalGradient(Color(0xFF6B5640), Color(0xFF2E261F), startY = h * 0.24f, endY = h * 0.39f))
+        drawPath(
+            shade,
+            brush = Brush.verticalGradient(
+                colors = listOf(Color(0xFF6B5640), Color(0xFF2E261F)),
+                startY = h * 0.24f,
+                endY = h * 0.39f,
+            ),
+        )
         drawLine(Color(0xFFB2956A).copy(alpha = 0.38f), Offset(poleX - m * 0.15f, h * 0.37f), Offset(poleX + m * 0.15f, h * 0.37f), m * 0.006f)
         drawOval(
             brush = Brush.radialGradient(

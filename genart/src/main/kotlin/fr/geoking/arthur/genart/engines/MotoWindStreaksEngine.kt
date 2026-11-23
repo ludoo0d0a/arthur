@@ -24,6 +24,7 @@ import fr.geoking.arthur.genart.phase01
 import fr.geoking.arthur.genart.qualityCount
 import fr.geoking.arthur.genart.seededRange
 import fr.geoking.arthur.genart.seededUnit
+import kotlin.math.cos
 import kotlin.math.sin
 
 private data class WindStreak(

@@ -105,12 +105,10 @@ internal fun ReactionSpotsEngine(
                 val col = if (blob.colorIndex % 2 == 0) c0 else c1
                 drawCircle(
                     brush = Brush.radialGradient(
-                        colorStops = listOf(
-                            0f to TonalPalette.withAlpha(col, 0.30f * dim),
-                            0.70f to TonalPalette.withAlpha(col, 0.20f * dim),
-                            0.92f to TonalPalette.withAlpha(col, 0.015f * dim),
-                            1f to Color.Transparent,
-                        ),
+                        0f to TonalPalette.withAlpha(col, 0.30f * dim),
+                        0.70f to TonalPalette.withAlpha(col, 0.20f * dim),
+                        0.92f to TonalPalette.withAlpha(col, 0.015f * dim),
+                        1f to Color.Transparent,
                         center = Offset(x, y),
                         radius = r,
                     ),

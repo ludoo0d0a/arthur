@@ -78,7 +78,7 @@ internal fun PhysarumNodeEngine(
     val c0 = TonalPalette.brightness(paletteColors.getOrElse(0) { Color(0xFF7CFFB2) }, brightness * dim)
     val dark = TonalPalette.brightness(Color(0xFF05080A), brightness * dim)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        val shader = remember { RuntimeShader(PHYSARUM_SOFT_AGSL) }
+        val shader = remember { RuntimeShader(PHYSARUM_NODE_AGSL) }
         val brush = remember(shader) { ShaderBrush(shader) }
         Canvas(modifier = modifier) {
             shader.setFloatUniform("iResolution", size.width, size.height)
@@ -157,7 +157,7 @@ internal fun PhysarumNodeEngine(
     }
 }
 
-private const val PHYSARUM_SOFT_AGSL = """
+private const val PHYSARUM_NODE_AGSL = """
 uniform float2 iResolution;
 uniform float iTime;
 uniform float iEnergy;

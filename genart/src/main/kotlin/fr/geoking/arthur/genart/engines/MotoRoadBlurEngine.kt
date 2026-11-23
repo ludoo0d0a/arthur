@@ -170,7 +170,14 @@ internal fun MotoRoadBlurEngine(
             lineTo(0f, h)
             close()
         }
-        drawPath(fairing, brush = Brush.verticalGradient(Color(0xFF080A0C), Color(0xFF050608), startY = h * 0.9f, endY = h))
+        drawPath(
+            fairing,
+            brush = Brush.verticalGradient(
+                colors = listOf(Color(0xFF080A0C), Color(0xFF050608)),
+                startY = h * 0.9f,
+                endY = h,
+            ),
+        )
         drawLine(
             color = TonalPalette.withAlpha(steel, 0.09f * dim),
             start = Offset(w * 0.25f, h * 0.925f),

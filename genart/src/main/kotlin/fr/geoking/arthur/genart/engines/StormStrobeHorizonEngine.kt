@@ -62,7 +62,7 @@ internal fun StormStrobeHorizonEngine(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((14000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween((10000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "stormstrobehorizon_t",
@@ -94,8 +94,8 @@ internal fun StormStrobeHorizonEngine(
         val glowRadius = (minDim * 0.64f).coerceAtLeast(1f)
         drawOval(
             brush = Brush.radialGradient(
-                0f to TonalPalette.withAlpha(Color(0xFFC9D9F2), (0.15f + 0.32f * flashAmt) * brightness),
-                0.32f to TonalPalette.withAlpha(Color(0xFF879DBC), (0.10f + 0.17f * flashAmt) * brightness),
+                0f to TonalPalette.withAlpha(Color(0xFFC9D9F2), (0.22f + 0.55f * flashAmt) * brightness),
+                0.32f to TonalPalette.withAlpha(Color(0xFF879DBC), (0.14f + 0.30f * flashAmt) * brightness),
                 1f to Color.Transparent,
                 center = glowCenter,
                 radius = glowRadius,
@@ -127,8 +127,8 @@ internal fun StormStrobeHorizonEngine(
 
         clouds.forEach { cloud ->
             val sway = (loopedFbm(time, radius = 1.0f + cloud.phase, octaves = 2, seedOffset = (cloud.phase * 1000).toInt() + 37) - 0.5f)
-            val cx = ((cloud.x + 1f + sway * 0.045f) % 1.25f - 0.12f) * w
-            val cy = cloud.y * h + (drift - 0.5f) * h * 0.012f
+            val cx = ((cloud.x + 1f + sway * 0.16f + time * 0.28f) % 1.25f - 0.12f) * w
+            val cy = cloud.y * h + (drift - 0.5f) * h * 0.028f
             val cw = cloud.width * w
             val ch = cloud.height * h
             val path = Path().apply {

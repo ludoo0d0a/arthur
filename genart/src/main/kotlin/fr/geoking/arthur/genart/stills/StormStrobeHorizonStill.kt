@@ -53,7 +53,7 @@ internal object StormStrobeHorizonStill {
             glowX, glowY, radius,
             intArrayOf(
                 Color.argb((255f * (0.13f + 0.31f * flashAmt)).toInt(), 201, 217, 242),
-                Color.argb((255f * (0.08f + 0.15f * flashAmt)).toInt(), 135, 157, 188),
+                Color.argb((255f * (0.08f + 0.30f * flashAmt)).toInt(), 135, 157, 188),
                 Color.TRANSPARENT,
             ),
             floatArrayOf(0f, 0.38f, 1f),

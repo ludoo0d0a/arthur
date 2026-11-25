@@ -42,10 +42,10 @@ internal fun FrostCrystalsEngine(
             FrostCrystal(
                 x = seededUnit(s + 3),
                 y = seededUnit(s + 11),
-                radius = seededRange(s + 19, 3f, 7f),
+                radius = seededRange(s + 19, 5f, 11f),
                 lineCount = if (seededUnit(s + 23) < 0.5f) 2 else 3,
                 rotation = seededRange(s + 29, 0f, 2f * PI.toFloat()),
-                cycleFreq = seededRange(s + 37, 0.4f, 0.9f),
+                cycleFreq = seededRange(s + 37, 0.65f, 1.35f),
                 phaseOffset = seededUnit(s + 43),
                 colorIndex = i,
             )
@@ -56,7 +56,7 @@ internal fun FrostCrystalsEngine(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((32000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween((11000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "frostcrystals_t",
@@ -65,6 +65,8 @@ internal fun FrostCrystalsEngine(
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
+        val minDim = minOf(w, h)
+        val strokeW = (minDim * 0.0028f).coerceAtLeast(1.6f)
         drawRect(
             brush = Brush.verticalGradient(
                 colors = listOf(Color(0xFF060B14), Color(0xFF0C1A26)),
@@ -74,11 +76,11 @@ internal fun FrostCrystalsEngine(
             val cyclePos = phase01(t * c.cycleFreq + c.phaseOffset)
             val envelope = frostEnvelope(cyclePos)
             if (envelope <= 0.001f) return@forEach
-            val base = TonalPalette.mix(Color.White, TonalPalette.pick(paletteColors, c.colorIndex), 0.3f)
+            val base = TonalPalette.mix(Color.White, TonalPalette.pick(paletteColors, c.colorIndex), 0.42f)
             val tint = TonalPalette.brightness(base, brightness)
             val alpha = (envelope * dim).coerceIn(0f, 1f)
             val center = Offset(c.x * w, c.y * h)
-            val armLength = c.radius * (0.75f + 0.25f * envelope)
+            val armLength = c.radius * (0.72f + 0.32f * envelope)
             val angleStep = PI.toFloat() / c.lineCount
             for (line in 0 until c.lineCount) {
                 val angle = c.rotation + line * angleStep
@@ -88,7 +90,7 @@ internal fun FrostCrystalsEngine(
                     color = TonalPalette.withAlpha(tint, alpha),
                     start = Offset(center.x - dx, center.y - dy),
                     end = Offset(center.x + dx, center.y + dy),
-                    strokeWidth = 1.1f,
+                    strokeWidth = strokeW,
                     cap = StrokeCap.Round,
                 )
             }
@@ -97,8 +99,8 @@ internal fun FrostCrystalsEngine(
 }
 
 private fun frostEnvelope(cyclePos: Float): Float {
-    val fadeIn = 0.35f
-    val fadeOut = 0.65f
+    val fadeIn = 0.22f
+    val fadeOut = 0.58f
     return when {
         cyclePos < fadeIn -> smoothStep(cyclePos / fadeIn)
         cyclePos < fadeOut -> 1f

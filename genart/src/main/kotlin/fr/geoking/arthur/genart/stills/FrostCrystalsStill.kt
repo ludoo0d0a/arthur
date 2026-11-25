@@ -52,15 +52,15 @@ internal object FrostCrystalsStill {
         for (i in 0 until count) {
             xs[i] = rnd.nextFloat() * w
             ys[i] = rnd.nextFloat() * h
-            radii[i] = (3f + rnd.nextFloat() * 4f) * (w / 64f)
+            radii[i] = (5f + rnd.nextFloat() * 6f) * (w / 64f)
             lineCounts[i] = if (rnd.nextFloat() < 0.5f) 2 else 3
             rotations[i] = rnd.nextFloat() * 2f * PI.toFloat()
-            freqs[i] = 0.4f + rnd.nextFloat() * 0.5f
+            freqs[i] = 0.65f + rnd.nextFloat() * 0.7f
             phaseOffsets[i] = rnd.nextFloat()
         }
 
         paint.style = Paint.Style.STROKE
-        paint.strokeWidth = (1.1f * (w / 64f)).coerceAtLeast(1f)
+        paint.strokeWidth = (1.6f * (w / 64f)).coerceAtLeast(1.4f)
         paint.strokeCap = Paint.Cap.ROUND
         val timeUnit = phase / (2f * PI.toFloat())
         for (i in 0 until count) {
@@ -71,11 +71,11 @@ internal object FrostCrystalsStill {
             val alpha = (envelope * pulse.coerceIn(0.35f, 1f)).coerceIn(0f, 1f)
             paint.color = Color.argb(
                 (alpha * 255).toInt().coerceIn(0, 255),
-                (Color.red(c) * 0.7f + 255 * 0.3f).toInt().coerceIn(0, 255),
-                (Color.green(c) * 0.7f + 255 * 0.3f).toInt().coerceIn(0, 255),
-                (Color.blue(c) * 0.7f + 255 * 0.3f).toInt().coerceIn(0, 255),
+                (Color.red(c) * 0.58f + 255 * 0.42f).toInt().coerceIn(0, 255),
+                (Color.green(c) * 0.58f + 255 * 0.42f).toInt().coerceIn(0, 255),
+                (Color.blue(c) * 0.58f + 255 * 0.42f).toInt().coerceIn(0, 255),
             )
-            val armLength = radii[i] * (0.75f + 0.25f * envelope)
+            val armLength = radii[i] * (0.72f + 0.32f * envelope)
             val angleStep = PI.toFloat() / lineCounts[i]
             for (line in 0 until lineCounts[i]) {
                 val angle = rotations[i] + line * angleStep
@@ -89,8 +89,8 @@ internal object FrostCrystalsStill {
     private fun phase01(t: Float): Float = ((t % 1f) + 1f) % 1f
 
     private fun frostEnvelope(cyclePos: Float): Float {
-        val fadeIn = 0.35f
-        val fadeOut = 0.65f
+        val fadeIn = 0.22f
+        val fadeOut = 0.58f
         return when {
             cyclePos < fadeIn -> smoothStep(cyclePos / fadeIn)
             cyclePos < fadeOut -> 1f

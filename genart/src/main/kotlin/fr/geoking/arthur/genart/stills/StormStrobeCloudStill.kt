@@ -36,7 +36,7 @@ internal object StormStrobeCloudStill {
         val afterglow = exp(-((localPhase - 0.245f) * (localPhase - 0.245f)) / 0.018f) * 0.24f
         val light = (burst * 0.52f + afterglow) * (0.7f + 0.3f * pulse)
         val glowX = w * (0.52f + (drift - 0.5f) * 0.10f)
-        val glowY = h * (0.58f + (drift2 - 0.5f) * 0.035f)
+        val glowY = h * (0.58f + (drift2 - 0.5f) * 0.14f)
         val glowRadius = minDim * (0.34f + 0.10f * burst)
 
         paint.style = Paint.Style.FILL
@@ -89,9 +89,9 @@ internal object StormStrobeCloudStill {
         repeat(6) { index ->
             val stagger = (index + 0.5f) / 6f
             val noise = loopedFbm(t01, radius = 1.1f + stagger, octaves = 2, seedOffset = index * 29 + 7)
-            val x = w * (stagger + (drift - 0.5f) * 0.035f)
+            val x = w * (stagger + (drift - 0.5f) * 0.14f)
             val y = h * (0.46f + (index % 3) * 0.075f + (noise - 0.5f) * 0.025f)
-            val rx = minDim * (0.20f + (index % 3) * 0.055f)
+            val rx = minDim * (0.20f + (index % 3) * 0.18f)
             val ry = minDim * (0.11f + (index % 2) * 0.04f)
             val distance = ((x - glowX) / (minDim * 0.68f)).let { it * it }
             val lit = (light * (0.24f + 0.46f * exp(-distance))).coerceIn(0f, 0.58f)

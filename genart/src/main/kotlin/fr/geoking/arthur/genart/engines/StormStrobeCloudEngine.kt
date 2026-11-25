@@ -37,7 +37,7 @@ internal fun StormStrobeCloudEngine(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((14000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween((10000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "stormstrobecloud_t",
@@ -93,9 +93,9 @@ internal fun StormStrobeCloudEngine(
         val glowRadius = minDim * (0.34f + 0.10f * burst)
         drawCircle(
             brush = Brush.radialGradient(
-                0f to TonalPalette.withAlpha(stormLight, 0.30f * light * brightness),
-                0.38f to TonalPalette.withAlpha(Color(0xFFBFCDE0), 0.20f * light * brightness),
-                0.72f to TonalPalette.withAlpha(Color(0xFF8999B3), 0.095f * light * brightness),
+                0f to TonalPalette.withAlpha(stormLight, 0.55f * light * brightness),
+                0.38f to TonalPalette.withAlpha(Color(0xFFBFCDE0), 0.36f * light * brightness),
+                0.72f to TonalPalette.withAlpha(Color(0xFF8999B3), 0.18f * light * brightness),
                 1f to Color.Transparent,
                 center = glowCenter,
                 radius = glowRadius,
@@ -108,10 +108,11 @@ internal fun StormStrobeCloudEngine(
         repeat(cloudCount) { index ->
             val stagger = (index + 0.5f) / cloudCount
             val cloudNoise = loopedFbm(time, radius = 1.1f + stagger, octaves = 2, seedOffset = index * 29 + 7)
-            val x = w * (stagger + (drift - 0.5f) * 0.035f)
-            val y = h * (0.46f + (index % 3) * 0.075f + (cloudNoise - 0.5f) * 0.025f)
-            val rx = minDim * (0.20f + (index % 3) * 0.055f)
-            val ry = minDim * (0.11f + (index % 2) * 0.04f)
+            val xRaw = stagger + (drift - 0.5f) * 0.18f + time * 0.30f
+            val x = w * (((xRaw % 1f) + 1f) % 1f)
+            val y = h * (0.46f + (index % 3) * 0.075f + (cloudNoise - 0.5f) * 0.04f)
+            val rx = minDim * (0.24f + (index % 3) * 0.06f)
+            val ry = minDim * (0.13f + (index % 2) * 0.045f)
             val distance = ((x - glowCenter.x) / (minDim * 0.68f)).let { it * it }
             val lit = (light * (0.24f + 0.46f * exp(-distance))).coerceIn(0f, 0.58f)
             val cloudColor = TonalPalette.mix(cloudBase, Color(0xFF39465B), lit)

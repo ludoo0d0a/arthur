@@ -38,7 +38,7 @@ internal fun StormStrobePulseEngine(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((14000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween((10000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "stormstrobepulse_t",
@@ -75,9 +75,10 @@ internal fun StormStrobePulseEngine(
             size = Size(w * 1.16f, h * 0.38f),
         )
         for (i in 0 until count) {
-            val x = (i + 0.5f) / count * w + (loopedFbm(time, radius = 1.25f, seedOffset = 37 + i * 11) - 0.5f) * w * 0.16f
+            val xRaw = (i + 0.5f) / count * w + (loopedFbm(time, radius = 1.25f, seedOffset = 37 + i * 11) - 0.5f) * w * 0.22f + time * w * 0.32f
+            val x = ((xRaw % (w * 1.2f)) + w * 1.2f) % (w * 1.2f) - w * 0.1f
             val y = cloudY + h * (0.01f + 0.035f * (i % 2))
-            val cloudWidth = w * (0.25f + 0.12f * loopedFbm(time, seedOffset = 71 + i * 7))
+            val cloudWidth = w * (0.30f + 0.14f * loopedFbm(time, seedOffset = 71 + i * 7))
             drawOval(
                 brush = Brush.radialGradient(
                     0f to TonalPalette.withAlpha(Color(0xFF263346), 0.34f * dim),
@@ -101,8 +102,8 @@ internal fun StormStrobePulseEngine(
             val glowRadius = minOf(w, h) * 0.42f
             drawOval(
                 brush = Brush.radialGradient(
-                    0f to TonalPalette.withAlpha(Color(0xFFE8F0FF), 0.34f * flashAmt * brightness),
-                    0.5f to TonalPalette.withAlpha(Color(0xFFBACBE2), 0.15f * flashAmt * brightness),
+                    0f to TonalPalette.withAlpha(Color(0xFFE8F0FF), 0.62f * flashAmt * brightness),
+                    0.5f to TonalPalette.withAlpha(Color(0xFFBACBE2), 0.30f * flashAmt * brightness),
                     1f to Color.Transparent,
                     center = Offset(flashX, flashY),
                     radius = glowRadius,

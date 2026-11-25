@@ -27,6 +27,17 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 
+private const val GLASS_ORB_LOOP_MS = 11_000
+
+private data class GlassOrbLayout(
+    val x0: Float = 0.5f,
+    val y0: Float = 0.46f,
+    val radiusFrac: Float = 0.35f,
+    val highlightAngle: Float = -0.72f,
+    val swirlSpin: Float = 1.05f,
+    val breathAmp: Float = 0.015f,
+)
+
 /**
  * One premium glass sphere on a desk — terminator shading, specular highlight,
  * fake refraction swirl inside, soft elliptical shadow, and floating dust.
@@ -41,16 +52,7 @@ internal fun GlassOrbEngine(
     modifier: Modifier = Modifier,
 ) {
     val dustCount = qualityCount(quality, low = 18, medium = 32, high = 48)
-    val orb = remember {
-        GlassOrbSeed(
-            x0 = 0.5f,
-            y0 = 0.48f,
-            radiusFrac = 0.28f,
-            highlightAngle = -0.72f,
-            swirlSpin = 0.35f,
-            breathAmp = 0.012f,
-        )
-    }
+    val orb = remember { GlassOrbLayout() }
     val dust = remember(dustCount) {
         List(dustCount) { j ->
             GlassOrbDustSeed(
@@ -70,7 +72,7 @@ internal fun GlassOrbEngine(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((50000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween((GLASS_ORB_LOOP_MS / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "glass_orb_t",
@@ -91,7 +93,6 @@ internal fun GlassOrbEngine(
             ),
         )
 
-        // Desk plane
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(Color(0xFF2A2434).copy(alpha = 0.45f), Color.Transparent),
@@ -114,99 +115,119 @@ internal fun GlassOrbEngine(
             ),
             brightness,
         )
+        val caustic = TonalPalette.brightness(
+            TonalPalette.pick(paletteColors, 1),
+            brightness * 0.85f,
+        )
         val a = dim
 
-        // Soft elliptical floor shadow
         drawOval(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    TonalPalette.withAlpha(Color(0xFF000000), 0.45f * a),
+                    TonalPalette.withAlpha(Color(0xFF000000), 0.5f * a),
                     Color.Transparent,
                 ),
                 center = Offset(cx, cy + r * 1.05f),
-                radius = r * 1.35f,
+                radius = r * 1.4f,
             ),
-            topLeft = Offset(cx - r * 1.15f, cy + r * 0.72f),
-            size = Size(r * 2.3f, r * 0.55f),
+            topLeft = Offset(cx - r * 1.2f, cy + r * 0.7f),
+            size = Size(r * 2.4f, r * 0.58f),
         )
 
-        // Glass body with terminator (lit upper-left → dark lower-right)
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    TonalPalette.withAlpha(Color.White, a * 0.65f),
-                    TonalPalette.withAlpha(tint, a * 0.55f),
-                    TonalPalette.withAlpha(tint, a * 0.28f),
-                    TonalPalette.withAlpha(Color(0xFF0A0A12), a * 0.7f),
+                    TonalPalette.withAlpha(Color.White, a * 0.72f),
+                    TonalPalette.withAlpha(tint, a * 0.58f),
+                    TonalPalette.withAlpha(tint, a * 0.26f),
+                    TonalPalette.withAlpha(Color(0xFF0A0A12), a * 0.75f),
                 ),
-                center = Offset(cx - r * 0.32f, cy - r * 0.38f),
-                radius = r * 1.25f,
+                center = Offset(cx - r * 0.34f, cy - r * 0.4f),
+                radius = r * 1.3f,
             ),
             radius = r,
             center = Offset(cx, cy),
         )
 
-        // Fake refraction swirl inside
         val swirl = timeAngle * orb.swirlSpin
-        val sx = cx + cos(swirl) * r * 0.2f
-        val sy = cy + sin(swirl * 0.85f) * r * 0.16f
+        val sx = cx + cos(swirl) * r * 0.26f
+        val sy = cy + sin(swirl * 0.88f) * r * 0.2f
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    TonalPalette.withAlpha(tint, a * 0.5f),
-                    TonalPalette.withAlpha(Color(0xFFA8C8E8), a * 0.22f),
+                    TonalPalette.withAlpha(caustic, a * 0.58f),
+                    TonalPalette.withAlpha(Color(0xFFA8C8E8), a * 0.32f),
                     Color.Transparent,
                 ),
                 center = Offset(sx, sy),
-                radius = r * 0.48f,
+                radius = r * 0.52f,
             ),
-            radius = r * 0.48f,
+            radius = r * 0.52f,
             center = Offset(sx, sy),
         )
-        // Secondary refraction pocket (sine-warp feel)
-        val sx2 = cx + cos(swirl + 2.1f) * r * 0.28f
-        val sy2 = cy + sin(swirl + 1.4f) * r * 0.22f
+
+        val sx2 = cx + cos(swirl + 2.1f) * r * 0.32f
+        val sy2 = cy + sin(swirl + 1.4f) * r * 0.24f
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    TonalPalette.withAlpha(Color.White, a * 0.18f),
+                    TonalPalette.withAlpha(Color.White, a * 0.28f),
+                    TonalPalette.withAlpha(tint, a * 0.12f),
                     Color.Transparent,
                 ),
                 center = Offset(sx2, sy2),
-                radius = r * 0.32f,
+                radius = r * 0.36f,
             ),
-            radius = r * 0.32f,
+            radius = r * 0.36f,
             center = Offset(sx2, sy2),
         )
 
-        // Rim light
-        drawCircle(
-            color = TonalPalette.withAlpha(Color.White, a * 0.4f),
-            radius = r,
-            center = Offset(cx, cy),
-            style = Stroke(width = (r * 0.035f).coerceAtLeast(1f)),
-        )
-
-        // Specular highlight
-        val hx = cx + cos(orb.highlightAngle) * r * 0.4f
-        val hy = cy + sin(orb.highlightAngle) * r * 0.4f
+        val sx3 = cx + cos(swirl * 1.35f - 0.9f) * r * 0.18f
+        val sy3 = cy + sin(swirl * 1.1f + 2.6f) * r * 0.14f
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    TonalPalette.withAlpha(Color.White, a * 0.95f),
+                    TonalPalette.withAlpha(caustic, a * 0.35f),
+                    Color.Transparent,
+                ),
+                center = Offset(sx3, sy3),
+                radius = r * 0.22f,
+            ),
+            radius = r * 0.22f,
+            center = Offset(sx3, sy3),
+        )
+
+        drawCircle(
+            color = TonalPalette.withAlpha(Color.White, a * 0.48f),
+            radius = r,
+            center = Offset(cx, cy),
+            style = Stroke(width = (r * 0.04f).coerceAtLeast(1f)),
+        )
+
+        val highlightDrift = sin(timeAngle * 2f) * 0.2f + cos(timeAngle * 0.65f) * 0.14f
+        val highlightAngle = orb.highlightAngle + highlightDrift
+        val hx = cx + cos(highlightAngle) * r * 0.42f
+        val hy = cy + sin(highlightAngle) * r * 0.42f
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(
+                    TonalPalette.withAlpha(Color.White, a * 0.98f),
+                    TonalPalette.withAlpha(Color.White, a * 0.25f),
                     Color.Transparent,
                 ),
                 center = Offset(hx, hy),
-                radius = r * 0.26f,
+                radius = r * 0.3f,
             ),
-            radius = r * 0.26f,
+            radius = r * 0.3f,
             center = Offset(hx, hy),
         )
-        // Secondary glint
+
+        val glintX = cx + r * (0.36f + 0.06f * sin(timeAngle * 1.8f))
+        val glintY = cy - r * (0.14f + 0.04f * cos(timeAngle * 2.2f))
         drawCircle(
-            color = TonalPalette.withAlpha(Color.White, a * 0.5f),
-            radius = r * 0.055f,
-            center = Offset(cx + r * 0.38f, cy - r * 0.12f),
+            color = TonalPalette.withAlpha(Color.White, a * 0.58f),
+            radius = r * 0.06f,
+            center = Offset(glintX, glintY),
         )
 
         dust.forEach { mote ->
@@ -224,15 +245,6 @@ internal fun GlassOrbEngine(
         }
     }
 }
-
-private data class GlassOrbSeed(
-    val x0: Float,
-    val y0: Float,
-    val radiusFrac: Float,
-    val highlightAngle: Float,
-    val swirlSpin: Float,
-    val breathAmp: Float,
-)
 
 private data class GlassOrbDustSeed(
     val x0: Float,

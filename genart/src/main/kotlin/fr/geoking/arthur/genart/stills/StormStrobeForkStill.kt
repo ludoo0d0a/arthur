@@ -65,7 +65,7 @@ internal object StormStrobeForkStill {
             trunk.reset()
             trunk.moveTo(cx, cy - minDim * 0.10f)
             trunk.lineTo(cx - minDim * 0.018f, cy - minDim * 0.01f)
-            trunk.lineTo(cx + minDim * 0.006f, cy + minDim * 0.055f)
+            trunk.lineTo(cx + minDim * 0.006f, cy + minDim * 0.18f)
             trunk.lineTo(cx - minDim * 0.014f, cy + minDim * 0.13f)
             trunk.lineTo(cx + minDim * 0.01f, cy + minDim * 0.22f)
             paint.color = Color.argb((0.58f * flash * 255).toInt().coerceIn(0, 255), 220, 232, 255)
@@ -75,7 +75,7 @@ internal object StormStrobeForkStill {
             canvas.drawPath(trunk, paint)
 
             branch.reset()
-            branch.moveTo(cx + minDim * 0.006f, cy + minDim * 0.055f)
+            branch.moveTo(cx + minDim * 0.006f, cy + minDim * 0.18f)
             branch.lineTo(cx + minDim * 0.056f, cy + minDim * 0.09f)
             branch.lineTo(cx + minDim * 0.14f, cy + minDim * 0.15f)
             paint.color = Color.argb((0.38f * flash * 255).toInt().coerceIn(0, 255), 199, 216, 242)

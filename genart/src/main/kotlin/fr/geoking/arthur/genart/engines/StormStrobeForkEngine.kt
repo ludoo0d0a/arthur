@@ -58,7 +58,7 @@ internal fun StormStrobeForkEngine(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((14000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween((10000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "stormstrobefork_t",
@@ -83,15 +83,15 @@ internal fun StormStrobeForkEngine(
         flashes.forEachIndexed { index, flash ->
             val local = (time + flash.phaseOffset) % 1f
             val pulse = exp(-((local - 0.16f) * (local - 0.16f)) / 0.0016f) * dim
-            if (pulse < 0.025f) return@forEachIndexed
+            if (pulse < 0.012f) return@forEachIndexed
 
-            val cx = flash.x * w + (cloudDrift - 0.5f) * w * 0.06f
+            val cx = flash.x * w + (cloudDrift - 0.5f) * w * 0.18f + time * w * 0.12f
             val cy = h * 0.43f
-            val radius = minDim * (0.22f + 0.12f * pulse)
+            val radius = minDim * (0.28f + 0.16f * pulse)
             drawCircle(
                 brush = Brush.radialGradient(
-                    0f to TonalPalette.withAlpha(Color(0xFFDCE8FF), 0.12f * pulse * brightness),
-                    0.38f to TonalPalette.withAlpha(Color(0xFFAFC7EA), 0.08f * pulse * brightness),
+                    0f to TonalPalette.withAlpha(Color(0xFFDCE8FF), 0.28f * pulse * brightness),
+                    0.38f to TonalPalette.withAlpha(Color(0xFFAFC7EA), 0.16f * pulse * brightness),
                     1f to Color.Transparent,
                     center = Offset(cx, cy),
                     radius = radius,
@@ -108,7 +108,7 @@ internal fun StormStrobeForkEngine(
                 lineTo(cx - minDim * 0.014f, cy + minDim * 0.13f)
                 lineTo(cx + minDim * flash.branchAngle, cy + minDim * 0.22f)
             }
-            val boltColor = TonalPalette.withAlpha(Color(0xFFDCE8FF), 0.58f * pulse * brightness)
+            val boltColor = TonalPalette.withAlpha(Color(0xFFDCE8FF), 0.85f * pulse * brightness)
             drawPath(
                 path = trunk,
                 color = boltColor,
@@ -142,11 +142,11 @@ internal fun StormStrobeForkEngine(
         // Low, overlapping cloud shelves obscure the top of each distant fork.
         val cloudColor = TonalPalette.brightness(Color(0xFF0A0E18), brightness * dim)
         val cloudHighlight = TonalPalette.mix(Color(0xFF1A2230), TonalPalette.pick(paletteColors, 0), 0.18f)
-        val drift = (cloudDrift - 0.5f) * w * 0.045f
+        val drift = (cloudDrift - 0.5f) * w * 0.18f + time * w * 0.22f
         drawOval(cloudColor, Offset(-w * 0.1f + drift, h * 0.28f), androidx.compose.ui.geometry.Size(w * 0.72f, h * 0.30f))
-        drawOval(cloudColor, Offset(w * 0.24f - drift, h * 0.22f), androidx.compose.ui.geometry.Size(w * 0.86f, h * 0.34f))
-        drawOval(cloudHighlight.copy(alpha = 0.14f * dim), Offset(w * 0.02f + drift, h * 0.39f), androidx.compose.ui.geometry.Size(w * 0.60f, h * 0.13f))
-        drawOval(cloudHighlight.copy(alpha = 0.11f * dim), Offset(w * 0.46f - drift, h * 0.40f), androidx.compose.ui.geometry.Size(w * 0.63f, h * 0.12f))
+        drawOval(cloudColor, Offset(w * 0.24f - drift * 0.7f, h * 0.22f), androidx.compose.ui.geometry.Size(w * 0.86f, h * 0.34f))
+        drawOval(cloudHighlight.copy(alpha = 0.22f * dim), Offset(w * 0.02f + drift, h * 0.39f), androidx.compose.ui.geometry.Size(w * 0.60f, h * 0.13f))
+        drawOval(cloudHighlight.copy(alpha = 0.18f * dim), Offset(w * 0.46f - drift * 0.7f, h * 0.40f), androidx.compose.ui.geometry.Size(w * 0.63f, h * 0.12f))
         drawRect(
             brush = Brush.verticalGradient(
                 0f to Color.Transparent,

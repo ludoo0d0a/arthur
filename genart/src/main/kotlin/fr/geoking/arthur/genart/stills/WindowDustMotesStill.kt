@@ -56,7 +56,7 @@ internal object WindowDustMotesStill {
         // Diffuse window source blooms through the otherwise dim room.
         paint.shader = RadialGradient(
             sourceX, sourceY, minDim * 0.72f,
-            intArrayOf(withAlpha(accent, (0.58f * dim * 255).toInt()), withAlpha(0xFFFFDFA8.toInt(), (0.28f * dim * 255).toInt()), Color.TRANSPARENT),
+            intArrayOf(withAlpha(accent, (0.72f * dim * 255).toInt()), withAlpha(0xFFFFDFA8.toInt(), (0.38f * dim * 255).toInt()), Color.TRANSPARENT),
             floatArrayOf(0f, 0.38f, 1f),
             Shader.TileMode.CLAMP,
         )
@@ -77,7 +77,7 @@ internal object WindowDustMotesStill {
             ray.close()
             paint.shader = LinearGradient(
                 topX, 0f, bottomX + spread, 0f,
-                intArrayOf(Color.TRANSPARENT, withAlpha(accent, ((0.055f - i * 0.01f) * dim * 255).toInt()), Color.TRANSPARENT),
+                intArrayOf(Color.TRANSPARENT, withAlpha(accent, ((0.14f - i * 0.025f) * dim * 255).toInt()), Color.TRANSPARENT),
                 floatArrayOf(0f, 0.5f, 1f),
                 Shader.TileMode.CLAMP,
             )
@@ -92,28 +92,28 @@ internal object WindowDustMotesStill {
         canvas.drawRect(0f, h * 0.30f, w * 0.268f, h * 0.318f, paint)
 
         // Small suspended particles drift gently through the bright air.
-        for (i in 0 until 10) {
+        for (i in 0 until 11) {
             val baseX = seededRange(i * 17 + 3, 0.20f, 0.92f)
             val baseY = seededRange(i * 29 + 7, 0.10f, 0.92f)
-            val drift = seededRange(i * 41 + 11, 0.008f, 0.025f)
-            val phaseOffset = seededRange(i * 53 + 13, 0f, 2f * PI.toFloat())
+            val drift = seededRange(i * 53 + 13, 0.012f, 0.035f)
+            val phaseOffset = seededRange(i * 67 + 19, 0f, 2f * PI.toFloat())
             val a = t * 2f * PI.toFloat() + phaseOffset
             val field = loopedFbm(t, radius = 1.2f, octaves = 2, seedOffset = i * 97 + 5)
             val x = (baseX + drift * sin(a) + (field - 0.5f) * 0.025f) * w
             val y = (baseY + drift * cos(a * 0.7f)) * h
-            val radius = minDim * seededRange(i * 67 + 19, 0.0025f, 0.0075f) * (0.8f + 0.4f * field)
+            val radius = minDim * seededRange(i * 41 + 11, 0.0035f, 0.0095f) * (0.8f + 0.4f * field)
             val proximity = (1f - (x / w - y / h * 0.35f).coerceIn(0f, 1f)).coerceIn(0.25f, 1f)
             val mote = mixArgb(accent, palette.colorAt(i), 0.24f)
 
             paint.shader = RadialGradient(
                 x, y, radius * 2.8f,
-                intArrayOf(withAlpha(mote, (0.72f * proximity * dim * 255).toInt()), Color.TRANSPARENT),
+                intArrayOf(withAlpha(mote, (0.88f * proximity * dim * 255).toInt()), Color.TRANSPARENT),
                 floatArrayOf(0f, 1f),
                 Shader.TileMode.CLAMP,
             )
             canvas.drawCircle(x, y, radius * 2.8f, paint)
             paint.shader = null
-            paint.color = withAlpha(mote, (0.78f * proximity * dim * 255).toInt())
+            paint.color = withAlpha(mote, (0.92f * proximity * dim * 255).toInt())
             canvas.drawCircle(x, y, radius * 0.45f, paint)
         }
     }

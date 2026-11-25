@@ -50,8 +50,8 @@ internal fun WindowDustMotesEngine(
             DustMote(
                 x = seededRange(i * 17 + 3, 0.20f, 0.92f),
                 y = seededRange(i * 29 + 7, 0.10f, 0.92f),
-                radius = seededRange(i * 41 + 11, 0.0025f, 0.0075f),
-                drift = seededRange(i * 53 + 13, 0.008f, 0.025f),
+                radius = seededRange(i * 41 + 11, 0.0035f, 0.0095f),
+                drift = seededRange(i * 53 + 13, 0.012f, 0.035f),
                 phase = seededRange(i * 67 + 19, 0f, 2f * PI.toFloat()),
             )
         }
@@ -61,7 +61,7 @@ internal fun WindowDustMotesEngine(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((72000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween((11000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "windowdustmotes_t",
@@ -92,8 +92,8 @@ internal fun WindowDustMotesEngine(
         // A bright, diffuse window source just beyond the left edge of the room.
         drawCircle(
             brush = Brush.radialGradient(
-                0f to TonalPalette.withAlpha(warm, 0.58f * dim),
-                0.38f to TonalPalette.withAlpha(Color(0xFFFFDFA8), 0.28f * dim),
+                0f to TonalPalette.withAlpha(warm, 0.72f * dim),
+                0.38f to TonalPalette.withAlpha(Color(0xFFFFDFA8), 0.38f * dim),
                 1f to Color.Transparent,
                 center = Offset(sourceX, sourceY),
                 radius = minDim * 0.72f,
@@ -118,7 +118,7 @@ internal fun WindowDustMotesEngine(
             drawPath(
                 path = ray,
                 brush = Brush.horizontalGradient(
-                    colors = listOf(Color.Transparent, TonalPalette.withAlpha(warm, (0.055f - i * 0.01f) * dim), Color.Transparent),
+                    colors = listOf(Color.Transparent, TonalPalette.withAlpha(warm, (0.14f - i * 0.025f) * dim), Color.Transparent),
                     startX = topX,
                     endX = bottomX + spread,
                 ),
@@ -145,7 +145,7 @@ internal fun WindowDustMotesEngine(
             )
             drawCircle(
                 brush = Brush.radialGradient(
-                    0f to TonalPalette.withAlpha(moteColor, (0.72f * nearRay * dim).coerceIn(0f, 0.72f)),
+                    0f to TonalPalette.withAlpha(moteColor, (0.88f * nearRay * dim).coerceIn(0f, 0.88f)),
                     1f to Color.Transparent,
                     center = Offset(x, y),
                     radius = radius * 2.8f,
@@ -154,7 +154,7 @@ internal fun WindowDustMotesEngine(
                 center = Offset(x, y),
             )
             drawCircle(
-                color = TonalPalette.withAlpha(moteColor, 0.78f * nearRay * dim),
+                color = TonalPalette.withAlpha(moteColor, 0.92f * nearRay * dim),
                 radius = radius * 0.45f,
                 center = Offset(x, y),
             )

@@ -32,7 +32,7 @@ internal object FloorLampPoolStill {
         val h = size.toFloat()
         val m = size.toFloat()
         val t = ((phase % (2f * PI.toFloat())) / (2f * PI.toFloat())).let { if (it < 0f) it + 1f else it }
-        val flicker = 0.94f + 0.06f * loopedFbm(t, radius = 1.25f, octaves = 2, seedOffset = 17)
+        val flicker = 0.88f + 0.12f * loopedFbm(t, radius = 1.25f, octaves = 2, seedOffset = 17)
         val dim = 0.85f + 0.15f * pulse
         val accent = mixArgb(0xFFFFD8A0.toInt(), palette.colorAt(0), 0.18f)
 
@@ -54,80 +54,82 @@ internal object FloorLampPoolStill {
         paint.strokeWidth = m * 0.002f
         canvas.drawLine(0f, floorY, w, floorY, paint)
 
-        // A broad gradient oval and translucent cone blend into a soft floor pool.
-        val cx = w * 0.62f
-        val cy = h * 0.79f
+        val cx = w * 0.58f
+        val cy = h * 0.805f
         paint.shader = RadialGradient(
-            cx, cy, m * 0.52f,
+            cx, cy, m * 0.66f,
             intArrayOf(
-                withAlpha(accent, (0.30f * flicker * dim * 255).toInt()),
-                withAlpha(accent, (0.18f * flicker * dim * 255).toInt()),
-                withAlpha(accent, (0.065f * flicker * dim * 255).toInt()),
+                withAlpha(accent, (0.42f * flicker * dim * 255).toInt()),
+                withAlpha(accent, (0.26f * flicker * dim * 255).toInt()),
+                withAlpha(accent, (0.10f * flicker * dim * 255).toInt()),
                 Color.TRANSPARENT,
             ),
-            floatArrayOf(0f, 0.42f, 0.78f, 1f),
+            floatArrayOf(0f, 0.38f, 0.72f, 1f),
             Shader.TileMode.CLAMP,
         )
-        rect.set(w * 0.18f, h * 0.64f, w * 1.06f, h * 1.08f)
+        rect.set(w * 0.10f, h * 0.60f, w * 1.04f, h * 1.10f)
         canvas.drawOval(rect, paint)
         paint.shader = null
 
-        val lampX = w * 0.68f
+        val lampX = w * 0.66f
         path.reset()
-        path.moveTo(lampX - m * 0.085f, h * 0.36f)
-        path.lineTo(w * 0.28f, floorY)
-        path.lineTo(w * 0.96f, floorY)
-        path.lineTo(lampX + m * 0.085f, h * 0.36f)
+        path.moveTo(lampX - m * 0.11f, h * 0.34f)
+        path.lineTo(w * 0.22f, floorY)
+        path.lineTo(w * 0.98f, floorY)
+        path.lineTo(lampX + m * 0.11f, h * 0.34f)
         path.close()
         paint.shader = LinearGradient(
-            0f, h * 0.36f, 0f, floorY,
-            intArrayOf(withAlpha(accent, (0.10f * flicker * dim * 255).toInt()), withAlpha(accent, (0.015f * flicker * dim * 255).toInt())),
+            0f, h * 0.34f, 0f, floorY,
+            intArrayOf(withAlpha(accent, (0.16f * flicker * dim * 255).toInt()), withAlpha(accent, (0.025f * flicker * dim * 255).toInt())),
             null,
             Shader.TileMode.CLAMP,
         )
         canvas.drawPath(path, paint)
         paint.shader = null
 
-        // Stand, weighted foot and gently tapered fabric shade.
         paint.color = 0xFF29241F.toInt()
-        paint.strokeWidth = m * 0.014f
+        paint.strokeWidth = m * 0.022f
         paint.strokeCap = Paint.Cap.ROUND
-        canvas.drawLine(lampX, h * 0.37f, lampX, floorY, paint)
+        canvas.drawLine(lampX, h * 0.35f, lampX, floorY, paint)
         paint.color = withAlpha(0xFF68523B.toInt(), 130)
-        paint.strokeWidth = m * 0.002f
-        canvas.drawLine(lampX - m * 0.004f, h * 0.39f, lampX - m * 0.004f, floorY * 0.98f, paint)
+        paint.strokeWidth = m * 0.0025f
+        canvas.drawLine(lampX - m * 0.005f, h * 0.36f, lampX - m * 0.005f, floorY * 0.98f, paint)
         paint.color = 0xFF211D19.toInt()
-        rect.set(lampX - m * 0.10f, floorY - m * 0.015f, lampX + m * 0.10f, floorY + m * 0.02f)
+        rect.set(lampX - m * 0.13f, floorY - m * 0.018f, lampX + m * 0.13f, floorY + m * 0.024f)
         canvas.drawOval(rect, paint)
 
         path.reset()
-        path.moveTo(lampX - m * 0.09f, h * 0.25f)
-        path.quadTo(lampX, h * 0.23f, lampX + m * 0.09f, h * 0.25f)
-        path.lineTo(lampX + m * 0.15f, h * 0.37f)
-        path.quadTo(lampX, h * 0.39f, lampX - m * 0.15f, h * 0.37f)
+        path.moveTo(lampX - m * 0.12f, h * 0.21f)
+        path.quadTo(lampX, h * 0.19f, lampX + m * 0.12f, h * 0.21f)
+        path.lineTo(lampX + m * 0.19f, h * 0.35f)
+        path.quadTo(lampX, h * 0.37f, lampX - m * 0.19f, h * 0.35f)
         path.close()
-        paint.shader = LinearGradient(0f, h * 0.24f, 0f, h * 0.39f, 0xFF6B5640.toInt(), 0xFF2E261F.toInt(), Shader.TileMode.CLAMP)
+        paint.shader = LinearGradient(0f, h * 0.19f, 0f, h * 0.37f, 0xFF6B5640.toInt(), 0xFF2E261F.toInt(), Shader.TileMode.CLAMP)
         canvas.drawPath(path, paint)
         paint.shader = null
-        paint.color = withAlpha(0xFFB2956A.toInt(), (0.38f * dim * 255).toInt())
-        paint.strokeWidth = m * 0.006f
-        canvas.drawLine(lampX - m * 0.15f, h * 0.37f, lampX + m * 0.15f, h * 0.37f, paint)
+        paint.color = withAlpha(0xFFB2956A.toInt(), (0.45f * dim * 255).toInt())
+        paint.strokeWidth = m * 0.007f
+        canvas.drawLine(lampX - m * 0.19f, h * 0.35f, lampX + m * 0.19f, h * 0.35f, paint)
 
         paint.shader = RadialGradient(
-            lampX, h * 0.38f, m * 0.20f,
-            intArrayOf(withAlpha(accent, (0.58f * flicker * dim * 255).toInt()), withAlpha(accent, (0.12f * dim * 255).toInt()), Color.TRANSPARENT),
+            lampX, h * 0.36f, m * 0.30f,
+            intArrayOf(
+                withAlpha(accent, (0.82f * flicker * dim * 255).toInt()),
+                withAlpha(accent, (0.28f * flicker * dim * 255).toInt()),
+                Color.TRANSPARENT,
+            ),
             floatArrayOf(0f, 0.55f, 1f),
             Shader.TileMode.CLAMP,
         )
-        canvas.drawOval(lampX - m * 0.20f, h * 0.32f, lampX + m * 0.20f, h * 0.48f, paint)
+        canvas.drawOval(lampX - m * 0.30f, h * 0.28f, lampX + m * 0.30f, h * 0.50f, paint)
         paint.shader = null
 
         for (i in 0 until 7) {
             val x = w * (0.18f + (i * 0.137f) % 0.72f)
-            val y = h * (0.72f + ((i * 0.061f + t * 0.035f) % 0.20f))
-            val proximity = (1f - kotlin.math.abs(x - lampX) / (m * 0.42f)).coerceIn(0f, 1f)
-            paint.color = withAlpha(accent, ((0.08f + 0.20f * proximity) * dim * 255).toInt())
-            canvas.drawCircle(x + sin(t * 2f * PI.toFloat() + i) * m * 0.008f, y, m * 0.0028f, paint)
+            val y = h * (0.72f + ((i * 0.061f + t * 0.14f) % 0.20f))
+            val proximity = (1f - kotlin.math.abs(x - lampX) / (m * 0.50f)).coerceIn(0f, 1f)
+            paint.color = withAlpha(accent, ((0.12f + 0.30f * proximity) * dim * 255).toInt())
+            canvas.drawCircle(x + sin(t * 2f * PI.toFloat() + i) * m * 0.012f, y, m * 0.0038f, paint)
         }
     }
 

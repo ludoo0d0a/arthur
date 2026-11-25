@@ -59,7 +59,7 @@ internal fun StormStrobeSheetEngine(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((14000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween((10000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "stormstrobesheet_t",
@@ -88,9 +88,9 @@ internal fun StormStrobeSheetEngine(
             drawRect(
                 brush = Brush.verticalGradient(
                     0f to Color.Transparent,
-                    0.30f to TonalPalette.withAlpha(Color(0xFFE8F0FF), 0.035f * flashAmt * brightness),
-                    0.50f to TonalPalette.withAlpha(Color(0xFFE8F0FF), 0.22f * flashAmt * brightness),
-                    0.70f to TonalPalette.withAlpha(Color(0xFFD3E2FA), 0.07f * flashAmt * brightness),
+                    0.30f to TonalPalette.withAlpha(Color(0xFFE8F0FF), 0.12f * flashAmt * brightness),
+                    0.50f to TonalPalette.withAlpha(Color(0xFFE8F0FF), 0.48f * flashAmt * brightness),
+                    0.70f to TonalPalette.withAlpha(Color(0xFFD3E2FA), 0.18f * flashAmt * brightness),
                     1f to Color.Transparent,
                     startY = bandY - h * 0.25f,
                     endY = bandY + h * 0.25f,
@@ -99,11 +99,12 @@ internal fun StormStrobeSheetEngine(
         }
 
         clouds.forEachIndexed { index, bank ->
-            val drift = (loopedFbm(time, radius = 1.15f, octaves = 2, seedOffset = index * 37 + 19) - 0.5f) * w * 0.055f
-            val bob = sin(time * 2f * PI.toFloat() + bank.phase) * h * 0.008f
-            val cx = ((bank.x * w + drift + w) % (w + bank.width * w)) - bank.width * w * 0.25f
+            val drift = (loopedFbm(time, radius = 1.15f, octaves = 2, seedOffset = index * 37 + 19) - 0.5f) * w * 0.18f + time * w * 0.28f
+            val bob = sin(time * 2f * PI.toFloat() + bank.phase) * h * 0.018f
+            val span = w + bank.width * w
+            val cx = ((bank.x * w + drift) % span + span) % span - bank.width * w * 0.25f
             val cy = bank.y * h + bob
-            val cloudAlpha = (0.42f + flashAmt * 0.16f) * dim
+            val cloudAlpha = (0.55f + flashAmt * 0.22f) * dim
             val cloudColor = TonalPalette.brightness(Color(0xFF1A2230), brightness * (0.92f + 0.08f * cloud))
             // Broad, soft cloud body with a faint illuminated upper edge during flashes.
             drawOval(

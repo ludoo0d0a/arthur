@@ -70,7 +70,7 @@ internal object StormStrobeSheetStill {
             val y0 = seededRange(i * 31 + 9, 0.26f, 0.70f)
             val width = seededRange(i * 43 + 13, 0.40f, 0.70f)
             val height = seededRange(i * 53 + 17, 0.12f, 0.22f)
-            val drift = (loopedFbm(t01, radius = 1.15f, octaves = 2, seedOffset = i * 37 + 19) - 0.5f) * w * 0.055f
+            val drift = (loopedFbm(t01, radius = 1.15f, octaves = 2, seedOffset = i * 37 + 19) - 0.5f) * w * 0.18f
             val bob = sin(t01 * 2f * PI.toFloat() + i * 1.7f) * h * 0.008f
             val cx = x0 * w + drift
             val cy = y0 * h + bob

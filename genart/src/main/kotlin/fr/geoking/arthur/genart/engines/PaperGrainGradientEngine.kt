@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import fr.geoking.arthur.genart.AnimationPalette
 import fr.geoking.arthur.genart.GenartQuality
+import fr.geoking.arthur.genart.stills.PAPER_GRAIN_GRADIENT_LOOP_SEC
 import fr.geoking.arthur.genart.stills.PaperGrainGradientStill
 
 /** Paper Grain Gradient — live Compose wrapper over the Android Canvas still draw. */
@@ -37,12 +38,14 @@ internal fun PaperGrainGradientEngine(
             },
         )
     }
+    val effectiveSpeed = speed.coerceAtLeast(0.2f)
+    val loopMs = (PAPER_GRAIN_GRADIENT_LOOP_SEC * 1000f / effectiveSpeed).toInt()
     val transition = rememberInfiniteTransition(label = "papergraingradient")
     val elapsedSec by transition.animateFloat(
         initialValue = 0f,
-        targetValue = 3600f,
+        targetValue = PAPER_GRAIN_GRADIENT_LOOP_SEC,
         animationSpec = infiniteRepeatable(
-            animation = tween((3600000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween(loopMs, easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "papergraingradient_t",
@@ -51,12 +54,11 @@ internal fun PaperGrainGradientEngine(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((2000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween(loopMs / 2, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse,
         ),
         label = "papergraingradient_pulse",
     )
-    // brightness reserved for Ambient dimming via isActive; quality reserved for future grid scaling
     @Suppress("UNUSED_PARAMETER")
     val unused = quality to brightness
 

@@ -37,7 +37,7 @@ internal fun StormStrobeFlashEngine(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((14000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween((10000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "stormstrobeflash_t",
@@ -67,8 +67,8 @@ internal fun StormStrobeFlashEngine(
         val glowRadius = minDim * (0.74f + 0.04f * flashAmt)
         drawCircle(
             brush = Brush.radialGradient(
-                0f to TonalPalette.withAlpha(lightningTint, 0.3f * flashAmt * brightness),
-                0.4f to TonalPalette.withAlpha(Color(0xFFB8C8E0), 0.14f * flashAmt * brightness),
+                0f to TonalPalette.withAlpha(lightningTint, 0.55f * flashAmt * brightness),
+                0.4f to TonalPalette.withAlpha(Color(0xFFB8C8E0), 0.28f * flashAmt * brightness),
                 1f to Color.Transparent,
                 center = glowCenter,
                 radius = glowRadius,
@@ -77,13 +77,14 @@ internal fun StormStrobeFlashEngine(
             center = glowCenter,
         )
 
-        // Soft low cloud bank, drifting only slightly so the scene stays calm between flashes.
+        // Soft low cloud bank with clear horizontal drift + brief sheet flash behind it.
         val cloudColor = TonalPalette.brightness(Color(0xFF111925), brightness * dim)
         repeat(cloudCount) { index ->
-            val x = (index + 0.35f) / cloudCount + (cloudMotion - 0.5f) * 0.05f
+            val xRaw = (index + 0.35f) / cloudCount + (cloudMotion - 0.5f) * 0.22f + time * 0.35f
+            val x = ((xRaw % 1f) + 1f) % 1f
             val y = 0.48f + (index % 3) * 0.07f
-            val rx = minDim * (0.22f + (index % 3) * 0.045f)
-            val ry = minDim * (0.12f + (index % 2) * 0.035f)
+            val rx = minDim * (0.26f + (index % 3) * 0.05f)
+            val ry = minDim * (0.14f + (index % 2) * 0.04f)
             val center = Offset(x * w, y * h)
             drawOval(
                 brush = Brush.radialGradient(
@@ -103,7 +104,7 @@ internal fun StormStrobeFlashEngine(
             drawRect(
                 brush = Brush.verticalGradient(
                     0f to Color.Transparent,
-                    0.55f to TonalPalette.withAlpha(Color(0xFFDCE8FA), 0.12f * flashAmt * brightness),
+                    0.55f to TonalPalette.withAlpha(Color(0xFFDCE8FA), 0.32f * flashAmt * brightness),
                     1f to Color.Transparent,
                 ),
             )

@@ -51,8 +51,8 @@ internal object StormStrobeFlashStill {
         paint.shader = RadialGradient(
             glowX, glowY, glowRadius,
             intArrayOf(
-                Color.argb((0.30f * flashAmt * 255).toInt().coerceIn(0, 255), 232, 240, 255),
-                Color.argb((0.14f * flashAmt * 255).toInt().coerceIn(0, 255), 184, 200, 224),
+                Color.argb((0.55f * flashAmt * 255).toInt().coerceIn(0, 255), 232, 240, 255),
+                Color.argb((0.28f * flashAmt * 255).toInt().coerceIn(0, 255), 184, 200, 224),
                 Color.TRANSPARENT,
             ),
             floatArrayOf(0f, 0.4f, 1f),
@@ -63,10 +63,11 @@ internal object StormStrobeFlashStill {
 
         // Keep the foreground clouds soft and dark so the flash remains a brief background event.
         repeat(6) { index ->
-            val x = (index + 0.35f) / 6f + (cloudMotion - 0.5f) * 0.05f
+            val xRaw = (index + 0.35f) / 6f + (cloudMotion - 0.5f) * 0.22f + t01 * 0.35f
+            val x = ((xRaw % 1f) + 1f) % 1f
             val y = 0.48f + (index % 3) * 0.07f
-            val rx = minDim * (0.22f + (index % 3) * 0.045f)
-            val ry = minDim * (0.12f + (index % 2) * 0.035f)
+            val rx = minDim * (0.26f + (index % 3) * 0.05f)
+            val ry = minDim * (0.14f + (index % 2) * 0.04f)
             val centerX = x * w
             val centerY = y * h
             oval.set(centerX - rx, centerY - ry, centerX + rx, centerY + ry)
@@ -85,7 +86,7 @@ internal object StormStrobeFlashStill {
                 0f, 0f, 0f, h,
                 intArrayOf(
                     Color.TRANSPARENT,
-                    Color.argb((0.12f * flashAmt * 255).toInt().coerceIn(0, 255), 220, 232, 250),
+                    Color.argb((0.32f * flashAmt * 255).toInt().coerceIn(0, 255), 220, 232, 250),
                     Color.TRANSPARENT,
                 ),
                 floatArrayOf(0f, 0.55f, 1f),

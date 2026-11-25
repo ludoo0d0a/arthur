@@ -60,7 +60,7 @@ internal fun BookshelfGlowEngine(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((72000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween((11000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "bookshelfglow_t",
@@ -73,9 +73,9 @@ internal fun BookshelfGlowEngine(
         val minDim = minOf(w, h)
         val time = phase01(t)
         val glowNoise = loopedFbm(time, radius = 1.3f, octaves = 2, seedOffset = 11)
-        val glowPulse = 0.88f + 0.12f * glowNoise
-        val wood = TonalPalette.brightness(Color(0xFF1C1410), brightness * dim)
-        val backWood = TonalPalette.brightness(Color(0xFF3A2A1C), brightness * dim)
+        val glowPulse = 0.80f + 0.20f * glowNoise
+        val wood = TonalPalette.brightness(Color(0xFF241A14), brightness * dim)
+        val backWood = TonalPalette.brightness(Color(0xFF3F2E1F), brightness * dim)
         val gold = TonalPalette.brightness(
             TonalPalette.mix(Color(0xFFE8C080), TonalPalette.pick(paletteColors, 0), 0.18f),
             brightness * dim,
@@ -84,8 +84,8 @@ internal fun BookshelfGlowEngine(
         drawRect(brush = Brush.verticalGradient(0f to wood, 1f to backWood))
         drawCircle(
             brush = Brush.radialGradient(
-                0f to TonalPalette.withAlpha(gold, 0.20f * glowPulse * dim),
-                0.58f to TonalPalette.withAlpha(Color(0xFF9B6337), 0.09f * dim),
+                0f to TonalPalette.withAlpha(gold, 0.30f * glowPulse * dim),
+                0.55f to TonalPalette.withAlpha(Color(0xFF9B6337), 0.16f * glowPulse * dim),
                 1f to Color.Transparent,
                 center = Offset(w * 0.5f, h * 0.48f),
                 radius = minDim * 0.76f,
@@ -109,7 +109,7 @@ internal fun BookshelfGlowEngine(
 
         // Side uprights and a dark back panel make the shelving read as a single unit.
         drawRoundRect(
-            color = TonalPalette.withAlpha(frameColor, 0.78f * dim),
+            color = TonalPalette.withAlpha(frameColor, 0.88f * dim),
             topLeft = Offset(startX - minDim * 0.025f, top - minDim * 0.025f),
             size = Size(shelfWidth + minDim * 0.05f, rowHeight * 3f + gap * 2f + minDim * 0.085f),
             cornerRadius = CornerRadius(minDim * 0.018f),
@@ -135,7 +135,7 @@ internal fun BookshelfGlowEngine(
                         brightness * dim,
                     )
                     drawRoundRect(
-                        color = TonalPalette.withAlpha(baseColor, 0.92f * dim),
+                        color = TonalPalette.withAlpha(baseColor, 0.97f * dim),
                         topLeft = Offset(cursorX, bookTop),
                         size = Size(bookWidth, bookHeight),
                         cornerRadius = CornerRadius(minDim * 0.004f),
@@ -161,7 +161,7 @@ internal fun BookshelfGlowEngine(
             // Amber light catches the front edge of each shelf, fading softly below.
             drawRect(
                 brush = Brush.verticalGradient(
-                    0f to TonalPalette.withAlpha(gold, 0.14f * glowPulse * dim),
+                    0f to TonalPalette.withAlpha(gold, 0.22f * glowPulse * dim),
                     0.18f to TonalPalette.withAlpha(shelfColor, 0.96f * dim),
                     1f to TonalPalette.withAlpha(frameColor, 0.98f * dim),
                     startY = boardY - minDim * 0.018f,
@@ -171,7 +171,7 @@ internal fun BookshelfGlowEngine(
                 size = Size(shelfWidth + minDim * 0.02f, minDim * 0.065f),
             )
             drawLine(
-                color = TonalPalette.withAlpha(gold, 0.26f * glowPulse * dim),
+                color = TonalPalette.withAlpha(gold, 0.38f * glowPulse * dim),
                 start = Offset(startX, boardY - minDim * 0.016f),
                 end = Offset(endX, boardY - minDim * 0.016f),
                 strokeWidth = minDim * 0.003f,

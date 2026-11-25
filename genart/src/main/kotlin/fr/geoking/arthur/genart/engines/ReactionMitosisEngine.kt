@@ -52,7 +52,7 @@ internal fun ReactionMitosisEngine(
             MitosisCell(
                 x = seededRange(i * 19 + 5, 0.12f, 0.88f),
                 y = seededRange(i * 31 + 9, 0.12f, 0.88f),
-                radius = seededRange(i * 43 + 13, 0.045f, 0.085f),
+                radius = seededRange(i * 43 + 13, 0.07f, 0.13f),
                 angle = seededRange(i * 53 + 17, 0f, 2f * PI.toFloat()),
                 phase = seededRange(i * 67 + 23, 0f, 2f * PI.toFloat()),
                 colorIndex = i,
@@ -64,7 +64,7 @@ internal fun ReactionMitosisEngine(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((80000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween((11000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "reactionmitosis_t",
@@ -79,7 +79,7 @@ internal fun ReactionMitosisEngine(
         val brush = remember(shader) { ShaderBrush(shader) }
         Canvas(modifier = modifier) {
             shader.setFloatUniform("iResolution", size.width, size.height)
-            shader.setFloatUniform("iTime", phase * 2f * PI.toFloat())
+            shader.setFloatUniform("iTime", phase * 2f * PI.toFloat() * 3.2f)
             shader.setFloatUniform("iEnergy", dim)
             shader.setFloatUniform("iColor0", c0.red, c0.green, c0.blue)
             shader.setFloatUniform("iColor1", c1.red, c1.green, c1.blue)
@@ -94,10 +94,10 @@ internal fun ReactionMitosisEngine(
             cells.forEach { cell ->
                 val localPhase = phase * 2f * PI.toFloat() + cell.phase
                 val motion = loopedFbm(phase, radius = 1.15f, octaves = 2, seedOffset = cell.colorIndex * 29)
-                val cx = cell.x * w + sin(localPhase) * minDim * 0.009f
-                val cy = cell.y * h + cos(localPhase * 0.7f) * minDim * 0.008f
+                val cx = cell.x * w + sin(localPhase) * minDim * 0.028f
+                val cy = cell.y * h + cos(localPhase * 0.7f) * minDim * 0.024f
                 val axis = cell.angle + 0.12f * sin(localPhase)
-                val separation = cell.radius * minDim * (0.12f + 0.56f * (0.5f + 0.5f * sin(localPhase)))
+                val separation = cell.radius * minDim * (0.22f + 0.78f * (0.5f + 0.5f * sin(localPhase)))
                 val radius = cell.radius * minDim * (0.82f + 0.08f * motion)
                 val dx = cos(axis) * separation
                 val dy = sin(axis) * separation

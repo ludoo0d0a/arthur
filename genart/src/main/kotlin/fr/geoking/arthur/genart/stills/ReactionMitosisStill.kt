@@ -36,7 +36,7 @@ internal object ReactionMitosisStill {
         for (i in 0 until 8) {
             val n = loopedFbm(t, radius = 1.15f, octaves = 2, seedOffset = i * 29)
             val angle0 = (i * 2.3999632f) + 0.35f
-            val orbit = minDim * (0.08f + (i % 3) * 0.035f)
+            val orbit = minDim * (0.08f + (i % 3) * 0.14f)
             val cx = w * (0.5f + cos(angle0) * orbit / minDim) + sin(t * 2f * PI.toFloat() + i) * minDim * 0.006f
             val cy = h * (0.5f + sin(angle0) * orbit / minDim) + cos(t * 2f * PI.toFloat() * 0.7f + i) * minDim * 0.005f
             val cellRadius = minDim * (0.075f + 0.012f * n) * (0.94f + 0.06f * pulse)
@@ -67,7 +67,7 @@ internal object ReactionMitosisStill {
 
             // Soft outer membrane ring keeps each cell legible over neighboring glow.
             paint.style = Paint.Style.STROKE
-            paint.strokeWidth = cellRadius * 0.045f
+            paint.strokeWidth = cellRadius * 0.16f
             paint.color = withAlpha(accent, (26f + 14f * n).toInt())
             canvas.drawCircle(cx - dx, cy - dy, cellRadius * 0.94f, paint)
             canvas.drawCircle(cx + dx, cy + dy, cellRadius * 0.94f, paint)

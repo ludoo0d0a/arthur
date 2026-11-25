@@ -47,23 +47,23 @@ internal object InkBloomStill {
         val cx = w * (0.50f + 0.04f * (drift - 0.5f))
         val cy = h * (0.51f + 0.06f * (bloom - 0.5f))
         val ink = mixArgb(0xFF1A1A22.toInt(), palette.colorAt(0), 0.12f)
-        val haloRadius = unit * (0.45f + 0.025f * bloom)
+        val haloRadius = unit * (0.56f + 0.04f * bloom)
         paint.shader = RadialGradient(
             cx, cy, haloRadius,
-            intArrayOf(withAlpha(0xFF716C70.toInt(), (0.10f * dim * 255).toInt()), withAlpha(0xFF8B8580.toInt(), (0.07f * dim * 255).toInt()), Color.TRANSPARENT),
+            intArrayOf(withAlpha(0xFF716C70.toInt(), (0.16f * dim * 255).toInt()), withAlpha(0xFF8B8580.toInt(), (0.11f * dim * 255).toInt()), Color.TRANSPARENT),
             floatArrayOf(0f, 0.55f, 1f),
             Shader.TileMode.CLAMP,
         )
         canvas.drawCircle(cx, cy, haloRadius, paint)
         paint.shader = null
 
-        val coreRadius = unit * (0.14f + 0.025f * bloom)
+        val coreRadius = unit * (0.24f + 0.04f * bloom)
         paint.shader = RadialGradient(
             cx, cy, coreRadius,
             intArrayOf(
-                withAlpha(ink, (0.52f * dim * 255).toInt()),
-                withAlpha(ink, (0.32f * dim * 255).toInt()),
-                withAlpha(0xFF3D3940.toInt(), (0.12f * dim * 255).toInt()),
+                withAlpha(ink, (0.68f * dim * 255).toInt()),
+                withAlpha(ink, (0.45f * dim * 255).toInt()),
+                withAlpha(0xFF3D3940.toInt(), (0.20f * dim * 255).toInt()),
                 Color.TRANSPARENT,
             ),
             floatArrayOf(0f, 0.42f, 0.78f, 1f),
@@ -80,7 +80,7 @@ internal object InkBloomStill {
             val sway = sin(t * 2f * PI.toFloat() + i * 0.83f)
             val startX = 0.32f + seededUnit(i * 19 + 5) * 0.36f
             val startY = 0.38f + seededUnit(i * 29 + 9) * 0.34f
-            val reach = unit * (0.12f + seededUnit(i * 37 + 13) * 0.22f) * (0.86f + 0.18f * n)
+            val reach = unit * (0.22f + seededUnit(i * 37 + 13) * 0.24f) * (0.86f + 0.18f * n)
             val bend = -0.16f + seededUnit(i * 43 + 17) * 0.32f
             val sign = if (i % 2 == 0) 1f else -1f
             val x0 = w * (startX + 0.05f * (drift - 0.5f))
@@ -94,11 +94,11 @@ internal object InkBloomStill {
                 tipX - unit * 0.025f * sway, y0 + sign * reach * 0.72f,
                 tipX, tipY,
             )
-            paint.strokeWidth = unit * (0.003f + seededUnit(i * 53 + 21) * 0.006f) * 3.3f
-            paint.color = withAlpha(ink, ((0.10f + 0.11f * n) * dim * 255).toInt())
+            paint.strokeWidth = unit * (0.007f + seededUnit(i * 53 + 21) * 0.008f) * 3.6f
+            paint.color = withAlpha(ink, ((0.18f + 0.14f * n) * dim * 255).toInt())
             canvas.drawPath(path, paint)
-            paint.strokeWidth = unit * (0.003f + seededUnit(i * 53 + 21) * 0.006f)
-            paint.color = withAlpha(ink, ((0.24f + 0.20f * n) * dim * 255).toInt())
+            paint.strokeWidth = unit * (0.007f + seededUnit(i * 53 + 21) * 0.008f)
+            paint.color = withAlpha(ink, ((0.36f + 0.28f * n) * dim * 255).toInt())
             canvas.drawPath(path, paint)
 
             for (side in -1..1 step 2) {
@@ -109,8 +109,8 @@ internal object InkBloomStill {
                     tipX + unit * side * 0.045f, tipY - sign * reach * 0.10f,
                     tipX + unit * side * (0.055f + 0.015f * sway), tipY - sign * reach * 0.18f,
                 )
-                paint.strokeWidth = unit * (0.003f + seededUnit(i * 53 + 21) * 0.006f) * 0.42f
-                paint.color = withAlpha(ink, (0.20f * dim * 255).toInt())
+                paint.strokeWidth = unit * (0.007f + seededUnit(i * 53 + 21) * 0.008f) * 0.52f
+                paint.color = withAlpha(ink, (0.32f * dim * 255).toInt())
                 canvas.drawPath(path, paint)
             }
         }
@@ -119,10 +119,10 @@ internal object InkBloomStill {
         for (i in 0 until 7) {
             val x = w * (0.22f + seededUnit(i * 83 + 7) * 0.56f) + unit * 0.018f * sin(t * 2f * PI.toFloat() + i)
             val y = h * (0.22f + seededUnit(i * 97 + 31) * 0.56f) + unit * 0.015f * sin(t * 2f * PI.toFloat() + i * 1.7f)
-            val radius = unit * (0.003f + 0.008f * seededUnit(i * 109 + 41))
-            paint.color = withAlpha(ink, (0.10f * dim * 255).toInt())
+            val radius = unit * (0.006f + 0.012f * seededUnit(i * 109 + 41))
+            paint.color = withAlpha(ink, (0.16f * dim * 255).toInt())
             canvas.drawCircle(x, y, radius * 2.8f, paint)
-            paint.color = withAlpha(ink, (0.32f * dim * 255).toInt())
+            paint.color = withAlpha(ink, (0.45f * dim * 255).toInt())
             canvas.drawCircle(x, y, radius, paint)
         }
         paint.shader = null

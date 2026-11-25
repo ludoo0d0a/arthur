@@ -52,9 +52,9 @@ internal fun InkBloomEngine(
             InkBranch(
                 startX = 0.32f + seededUnit(i * 19 + 5) * 0.36f,
                 startY = 0.38f + seededUnit(i * 29 + 9) * 0.34f,
-                reach = seededRange(i * 37 + 13, 0.12f, 0.34f),
+                reach = seededRange(i * 37 + 13, 0.22f, 0.46f),
                 bend = seededRange(i * 43 + 17, -0.16f, 0.16f),
-                width = seededRange(i * 53 + 21, 0.003f, 0.009f),
+                width = seededRange(i * 53 + 21, 0.007f, 0.015f),
                 phase = seededRange(i * 61 + 25, 0f, 2f * PI.toFloat()),
                 color = TonalPalette.pick(paletteColors, i),
             )
@@ -65,7 +65,7 @@ internal fun InkBloomEngine(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((72000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween((11000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "inkbloom_t",
@@ -88,11 +88,11 @@ internal fun InkBloomEngine(
         // Pale, irregular ink-water halos soften the edges of the dark forms.
         val cx = w * (0.50f + 0.04f * (drift - 0.5f))
         val cy = h * (0.51f + 0.06f * (bloom - 0.5f))
-        val haloRadius = unit * (0.45f + 0.025f * bloom)
+        val haloRadius = unit * (0.56f + 0.04f * bloom)
         drawCircle(
             brush = Brush.radialGradient(
-                0f to TonalPalette.withAlpha(Color(0xFF716C70), 0.10f * dim),
-                0.55f to TonalPalette.withAlpha(Color(0xFF8B8580), 0.07f * dim),
+                0f to TonalPalette.withAlpha(Color(0xFF716C70), 0.16f * dim),
+                0.55f to TonalPalette.withAlpha(Color(0xFF8B8580), 0.11f * dim),
                 1f to Color.Transparent,
                 center = Offset(cx, cy),
                 radius = haloRadius,
@@ -102,12 +102,12 @@ internal fun InkBloomEngine(
         )
 
         // A soft central bloom, surrounded by diffuse pools of diluted pigment.
-        val coreRadius = unit * (0.14f + 0.025f * bloom)
+        val coreRadius = unit * (0.24f + 0.04f * bloom)
         drawCircle(
             brush = Brush.radialGradient(
-                0f to TonalPalette.withAlpha(ink, 0.52f * dim),
-                0.42f to TonalPalette.withAlpha(ink, 0.32f * dim),
-                0.78f to TonalPalette.withAlpha(Color(0xFF3D3940), 0.12f * dim),
+                0f to TonalPalette.withAlpha(ink, 0.68f * dim),
+                0.42f to TonalPalette.withAlpha(ink, 0.45f * dim),
+                0.78f to TonalPalette.withAlpha(Color(0xFF3D3940), 0.20f * dim),
                 1f to Color.Transparent,
                 center = Offset(cx, cy),
                 radius = coreRadius,
@@ -136,8 +136,8 @@ internal fun InkBloomEngine(
                 )
             }
             val tint = TonalPalette.mix(ink, branch.color, 0.12f)
-            drawPath(path, color = TonalPalette.withAlpha(tint, (0.10f + 0.11f * n) * dim), style = Stroke(width = unit * branch.width * 3.3f, cap = StrokeCap.Round))
-            drawPath(path, color = TonalPalette.withAlpha(tint, (0.24f + 0.20f * n) * dim), style = Stroke(width = unit * branch.width, cap = StrokeCap.Round))
+            drawPath(path, color = TonalPalette.withAlpha(tint, (0.18f + 0.14f * n) * dim), style = Stroke(width = unit * branch.width * 3.6f, cap = StrokeCap.Round))
+            drawPath(path, color = TonalPalette.withAlpha(tint, (0.36f + 0.28f * n) * dim), style = Stroke(width = unit * branch.width, cap = StrokeCap.Round))
 
             // Tiny capillary offshoots make the bloom feel organic rather than geometric.
             for (side in -1..1 step 2) {
@@ -149,7 +149,7 @@ internal fun InkBloomEngine(
                         tipX + unit * side * (0.055f + 0.015f * sway), tipY - sign * reach * 0.18f,
                     )
                 }
-                drawPath(fork, color = TonalPalette.withAlpha(tint, 0.20f * dim), style = Stroke(width = unit * branch.width * 0.42f, cap = StrokeCap.Round))
+                drawPath(fork, color = TonalPalette.withAlpha(tint, 0.32f * dim), style = Stroke(width = unit * branch.width * 0.52f, cap = StrokeCap.Round))
             }
         }
 
@@ -157,9 +157,9 @@ internal fun InkBloomEngine(
         for (i in 0 until count) {
             val x = w * (0.22f + seededUnit(i * 83 + 7) * 0.56f) + unit * 0.018f * sin(time * 2f * PI.toFloat() + i)
             val y = h * (0.22f + seededUnit(i * 97 + 31) * 0.56f) + unit * 0.015f * sin(time * 2f * PI.toFloat() + i * 1.7f)
-            val radius = unit * (0.003f + 0.008f * seededUnit(i * 109 + 41))
-            drawCircle(TonalPalette.withAlpha(ink, 0.10f * dim), radius * 2.8f, Offset(x, y))
-            drawCircle(TonalPalette.withAlpha(ink, 0.32f * dim), radius, Offset(x, y))
+            val radius = unit * (0.006f + 0.012f * seededUnit(i * 109 + 41))
+            drawCircle(TonalPalette.withAlpha(ink, 0.16f * dim), radius * 2.8f, Offset(x, y))
+            drawCircle(TonalPalette.withAlpha(ink, 0.45f * dim), radius, Offset(x, y))
         }
     }
 }

@@ -28,6 +28,8 @@ import fr.geoking.arthur.genart.genartSoftBlur
 import kotlin.math.PI
 import kotlin.math.sin
 
+private const val TREE_SWAY_LOOP_SECONDS = 10f
+
 /** A single tree whose canopy sways as one rigid body, pivoting from the trunk's top. */
 @Composable
 internal fun TreeEngine(
@@ -59,7 +61,12 @@ internal fun TreeEngine(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((7000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween(
+                ((TREE_SWAY_LOOP_SECONDS * 1000f) / speed.coerceAtLeast(0.2f))
+                    .toInt()
+                    .coerceIn(8000, 14000),
+                easing = LinearEasing,
+            ),
             repeatMode = RepeatMode.Restart,
         ),
         label = "tree_t",
@@ -72,8 +79,8 @@ internal fun TreeEngine(
         Canvas(modifier = Modifier.fillMaxSize()) {
             val w = size.width
             val h = size.height
-            val skyTop = TonalPalette.brightness(TonalPalette.pick(paletteColors, 0), brightness * 0.45f)
-            val skyMid = TonalPalette.brightness(TonalPalette.pick(paletteColors, 1), brightness * 0.28f)
+            val skyTop = TonalPalette.brightness(TonalPalette.pick(paletteColors, 0), brightness * 0.52f)
+            val skyMid = TonalPalette.brightness(TonalPalette.pick(paletteColors, 1), brightness * 0.34f)
             val skyBot = Color(0xFF0A1018)
             drawRect(
                 brush = Brush.verticalGradient(colors = listOf(skyTop, skyMid, skyBot)),
@@ -81,9 +88,9 @@ internal fun TreeEngine(
 
             val trunkBaseX = w * 0.5f
             val trunkBaseY = h
-            val trunkTopY = h * 0.5f
-            val trunkBottomHalfWidth = w * 0.035f
-            val trunkTopHalfWidth = w * 0.012f
+            val trunkTopY = h * 0.44f
+            val trunkBottomHalfWidth = w * 0.058f
+            val trunkTopHalfWidth = w * 0.022f
             val trunkColor = TonalPalette.brightness(trunkBrown, brightness)
             val trunkPath = Path().apply {
                 moveTo(trunkBaseX - trunkBottomHalfWidth, trunkBaseY)
@@ -95,16 +102,16 @@ internal fun TreeEngine(
             drawPath(path = trunkPath, color = trunkColor)
         }
 
-        Canvas(modifier = Modifier.fillMaxSize().genartSoftBlur(quality, 14.dp)) {
+        Canvas(modifier = Modifier.fillMaxSize().genartSoftBlur(quality, 10.dp)) {
             val w = size.width
             val h = size.height
             val minDim = w.coerceAtMost(h)
             val pivotX = w * 0.5f
-            val pivotY = h * 0.5f
+            val pivotY = h * 0.44f
             val time = phase01(t) * 2f * PI.toFloat()
-            val swayDeg = sin(time) * 7f * swayScale
-            val canopyCenterY = pivotY - minDim * 0.16f
-            val canopyRadius = minDim * 0.34f
+            val swayDeg = sin(time) * 10.5f * swayScale
+            val canopyCenterY = pivotY - minDim * 0.24f
+            val canopyRadius = minDim * 0.48f
 
             rotate(degrees = swayDeg, pivot = Offset(pivotX, pivotY)) {
                 blobs.forEach { blob ->
@@ -113,18 +120,18 @@ internal fun TreeEngine(
                     val radius = blob.radiusFrac * canopyRadius
                     val base = TonalPalette.pick(paletteColors, blob.colorIndex)
                     val tint = TonalPalette.mix(base, canopyGreen, 0.6f)
-                    val haloColor = TonalPalette.brightness(tint, brightness * 0.8f)
+                    val haloColor = TonalPalette.brightness(tint, brightness * 0.92f)
                     val coreColor = TonalPalette.brightness(
-                        TonalPalette.mix(tint, canopyHighlight, 0.5f),
-                        brightness,
+                        TonalPalette.mix(tint, canopyHighlight, 0.58f),
+                        brightness * 1.05f,
                     )
                     drawCircle(
-                        color = TonalPalette.withAlpha(haloColor, 0.28f * alphaScale),
+                        color = TonalPalette.withAlpha(haloColor, 0.42f * alphaScale),
                         radius = radius * 1.35f,
                         center = Offset(cx, cy),
                     )
                     drawCircle(
-                        color = TonalPalette.withAlpha(coreColor, 0.55f * alphaScale),
+                        color = TonalPalette.withAlpha(coreColor, 0.72f * alphaScale),
                         radius = radius,
                         center = Offset(cx, cy),
                     )

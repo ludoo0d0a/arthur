@@ -40,15 +40,15 @@ internal object TreeStill {
             intArrayOf(
                 Color.argb(
                     255,
-                    (Color.red(skyTop) * 0.45f).toInt().coerceIn(0, 255),
-                    (Color.green(skyTop) * 0.45f).toInt().coerceIn(0, 255),
-                    (Color.blue(skyTop) * 0.45f).toInt().coerceIn(0, 255),
+                    (Color.red(skyTop) * 0.52f).toInt().coerceIn(0, 255),
+                    (Color.green(skyTop) * 0.52f).toInt().coerceIn(0, 255),
+                    (Color.blue(skyTop) * 0.52f).toInt().coerceIn(0, 255),
                 ),
                 Color.argb(
                     255,
-                    (Color.red(skyMid) * 0.28f).toInt().coerceIn(0, 255),
-                    (Color.green(skyMid) * 0.28f).toInt().coerceIn(0, 255),
-                    (Color.blue(skyMid) * 0.28f).toInt().coerceIn(0, 255),
+                    (Color.red(skyMid) * 0.34f).toInt().coerceIn(0, 255),
+                    (Color.green(skyMid) * 0.34f).toInt().coerceIn(0, 255),
+                    (Color.blue(skyMid) * 0.34f).toInt().coerceIn(0, 255),
                 ),
                 0xFF0A1018.toInt(),
             ),
@@ -62,9 +62,9 @@ internal object TreeStill {
         val pulseMix = 0.85f + pulse * 0.15f
         val trunkBaseX = w * 0.5f
         val trunkBaseY = h
-        val trunkTopY = h * 0.5f
-        val trunkBottomHalfWidth = w * 0.035f
-        val trunkTopHalfWidth = w * 0.012f
+        val trunkTopY = h * 0.44f
+        val trunkBottomHalfWidth = w * 0.058f
+        val trunkTopHalfWidth = w * 0.022f
 
         trunkPath.reset()
         trunkPath.moveTo(trunkBaseX - trunkBottomHalfWidth, trunkBaseY)
@@ -77,11 +77,11 @@ internal object TreeStill {
         canvas.drawPath(trunkPath, paint)
 
         val pivotX = w * 0.5f
-        val pivotY = h * 0.5f
+        val pivotY = h * 0.44f
         val time = phase * 2f * PI.toFloat() + rotationDeg * PI.toFloat() / 180f
-        val swayDeg = sin(time) * 7f
-        val canopyCenterY = pivotY - minDim * 0.16f
-        val canopyRadius = minDim * 0.34f * pulseMix
+        val swayDeg = sin(time) * 10.5f
+        val canopyCenterY = pivotY - minDim * 0.24f
+        val canopyRadius = minDim * 0.48f * pulseMix
 
         canvas.save()
         canvas.rotate(swayDeg, pivotX, pivotY)
@@ -103,7 +103,7 @@ internal object TreeStill {
             )
 
             paint.color = Color.argb(
-                (0.28f * 255).toInt(),
+                (0.42f * 255).toInt(),
                 Color.red(greenTint),
                 Color.green(greenTint),
                 Color.blue(greenTint),
@@ -111,12 +111,12 @@ internal object TreeStill {
             canvas.drawCircle(cx, cy, radius * 1.35f, paint)
 
             val coreColor = Color.rgb(
-                (Color.red(greenTint) * 0.5f + 0x9C * 0.5f).toInt().coerceIn(0, 255),
-                (Color.green(greenTint) * 0.5f + 0xCB * 0.5f).toInt().coerceIn(0, 255),
-                (Color.blue(greenTint) * 0.5f + 0x6B * 0.5f).toInt().coerceIn(0, 255),
+                (Color.red(greenTint) * 0.42f + 0x9C * 0.58f).toInt().coerceIn(0, 255),
+                (Color.green(greenTint) * 0.42f + 0xCB * 0.58f).toInt().coerceIn(0, 255),
+                (Color.blue(greenTint) * 0.42f + 0x6B * 0.58f).toInt().coerceIn(0, 255),
             )
             paint.color = Color.argb(
-                (0.55f * 255).toInt(),
+                (0.72f * 255).toInt(),
                 Color.red(coreColor),
                 Color.green(coreColor),
                 Color.blue(coreColor),

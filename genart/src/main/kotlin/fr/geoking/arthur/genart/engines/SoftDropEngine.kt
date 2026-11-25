@@ -20,9 +20,13 @@ import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
 import fr.geoking.arthur.genart.phase01
 import fr.geoking.arthur.genart.qualityCount
-import fr.geoking.arthur.genart.seededRange
 import fr.geoking.arthur.genart.seededUnit
-import kotlin.math.floor
+
+private const val SOFT_DROP_LOOP_MS = 11_000
+private const val SOFT_DROP_COLS = 10
+private const val SOFT_DROP_ROWS = 16
+private const val SOFT_DROP_STACK_ROWS = 4
+private const val SOFT_DROP_FALL_ROWS = SOFT_DROP_ROWS - SOFT_DROP_STACK_ROWS
 
 /**
  * Falling rectangular blocks stacking ambient — tetromino-like shapes, generic (no branding).
@@ -36,26 +40,30 @@ internal fun SoftDropEngine(
     speed: Float,
     modifier: Modifier = Modifier,
 ) {
-    val pieceCount = qualityCount(quality, low = 5, medium = 7, high = 10)
-    val stackRows = qualityCount(quality, low = 3, medium = 4, high = 5)
+    val pieceCount = qualityCount(quality, low = 5, medium = 7, high = 9)
+    val stackRows = qualityCount(quality, low = 3, medium = SOFT_DROP_STACK_ROWS, high = SOFT_DROP_STACK_ROWS)
     val pieces = remember(pieceCount) {
         List(pieceCount) { i ->
+            val shape = (seededUnit(i * 17 + 3) * SHAPES.size).toInt().coerceIn(0, SHAPES.lastIndex)
+            val rot = (seededUnit(i * 67 + 19) * 4f).toInt() % 4
+            val rotated = rotateShape(SHAPES[shape], rot)
+            val width = rotated.maxOf { it.first } + 1
+            val maxCol = (SOFT_DROP_COLS - width).coerceAtLeast(1)
             SoftDropSeed(
-                shape = (seededUnit(i * 17 + 3) * SHAPES.size).toInt().coerceIn(0, SHAPES.lastIndex),
-                xCol = seededRange(i * 29 + 7, 0.5f, 8.5f).toInt().coerceIn(0, 8),
+                shape = shape,
+                xCol = (seededUnit(i * 29 + 7) * maxCol).toInt().coerceIn(0, SOFT_DROP_COLS - width),
                 fallPhase = seededUnit(i * 41 + 11),
-                fallSpeed = seededRange(i * 53 + 13, 0.35f, 0.9f),
                 colorIndex = i,
-                rot = (seededUnit(i * 67 + 19) * 4f).toInt() % 4,
+                rot = rot,
             )
         }
     }
     val stack = remember(stackRows) {
-        List(stackRows * 10) { i ->
+        List(stackRows * SOFT_DROP_COLS) { i ->
             SoftStackCell(
-                col = i % 10,
-                row = i / 10,
-                filled = seededUnit(i * 23 + 5) > 0.55f,
+                col = i % SOFT_DROP_COLS,
+                row = i / SOFT_DROP_COLS,
+                filled = seededUnit(i * 23 + 5) > 0.32f,
                 colorIndex = i,
             )
         }
@@ -66,7 +74,7 @@ internal fun SoftDropEngine(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((28000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween((SOFT_DROP_LOOP_MS / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "softdrop_t",
@@ -80,14 +88,14 @@ internal fun SoftDropEngine(
         val h = size.height
         drawRect(color = TonalPalette.brightness(Color(0xFF0A0C12), brightness * dim))
 
-        val cols = 10
-        val rows = 18
-        val cell = minOf(w / (cols + 2f), h / (rows + 2f))
+        val cols = SOFT_DROP_COLS
+        val rows = SOFT_DROP_ROWS
+        val cell = minOf(w / (cols + 0.9f), h / (rows + 1.4f))
         val originX = (w - cols * cell) * 0.5f
-        val originY = (h - rows * cell) * 0.5f
+        val originY = (h - rows * cell) * 0.5f + cell * 0.45f
         val grid = TonalPalette.withAlpha(
             TonalPalette.brightness(TonalPalette.pick(paletteColors, 0), brightness * dim),
-            0.12f * dim,
+            0.14f * dim,
         )
         for (c in 0..cols) {
             drawLine(
@@ -98,19 +106,32 @@ internal fun SoftDropEngine(
             )
         }
         for (r in 0..rows) {
+            val lineAlpha = if (r == 0) 0.28f * dim else 0.14f * dim
             drawLine(
-                color = grid,
+                color = TonalPalette.withAlpha(
+                    TonalPalette.brightness(TonalPalette.pick(paletteColors, 0), brightness * dim),
+                    lineAlpha,
+                ),
                 start = Offset(originX, originY + r * cell),
                 end = Offset(originX + cols * cell, originY + r * cell),
-                strokeWidth = 1f,
+                strokeWidth = if (r == 0) 1.4f else 1f,
             )
         }
 
-        // Stacked base
+        val stackTopRow = rows - stackRows
+        drawLine(
+            color = TonalPalette.withAlpha(
+                TonalPalette.brightness(TonalPalette.pick(paletteColors, 1), brightness * dim),
+                0.22f * dim,
+            ),
+            start = Offset(originX, originY + stackTopRow * cell),
+            end = Offset(originX + cols * cell, originY + stackTopRow * cell),
+            strokeWidth = 1.2f,
+        )
+
         stack.forEach { cellSeed ->
             if (!cellSeed.filled) return@forEach
-            val rowFromBottom = cellSeed.row
-            val gy = rows - 1 - rowFromBottom
+            val gy = rows - stackRows + cellSeed.row
             val tint = TonalPalette.brightness(
                 TonalPalette.mix(
                     SoftDropColors[cellSeed.colorIndex % SoftDropColors.size],
@@ -124,14 +145,15 @@ internal fun SoftDropEngine(
                 originY + gy * cell,
                 cell,
                 tint,
-                0.7f * dim,
+                0.78f * dim,
             )
         }
 
-        // Falling pieces
+        val spawnRow = -2.5f
+        val landRow = (SOFT_DROP_FALL_ROWS - 1).toFloat()
         pieces.forEach { piece ->
-            val fall = phase01(cycle * piece.fallSpeed + piece.fallPhase)
-            val rowF = fall * (rows - 4f)
+            val fallProgress = phase01(cycle + piece.fallPhase)
+            val rowF = spawnRow + fallProgress * (landRow - spawnRow)
             val shape = rotateShape(SHAPES[piece.shape], piece.rot)
             val tint = TonalPalette.brightness(
                 TonalPalette.mix(
@@ -143,9 +165,9 @@ internal fun SoftDropEngine(
             )
             shape.forEach { (dx, dy) ->
                 val cx = piece.xCol + dx
-                val cy = floor(rowF).toInt() + dy
-                if (cx in 0 until cols && cy in 0 until rows) {
-                    drawRoundedCell(originX + cx * cell, originY + cy * cell, cell, tint, 0.9f * dim)
+                val cy = rowF + dy
+                if (cx in 0 until cols && cy >= -2f && cy < rows) {
+                    drawRoundedCell(originX + cx * cell, originY + cy * cell, cell, tint, 0.92f * dim)
                 }
             }
         }
@@ -159,14 +181,14 @@ private fun DrawScope.drawRoundedCell(
     tint: Color,
     alpha: Float,
 ) {
-    val pad = cell * 0.08f
+    val pad = cell * 0.06f
     drawRect(
         color = TonalPalette.withAlpha(tint, alpha),
         topLeft = Offset(x + pad, y + pad),
         size = Size(cell - pad * 2f, cell - pad * 2f),
     )
     drawRect(
-        color = TonalPalette.withAlpha(Color.White, 0.12f * alpha),
+        color = TonalPalette.withAlpha(Color.White, 0.14f * alpha),
         topLeft = Offset(x + pad, y + pad),
         size = Size(cell - pad * 2f, cell - pad * 2f),
         style = Stroke(width = 1.2f),
@@ -208,7 +230,6 @@ private data class SoftDropSeed(
     val shape: Int,
     val xCol: Int,
     val fallPhase: Float,
-    val fallSpeed: Float,
     val colorIndex: Int,
     val rot: Int,
 )

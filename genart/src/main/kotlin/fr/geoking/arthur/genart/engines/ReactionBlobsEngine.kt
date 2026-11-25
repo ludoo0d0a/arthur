@@ -53,9 +53,9 @@ internal fun ReactionBlobsEngine(
             ReactionBlobsBlob(
                 x0 = seededUnit(i * 19 + 5),
                 y0 = seededUnit(i * 31 + 9),
-                radius = seededRange(i * 43 + 13, 0.08f, 0.20f),
+                radius = seededRange(i * 43 + 13, 0.12f, 0.28f),
                 phaseOffset = seededRange(i * 53 + 17, 0f, 2f * PI.toFloat()),
-                orbit = seededRange(i * 61 + 21, 0.02f, 0.07f),
+                orbit = seededRange(i * 61 + 21, 0.05f, 0.14f),
                 colorIndex = i,
             )
         }
@@ -65,7 +65,7 @@ internal fun ReactionBlobsEngine(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((80000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween((11000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "reactionblobs_t",
@@ -78,7 +78,7 @@ internal fun ReactionBlobsEngine(
         val brush = remember(shader) { ShaderBrush(shader) }
         Canvas(modifier = modifier) {
             shader.setFloatUniform("iResolution", size.width, size.height)
-            shader.setFloatUniform("iTime", phase01(t) * 6.2831853f)
+            shader.setFloatUniform("iTime", phase01(t) * 6.2831853f * 3.2f)
             shader.setFloatUniform("iEnergy", dim)
             shader.setFloatUniform("iColor0", c0.red, c0.green, c0.blue)
             shader.setFloatUniform("iColor1", c1.red, c1.green, c1.blue)
@@ -107,8 +107,8 @@ internal fun ReactionBlobsEngine(
                 val col = if (blob.colorIndex % 2 == 0) c0 else c1
                 drawCircle(
                     brush = Brush.radialGradient(
-                        0f to TonalPalette.withAlpha(col, 0.38f * dim),
-                        0.45f to TonalPalette.withAlpha(col, 0.22f * dim),
+                        0f to TonalPalette.withAlpha(col, 0.52f * dim),
+                        0.45f to TonalPalette.withAlpha(col, 0.34f * dim),
                         0.82f to TonalPalette.withAlpha(col, 0.06f * dim),
                         1f to Color.Transparent,
                         center = Offset(x, y),
@@ -157,10 +157,10 @@ half4 main(float2 fragCoord) {
     for (int i = 0; i < 7; i++) {
         float fi = float(i);
         float2 c = float2(
-            sin(t * 0.18 + fi * 1.7) * 0.42 + cos(t * 0.11 + fi) * 0.12,
-            cos(t * 0.15 + fi * 1.3) * 0.38 + sin(t * 0.09 + fi * 0.7) * 0.10
+            sin(t * 0.55 + fi * 1.7) * 0.42 + cos(t * 0.38 + fi) * 0.12,
+            cos(t * 0.48 + fi * 1.3) * 0.38 + sin(t * 0.32 + fi * 0.7) * 0.10
         );
-        float r = 0.18 + 0.07 * hash21(float2(fi + 2.1, fi * 0.37));
+        float r = 0.24 + 0.10 * hash21(float2(fi + 2.1, fi * 0.37));
         float d = length(p - c);
         float contrib = r * r / max(d * d + 0.0008, 0.0008);
         field += contrib;

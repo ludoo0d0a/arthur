@@ -47,17 +47,17 @@ internal object FrostedWindowDawnStill {
         paint.shader = null
 
         paint.shader = RadialGradient(
-            glowX, glowY, shortSide * 0.72f,
-            intArrayOf(withAlpha(warm, (0.62f * dim * 255).toInt()), withAlpha(0xFFFFDDB0.toInt(), (0.30f * dim * 255).toInt()), Color.TRANSPARENT),
-            floatArrayOf(0f, 0.36f, 1f),
+            glowX, glowY, shortSide * 0.80f,
+            intArrayOf(withAlpha(warm, (0.72f * dim * 255).toInt()), withAlpha(0xFFFFDDB0.toInt(), (0.38f * dim * 255).toInt()), Color.TRANSPARENT),
+            floatArrayOf(0f, 0.32f, 1f),
             Shader.TileMode.CLAMP,
         )
-        canvas.drawCircle(glowX, glowY, shortSide * 0.72f, paint)
+        canvas.drawCircle(glowX, glowY, shortSide * 0.80f, paint)
         paint.shader = null
 
         paint.shader = LinearGradient(
             0f, 0f, 0f, h,
-            intArrayOf(Color.TRANSPARENT, withAlpha(0xFFFFE3BE.toInt(), (0.10f * dim * 255).toInt()), withAlpha(0xFF6B8195.toInt(), (0.28f * dim * 255).toInt())),
+            intArrayOf(Color.TRANSPARENT, withAlpha(0xFFFFE3BE.toInt(), (0.12f * dim * 255).toInt()), withAlpha(0xFF6B8195.toInt(), (0.28f * dim * 255).toInt())),
             floatArrayOf(0f, 0.46f, 1f),
             Shader.TileMode.CLAMP,
         )
@@ -67,8 +67,8 @@ internal object FrostedWindowDawnStill {
         // Feathered ice along the edges frames a clear view of the dawn.
         paint.shader = LinearGradient(
             0f, 0f, w, 0f,
-            intArrayOf(withAlpha(Color.WHITE, (0.76f * dim * 255).toInt()), withAlpha(0xFFE8F0F8.toInt(), (0.36f * dim * 255).toInt()), Color.TRANSPARENT, Color.TRANSPARENT, withAlpha(0xFFE8F0F8.toInt(), (0.36f * dim * 255).toInt()), withAlpha(Color.WHITE, (0.76f * dim * 255).toInt())),
-            floatArrayOf(0f, 0.10f, 0.28f, 0.72f, 0.90f, 1f),
+            intArrayOf(withAlpha(Color.WHITE, (0.82f * dim * 255).toInt()), withAlpha(0xFFE8F0F8.toInt(), (0.44f * dim * 255).toInt()), Color.TRANSPARENT, Color.TRANSPARENT, withAlpha(0xFFE8F0F8.toInt(), (0.44f * dim * 255).toInt()), withAlpha(Color.WHITE, (0.82f * dim * 255).toInt())),
+            floatArrayOf(0f, 0.10f, 0.26f, 0.74f, 0.90f, 1f),
             Shader.TileMode.CLAMP,
         )
         canvas.drawRect(0f, 0f, w, h, paint)
@@ -76,20 +76,20 @@ internal object FrostedWindowDawnStill {
 
         paint.shader = LinearGradient(
             0f, 0f, 0f, h,
-            intArrayOf(withAlpha(Color.WHITE, (0.58f * dim * 255).toInt()), withAlpha(0xFFE8F0F8.toInt(), (0.25f * dim * 255).toInt()), Color.TRANSPARENT, Color.TRANSPARENT, withAlpha(0xFFE8F0F8.toInt(), (0.32f * dim * 255).toInt()), withAlpha(Color.WHITE, (0.72f * dim * 255).toInt())),
-            floatArrayOf(0f, 0.12f, 0.34f, 0.68f, 0.90f, 1f),
+            intArrayOf(withAlpha(Color.WHITE, (0.66f * dim * 255).toInt()), withAlpha(0xFFE8F0F8.toInt(), (0.32f * dim * 255).toInt()), Color.TRANSPARENT, Color.TRANSPARENT, withAlpha(0xFFE8F0F8.toInt(), (0.38f * dim * 255).toInt()), withAlpha(Color.WHITE, (0.78f * dim * 255).toInt())),
+            floatArrayOf(0f, 0.12f, 0.32f, 0.70f, 0.90f, 1f),
             Shader.TileMode.CLAMP,
         )
         canvas.drawRect(0f, 0f, w, h, paint)
         paint.shader = null
 
         // Ice fern dendrites radiate from irregular crystals around the panes.
-        for (i in 0 until 12) {
+        for (i in 0 until 9) {
             val x = unit(i * 31 + 3) * w
             val y = unit(i * 37 + 7) * h
-            val branch = shortSide * (0.025f + unit(i * 41 + 11) * 0.05f)
+            val branch = shortSide * (0.06f + unit(i * 41 + 11) * 0.08f)
             val shimmer = 0.75f + 0.25f * loopedFbm(t01, radius = 1.1f, octaves = 2, seedOffset = i * 97 + 5)
-            val alpha = (0.32f * shimmer * dim * 255).toInt()
+            val alpha = (0.40f * shimmer * dim * 255).toInt()
             val direction = if (i % 2 == 0) 1f else -1f
             crystalPath.reset()
             crystalPath.moveTo(x, y + branch)
@@ -103,32 +103,32 @@ internal object FrostedWindowDawnStill {
             crystalPath.moveTo(x, y + branch * 0.28f)
             crystalPath.lineTo(x - direction * branch * 0.34f, y - branch * 0.02f)
             paint.color = withAlpha(Color.WHITE, alpha)
-            paint.strokeWidth = (shortSide * 0.0022f).coerceAtLeast(1f)
+            paint.strokeWidth = (shortSide * 0.0035f).coerceAtLeast(1.2f)
             paint.strokeCap = Paint.Cap.ROUND
             paint.style = Paint.Style.STROKE
             canvas.drawPath(crystalPath, paint)
             paint.style = Paint.Style.FILL
-            paint.color = withAlpha(Color.WHITE, (alpha * 0.65f).toInt())
-            canvas.drawCircle(x, y, shortSide * 0.004f, paint)
+            paint.color = withAlpha(Color.WHITE, (alpha * 0.70f).toInt())
+            canvas.drawCircle(x, y, shortSide * 0.007f, paint)
         }
 
         // Muntins separate four softly reflective panes.
-        val bar = shortSide * 0.035f
-        paint.color = withAlpha(0xFF63798D.toInt(), (0.65f * dim * 255).toInt())
+        val bar = shortSide * 0.048f
+        paint.color = withAlpha(0xFF63798D.toInt(), (0.72f * dim * 255).toInt())
         canvas.drawRect(w * 0.5f - bar * 0.5f, 0f, w * 0.5f + bar * 0.5f, h, paint)
         canvas.drawRect(0f, h * 0.52f - bar * 0.5f, w, h * 0.52f + bar * 0.5f, paint)
-        paint.color = withAlpha(warm, (0.26f * dim * 255).toInt())
+        paint.color = withAlpha(warm, (0.32f * dim * 255).toInt())
         canvas.drawRect(w * 0.5f + bar * 0.5f, 0f, w * 0.5f + bar * 0.62f, h, paint)
         canvas.drawRect(0f, h * 0.52f + bar * 0.5f, w, h * 0.52f + bar * 0.62f, paint)
 
         // Condensation pinpoints shimmer gently across the glass.
         paint.color = Color.WHITE
-        for (i in 0 until 18) {
+        for (i in 0 until 12) {
             val x = (unit(i * 53 + 19) + (loopedFbm(t01, radius = 1.3f, octaves = 2, seedOffset = i * 79 + 31) - 0.5f) * 0.025f) * w
             val y = (unit(i * 67 + 23) + 0.012f * sin(t01 * 2f * PI.toFloat() + i)) * h
             val sparkle = 0.5f + 0.5f * loopedFbm(t01, radius = 1.4f, seedOffset = i * 89 + 37)
-            paint.color = withAlpha(Color.WHITE, ((0.10f + 0.18f * sparkle) * dim * 255).toInt())
-            canvas.drawCircle(x, y, shortSide * 0.0025f, paint)
+            paint.color = withAlpha(Color.WHITE, ((0.14f + 0.24f * sparkle) * dim * 255).toInt())
+            canvas.drawCircle(x, y, shortSide * 0.004f, paint)
         }
         paint.shader = null
         paint.style = Paint.Style.FILL

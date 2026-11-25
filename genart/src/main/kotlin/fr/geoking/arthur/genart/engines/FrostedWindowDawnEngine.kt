@@ -40,13 +40,13 @@ internal fun FrostedWindowDawnEngine(
     speed: Float,
     modifier: Modifier = Modifier,
 ) {
-    val crystalCount = qualityCount(quality, low = 7, medium = 12, high = 18)
+    val crystalCount = qualityCount(quality, low = 5, medium = 9, high = 14)
     val crystals = remember(crystalCount) {
         List(crystalCount) { i ->
             FrostedWindowCrystal(
                 x = seededUnit(i * 31 + 3),
                 y = seededUnit(i * 37 + 7),
-                scale = seededRange(i * 41 + 11, 0.025f, 0.075f),
+                scale = seededRange(i * 41 + 11, 0.06f, 0.14f),
                 seed = i * 97 + 5,
             )
         }
@@ -56,7 +56,7 @@ internal fun FrostedWindowDawnEngine(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((72000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween((11000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "frostedwindowdawn_t",
@@ -83,19 +83,19 @@ internal fun FrostedWindowDawnEngine(
         // Pale, hazy sky and the soft first glow of sunrise behind the glass.
         drawCircle(
             brush = Brush.radialGradient(
-                0f to TonalPalette.withAlpha(warm, 0.62f * dim),
-                0.36f to TonalPalette.withAlpha(Color(0xFFFFDDB0), 0.30f * dim),
+                0f to TonalPalette.withAlpha(warm, 0.72f * dim),
+                0.32f to TonalPalette.withAlpha(Color(0xFFFFDDB0), 0.38f * dim),
                 1f to Color.Transparent,
                 center = Offset(glowX, glowY),
-                radius = (shortSide * 0.72f).positiveRadius(),
+                radius = (shortSide * 0.80f).positiveRadius(),
             ),
-            radius = (shortSide * 0.72f).positiveRadius(),
+            radius = (shortSide * 0.80f).positiveRadius(),
             center = Offset(glowX, glowY),
         )
         drawRect(
             brush = Brush.verticalGradient(
                 0f to Color.Transparent,
-                0.46f to TonalPalette.withAlpha(Color(0xFFFFE3BE), 0.09f * dim),
+                0.46f to TonalPalette.withAlpha(Color(0xFFFFE3BE), 0.12f * dim),
                 1f to TonalPalette.withAlpha(Color(0xFF6B8195), 0.30f * dim),
             ),
         )
@@ -103,22 +103,22 @@ internal fun FrostedWindowDawnEngine(
         // Frost gathers around the perimeter, leaving the dawn visible in the center.
         drawRect(
             brush = Brush.horizontalGradient(
-                0f to TonalPalette.withAlpha(Color(0xFFF4FAFF), 0.76f * dim),
-                0.10f to TonalPalette.withAlpha(frost, 0.36f * dim),
-                0.28f to Color.Transparent,
-                0.72f to Color.Transparent,
-                0.90f to TonalPalette.withAlpha(frost, 0.36f * dim),
-                1f to TonalPalette.withAlpha(Color(0xFFF4FAFF), 0.76f * dim),
+                0f to TonalPalette.withAlpha(Color(0xFFF4FAFF), 0.82f * dim),
+                0.10f to TonalPalette.withAlpha(frost, 0.44f * dim),
+                0.26f to Color.Transparent,
+                0.74f to Color.Transparent,
+                0.90f to TonalPalette.withAlpha(frost, 0.44f * dim),
+                1f to TonalPalette.withAlpha(Color(0xFFF4FAFF), 0.82f * dim),
             ),
         )
         drawRect(
             brush = Brush.verticalGradient(
-                0f to TonalPalette.withAlpha(Color(0xFFF4FAFF), 0.58f * dim),
-                0.12f to TonalPalette.withAlpha(frost, 0.25f * dim),
-                0.34f to Color.Transparent,
-                0.68f to Color.Transparent,
-                0.90f to TonalPalette.withAlpha(frost, 0.32f * dim),
-                1f to TonalPalette.withAlpha(Color(0xFFF4FAFF), 0.72f * dim),
+                0f to TonalPalette.withAlpha(Color(0xFFF4FAFF), 0.66f * dim),
+                0.12f to TonalPalette.withAlpha(frost, 0.32f * dim),
+                0.32f to Color.Transparent,
+                0.70f to Color.Transparent,
+                0.90f to TonalPalette.withAlpha(frost, 0.38f * dim),
+                1f to TonalPalette.withAlpha(Color(0xFFF4FAFF), 0.78f * dim),
             ),
         )
 
@@ -128,7 +128,7 @@ internal fun FrostedWindowDawnEngine(
             val y = crystal.y * h
             val size = shortSide * crystal.scale
             val shimmer = 0.75f + 0.25f * loopedFbm(time, radius = 1.1f, octaves = 2, seedOffset = crystal.seed)
-            val alpha = 0.30f * shimmer * dim
+            val alpha = 0.40f * shimmer * dim
             val direction = if (crystal.seed % 2 == 0) 1f else -1f
             val path = Path().apply {
                 moveTo(x, y + size)
@@ -145,44 +145,44 @@ internal fun FrostedWindowDawnEngine(
             drawPath(
                 path = path,
                 color = TonalPalette.withAlpha(Color(0xFFFFFFFF), alpha),
-                style = Stroke(width = (shortSide * 0.0022f).coerceAtLeast(1f)),
+                style = Stroke(width = (shortSide * 0.0035f).coerceAtLeast(1.2f)),
             )
             drawCircle(
-                color = TonalPalette.withAlpha(Color(0xFFFFFFFF), alpha * 0.65f),
-                radius = (shortSide * 0.004f).positiveRadius(),
+                color = TonalPalette.withAlpha(Color(0xFFFFFFFF), alpha * 0.70f),
+                radius = (shortSide * 0.007f).positiveRadius(),
                 center = Offset(x, y),
             )
         }
 
         // Window muntins: slim, cool shadows with a warm reflected edge.
-        val frame = shortSide * 0.035f
+        val frame = shortSide * 0.048f
         val vertical = w * 0.5f
         val horizontal = h * 0.52f
         drawRect(
-            color = TonalPalette.withAlpha(Color(0xFF63798D), 0.65f * dim),
+            color = TonalPalette.withAlpha(Color(0xFF63798D), 0.72f * dim),
             topLeft = Offset(vertical - frame * 0.5f, 0f),
             size = Size(frame, h),
         )
         drawRect(
-            color = TonalPalette.withAlpha(Color(0xFF63798D), 0.60f * dim),
+            color = TonalPalette.withAlpha(Color(0xFF63798D), 0.68f * dim),
             topLeft = Offset(0f, horizontal - frame * 0.5f),
             size = Size(w, frame),
         )
         drawLine(
-            color = TonalPalette.withAlpha(warm, 0.28f * dim),
+            color = TonalPalette.withAlpha(warm, 0.34f * dim),
             start = Offset(vertical + frame * 0.5f, 0f),
             end = Offset(vertical + frame * 0.5f, h),
-            strokeWidth = shortSide * 0.004f,
+            strokeWidth = shortSide * 0.005f,
         )
         drawLine(
-            color = TonalPalette.withAlpha(warm, 0.24f * dim),
+            color = TonalPalette.withAlpha(warm, 0.30f * dim),
             start = Offset(0f, horizontal + frame * 0.5f),
             end = Offset(w, horizontal + frame * 0.5f),
-            strokeWidth = shortSide * 0.004f,
+            strokeWidth = shortSide * 0.005f,
         )
 
         // Fine condensation beads catch a faint, slow-moving dawn shimmer.
-        repeat(qualityCount(quality, low = 8, medium = 14, high = 22)) { i ->
+        repeat(qualityCount(quality, low = 8, medium = 12, high = 18)) { i ->
             val x0 = seededUnit(i * 53 + 19)
             val y0 = seededUnit(i * 67 + 23)
             val drift = loopedFbm(time, radius = 1.3f, octaves = 2, seedOffset = i * 79 + 31) - 0.5f
@@ -190,8 +190,8 @@ internal fun FrostedWindowDawnEngine(
             val y = (y0 + 0.012f * sin(time * 2f * PI.toFloat() + i)) * h
             val sparkle = 0.5f + 0.5f * loopedFbm(time, radius = 1.4f, seedOffset = i * 89 + 37)
             drawCircle(
-                color = TonalPalette.withAlpha(Color.White, (0.10f + 0.18f * sparkle) * dim),
-                radius = (shortSide * 0.0025f).positiveRadius(),
+                color = TonalPalette.withAlpha(Color.White, (0.14f + 0.24f * sparkle) * dim),
+                radius = (shortSide * 0.004f).positiveRadius(),
                 center = Offset(x, y),
             )
         }

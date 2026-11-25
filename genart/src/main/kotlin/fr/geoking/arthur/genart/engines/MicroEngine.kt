@@ -19,6 +19,16 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
 
+/** One full primary rotation at speed 1.0 ≈ 11s (scales ~8–14s with user speed). */
+private const val MICRO_RAY_LOOP_MS = 11000f
+private const val MICRO_RAY_WIDTH_FRAC = 0.22f
+private const val MICRO_RAY_PRIMARY_ALPHA_ACTIVE = 0.26f
+private const val MICRO_RAY_PRIMARY_ALPHA_IDLE = 0.14f
+private const val MICRO_RAY_STREAK_ALPHA_ACTIVE = 0.22f
+private const val MICRO_RAY_STREAK_ALPHA_IDLE = 0.11f
+private const val MICRO_RAY_SECONDARY_ALPHA_ACTIVE = 0.18f
+private const val MICRO_RAY_SECONDARY_ALPHA_IDLE = 0.09f
+
 /**
  * Volumetric light rays — ported from Julius MicroEffectCanvas (voice status → isActive).
  */
@@ -36,7 +46,7 @@ internal fun MicroEngine(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween((20000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween((MICRO_RAY_LOOP_MS / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "rotation",
@@ -85,20 +95,24 @@ internal fun MicroEngine(
                     drawRect(
                         brush = Brush.radialGradient(
                             colors = listOf(
-                                primaryColor.copy(alpha = if (isActive) 0.15f else 0.08f),
+                                primaryColor.copy(
+                                    alpha = if (isActive) MICRO_RAY_PRIMARY_ALPHA_ACTIVE else MICRO_RAY_PRIMARY_ALPHA_IDLE,
+                                ),
                                 Color.Transparent,
                             ),
                             center = center,
                             radius = maxRadius * pulseScale,
                         ),
-                        alpha = 0.6f,
+                        alpha = 0.78f,
                     )
-                    val rayWidth = size.width * 0.15f
+                    val rayWidth = size.width * MICRO_RAY_WIDTH_FRAC
                     drawRect(
                         brush = Brush.horizontalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                primaryColor.copy(alpha = if (isActive) 0.1f else 0.05f),
+                                primaryColor.copy(
+                                    alpha = if (isActive) MICRO_RAY_STREAK_ALPHA_ACTIVE else MICRO_RAY_STREAK_ALPHA_IDLE,
+                                ),
                                 Color.Transparent,
                             ),
                             startX = centerX - rayWidth,
@@ -118,13 +132,15 @@ internal fun MicroEngine(
                     drawRect(
                         brush = Brush.radialGradient(
                             colors = listOf(
-                                secondaryColor.copy(alpha = if (isActive) 0.12f else 0.06f),
+                                secondaryColor.copy(
+                                    alpha = if (isActive) MICRO_RAY_SECONDARY_ALPHA_ACTIVE else MICRO_RAY_SECONDARY_ALPHA_IDLE,
+                                ),
                                 Color.Transparent,
                             ),
                             center = center,
                             radius = maxRadius * 0.8f * pulseScale,
                         ),
-                        alpha = 0.5f,
+                        alpha = 0.65f,
                     )
                 }
             }
@@ -133,12 +149,12 @@ internal fun MicroEngine(
         drawRect(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    baseColor.copy(alpha = if (isActive) 0.8f else 0.4f),
+                    baseColor.copy(alpha = if (isActive) 0.52f else 0.32f),
                     Color.Transparent,
-                    Color(0xFF0D001A).copy(alpha = 0.7f),
+                    Color(0xFF0D001A).copy(alpha = 0.38f),
                 ),
                 center = center,
-                radius = maxRadius * 0.7f,
+                radius = maxRadius * 0.85f,
             ),
         )
     }

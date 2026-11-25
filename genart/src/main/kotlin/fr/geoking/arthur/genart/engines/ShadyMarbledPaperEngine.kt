@@ -37,12 +37,15 @@ internal fun ShadyMarbledPaperEngine(
             },
         )
     }
+    val loopMs = (ShadyMarbledPaperStill.LOOP_DURATION_MS / speed.coerceAtLeast(0.2f))
+        .toInt()
+        .coerceIn(8_000, 14_000)
     val transition = rememberInfiniteTransition(label = "shadymarbledpaper")
-    val elapsedSec by transition.animateFloat(
+    val loopPhase by transition.animateFloat(
         initialValue = 0f,
-        targetValue = 3600f,
+        targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((3600000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween(loopMs, easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "shadymarbledpaper_t",
@@ -51,7 +54,7 @@ internal fun ShadyMarbledPaperEngine(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((2000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween((loopMs / 2).coerceIn(2000, 6000), easing = LinearEasing),
             repeatMode = RepeatMode.Reverse,
         ),
         label = "shadymarbledpaper_pulse",
@@ -71,7 +74,7 @@ internal fun ShadyMarbledPaperEngine(
                 width = w,
                 height = h,
                 generation = 0L,
-                phase = elapsedSec,
+                phase = loopPhase,
                 rotationDeg = 0f,
                 pulse = pulse,
                 palette = palette,

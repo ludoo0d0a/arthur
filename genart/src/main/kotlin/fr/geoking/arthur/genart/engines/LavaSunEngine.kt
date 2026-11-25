@@ -73,7 +73,7 @@ internal fun LavaSunEngine(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((16000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween((11000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "lava_sun_t",
@@ -82,7 +82,7 @@ internal fun LavaSunEngine(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((5000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween((3600 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "lava_sun_pulse",
@@ -90,7 +90,7 @@ internal fun LavaSunEngine(
 
     val dim = if (isActive) 1f else 0.55f
     val time = phase01(t) * 2f * PI.toFloat()
-    val pulse = 0.88f + 0.12f * sin01(phase01(pulseT) * 2f * PI.toFloat())
+    val pulse = 0.8f + 0.2f * sin01(phase01(pulseT) * 2f * PI.toFloat())
 
     Box(modifier = modifier) {
         Canvas(modifier = Modifier.fillMaxSize()) {
@@ -103,22 +103,22 @@ internal fun LavaSunEngine(
             val minDim = w.coerceAtMost(h)
             val cx = w * 0.5f
             val cy = h * 0.5f
-            val sunR = minDim * 0.28f
+            val sunR = minDim * 0.34f
             val corona = TonalPalette.brightness(
-                TonalPalette.mix(Color(0xFFFFAA44), TonalPalette.pick(paletteColors, 0), 0.25f),
+                TonalPalette.mix(Color(0xFFFFAA44), TonalPalette.pick(paletteColors, 0), 0.12f),
                 brightness,
             )
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        TonalPalette.withAlpha(corona, 0.55f * dim * pulse),
-                        TonalPalette.withAlpha(corona, 0.18f * dim * pulse),
+                        TonalPalette.withAlpha(corona, 0.72f * dim * pulse),
+                        TonalPalette.withAlpha(corona, 0.28f * dim * pulse),
                         Color.Transparent,
                     ),
                     center = Offset(cx, cy),
-                    radius = sunR * 2.4f,
+                    radius = sunR * 2.65f,
                 ),
-                radius = sunR * 2.4f,
+                radius = sunR * 2.65f,
                 center = Offset(cx, cy),
             )
         }
@@ -129,13 +129,13 @@ internal fun LavaSunEngine(
             val minDim = w.coerceAtMost(h)
             val cx = w * 0.5f
             val cy = h * 0.5f
-            val sunR = minDim * 0.28f
+            val sunR = minDim * 0.34f
 
             tongues.forEach { tongue ->
-                val noise = fbm2D(time * 0.4f, tongue.angle * 3f, octaves = 2, seedOffset = tongue.colorIndex * 101)
+                val noise = fbm2D(time * 0.58f, tongue.angle * 3f, octaves = 2, seedOffset = tongue.colorIndex * 101)
                 val sway = sin(time * tongue.swayFreq + tongue.flickerPhase) * tongue.swayAmp * noise
                 val angle = tongue.angle + sway
-                val breath = 0.85f + 0.15f * loopedFbm(time * 0.25f, radius = 1f, octaves = 2, seedOffset = tongue.colorIndex * 307)
+                val breath = 0.82f + 0.18f * loopedFbm(time * 0.4f, radius = 1f, octaves = 2, seedOffset = tongue.colorIndex * 307)
                 val length = tongue.lengthFrac * minDim * breath * pulse
                 val halfW = tongue.widthFrac * minDim
                 val baseX = cx + cos(angle) * sunR * 0.92f
@@ -147,10 +147,10 @@ internal fun LavaSunEngine(
                 val tint = TonalPalette.mix(
                     TonalPalette.pick(paletteColors, tongue.colorIndex),
                     Color(0xFFFF6622),
-                    0.45f,
+                    0.32f,
                 )
                 val flame = TonalPalette.brightness(tint, brightness)
-                val core = TonalPalette.mix(flame, Color(0xFFFFEEAA), 0.4f)
+                val core = TonalPalette.mix(flame, Color(0xFFFFF0BB), 0.48f)
                 val path = Path().apply {
                     moveTo(baseX + perpX * halfW, baseY + perpY * halfW)
                     cubicTo(
@@ -175,9 +175,9 @@ internal fun LavaSunEngine(
                     path = path,
                     brush = Brush.linearGradient(
                         colors = listOf(
-                            TonalPalette.withAlpha(core, 0.85f * dim),
-                            TonalPalette.withAlpha(flame, 0.55f * dim),
-                            TonalPalette.withAlpha(flame, 0.05f * dim),
+                            TonalPalette.withAlpha(core, 0.92f * dim),
+                            TonalPalette.withAlpha(flame, 0.65f * dim),
+                            TonalPalette.withAlpha(flame, 0.08f * dim),
                         ),
                         start = Offset(baseX, baseY),
                         end = Offset(tipX, tipY),
@@ -189,19 +189,19 @@ internal fun LavaSunEngine(
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        Color(0xFFFFF0C8),
-                        Color(0xFFFFB84A),
-                        Color(0xFFFF6A22),
+                        Color(0xFFFFF6D8),
+                        Color(0xFFFFC04E),
+                        Color(0xFFFF5518),
                     ),
-                    center = Offset(cx - sunR * 0.2f, cy - sunR * 0.2f),
-                    radius = sunR * 1.2f,
+                    center = Offset(cx - sunR * 0.22f, cy - sunR * 0.22f),
+                    radius = sunR * 1.28f,
                 ),
                 radius = sunR,
                 center = Offset(cx, cy),
             )
             mottling.forEach { spot ->
                 drawCircle(
-                    color = TonalPalette.withAlpha(Color(0xFFFF4411), 0.25f * dim),
+                    color = TonalPalette.withAlpha(Color(0xFFFF4411), 0.34f * dim * pulse),
                     radius = spot.radiusFrac * sunR,
                     center = Offset(
                         cx + cos(spot.angle) * spot.distFrac * sunR,

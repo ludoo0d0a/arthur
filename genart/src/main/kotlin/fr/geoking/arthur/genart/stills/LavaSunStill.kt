@@ -33,7 +33,7 @@ internal object LavaSunStill {
         val minDim = w.coerceAtMost(h)
         val cx = w * 0.5f
         val cy = h * 0.5f
-        val sunR = minDim * 0.28f
+        val sunR = minDim * 0.34f
         val dim = 0.65f + 0.35f * pulse
         val time = phase + rotationDeg * PI.toFloat() / 180f
 
@@ -46,18 +46,18 @@ internal object LavaSunStill {
         val cg = (Color.green(tint) + 170) / 2
         val cb = (Color.blue(tint) + 68) / 2
 
-        paint.maskFilter = BlurMaskFilter((sunR * 0.4f).coerceAtLeast(8f), BlurMaskFilter.Blur.NORMAL)
+        paint.maskFilter = BlurMaskFilter((sunR * 0.42f).coerceAtLeast(8f), BlurMaskFilter.Blur.NORMAL)
         paint.shader = RadialGradient(
-            cx, cy, sunR * 2.4f,
+            cx, cy, sunR * 2.65f,
             intArrayOf(
-                Color.argb((0.5f * dim * 255).toInt().coerceIn(0, 255), cr, cg, cb),
-                Color.argb((0.15f * dim * 255).toInt().coerceIn(0, 255), cr, cg, cb),
+                Color.argb((0.72f * dim * 255).toInt().coerceIn(0, 255), cr, cg, cb),
+                Color.argb((0.28f * dim * 255).toInt().coerceIn(0, 255), cr, cg, cb),
                 Color.TRANSPARENT,
             ),
-            floatArrayOf(0f, 0.45f, 1f),
+            floatArrayOf(0f, 0.42f, 1f),
             Shader.TileMode.CLAMP,
         )
-        canvas.drawCircle(cx, cy, sunR * 2.4f, paint)
+        canvas.drawCircle(cx, cy, sunR * 2.65f, paint)
         paint.maskFilter = null
         paint.shader = null
 
@@ -76,15 +76,15 @@ internal object LavaSunStill {
             val perpX = -sin(a)
             val perpY = cos(a)
             val flame = palette.colorAt(i)
-            val fr = (Color.red(flame) + 255) / 2
-            val fg = (Color.green(flame) + 100) / 2
-            val fb = (Color.blue(flame) + 34) / 2
+            val fr = ((Color.red(flame) * 0.68f) + (255 * 0.32f)).toInt().coerceIn(0, 255)
+            val fg = ((Color.green(flame) * 0.68f) + (100 * 0.32f)).toInt().coerceIn(0, 255)
+            val fb = ((Color.blue(flame) * 0.68f) + (34 * 0.32f)).toInt().coerceIn(0, 255)
 
             paint.shader = LinearGradient(
                 baseX, baseY, tipX, tipY,
                 intArrayOf(
-                    Color.argb((0.85f * dim * 255).toInt().coerceIn(0, 255), 255, 238, 170),
-                    Color.argb((0.55f * dim * 255).toInt().coerceIn(0, 255), fr, fg, fb),
+                    Color.argb((0.92f * dim * 255).toInt().coerceIn(0, 255), 255, 246, 187),
+                    Color.argb((0.65f * dim * 255).toInt().coerceIn(0, 255), fr, fg, fb),
                     Color.TRANSPARENT,
                 ),
                 floatArrayOf(0f, 0.45f, 1f),
@@ -114,9 +114,9 @@ internal object LavaSunStill {
         }
 
         paint.shader = RadialGradient(
-            cx - sunR * 0.2f, cy - sunR * 0.2f, sunR * 1.2f,
-            intArrayOf(0xFFFFF0C8.toInt(), 0xFFFFB84A.toInt(), 0xFFFF6A22.toInt()),
-            floatArrayOf(0f, 0.55f, 1f),
+            cx - sunR * 0.22f, cy - sunR * 0.22f, sunR * 1.28f,
+            intArrayOf(0xFFFFF6D8.toInt(), 0xFFFFC04E.toInt(), 0xFFFF5518.toInt()),
+            floatArrayOf(0f, 0.52f, 1f),
             Shader.TileMode.CLAMP,
         )
         canvas.drawCircle(cx, cy, sunR, paint)
@@ -126,7 +126,7 @@ internal object LavaSunStill {
             val a = rnd.nextFloat() * 2f * PI.toFloat()
             val d = (0.15f + rnd.nextFloat() * 0.55f) * sunR
             val r = (0.08f + rnd.nextFloat() * 0.1f) * sunR
-            paint.color = Color.argb((0.25f * dim * 255).toInt().coerceIn(0, 255), 255, 68, 17)
+            paint.color = Color.argb((0.34f * dim * 255).toInt().coerceIn(0, 255), 255, 68, 17)
             canvas.drawCircle(cx + cos(a) * d, cy + sin(a) * d, r, paint)
         }
         paint.alpha = 255

@@ -43,16 +43,18 @@ internal object LandslideDustStill {
         for (i in 0 until 6) {
             val x0 = rnd.nextFloat()
             val yFrac = 0.7f + rnd.nextFloat() * 0.27f
-            val speedMul = 0.015f + rnd.nextFloat() * 0.035f
+            val speedMul = 0.04f + rnd.nextFloat() * 0.08f
             val widthFrac = 0.4f + rnd.nextFloat() * 0.45f
             val heightFrac = 0.1f + rnd.nextFloat() * 0.12f
-            val bobAmp = 0.003f + rnd.nextFloat() * 0.009f
+            val bobAmp = 0.006f + rnd.nextFloat() * 0.016f
             val bobFreq = 0.15f + rnd.nextFloat() * 0.35f
             val alphaBase = 0.1f + rnd.nextFloat() * 0.14f
-            val x = (((x0 + drift * speedMul * 0.1f) % 1f) + 1f) % 1f * w
-            val y = (yFrac * h + sin(drift * bobFreq) * bobAmp * h).coerceIn(h * 0.62f, h)
+            val x = (((x0 + drift * speedMul) % 1f) + 1f) % 1f * w
+            val puffUp = (dim - 0.75f) * 0.08f * h
+            val settle = (((drift % 1f) + 1f) % 1f) * 0.03f * h
+            val y = (yFrac * h + sin(drift * bobFreq) * bobAmp * h - puffUp + settle).coerceIn(h * 0.58f, h)
             val rw = widthFrac * w
-            val rh = heightFrac * h
+            val rh = heightFrac * h * (0.9f + 0.2f * dim)
             val tint = palette.colorAt(i)
             val r = ((Color.red(tint) + 201) / 2)
             val g = ((Color.green(tint) + 161) / 2)

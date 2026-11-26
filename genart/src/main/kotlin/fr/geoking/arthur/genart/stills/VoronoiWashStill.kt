@@ -42,16 +42,17 @@ internal object VoronoiWashStill {
         for (i in 0 until count) {
             val x0 = rnd.nextFloat()
             val y0 = rnd.nextFloat()
-            val driftX = (rnd.nextFloat() - 0.5f) * 0.08f
-            val driftY = (rnd.nextFloat() - 0.5f) * 0.08f
+            val driftX = (rnd.nextFloat() - 0.5f) * 0.24f
+            val driftY = (rnd.nextFloat() - 0.5f) * 0.24f
             val radiusFrac = 0.12f + rnd.nextFloat() * 0.1f
             val sides = 5 + i % 3
             val rot0 = rnd.nextFloat() * 2f * PI.toFloat()
             val rotSpeed = 0.1f + rnd.nextFloat() * 0.3f
+            val pulseFreq = 0.15f + rnd.nextFloat() * 0.45f
             val x = (((x0 + loop * driftX) % 1f) + 1f) % 1f * w
             val y = (((y0 + loop * driftY) % 1f) + 1f) % 1f * h
             positions.add(x to y)
-            seeds.add(SiteSeed(radiusFrac, sides, rot0, rotSpeed))
+            seeds.add(SiteSeed(radiusFrac, sides, rot0, rotSpeed, pulseFreq))
         }
 
         for (i in 0 until count) {
@@ -64,7 +65,9 @@ internal object VoronoiWashStill {
                 val d = hypot(cx - ox, cy - oy)
                 if (d < nearest) nearest = d
             }
-            val radius = (nearest * 0.48f).coerceIn(minDim * 0.08f, seed.radiusFrac * minDim * 1.4f)
+            val pulse = 0.5f + 0.5f * sin(loop * 2f * PI.toFloat() * seed.pulseFreq + seed.rot0)
+            val radius = (nearest * 0.48f).coerceIn(minDim * 0.08f, seed.radiusFrac * minDim * 1.4f) *
+                (0.88f + 0.16f * pulse)
             val rot = seed.rot0 + loop * 2f * PI.toFloat() * seed.rotSpeed
             path.reset()
             for (k in 0 until seed.sides) {
@@ -78,12 +81,12 @@ internal object VoronoiWashStill {
             val tint = palette.colorAt(i)
             paint.style = Paint.Style.FILL
             paint.color = Color.argb(
-                (0.22f * dim * 255).toInt().coerceIn(0, 255),
+                ((0.16f + 0.14f * pulse) * dim * 255).toInt().coerceIn(0, 255),
                 Color.red(tint), Color.green(tint), Color.blue(tint),
             )
             canvas.drawPath(path, paint)
             paint.style = Paint.Style.STROKE
-            paint.strokeWidth = 1.2f
+            paint.strokeWidth = 1.0f + 0.9f * pulse
             paint.color = Color.argb(
                 (0.45f * dim * 255).toInt().coerceIn(0, 255),
                 Color.red(tint), Color.green(tint), Color.blue(tint),
@@ -105,5 +108,6 @@ internal object VoronoiWashStill {
         val sides: Int,
         val rot0: Float,
         val rotSpeed: Float,
+        val pulseFreq: Float,
     )
 }

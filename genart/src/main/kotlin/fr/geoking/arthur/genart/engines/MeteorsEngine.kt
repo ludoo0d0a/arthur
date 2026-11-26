@@ -42,17 +42,17 @@ internal fun MeteorsEngine(
                 seededRange(i * 31 + 11, 0.08f, 0.35f)
         }
     }
-    val meteorCount = qualityCount(quality, low = 3, medium = 4, high = 6)
+    val meteorCount = qualityCount(quality, low = 6, medium = 9, high = 12)
     val meteors = remember(meteorCount) {
         List(meteorCount) { i ->
             MeteorSeed(
                 startX = seededUnit(i * 17 + 3),
                 startY = seededRange(i * 29 + 7, 0f, 0.45f),
-                lengthFrac = seededRange(i * 41 + 11, 0.12f, 0.28f),
+                lengthFrac = seededRange(i * 41 + 11, 0.18f, 0.38f),
                 angle = seededRange(i * 53 + 13, 0.35f, 0.85f),
-                phaseOffset = seededUnit(i * 67 + 19),
-                duration = seededRange(i * 79 + 23, 0.12f, 0.28f),
-                thickness = seededRange(i * 89 + 29, 1.2f, 2.8f),
+                phaseOffset = i / meteorCount.toFloat() + seededRange(i * 67 + 19, 0f, 0.08f),
+                duration = seededRange(i * 79 + 23, 0.25f, 0.45f),
+                thickness = seededRange(i * 89 + 29, 1.8f, 3.6f),
                 colorIndex = i,
             )
         }
@@ -77,8 +77,8 @@ internal fun MeteorsEngine(
         )
         stars.forEach { (pos, alpha) ->
             drawCircle(
-                color = Color.White.copy(alpha = alpha * 0.8f),
-                radius = 1.2f,
+                color = Color.White.copy(alpha = alpha * 1.05f),
+                radius = 1.35f,
                 center = Offset(pos.x * w, pos.y * h),
             )
         }
@@ -94,14 +94,14 @@ internal fun MeteorsEngine(
             val trail = m.lengthFrac * minOf(w, h)
             val start = Offset(x - cos(m.angle) * trail, y - sin(m.angle) * trail)
             val end = Offset(x, y)
-            val fade = (1f - life).coerceIn(0f, 1f) * (life / 0.15f).coerceIn(0f, 1f)
+            val fade = (1f - life).coerceIn(0f, 1f) * (life / 0.08f).coerceIn(0f, 1f)
             val base = TonalPalette.mix(Color.White, TonalPalette.pick(paletteColors, m.colorIndex), 0.35f)
             val color = TonalPalette.brightness(base, brightness)
             drawLine(
                 brush = Brush.linearGradient(
                     colors = listOf(
                         Color.Transparent,
-                        TonalPalette.withAlpha(color, 0.55f * fade * dim),
+                        TonalPalette.withAlpha(color, 0.82f * fade * dim),
                     ),
                     start = start,
                     end = end,
@@ -112,8 +112,8 @@ internal fun MeteorsEngine(
                 cap = StrokeCap.Round,
             )
             drawCircle(
-                color = TonalPalette.withAlpha(color, 0.7f * fade * dim),
-                radius = m.thickness * 1.2f,
+                color = TonalPalette.withAlpha(color, 0.9f * fade * dim),
+                radius = m.thickness * 1.35f,
                 center = end,
             )
         }

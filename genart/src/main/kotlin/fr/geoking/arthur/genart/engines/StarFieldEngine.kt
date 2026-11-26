@@ -61,7 +61,7 @@ internal fun StarFieldEngine(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((110000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween((45000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "starfield_drift",
@@ -104,15 +104,15 @@ internal fun StarFieldEngine(
         }
         // Far layer: crisp, slow drift, many small dim stars.
         Canvas(modifier = Modifier.fillMaxSize()) {
-            drawStarLayer(farStars, driftT, twinkleT, driftScale = 0.015f, sizeScale = 1f, alphaScale = 1f, paletteColors, brightness, dim)
+            drawStarLayer(farStars, driftT, twinkleT, driftScale = 0.04f, yDriftScale = 0.008f, sizeScale = 1f, alphaScale = 1f, paletteColors, brightness, dim)
         }
         // Mid layer: light blur, medium drift, medium size.
         Canvas(modifier = Modifier.fillMaxSize().genartSoftBlur(quality, 3.dp)) {
-            drawStarLayer(midStars, driftT, twinkleT, driftScale = 0.045f, sizeScale = 1.7f, alphaScale = 1.15f, paletteColors, brightness, dim)
+            drawStarLayer(midStars, driftT, twinkleT, driftScale = 0.12f, yDriftScale = 0.02f, sizeScale = 1.7f, alphaScale = 1.15f, paletteColors, brightness, dim)
         }
         // Near layer: soft bokeh blur, fastest drift, largest/brightest — shallow depth-of-field look.
         Canvas(modifier = Modifier.fillMaxSize().genartSoftBlur(quality, 8.dp)) {
-            drawStarLayer(nearStars, driftT, twinkleT, driftScale = 0.09f, sizeScale = 2.6f, alphaScale = 1.3f, paletteColors, brightness, dim)
+            drawStarLayer(nearStars, driftT, twinkleT, driftScale = 0.25f, yDriftScale = 0.04f, sizeScale = 2.6f, alphaScale = 1.3f, paletteColors, brightness, dim)
         }
         // One slow satellite point crossing the frame in a straight line, crisp, fading at both ends.
         Canvas(modifier = Modifier.fillMaxSize()) {
@@ -163,7 +163,7 @@ private fun dustLayer(count: Int, seedBase: Int): List<DustSeed> = List(count) {
         yFrac = seededUnit(s + 11),
         radiusFrac = seededRange(s + 19, 0.22f, 0.48f),
         alphaBase = seededRange(s + 29, 0.10f, 0.22f),
-        driftMul = seededRange(s + 37, 0.01f, 0.04f),
+        driftMul = seededRange(s + 37, 0.03f, 0.10f),
         colorIndex = i,
     )
 }
@@ -209,6 +209,7 @@ private fun DrawScope.drawStarLayer(
     driftT: Float,
     twinkleT: Float,
     driftScale: Float,
+    yDriftScale: Float,
     sizeScale: Float,
     alphaScale: Float,
     paletteColors: List<Color>,
@@ -221,7 +222,7 @@ private fun DrawScope.drawStarLayer(
     val twinkleAngle = phase01(twinkleT) * 2f * PI.toFloat()
     stars.forEach { star ->
         val x = phase01(star.xFrac + drift * driftScale) * w
-        val y = star.yFrac * h
+        val y = phase01(star.yFrac + drift * yDriftScale) * h
         val twinkle = 0.5f + 0.5f * sin01(twinkleAngle * star.twinkleFreq + star.twinklePhase)
         val minDim = size.minDimension
         val radius = (0.0011f + star.sizeUnit * 0.0034f) * minDim * sizeScale

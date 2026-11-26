@@ -6,7 +6,9 @@ import android.graphics.Paint
 import android.graphics.RadialGradient
 import android.graphics.Shader
 import fr.geoking.arthur.genart.AnimationPalette
+import fr.geoking.arthur.genart.sin01
 import kotlin.math.PI
+import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
 
@@ -42,17 +44,25 @@ internal object GradientMeshStill {
             val yB = rnd.nextFloat()
             val radiusFrac = 0.28f + rnd.nextFloat() * 0.27f
             val morphPhase = rnd.nextFloat() * 2f * PI.toFloat()
+            val orbitFreq = 0.35f + rnd.nextFloat() * 0.55f
             val alphaBase = 0.22f + rnd.nextFloat() * 0.2f
-            val morph = ((sin(loop * 2f * PI.toFloat() + morphPhase) + 1f) / 2f)
-            val x = (xA + (xB - xA) * morph) * w
-            val y = (yA + (yB - yA) * morph) * h
-            val radius = radiusFrac * minDim * (0.85f + 0.15f * morph)
+            val morph = sin01(loop * 2f * PI.toFloat() * orbitFreq + morphPhase)
+            val midX = (xA + xB) * 0.5f
+            val midY = (yA + yB) * 0.5f
+            val dx = (xB - xA) * 0.5f
+            val dy = (yB - yA) * 0.5f
+            val orbitAngle = loop * 2f * PI.toFloat() * orbitFreq + morphPhase
+            val x = (midX + dx * cos(orbitAngle) - dy * 0.35f * sin(orbitAngle)) * w
+            val y = (midY + dy * cos(orbitAngle) + dx * 0.35f * sin(orbitAngle)) * h
+            val harmonic = 0.08f * sin(loop * 4f * PI.toFloat() * orbitFreq + morphPhase)
+            val radius = radiusFrac * minDim * (0.85f + 0.15f * morph + harmonic)
+            val alphaPulse = 0.8f + 0.2f * morph
             val tintA = palette.colorAt(i)
             val tintB = palette.colorAt(i + 2)
             val r = (Color.red(tintA) + (Color.red(tintB) - Color.red(tintA)) * morph).toInt()
             val g = (Color.green(tintA) + (Color.green(tintB) - Color.green(tintA)) * morph).toInt()
             val b = (Color.blue(tintA) + (Color.blue(tintB) - Color.blue(tintA)) * morph).toInt()
-            val alpha = (alphaBase * dim * 255).toInt().coerceIn(0, 255)
+            val alpha = (alphaBase * dim * alphaPulse * 255).toInt().coerceIn(0, 255)
             paint.shader = RadialGradient(
                 x, y, radius.coerceAtLeast(1f),
                 intArrayOf(

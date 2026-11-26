@@ -38,18 +38,21 @@ internal object SoftNoiseFieldStill {
         for (i in 0 until 16) {
             val x0 = rnd.nextFloat()
             val y0 = rnd.nextFloat()
-            val driftX = (rnd.nextFloat() - 0.5f) * 0.12f
-            val driftY = (rnd.nextFloat() - 0.5f) * 0.1f
+            val driftX = (rnd.nextFloat() - 0.5f) * 0.32f
+            val driftY = (rnd.nextFloat() - 0.5f) * 0.28f
             val radiusFrac = 0.18f + rnd.nextFloat() * 0.24f
-            val wobbleFreq = 0.1f + rnd.nextFloat() * 0.3f
+            val wobbleFreq = 0.15f + rnd.nextFloat() * 0.4f
+            val breatheFreq = 0.2f + rnd.nextFloat() * 0.4f
             val wobblePhase = rnd.nextFloat() * 2f * PI.toFloat()
             val alphaBase = 0.08f + rnd.nextFloat() * 0.14f
             val wobble = sin(loop * 2f * PI.toFloat() * wobbleFreq + wobblePhase)
-            val x = (((x0 + loop * driftX + wobble * 0.02f) % 1f) + 1f) % 1f * w
-            val y = (((y0 + loop * driftY + wobble * 0.015f) % 1f) + 1f) % 1f * h
-            val radius = radiusFrac * minDim * (0.9f + 0.1f * wobble)
+            val breathe = sin(loop * 2f * PI.toFloat() * breatheFreq + wobblePhase)
+            val x = (((x0 + loop * driftX + wobble * 0.05f) % 1f) + 1f) % 1f * w
+            val y = (((y0 + loop * driftY + wobble * 0.04f) % 1f) + 1f) % 1f * h
+            val radius = radiusFrac * minDim * (0.85f + 0.2f * breathe)
+            val alphaPulse = 0.85f + 0.15f * breathe
             val tint = palette.colorAt(i)
-            val alpha = (alphaBase * dim * 255).toInt().coerceIn(0, 255)
+            val alpha = (alphaBase * dim * alphaPulse * 255).toInt().coerceIn(0, 255)
             paint.shader = RadialGradient(
                 x, y, radius.coerceAtLeast(1f),
                 intArrayOf(

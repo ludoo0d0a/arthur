@@ -43,13 +43,14 @@ internal object SmogStill {
         for (i in 0 until 7) {
             val x0 = rnd.nextFloat()
             val yFrac = 0.15f + rnd.nextFloat() * 0.7f
-            val speedMul = 0.03f + rnd.nextFloat() * 0.07f
-            val widthFrac = 0.35f + rnd.nextFloat() * 0.35f
+            val direction = if (i % 2 == 0) 1f else -1f
+            val speedMul = (0.08f + rnd.nextFloat() * 0.14f) * direction
+            val widthFrac = 0.40f + rnd.nextFloat() * 0.45f
             val heightFrac = 0.08f + rnd.nextFloat() * 0.14f
             val bobAmp = 0.004f + rnd.nextFloat() * 0.016f
             val bobFreq = 0.2f + rnd.nextFloat() * 0.6f
-            val alphaBase = 0.06f + rnd.nextFloat() * 0.12f
-            val x = (((x0 + drift * speedMul * 0.1f) % 1f) + 1f) % 1f * w
+            val alphaBase = if (i < 2) 0.12f + rnd.nextFloat() * 0.16f else 0.08f + rnd.nextFloat() * 0.10f
+            val x = (((x0 + drift * speedMul) % 1f) + 1f) % 1f * w
             val y = yFrac * h + sin(drift * bobFreq) * bobAmp * h
             val rw = widthFrac * w
             val rh = heightFrac * h

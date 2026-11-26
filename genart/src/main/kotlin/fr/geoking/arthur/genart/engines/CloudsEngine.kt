@@ -36,21 +36,23 @@ internal fun CloudsEngine(
     speed: Float,
     modifier: Modifier = Modifier,
 ) {
-    val cloudCount = qualityCount(quality, low = 4, medium = 6, high = 9)
-    val puffBudget = qualityCount(quality, low = 4, medium = 5, high = 7)
+    val cloudCount = qualityCount(quality, low = 6, medium = 10, high = 14)
+    val puffBudget = qualityCount(quality, low = 4, medium = 6, high = 8)
 
     val clouds = remember(cloudCount, puffBudget) {
         List(cloudCount) { i ->
             val puffCount = (puffBudget - 1 + (seededUnit(i * 101 + 3) * 2f).toInt()).coerceIn(3, 8)
+            val far = i % 3 == 0
             CloudSeed(
                 x0 = seededUnit(i * 17 + 3),
-                yFrac = seededRange(i * 29 + 7, 0.12f, 0.58f),
-                speedMul = seededRange(i * 41 + 11, 0.08f, 0.22f),
+                yFrac = seededRange(i * 29 + 7, 0.10f, 0.62f),
+                speedMul = seededRange(i * 41 + 11, 0.18f, 0.45f) * if (far) 0.55f else 1f,
                 bobAmpFrac = seededRange(i * 53 + 13, 0.004f, 0.018f),
                 bobFreq = seededRange(i * 67 + 19, 0.3f, 1.1f),
                 bobPhase = seededRange(i * 79 + 23, 0f, 2f * PI.toFloat()),
-                scale = seededRange(i * 89 + 29, 0.55f, 1.15f),
+                scale = seededRange(i * 89 + 29, 0.55f, 1.15f) * if (far) 0.75f else 1.05f,
                 colorIndex = i,
+                depthAlpha = if (far) 0.75f else 1f,
                 puffs = List(puffCount) { p ->
                     PuffSeed(
                         dx = seededRange(i * 200 + p * 13 + 5, -0.55f, 0.55f),
@@ -67,7 +69,7 @@ internal fun CloudsEngine(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((50000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween((28000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "clouds_t",
@@ -108,8 +110,8 @@ internal fun CloudsEngine(
                     val cx = x + puff.dx * cloud.scale * minDim * 0.55f
                     val cy = y + puff.dy * cloud.scale * minDim * 0.35f
                     val radius = puff.radiusFrac * cloud.scale * minDim * 0.22f
-                    val haloAlpha = 0.10f * alphaScale * brightness.coerceAtMost(1.1f)
-                    val coreAlpha = 0.22f * alphaScale * brightness.coerceAtMost(1.1f)
+                    val haloAlpha = 0.12f * alphaScale * cloud.depthAlpha * brightness.coerceAtMost(1.1f)
+                    val coreAlpha = 0.30f * alphaScale * cloud.depthAlpha * brightness.coerceAtMost(1.1f)
 
                     drawCircle(
                         color = TonalPalette.withAlpha(tint, haloAlpha),
@@ -136,6 +138,7 @@ private data class CloudSeed(
     val bobPhase: Float,
     val scale: Float,
     val colorIndex: Int,
+    val depthAlpha: Float,
     val puffs: List<PuffSeed>,
 )
 

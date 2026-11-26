@@ -41,15 +41,21 @@ internal fun SmogEngine(
     val count = qualityCount(quality, low = 5, medium = 7, high = 10)
     val banks = remember(count) {
         List(count) { i ->
+            val direction = if (i % 2 == 0) 1f else -1f
+            val foreground = i < 2
             SmogBank(
                 x0 = seededUnit(i * 17 + 3),
                 yFrac = seededRange(i * 29 + 7, 0.15f, 0.85f),
-                speedMul = seededRange(i * 41 + 11, 0.03f, 0.1f),
-                widthFrac = seededRange(i * 53 + 13, 0.35f, 0.7f),
+                speedMul = seededRange(i * 41 + 11, 0.08f, 0.22f) * direction,
+                widthFrac = seededRange(i * 53 + 13, 0.40f, 0.85f),
                 heightFrac = seededRange(i * 67 + 19, 0.08f, 0.22f),
                 bobAmp = seededRange(i * 79 + 23, 0.004f, 0.02f),
                 bobFreq = seededRange(i * 89 + 29, 0.2f, 0.8f),
-                alphaBase = seededRange(i * 97 + 31, 0.06f, 0.18f),
+                alphaBase = if (foreground) {
+                    seededRange(i * 97 + 31, 0.12f, 0.28f)
+                } else {
+                    seededRange(i * 97 + 31, 0.08f, 0.18f)
+                },
                 colorIndex = i,
             )
         }
@@ -59,7 +65,7 @@ internal fun SmogEngine(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((68000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween((38000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "smog_t",
@@ -81,7 +87,7 @@ internal fun SmogEngine(
             banks.forEach { bank ->
                 val x = phase01(bank.x0 + time * bank.speedMul) * w
                 val bob = sin(time * bank.bobFreq * 2f * PI.toFloat()) * bank.bobAmp * h
-                val y = bank.yFrac * h + bob
+                val y = bank.yFrac * h + bob + time * 0.02f * h * if (bank.speedMul >= 0f) 1f else -1f
                 val rw = bank.widthFrac * w
                 val rh = bank.heightFrac * h
                 val base = TonalPalette.mix(Color(0xFFB8AD90), TonalPalette.pick(paletteColors, bank.colorIndex), 0.15f)

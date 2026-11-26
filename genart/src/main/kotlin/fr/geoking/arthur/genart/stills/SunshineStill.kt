@@ -49,10 +49,12 @@ internal object SunshineStill {
         for (i in 0 until 7) {
             val angle = -1.8f + rnd.nextFloat() * 3.6f
             val widthHalf = 0.1f + rnd.nextFloat() * 0.1f
-            val swayAmp = 0.015f + rnd.nextFloat() * 0.03f
-            val swayFreq = 0.08f + rnd.nextFloat() * 0.2f
-            val alphaBase = 0.05f + rnd.nextFloat() * 0.07f
-            val a = -PI.toFloat() / 4f + angle + swayAmp * sin(swayBase * swayFreq)
+            val swayAmp = 0.05f + rnd.nextFloat() * 0.09f
+            val swayFreq = 0.15f + rnd.nextFloat() * 0.3f
+            val alphaBase = 0.06f + rnd.nextFloat() * 0.08f
+            val globalSpin = swayBase * 0.08f
+            val twinkle = 0.7f + 0.3f * sin(swayBase * (0.35f + rnd.nextFloat() * 0.75f) + i)
+            val a = -PI.toFloat() / 4f + angle + swayAmp * sin(swayBase * swayFreq) + globalSpin
             val leftX = sunX + sin(a - widthHalf) * reach
             val leftY = sunY + cos(a - widthHalf) * reach
             val rightX = sunX + sin(a + widthHalf) * reach
@@ -70,7 +72,7 @@ internal object SunshineStill {
             val midY = (leftY + rightY) * 0.5f
             paint.shader = LinearGradient(
                 sunX, sunY, midX, midY,
-                Color.argb((alphaBase * dim * 255).toInt().coerceIn(0, 255), r, g, b),
+                Color.argb((alphaBase * dim * twinkle * 255).toInt().coerceIn(0, 255), r, g, b),
                 Color.TRANSPARENT,
                 Shader.TileMode.CLAMP,
             )

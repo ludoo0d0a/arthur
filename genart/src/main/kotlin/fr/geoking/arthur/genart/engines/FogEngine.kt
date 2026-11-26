@@ -40,15 +40,21 @@ internal fun FogEngine(
     val count = qualityCount(quality, low = 5, medium = 7, high = 10)
     val banks = remember(count) {
         List(count) { i ->
+            val direction = if (i % 2 == 0) 1f else -1f
+            val foreground = i < 2
             FogBank(
                 x0 = seededUnit(i * 17 + 3),
                 yFrac = seededRange(i * 29 + 7, 0.15f, 0.85f),
-                speedMul = seededRange(i * 41 + 11, 0.04f, 0.14f),
-                widthFrac = seededRange(i * 53 + 13, 0.35f, 0.7f),
+                speedMul = seededRange(i * 41 + 11, 0.08f, 0.28f) * direction,
+                widthFrac = seededRange(i * 53 + 13, 0.40f, 0.85f),
                 heightFrac = seededRange(i * 67 + 19, 0.08f, 0.22f),
                 bobAmp = seededRange(i * 79 + 23, 0.004f, 0.02f),
                 bobFreq = seededRange(i * 89 + 29, 0.2f, 0.8f),
-                alphaBase = seededRange(i * 97 + 31, 0.08f, 0.22f),
+                alphaBase = if (foreground) {
+                    seededRange(i * 97 + 31, 0.16f, 0.32f)
+                } else {
+                    seededRange(i * 97 + 31, 0.10f, 0.22f)
+                },
                 colorIndex = i,
             )
         }
@@ -58,7 +64,7 @@ internal fun FogEngine(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((55000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween((36000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "fog_t",

@@ -16,7 +16,7 @@ import kotlin.random.Random
 /** Bakes one frozen frame of "Rising Smoke" for Auto/Ambient album art. */
 internal object SmokeStill {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
-    private const val WISP_COUNT = 6
+    private const val WISP_COUNT = 10
 
     fun draw(
         canvas: Canvas,
@@ -64,17 +64,19 @@ internal object SmokeStill {
         for (i in 0 until WISP_COUNT) {
             val x0 = rnd.nextFloat()
             val startOffset = rnd.nextFloat()
-            val riseSpeedFactor = 0.55f + rnd.nextFloat() * 0.7f
+            val riseSpeedFactor = 0.85f + rnd.nextFloat() * 0.8f
             val radiusBaseFrac = 0.05f + rnd.nextFloat() * 0.06f
             val swayFreq = 0.3f + rnd.nextFloat() * 0.6f
             val swayPhase = rnd.nextFloat() * 2f * PI.toFloat()
             val swayAmpFrac = 0.08f + rnd.nextFloat() * 0.12f
             val alphaBase = 0.14f + rnd.nextFloat() * 0.16f
+            val windMul = 0.04f + rnd.nextFloat() * 0.08f
 
             val raw = drift * riseSpeedFactor + startOffset
             val heightFrac = raw - floor(raw)
             val sway = sin(drift * swayFreq + swayPhase) * swayAmpFrac * heightFrac * w
-            val x = x0 * w + sway
+            val wind = (((drift * windMul) % 1f) + 1f) % 1f * w * 0.35f
+            val x = ((((x0 + wind / w) % 1f) + 1f) % 1f) * w + sway
             val y = (1f - heightFrac) * h
             val radius = radiusBaseFrac * minDim * (1f + heightFrac * 2.4f) * pulseMix
             val fadeIn = (heightFrac / 0.1f).coerceIn(0f, 1f)

@@ -51,14 +51,14 @@ internal object MeteorsStill {
         paint.strokeCap = Paint.Cap.ROUND
         paint.style = Paint.Style.STROKE
 
-        for (i in 0 until 4) {
+        for (i in 0 until 9) {
             val startX = rnd.nextFloat()
             val startY = rnd.nextFloat() * 0.45f
-            val lengthFrac = 0.12f + rnd.nextFloat() * 0.16f
+            val lengthFrac = 0.18f + rnd.nextFloat() * 0.20f
             val angle = 0.35f + rnd.nextFloat() * 0.5f
-            val phaseOffset = rnd.nextFloat()
-            val duration = 0.12f + rnd.nextFloat() * 0.16f
-            val thickness = 1.2f + rnd.nextFloat() * 1.6f
+            val phaseOffset = i / 9f + rnd.nextFloat() * 0.08f
+            val duration = 0.25f + rnd.nextFloat() * 0.20f
+            val thickness = 1.8f + rnd.nextFloat() * 1.8f
             val local = ((loop + phaseOffset) % 1f + 1f) % 1f
             if (local > duration) continue
             val life = local / duration
@@ -68,14 +68,14 @@ internal object MeteorsStill {
             val trail = lengthFrac * minOf(w, h)
             val sx = x - cos(angle) * trail
             val sy = y - sin(angle) * trail
-            val fade = (1f - life).coerceIn(0f, 1f) * (life / 0.15f).coerceIn(0f, 1f)
+            val fade = (1f - life).coerceIn(0f, 1f) * (life / 0.08f).coerceIn(0f, 1f)
             val tint = palette.colorAt(i)
             paint.strokeWidth = thickness
             paint.shader = LinearGradient(
                 sx, sy, x, y,
                 Color.TRANSPARENT,
                 Color.argb(
-                    (0.55f * fade * dim * 255).toInt().coerceIn(0, 255),
+                    (0.82f * fade * dim * 255).toInt().coerceIn(0, 255),
                     (Color.red(tint) + 255) / 2,
                     (Color.green(tint) + 255) / 2,
                     (Color.blue(tint) + 255) / 2,
@@ -86,12 +86,12 @@ internal object MeteorsStill {
             paint.shader = null
             paint.style = Paint.Style.FILL
             paint.color = Color.argb(
-                (0.7f * fade * dim * 255).toInt().coerceIn(0, 255),
+                (0.9f * fade * dim * 255).toInt().coerceIn(0, 255),
                 (Color.red(tint) + 255) / 2,
                 (Color.green(tint) + 255) / 2,
                 (Color.blue(tint) + 255) / 2,
             )
-            canvas.drawCircle(x, y, thickness * 1.2f, paint)
+            canvas.drawCircle(x, y, thickness * 1.35f, paint)
             paint.style = Paint.Style.STROKE
         }
         paint.shader = null

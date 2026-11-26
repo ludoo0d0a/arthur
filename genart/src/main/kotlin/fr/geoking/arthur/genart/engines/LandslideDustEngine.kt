@@ -45,10 +45,10 @@ internal fun LandslideDustEngine(
             DustCloud(
                 x0 = seededUnit(i * 17 + 5),
                 yFrac = seededRange(i * 29 + 11, 0.7f, 0.97f),
-                speedMul = seededRange(i * 41 + 13, 0.015f, 0.05f),
+                speedMul = seededRange(i * 41 + 13, 0.04f, 0.12f),
                 widthFrac = seededRange(i * 53 + 17, 0.4f, 0.85f),
                 heightFrac = seededRange(i * 67 + 19, 0.1f, 0.22f),
-                bobAmp = seededRange(i * 79 + 23, 0.003f, 0.012f),
+                bobAmp = seededRange(i * 79 + 23, 0.006f, 0.022f),
                 bobFreq = seededRange(i * 89 + 29, 0.15f, 0.5f),
                 alphaBase = seededRange(i * 97 + 31, 0.1f, 0.24f),
                 colorIndex = i,
@@ -60,7 +60,7 @@ internal fun LandslideDustEngine(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((95000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween((50000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "landslide_dust_t",
@@ -90,11 +90,14 @@ internal fun LandslideDustEngine(
             val dim = if (isActive) 1f else 0.55f
             val breathe = 0.75f + 0.25f * sin01(breathT * 2f * PI.toFloat())
             clouds.forEach { cloud ->
+                // Downhill bias: drift right while settling slightly lower over the cycle.
                 val x = phase01(cloud.x0 + time * cloud.speedMul) * w
                 val bob = sin(time * cloud.bobFreq * 2f * PI.toFloat()) * cloud.bobAmp * h
-                val y = (cloud.yFrac * h + bob).coerceIn(h * 0.62f, h)
+                val puffUp = (breathe - 0.75f) * 0.08f * h
+                val settle = time * 0.03f * h
+                val y = (cloud.yFrac * h + bob - puffUp + settle).coerceIn(h * 0.58f, h)
                 val rw = cloud.widthFrac * w
-                val rh = cloud.heightFrac * h
+                val rh = cloud.heightFrac * h * (0.9f + 0.2f * breathe)
                 val base = TonalPalette.mix(Color(0xFFC9A16A), TonalPalette.pick(paletteColors, cloud.colorIndex), 0.25f)
                 val tint = TonalPalette.brightness(base, brightness * 0.85f)
                 val alpha = cloud.alphaBase * dim * breathe

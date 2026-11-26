@@ -43,12 +43,13 @@ internal fun VoronoiWashEngine(
             VoronoiSite(
                 x0 = seededUnit(i * 17 + 3),
                 y0 = seededUnit(i * 29 + 7),
-                driftX = seededRange(i * 41 + 11, -0.04f, 0.04f),
-                driftY = seededRange(i * 53 + 13, -0.04f, 0.04f),
+                driftX = seededRange(i * 41 + 11, -0.12f, 0.12f),
+                driftY = seededRange(i * 53 + 13, -0.12f, 0.12f),
                 radiusFrac = seededRange(i * 67 + 19, 0.12f, 0.22f),
                 sides = 5 + (i % 3),
                 rot0 = seededRange(i * 79 + 23, 0f, 2f * PI.toFloat()),
-                rotSpeed = seededRange(i * 89 + 29, 0.1f, 0.4f),
+                rotSpeed = seededRange(i * 89 + 29, 0.15f, 0.55f),
+                pulseFreq = seededRange(i * 97 + 31, 0.2f, 0.7f),
                 colorIndex = i,
             )
         }
@@ -86,7 +87,9 @@ internal fun VoronoiWashEngine(
                     if (d < nearest) nearest = d
                 }
             }
-            val radius = (nearest * 0.48f).coerceIn(minDim * 0.08f, site.radiusFrac * minDim * 1.4f)
+            val pulse = 0.5f + 0.5f * sin(time * 2f * PI.toFloat() * site.pulseFreq + site.rot0)
+            val radius = (nearest * 0.48f).coerceIn(minDim * 0.08f, site.radiusFrac * minDim * 1.4f) *
+                (0.88f + 0.16f * pulse)
             val rot = site.rot0 + time * 2f * PI.toFloat() * site.rotSpeed
             val path = Path()
             for (k in 0 until site.sides) {
@@ -108,14 +111,16 @@ internal fun VoronoiWashEngine(
                 TonalPalette.pick(paletteColors, site.colorIndex),
                 brightness,
             )
+            val fillAlpha = (0.16f + 0.14f * pulse) * dim
+            val strokeW = 1.0f + 0.9f * pulse
             drawPath(
                 path = path,
-                color = TonalPalette.withAlpha(tint, 0.22f * dim),
+                color = TonalPalette.withAlpha(tint, fillAlpha),
             )
             drawPath(
                 path = path,
                 color = TonalPalette.withAlpha(tint, 0.45f * dim),
-                style = Stroke(width = 1.2f),
+                style = Stroke(width = strokeW),
             )
             drawCircle(
                 color = TonalPalette.withAlpha(tint, 0.35f * dim),
@@ -135,5 +140,6 @@ private data class VoronoiSite(
     val sides: Int,
     val rot0: Float,
     val rotSpeed: Float,
+    val pulseFreq: Float,
     val colorIndex: Int,
 )

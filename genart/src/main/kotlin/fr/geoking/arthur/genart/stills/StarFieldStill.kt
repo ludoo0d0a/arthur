@@ -9,6 +9,8 @@ import android.graphics.RadialGradient
 import android.graphics.Shader
 import fr.geoking.arthur.genart.AnimationPalette
 import fr.geoking.arthur.genart.GenartStillFx
+import fr.geoking.arthur.genart.phase01
+import fr.geoking.arthur.genart.sin01
 import kotlin.math.PI
 import kotlin.math.sin
 import kotlin.random.Random
@@ -42,7 +44,8 @@ internal object StarFieldStill {
         canvas.drawRect(0f, 0f, w, h, paint)
         paint.shader = null
 
-        val drift = phase + rotationDeg * PI.toFloat() / 180f
+        val driftT = phase + rotationDeg * PI.toFloat() / 180f
+        val loop = phase01(driftT / (2f * PI.toFloat()))
 
         // Soft nebula / galaxy dust — fills most of the dark sky for AA surface coverage.
         paint.maskFilter = BlurMaskFilter(minDim * 0.08f, BlurMaskFilter.Blur.NORMAL)
@@ -71,9 +74,9 @@ internal object StarFieldStill {
         paint.maskFilter = null
 
         // Dense far / mid / near layers — random positions per generation.
-        drawLayer(canvas, rnd, w, h, minDim, count = 180, sizeScale = 1f, alphaScale = 0.8f, blurFrac = 0f, drift = drift, pulse = pulse, palette = palette, colorOffset = 0)
-        drawLayer(canvas, rnd, w, h, minDim, count = 64, sizeScale = 1.85f, alphaScale = 0.95f, blurFrac = 0.012f, drift = drift, pulse = pulse, palette = palette, colorOffset = 70)
-        drawLayer(canvas, rnd, w, h, minDim, count = 28, sizeScale = 2.9f, alphaScale = 1.15f, blurFrac = 0.032f, drift = drift, pulse = pulse, palette = palette, colorOffset = 96)
+        drawLayer(canvas, rnd, w, h, minDim, count = 180, sizeScale = 1f, alphaScale = 0.8f, blurFrac = 0f, loop = loop, driftScale = 0.04f, yDriftScale = 0.008f, twinkleLoop = loop, pulse = pulse, palette = palette, colorOffset = 0)
+        drawLayer(canvas, rnd, w, h, minDim, count = 64, sizeScale = 1.85f, alphaScale = 0.95f, blurFrac = 0.012f, loop = loop, driftScale = 0.12f, yDriftScale = 0.02f, twinkleLoop = loop * 0.7f + 0.15f, pulse = pulse, palette = palette, colorOffset = 70)
+        drawLayer(canvas, rnd, w, h, minDim, count = 28, sizeScale = 2.9f, alphaScale = 1.15f, blurFrac = 0.032f, loop = loop, driftScale = 0.25f, yDriftScale = 0.04f, twinkleLoop = loop, pulse = pulse, palette = palette, colorOffset = 96)
 
         // Extra seeded sparkle dust for near-4K richness.
         GenartStillFx.randomScatter(
@@ -110,20 +113,27 @@ internal object StarFieldStill {
         sizeScale: Float,
         alphaScale: Float,
         blurFrac: Float,
-        drift: Float,
+        loop: Float,
+        driftScale: Float,
+        yDriftScale: Float,
+        twinkleLoop: Float,
         pulse: Float,
         palette: AnimationPalette,
         colorOffset: Int,
     ) {
         paint.maskFilter = if (blurFrac > 0f) BlurMaskFilter(blurFrac * minDim, BlurMaskFilter.Blur.NORMAL) else null
+        val twinkleAngle = phase01(twinkleLoop) * 2f * PI.toFloat()
         for (i in 0 until count) {
             val x0 = rnd.nextFloat()
             val y0 = rnd.nextFloat()
             val sizeUnit = rnd.nextFloat()
-            val twinkle = 0.5f + 0.5f * sin(drift * (0.5f + rnd.nextFloat() * 1.1f) + rnd.nextFloat() * 2f * PI.toFloat())
-            val x = (((x0 + drift * 0.01f) % 1f) + 1f) % 1f * w
-            val y = y0 * h
-            val radius = (0.0012f + sizeUnit * 0.0038f) * minDim * sizeScale
+            val twinkleFreq = 0.5f + rnd.nextFloat() * 1.1f
+            val twinklePhase = rnd.nextFloat() * 2f * PI.toFloat()
+            val twinkle = 0.5f + 0.5f * sin01(twinkleAngle * twinkleFreq + twinklePhase)
+            val drift = phase01(loop)
+            val x = phase01(x0 + drift * driftScale) * w
+            val y = phase01(y0 + drift * yDriftScale) * h
+            val radius = (0.0011f + sizeUnit * 0.0034f) * minDim * sizeScale
             val tint = palette.colorAt(colorOffset + i)
             val alpha = (0.4f + 0.6f * pulse) * (0.45f + 0.55f * twinkle) * alphaScale
             paint.color = Color.argb(

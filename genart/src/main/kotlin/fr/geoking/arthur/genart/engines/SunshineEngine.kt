@@ -41,9 +41,11 @@ internal fun SunshineEngine(
             RaySeed(
                 angle = seededRange(i * 19 + 5, -1.8f, 1.8f),
                 widthHalf = seededRange(i * 31 + 9, 0.1f, 0.2f),
-                swayAmp = seededRange(i * 43 + 13, 0.015f, 0.045f),
-                swayFreq = seededRange(i * 59 + 17, 0.08f, 0.28f),
-                alphaBase = seededRange(i * 71 + 23, 0.05f, 0.12f),
+                swayAmp = seededRange(i * 43 + 13, 0.05f, 0.14f),
+                swayFreq = seededRange(i * 59 + 17, 0.15f, 0.45f),
+                alphaBase = seededRange(i * 71 + 23, 0.06f, 0.14f),
+                twinkleFreq = seededRange(i * 83 + 29, 0.35f, 1.1f),
+                twinklePhase = seededRange(i * 97 + 31, 0f, 2f * PI.toFloat()),
                 colorIndex = i,
             )
         }
@@ -53,7 +55,7 @@ internal fun SunshineEngine(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((70000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween((30000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "sunshine_t",
@@ -70,10 +72,11 @@ internal fun SunshineEngine(
         val time = phase01(t) * 2f * PI.toFloat()
         val dim = if (isActive) 1f else 0.6f
         val breathe = 0.9f + 0.1f * sin01(time * 0.4f)
+        val globalSpin = time * 0.08f
         val reach = maxOf(w, h) * 1.3f
         rays.forEach { ray ->
             val sway = ray.swayAmp * sin(time * ray.swayFreq)
-            val a = -PI.toFloat() / 4f + ray.angle + sway
+            val a = -PI.toFloat() / 4f + ray.angle + sway + globalSpin
             val half = ray.widthHalf
             val left = Offset(
                 sun.x + sin(a - half) * reach,
@@ -89,13 +92,14 @@ internal fun SunshineEngine(
                 lineTo(right.x, right.y)
                 close()
             }
+            val twinkle = 0.7f + 0.3f * sin(time * ray.twinkleFreq + ray.twinklePhase)
             val base = TonalPalette.mix(Color(0xFFFFF6D9), TonalPalette.pick(paletteColors, ray.colorIndex), 0.25f)
             val tint = TonalPalette.brightness(base, brightness)
             drawPath(
                 path = path,
                 brush = Brush.linearGradient(
                     colors = listOf(
-                        TonalPalette.withAlpha(tint, ray.alphaBase * dim * breathe),
+                        TonalPalette.withAlpha(tint, ray.alphaBase * dim * breathe * twinkle),
                         Color.Transparent,
                     ),
                     start = sun,
@@ -126,5 +130,7 @@ private data class RaySeed(
     val swayAmp: Float,
     val swayFreq: Float,
     val alphaBase: Float,
+    val twinkleFreq: Float,
+    val twinklePhase: Float,
     val colorIndex: Int,
 )

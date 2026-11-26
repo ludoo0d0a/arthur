@@ -39,11 +39,12 @@ internal fun SoftNoiseFieldEngine(
             NoiseCell(
                 x0 = seededUnit(i * 13 + 1),
                 y0 = seededUnit(i * 19 + 5),
-                driftX = seededRange(i * 31 + 7, -0.06f, 0.06f),
-                driftY = seededRange(i * 43 + 11, -0.05f, 0.05f),
+                driftX = seededRange(i * 31 + 7, -0.16f, 0.16f),
+                driftY = seededRange(i * 43 + 11, -0.14f, 0.14f),
                 radiusFrac = seededRange(i * 59 + 17, 0.18f, 0.42f),
-                wobbleFreq = seededRange(i * 71 + 23, 0.1f, 0.4f),
+                wobbleFreq = seededRange(i * 71 + 23, 0.15f, 0.55f),
                 wobblePhase = seededRange(i * 83 + 29, 0f, 2f * PI.toFloat()),
+                breatheFreq = seededRange(i * 91 + 37, 0.2f, 0.6f),
                 alphaBase = seededRange(i * 97 + 31, 0.08f, 0.22f),
                 colorIndex = i,
             )
@@ -54,7 +55,7 @@ internal fun SoftNoiseFieldEngine(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween((40000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
+            animation = tween((28000 / speed.coerceAtLeast(0.2f)).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "soft_noise_field_t",
@@ -68,9 +69,11 @@ internal fun SoftNoiseFieldEngine(
         val dim = if (isActive) 1f else 0.55f
         cells.forEach { cell ->
             val wobble = sin(time * 2f * PI.toFloat() * cell.wobbleFreq + cell.wobblePhase)
-            val x = phase01(cell.x0 + time * cell.driftX + wobble * 0.02f) * w
-            val y = phase01(cell.y0 + time * cell.driftY + wobble * 0.015f) * h
-            val radius = cell.radiusFrac * minDim * (0.9f + 0.1f * wobble)
+            val breathe = sin(time * 2f * PI.toFloat() * cell.breatheFreq + cell.wobblePhase)
+            val x = phase01(cell.x0 + time * cell.driftX + wobble * 0.05f) * w
+            val y = phase01(cell.y0 + time * cell.driftY + wobble * 0.04f) * h
+            val radius = cell.radiusFrac * minDim * (0.85f + 0.2f * breathe)
+            val alphaPulse = 0.85f + 0.15f * breathe
             val tint = TonalPalette.brightness(
                 TonalPalette.pick(paletteColors, cell.colorIndex),
                 brightness,
@@ -78,8 +81,8 @@ internal fun SoftNoiseFieldEngine(
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        TonalPalette.withAlpha(tint, cell.alphaBase * dim),
-                        TonalPalette.withAlpha(tint, cell.alphaBase * 0.25f * dim),
+                        TonalPalette.withAlpha(tint, cell.alphaBase * dim * alphaPulse),
+                        TonalPalette.withAlpha(tint, cell.alphaBase * 0.25f * dim * alphaPulse),
                         Color.Transparent,
                     ),
                     center = Offset(x, y),
@@ -100,6 +103,7 @@ private data class NoiseCell(
     val radiusFrac: Float,
     val wobbleFreq: Float,
     val wobblePhase: Float,
+    val breatheFreq: Float,
     val alphaBase: Float,
     val colorIndex: Int,
 )

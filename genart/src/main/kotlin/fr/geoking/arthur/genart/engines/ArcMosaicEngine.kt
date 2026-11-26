@@ -23,7 +23,10 @@ import fr.geoking.arthur.genart.phase01
 import fr.geoking.arthur.genart.qualityCount
 import fr.geoking.arthur.genart.seededRange
 import fr.geoking.arthur.genart.seededUnit
+import fr.geoking.arthur.genart.sin01
 import kotlin.math.min
+import kotlin.math.sin
+import kotlin.math.PI
 
 /** Truchet-style quarter-arc tile grid with slow rotation / phase offset. */
 @Composable
@@ -71,16 +74,20 @@ internal fun ArcMosaicEngine(
             val cx = originX + (col + 0.5f) * cell
             val cy = originY + (row + 0.5f) * cell
             val rotDeg = (tile.rot0 + time * tile.speedMul * 4f) * 90f
+            val envelope = sin01((time + tile.rot0 * 0.25f) * tile.speedMul * 2f * PI.toFloat())
+            val appear = if (envelope < 0.05f) 0f else envelope
+            if (appear <= 0f) return@forEachIndexed
             val tint = TonalPalette.brightness(
                 TonalPalette.pick(paletteColors, tile.colorIndex),
                 brightness,
             )
-            val stroke = cell * tile.strokeFrac
+            val strokePulse = 0.85f + 0.3f * sin(time * 2f * PI.toFloat() * tile.speedMul + tile.rot0)
+            val stroke = cell * tile.strokeFrac * strokePulse
             val arcSize = cell * 0.92f
             rotate(degrees = rotDeg, pivot = Offset(cx, cy)) {
                 // Two opposing quarter-arcs (classic Truchet).
                 drawArc(
-                    color = TonalPalette.withAlpha(tint, 0.55f * dim),
+                    color = TonalPalette.withAlpha(tint, 0.55f * dim * appear),
                     startAngle = 0f,
                     sweepAngle = 90f,
                     useCenter = false,
@@ -89,7 +96,7 @@ internal fun ArcMosaicEngine(
                     style = Stroke(width = stroke, cap = StrokeCap.Round),
                 )
                 drawArc(
-                    color = TonalPalette.withAlpha(tint, 0.4f * dim),
+                    color = TonalPalette.withAlpha(tint, 0.4f * dim * appear),
                     startAngle = 180f,
                     sweepAngle = 90f,
                     useCenter = false,
@@ -100,7 +107,7 @@ internal fun ArcMosaicEngine(
             }
             // Soft fill hint under arcs.
             drawCircle(
-                color = TonalPalette.withAlpha(tint, 0.06f * dim),
+                color = TonalPalette.withAlpha(tint, 0.06f * dim * appear),
                 radius = cell * 0.35f,
                 center = Offset(cx, cy),
             )

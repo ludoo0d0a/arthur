@@ -16,13 +16,14 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import fr.geoking.arthur.genart.GenartQuality
 import fr.geoking.arthur.genart.TonalPalette
-import fr.geoking.arthur.genart.lerp
 import fr.geoking.arthur.genart.phase01
 import fr.geoking.arthur.genart.qualityCount
 import fr.geoking.arthur.genart.seededRange
 import fr.geoking.arthur.genart.seededUnit
 import fr.geoking.arthur.genart.sin01
 import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 
 /** Multi-blob radial gradients with slow center/color morph — soft wallpaper feel. */
 @Composable
@@ -44,6 +45,7 @@ internal fun GradientMeshEngine(
                 yB = seededUnit(i * 53 + 13),
                 radiusFrac = seededRange(i * 67 + 19, 0.28f, 0.55f),
                 morphPhase = seededRange(i * 79 + 23, 0f, 2f * PI.toFloat()),
+                orbitFreq = seededRange(i * 83 + 27, 0.35f, 0.9f),
                 alphaBase = seededRange(i * 89 + 29, 0.22f, 0.42f),
                 colorIndex = i,
                 colorIndexB = i + 2,
@@ -68,10 +70,17 @@ internal fun GradientMeshEngine(
         val time = phase01(t)
         val dim = if (isActive) 1f else 0.55f
         nodes.forEach { node ->
-            val morph = sin01(time * 2f * PI.toFloat() + node.morphPhase)
-            val x = lerp(node.xA, node.xB, morph) * w
-            val y = lerp(node.yA, node.yB, morph) * h
-            val radius = node.radiusFrac * minDim * (0.85f + 0.15f * morph)
+            val morph = sin01(time * 2f * PI.toFloat() * node.orbitFreq + node.morphPhase)
+            val midX = (node.xA + node.xB) * 0.5f
+            val midY = (node.yA + node.yB) * 0.5f
+            val dx = (node.xB - node.xA) * 0.5f
+            val dy = (node.yB - node.yA) * 0.5f
+            val orbitAngle = time * 2f * PI.toFloat() * node.orbitFreq + node.morphPhase
+            val x = (midX + dx * cos(orbitAngle) - dy * 0.35f * sin(orbitAngle)) * w
+            val y = (midY + dy * cos(orbitAngle) + dx * 0.35f * sin(orbitAngle)) * h
+            val harmonic = 0.08f * sin(time * 4f * PI.toFloat() * node.orbitFreq + node.morphPhase)
+            val radius = node.radiusFrac * minDim * (0.85f + 0.15f * morph + harmonic)
+            val alphaPulse = 0.8f + 0.2f * morph
             val cA = TonalPalette.brightness(
                 TonalPalette.pick(paletteColors, node.colorIndex),
                 brightness,
@@ -84,8 +93,8 @@ internal fun GradientMeshEngine(
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        TonalPalette.withAlpha(tint, node.alphaBase * dim),
-                        TonalPalette.withAlpha(tint, node.alphaBase * 0.45f * dim),
+                        TonalPalette.withAlpha(tint, node.alphaBase * dim * alphaPulse),
+                        TonalPalette.withAlpha(tint, node.alphaBase * 0.45f * dim * alphaPulse),
                         TonalPalette.withAlpha(tint, 0.05f * dim),
                         Color.Transparent,
                     ),
@@ -106,6 +115,7 @@ private data class MeshNode(
     val yB: Float,
     val radiusFrac: Float,
     val morphPhase: Float,
+    val orbitFreq: Float,
     val alphaBase: Float,
     val colorIndex: Int,
     val colorIndexB: Int,

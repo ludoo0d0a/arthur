@@ -21,6 +21,7 @@ import fr.geoking.arthur.genart.phase01
 import fr.geoking.arthur.genart.qualityCount
 import fr.geoking.arthur.genart.sin01
 import kotlin.math.PI
+import kotlin.math.sin
 
 private val RainbowSpectrum = listOf(
     Color(0xFFC9A6FF),
@@ -70,12 +71,13 @@ internal fun RainbowEngine(
             ),
         )
 
-        val breathe = 0.55f + 0.45f * sin01(phase01(t) * 2f * PI.toFloat())
-
-        val centerX = w * 0.5f
+        val loop = phase01(t)
+        val angle = loop * 2f * PI.toFloat()
+        val breathe = 0.55f + 0.45f * sin01(angle)
+        val centerX = w * (0.5f + 0.04f * sin(angle * 0.6f))
         val centerY = h * 1.35f
         val bandGap = h * 0.045f
-        val baseRadius = h * 1.25f
+        val baseRadius = h * (1.20f + 0.08f * breathe)
         val bandWidth = bandGap * 0.85f
 
         val extraOuter = haloLayers - 1
@@ -83,7 +85,8 @@ internal fun RainbowEngine(
             val radius = baseRadius + i * bandGap
             val base = RainbowSpectrum[i]
             val tint = TonalPalette.brightness(base, brightness.coerceAtMost(1.2f))
-            val alpha = 0.14f * dim * breathe
+            val bandShimmer = 0.75f + 0.25f * sin01(angle * 1.2f + i * 0.55f)
+            val alpha = 0.14f * dim * breathe * bandShimmer
             drawArc(
                 color = TonalPalette.withAlpha(tint, alpha),
                 startAngle = 180f,

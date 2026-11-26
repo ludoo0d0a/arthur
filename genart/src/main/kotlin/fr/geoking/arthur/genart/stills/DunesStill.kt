@@ -48,13 +48,13 @@ internal object DunesStill {
             DuneLayerStillSeed(
                 depthFrac = depthFrac,
                 baseYFrac = 0.42f + depthFrac * 0.36f + (rnd.nextFloat() - 0.5f) * 0.06f,
-                ampFrac1 = 0.012f + rnd.nextFloat() * 0.02f,
+                ampFrac1 = 0.028f + rnd.nextFloat() * 0.044f,
                 freq1 = 0.006f + rnd.nextFloat() * 0.007f,
                 phase1 = rnd.nextFloat() * 2f * PI.toFloat(),
-                ampFrac2 = 0.006f + rnd.nextFloat() * 0.01f,
+                ampFrac2 = 0.014f + rnd.nextFloat() * 0.024f,
                 freq2 = 0.014f + rnd.nextFloat() * 0.012f,
                 phase2 = rnd.nextFloat() * 2f * PI.toFloat(),
-                driftSpeed = 0.015f + rnd.nextFloat() * 0.035f,
+                driftSpeed = 0.04f + rnd.nextFloat() * 0.10f,
                 colorIndex = i,
             )
         }
@@ -99,31 +99,35 @@ internal object DunesStill {
         }
         paint.alpha = 255
 
-        val grainCount = 20
         val sandColor = palette.primary
-        for (i in 0 until grainCount) {
-            val x0 = rnd.nextFloat()
-            val y0Frac = rnd.nextFloat() * 0.54f + 0.08f
-            val jitterAmpFrac = rnd.nextFloat() * 0.014f + 0.004f
-            val jitterFreq = rnd.nextFloat() * 1.6f + 0.6f
-            val jitterPhase = rnd.nextFloat() * 2f * PI.toFloat()
-            val length = rnd.nextFloat() * 8f + 4f
+        fun drawGrains(count: Int, speed: Float, yMin: Float, ySpan: Float, alphaBoost: Float) {
+            for (i in 0 until count) {
+                val x0 = rnd.nextFloat()
+                val y0Frac = yMin + rnd.nextFloat() * ySpan
+                val jitterAmpFrac = rnd.nextFloat() * 0.022f + 0.006f
+                val jitterFreq = rnd.nextFloat() * 1.6f + 0.6f
+                val jitterPhase = rnd.nextFloat() * 2f * PI.toFloat()
+                val length = rnd.nextFloat() * 11f + 7f
+                val stroke = 1.6f + rnd.nextFloat() * 1.0f
 
-            val x = (((x0 + phase * 0.4f) % 1f + 1f) % 1f) * w
-            val y = y0Frac * h + sin(phase * jitterFreq * 2f * PI.toFloat() + jitterPhase) * jitterAmpFrac * h
-            val alpha = ((0.12f + 0.18f * (1f - y0Frac)) * 255).toInt().coerceIn(0, 140)
+                val x = (((x0 + phase * speed) % 1f + 1f) % 1f) * w
+                val y = y0Frac * h + sin(phase * jitterFreq * 2f * PI.toFloat() + jitterPhase) * jitterAmpFrac * h
+                val alpha = ((0.22f + 0.28f * (1f - y0Frac)) * alphaBoost * 255).toInt().coerceIn(0, 190)
 
-            paint.style = Paint.Style.STROKE
-            paint.strokeWidth = 1.4f
-            paint.strokeCap = Paint.Cap.ROUND
-            paint.color = Color.argb(
-                alpha,
-                Color.red(sandColor),
-                Color.green(sandColor),
-                Color.blue(sandColor),
-            )
-            canvas.drawLine(x - length, y, x, y, paint)
+                paint.style = Paint.Style.STROKE
+                paint.strokeWidth = stroke
+                paint.strokeCap = Paint.Cap.ROUND
+                paint.color = Color.argb(
+                    alpha,
+                    Color.red(sandColor),
+                    Color.green(sandColor),
+                    Color.blue(sandColor),
+                )
+                canvas.drawLine(x - length, y, x, y, paint)
+            }
         }
+        drawGrains(count = 32, speed = 0.7f, yMin = 0.08f, ySpan = 0.54f, alphaBoost = 1f)
+        drawGrains(count = 14, speed = 1.6f, yMin = 0.05f, ySpan = 0.33f, alphaBoost = 1.15f)
         paint.style = Paint.Style.FILL
         paint.alpha = 255
     }

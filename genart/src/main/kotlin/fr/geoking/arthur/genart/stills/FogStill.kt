@@ -52,11 +52,12 @@ internal object FogStill {
         for (i in 0 until 8) {
             val x0 = rnd.nextFloat()
             val yFrac = 0.15f + rnd.nextFloat() * 0.7f
-            val speedMul = 0.04f + rnd.nextFloat() * 0.1f
-            val widthFrac = 0.35f + rnd.nextFloat() * 0.35f
+            val direction = if (i % 2 == 0) 1f else -1f
+            val speedMul = (0.08f + rnd.nextFloat() * 0.20f) * direction
+            val widthFrac = 0.40f + rnd.nextFloat() * 0.45f
             val heightFrac = 0.08f + rnd.nextFloat() * 0.14f
             val bobAmp = 0.004f + rnd.nextFloat() * 0.016f
-            val alphaBase = 0.08f + rnd.nextFloat() * 0.14f
+            val alphaBase = if (i < 2) 0.16f + rnd.nextFloat() * 0.16f else 0.10f + rnd.nextFloat() * 0.12f
             val x = (((x0 + t01 * speedMul + rotationDeg / 720f) % 1f) + 1f) % 1f * w
             val bobNoise = loopedFbm(t01, radius = 1.25f + i * 0.05f, seedOffset = i * 73) * 2f - 1f
             val y = yFrac * h + bobNoise * bobAmp * h

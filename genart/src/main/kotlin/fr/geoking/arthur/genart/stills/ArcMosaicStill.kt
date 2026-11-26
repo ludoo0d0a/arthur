@@ -5,8 +5,10 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
 import fr.geoking.arthur.genart.AnimationPalette
+import fr.geoking.arthur.genart.sin01
 import kotlin.math.PI
 import kotlin.math.min
+import kotlin.math.sin
 import kotlin.random.Random
 
 /** Bakes one frozen frame of Arc Mosaic for Auto/Ambient album art. */
@@ -47,14 +49,18 @@ internal object ArcMosaicStill {
             val speedMul = 0.15f + rnd.nextFloat() * 0.3f
             val strokeFrac = 0.06f + rnd.nextFloat() * 0.06f
             val rotDeg = (rot0 + loop * speedMul * 4f) * 90f
+            val envelope = sin01((loop + rot0 * 0.25f) * speedMul * 2f * PI.toFloat())
+            val appear = if (envelope < 0.05f) 0f else envelope
+            if (appear <= 0f) continue
             val tint = palette.colorAt(index)
-            val stroke = cell * strokeFrac
+            val strokePulse = 0.85f + 0.3f * sin(loop * 2f * PI.toFloat() * speedMul + rot0)
+            val stroke = cell * strokeFrac * strokePulse
             val arcSize = cell * 0.92f
             oval.set(cx - arcSize * 0.5f, cy - arcSize * 0.5f, cx + arcSize * 0.5f, cy + arcSize * 0.5f)
 
             paint.style = Paint.Style.FILL
             paint.color = Color.argb(
-                (0.06f * dim * 255).toInt().coerceIn(0, 255),
+                (0.06f * dim * appear * 255).toInt().coerceIn(0, 255),
                 Color.red(tint), Color.green(tint), Color.blue(tint),
             )
             canvas.drawCircle(cx, cy, cell * 0.35f, paint)
@@ -65,13 +71,13 @@ internal object ArcMosaicStill {
             paint.strokeCap = Paint.Cap.ROUND
             paint.strokeWidth = stroke
             paint.color = Color.argb(
-                (0.55f * dim * 255).toInt().coerceIn(0, 255),
+                (0.55f * dim * appear * 255).toInt().coerceIn(0, 255),
                 Color.red(tint), Color.green(tint), Color.blue(tint),
             )
             canvas.drawArc(oval, 0f, 90f, false, paint)
             paint.strokeWidth = stroke * 0.85f
             paint.color = Color.argb(
-                (0.4f * dim * 255).toInt().coerceIn(0, 255),
+                (0.4f * dim * appear * 255).toInt().coerceIn(0, 255),
                 Color.red(tint), Color.green(tint), Color.blue(tint),
             )
             canvas.drawArc(oval, 180f, 90f, false, paint)

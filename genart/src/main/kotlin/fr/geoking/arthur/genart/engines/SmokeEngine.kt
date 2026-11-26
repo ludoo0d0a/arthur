@@ -37,18 +37,19 @@ internal fun SmokeEngine(
     speed: Float,
     modifier: Modifier = Modifier,
 ) {
-    val wispCount = qualityCount(quality, low = 3, medium = 5, high = 8)
+    val wispCount = qualityCount(quality, low = 5, medium = 8, high = 12)
     val wisps = remember(wispCount) {
         List(wispCount) { i ->
             SmokeWispSeed(
                 x0 = seededUnit(i * 17 + 3),
                 startOffset = seededUnit(i * 29 + 7),
-                riseSpeedFactor = seededRange(i * 41 + 11, 0.55f, 1.25f),
+                riseSpeedFactor = seededRange(i * 41 + 11, 0.85f, 1.65f),
                 radiusBaseFrac = seededRange(i * 53 + 13, 0.05f, 0.11f),
                 swayFreq = seededRange(i * 67 + 19, 0.3f, 0.9f),
                 swayPhase = seededRange(i * 79 + 23, 0f, 2f * PI.toFloat()),
                 swayAmpFrac = seededRange(i * 89 + 29, 0.08f, 0.2f),
                 alphaBase = seededRange(i * 101 + 31, 0.14f, 0.3f),
+                windMul = seededRange(i * 107 + 37, 0.04f, 0.12f),
                 colorIndex = i,
             )
         }
@@ -83,19 +84,22 @@ internal fun SmokeEngine(
             val minDim = w.coerceAtMost(h)
             val time = phase01(t) * (2f * PI.toFloat())
 
-            wisps.forEach { wisp ->
-                val heightFrac = phase01(t * wisp.riseSpeedFactor * driftScale + wisp.startOffset)
+            fun drawWisp(wisp: SmokeWispSeed, offset: Float) {
+                val heightFrac = phase01(t * wisp.riseSpeedFactor * driftScale + wisp.startOffset + offset)
                 val sway = sin(time * wisp.swayFreq + wisp.swayPhase) * wisp.swayAmpFrac * heightFrac * w
-                val x = wisp.x0 * w + sway
+                val wind = phase01(t * wisp.windMul * driftScale) * w * 0.35f
+                val x = phase01(wisp.x0 + wind / w) * w + sway
                 val y = (1f - heightFrac) * h
                 val radius = wisp.radiusBaseFrac * minDim * (1f + heightFrac * 2.4f)
                 val fadeIn = (heightFrac / 0.1f).coerceIn(0f, 1f)
-                val alpha = (wisp.alphaBase * (1f - heightFrac) * fadeIn * alphaScale).coerceIn(0f, 1f)
+                val fadeOut = ((1f - heightFrac) / 0.12f).coerceIn(0f, 1f)
+                val cross = if (offset > 0f) 0.55f else 1f
+                val alpha = (wisp.alphaBase * (1f - heightFrac) * fadeIn * fadeOut * alphaScale * cross).coerceIn(0f, 1f)
+                if (alpha < 0.01f) return
                 val tint = TonalPalette.brightness(
                     TonalPalette.mix(grey, TonalPalette.pick(paletteColors, wisp.colorIndex), 0.25f),
                     brightness.coerceAtLeast(0f),
                 )
-
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(
@@ -108,6 +112,11 @@ internal fun SmokeEngine(
                     radius = radius,
                     center = Offset(x, y),
                 )
+            }
+            wisps.forEach { wisp ->
+                drawWisp(wisp, 0f)
+                // Overlapping twin for seamless loop cross-fade.
+                drawWisp(wisp, 0.5f)
             }
         }
     }
@@ -122,5 +131,6 @@ private data class SmokeWispSeed(
     val swayPhase: Float,
     val swayAmpFrac: Float,
     val alphaBase: Float,
+    val windMul: Float,
     val colorIndex: Int,
 )

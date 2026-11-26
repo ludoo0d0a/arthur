@@ -35,7 +35,8 @@ internal fun DunesEngine(
     modifier: Modifier = Modifier,
 ) {
     val layerCount = qualityCount(quality, low = 3, medium = 5, high = 7)
-    val grainCount = qualityCount(quality, low = 10, medium = 18, high = 28)
+    val grainCount = qualityCount(quality, low = 18, medium = 32, high = 48)
+    val fastGrainCount = qualityCount(quality, low = 8, medium = 14, high = 22)
 
     val layers = remember(layerCount) {
         List(layerCount) { i ->
@@ -43,13 +44,13 @@ internal fun DunesEngine(
             DuneLayerSeed(
                 depthFrac = depthFrac,
                 baseYFrac = 0.42f + depthFrac * 0.36f + seededRange(i * 13 + 5, -0.03f, 0.03f),
-                ampFrac1 = seededRange(i * 17 + 7, 0.012f, 0.032f),
+                ampFrac1 = seededRange(i * 17 + 7, 0.028f, 0.072f),
                 freq1 = seededRange(i * 19 + 11, 0.006f, 0.013f),
                 phase1 = seededRange(i * 23 + 13, 0f, 2f * PI.toFloat()),
-                ampFrac2 = seededRange(i * 29 + 17, 0.006f, 0.016f),
+                ampFrac2 = seededRange(i * 29 + 17, 0.014f, 0.038f),
                 freq2 = seededRange(i * 31 + 19, 0.014f, 0.026f),
                 phase2 = seededRange(i * 37 + 23, 0f, 2f * PI.toFloat()),
-                driftSpeed = seededRange(i * 41 + 29, 0.015f, 0.05f) * (0.4f + depthFrac * 0.9f),
+                driftSpeed = seededRange(i * 41 + 29, 0.04f, 0.14f) * (0.4f + depthFrac * 0.9f),
                 colorIndex = i,
             )
         }
@@ -59,12 +60,28 @@ internal fun DunesEngine(
             SandGrainSeed(
                 x0 = seededUnit(i * 43 + 3),
                 y0Frac = seededRange(i * 47 + 7, 0.08f, 0.62f),
-                speedMul = seededRange(i * 53 + 11, 0.4f, 1.4f),
-                jitterAmpFrac = seededRange(i * 59 + 13, 0.004f, 0.018f),
+                speedMul = seededRange(i * 53 + 11, 0.7f, 2.0f),
+                jitterAmpFrac = seededRange(i * 59 + 13, 0.006f, 0.028f),
                 jitterFreq = seededRange(i * 61 + 17, 0.6f, 2.2f),
                 jitterPhase = seededRange(i * 67 + 19, 0f, 2f * PI.toFloat()),
-                length = seededRange(i * 71 + 23, 4f, 12f),
+                length = seededRange(i * 71 + 23, 7f, 18f),
+                stroke = seededRange(i * 73 + 27, 1.6f, 2.6f),
                 colorIndex = i,
+            )
+        }
+    }
+    val fastGrains = remember(fastGrainCount) {
+        List(fastGrainCount) { i ->
+            SandGrainSeed(
+                x0 = seededUnit(i * 83 + 5),
+                y0Frac = seededRange(i * 87 + 9, 0.05f, 0.38f),
+                speedMul = seededRange(i * 91 + 13, 1.6f, 3.2f),
+                jitterAmpFrac = seededRange(i * 97 + 17, 0.008f, 0.03f),
+                jitterFreq = seededRange(i * 101 + 19, 1.0f, 2.8f),
+                jitterPhase = seededRange(i * 103 + 23, 0f, 2f * PI.toFloat()),
+                length = seededRange(i * 107 + 29, 10f, 22f),
+                stroke = seededRange(i * 109 + 31, 1.8f, 3.0f),
+                colorIndex = i + 11,
             )
         }
     }
@@ -127,20 +144,24 @@ internal fun DunesEngine(
         }
 
         val sandColor = TonalPalette.brightness(TonalPalette.pick(paletteColors, 0), brightness)
-        grains.forEach { grain ->
-            val xFrac = phase01(grain.x0 + t * grain.speedMul * driftScale)
-            val x = xFrac * w
-            val jitterT = t * grain.jitterFreq * 2f * PI.toFloat() + grain.jitterPhase
-            val y = grain.y0Frac * h + sin(jitterT) * grain.jitterAmpFrac * h
-            val alpha = (0.12f + 0.18f * (1f - grain.y0Frac)) * sandAlphaScale * brightness.coerceAtMost(1f)
-            drawLine(
-                color = TonalPalette.withAlpha(sandColor, alpha.coerceIn(0f, 0.6f)),
-                start = Offset(x - grain.length, y),
-                end = Offset(x, y),
-                strokeWidth = 1.4f,
-                cap = StrokeCap.Round,
-            )
+        fun drawGrainLayer(list: List<SandGrainSeed>, alphaBoost: Float) {
+            list.forEach { grain ->
+                val xFrac = phase01(grain.x0 + t * grain.speedMul * driftScale)
+                val x = xFrac * w
+                val jitterT = t * grain.jitterFreq * 2f * PI.toFloat() + grain.jitterPhase
+                val y = grain.y0Frac * h + sin(jitterT) * grain.jitterAmpFrac * h
+                val alpha = (0.22f + 0.28f * (1f - grain.y0Frac)) * sandAlphaScale * brightness.coerceAtMost(1f) * alphaBoost
+                drawLine(
+                    color = TonalPalette.withAlpha(sandColor, alpha.coerceIn(0f, 0.75f)),
+                    start = Offset(x - grain.length, y),
+                    end = Offset(x, y),
+                    strokeWidth = grain.stroke,
+                    cap = StrokeCap.Round,
+                )
+            }
         }
+        drawGrainLayer(grains, 1f)
+        drawGrainLayer(fastGrains, 1.15f)
     }
 }
 
@@ -165,5 +186,6 @@ private data class SandGrainSeed(
     val jitterFreq: Float,
     val jitterPhase: Float,
     val length: Float,
+    val stroke: Float,
     val colorIndex: Int,
 )

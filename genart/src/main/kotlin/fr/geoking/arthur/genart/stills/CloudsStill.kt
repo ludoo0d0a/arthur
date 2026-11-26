@@ -60,7 +60,7 @@ internal object CloudsStill {
         canvas.drawRect(0f, 0f, w, h, paint)
         paint.shader = null
 
-        val cloudCount = 8
+        val cloudCount = 12
         val pulseMix = 0.85f + pulse * 0.15f
         val drift = t01 + rotationDeg / 360f
 
@@ -73,18 +73,18 @@ internal object CloudsStill {
                 paint.maskFilter = null
             }
             val layerCount = if (far) cloudCount / 2 else cloudCount - cloudCount / 2
-            val speedScale = if (far) 0.45f else 1f
-            val alphaScale = if (far) 0.55f else 1f
+            val speedScale = if (far) 0.55f else 1f
+            val alphaScale = if (far) 0.65f else 1f
             val yBias = if (far) 0.08f else 0f
 
             for (i in 0 until layerCount) {
                 val x0 = rnd.nextFloat()
-                val yFrac = 0.10f + yBias + rnd.nextFloat() * 0.48f
-                val speedMul = (0.08f + rnd.nextFloat() * 0.14f) * speedScale
+                val yFrac = 0.10f + yBias + rnd.nextFloat() * 0.52f
+                val speedMul = (0.18f + rnd.nextFloat() * 0.27f) * speedScale
                 val bobAmpFrac = 0.004f + rnd.nextFloat() * 0.014f
-                val scale = (0.55f + rnd.nextFloat() * 0.6f) * pulseMix * (if (far) 1.15f else 1f)
+                val scale = (0.55f + rnd.nextFloat() * 0.6f) * pulseMix * (if (far) 0.85f else 1.05f)
                 val tint = palette.colorAt(i + layer * 3)
-                val puffCount = 4 + rnd.nextInt(3)
+                val puffCount = 4 + rnd.nextInt(4)
 
                 val x = (((x0 + drift * speedMul) % 1f + 1f) % 1f) * w
                 val bobNoise = loopedFbm(t01, radius = 1.2f + i * 0.07f, seedOffset = i * 97 + layer * 13) * 2f - 1f
@@ -99,14 +99,14 @@ internal object CloudsStill {
                     val radius = radiusFrac * scale * minDim * 0.22f
 
                     paint.color = Color.argb(
-                        (0.10f * alphaScale * 255).toInt().coerceIn(0, 255),
+                        (0.12f * alphaScale * 255).toInt().coerceIn(0, 255),
                         Color.red(tint),
                         Color.green(tint),
                         Color.blue(tint),
                     )
                     canvas.drawCircle(cx, cy, radius * 1.45f, paint)
 
-                    paint.color = Color.argb((0.22f * alphaScale * 255).toInt().coerceIn(0, 255), 232, 238, 245)
+                    paint.color = Color.argb((0.30f * alphaScale * 255).toInt().coerceIn(0, 255), 232, 238, 245)
                     canvas.drawCircle(cx, cy, radius, paint)
                 }
             }

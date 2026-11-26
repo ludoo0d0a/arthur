@@ -4,9 +4,12 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.LinearGradient
 import android.graphics.Paint
+import android.graphics.RadialGradient
+import android.graphics.RectF
 import android.graphics.Shader
 import fr.geoking.arthur.genart.AnimationPalette
 import kotlin.math.PI
+import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
 
@@ -26,6 +29,7 @@ internal object ConstellationStill {
         val rnd = Random(generation)
         val w = size.toFloat()
         val h = size.toFloat()
+        val minDim = minOf(w, h)
 
         paint.shader = LinearGradient(
             0f,
@@ -84,5 +88,83 @@ internal object ConstellationStill {
             )
             canvas.drawCircle(xs[i], ys[i], radii[i], paint)
         }
+
+        // One shooting star pose.
+        val dim = 0.7f + 0.3f * pulse
+        val angle = 0.45f + rnd.nextFloat() * 0.25f
+        val startX = 0.1f + rnd.nextFloat() * 0.3f
+        val startY = 0.08f + rnd.nextFloat() * 0.2f
+        val lengthFrac = 0.22f
+        val life = 0.45f
+        val travel = life * lengthFrac * 2.4f
+        val x = (startX + cos(angle) * travel) * w
+        val y = (startY + sin(angle) * travel) * h
+        val trail = lengthFrac * minDim
+        val sx = x - cos(angle) * trail
+        val sy = y - sin(angle) * trail
+        val tint = palette.colorAt(5)
+        paint.style = Paint.Style.STROKE
+        paint.strokeCap = Paint.Cap.ROUND
+        paint.strokeWidth = 2.4f
+        paint.shader = LinearGradient(
+            sx, sy, x, y,
+            Color.TRANSPARENT,
+            Color.argb((0.8f * dim * 255).toInt().coerceIn(0, 255),
+                (Color.red(tint) + 255) / 2,
+                (Color.green(tint) + 255) / 2,
+                (Color.blue(tint) + 255) / 2),
+            Shader.TileMode.CLAMP,
+        )
+        canvas.drawLine(sx, sy, x, y, paint)
+        paint.shader = null
+        paint.style = Paint.Style.FILL
+        paint.color = Color.argb((0.9f * dim * 255).toInt().coerceIn(0, 255), 255, 255, 255)
+        canvas.drawCircle(x, y, 3f, paint)
+
+        // Planet with terminator + optional ring.
+        val px = (0.62f + rnd.nextFloat() * 0.18f) * w
+        val py = (0.55f + rnd.nextFloat() * 0.2f) * h
+        val pr = (0.055f + rnd.nextFloat() * 0.03f) * minDim
+        val planetTint = palette.colorAt(3)
+        canvas.save()
+        canvas.rotate(rotationDeg * 0.4f + phase * 40f, px, py)
+        if (rnd.nextFloat() > 0.35f) {
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = pr * 0.12f
+            paint.color = Color.argb(
+                (0.35f * dim * 255).toInt().coerceIn(0, 255),
+                Color.red(planetTint),
+                Color.green(planetTint),
+                Color.blue(planetTint),
+            )
+            canvas.drawOval(RectF(px - pr * 1.7f, py - pr * 0.28f, px + pr * 1.7f, py + pr * 0.28f), paint)
+        }
+        paint.style = Paint.Style.FILL
+        paint.shader = RadialGradient(
+            px - pr * 0.25f, py - pr * 0.2f, pr * 1.15f,
+            intArrayOf(
+                Color.argb((0.95f * dim * 255).toInt().coerceIn(0, 255),
+                    (Color.red(planetTint) * 1.15f).toInt().coerceIn(0, 255),
+                    (Color.green(planetTint) * 1.15f).toInt().coerceIn(0, 255),
+                    (Color.blue(planetTint) * 1.15f).toInt().coerceIn(0, 255)),
+                Color.argb((0.85f * dim * 255).toInt().coerceIn(0, 255),
+                    Color.red(planetTint), Color.green(planetTint), Color.blue(planetTint)),
+                Color.argb((0.9f * dim * 255).toInt().coerceIn(0, 255), 26, 16, 40),
+            ),
+            floatArrayOf(0f, 0.45f, 1f),
+            Shader.TileMode.CLAMP,
+        )
+        canvas.drawCircle(px, py, pr, paint)
+        paint.shader = RadialGradient(
+            px + pr * 0.35f, py + pr * 0.1f, pr * 0.95f,
+            intArrayOf(Color.TRANSPARENT, Color.argb((0.45f * dim * 255).toInt().coerceIn(0, 255), 0, 0, 0)),
+            floatArrayOf(0.35f, 1f),
+            Shader.TileMode.CLAMP,
+        )
+        canvas.drawCircle(px, py, pr, paint)
+        paint.shader = null
+        canvas.restore()
+        paint.alpha = 255
+        paint.style = Paint.Style.FILL
     }
 }

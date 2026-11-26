@@ -7,6 +7,9 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Shader
 import fr.geoking.arthur.genart.AnimationPalette
+import fr.geoking.arthur.genart.sin01
+import kotlin.math.PI
+import kotlin.math.sin
 
 private val RainbowSpectrum = intArrayOf(
     0xFFC9A6FF.toInt(),
@@ -64,11 +67,14 @@ internal object RainbowStill {
         canvas.drawRect(0f, 0f, w, h, paint)
         paint.shader = null
 
-        val breathe = 0.55f + 0.45f * pulse
-        val centerX = w * 0.5f
+        val loop = ((phase / (2f * PI.toFloat()) + rotationDeg / 360f) % 1f + 1f) % 1f
+        val angle = loop * 2f * PI.toFloat()
+        val breathe = 0.55f + 0.45f * sin01(angle)
+        val dim = 0.65f + 0.35f * pulse
+        val centerX = w * (0.5f + 0.04f * sin(angle * 0.6f))
         val centerY = h * 1.35f
         val bandGap = h * 0.045f
-        val baseRadius = h * 1.25f
+        val baseRadius = h * (1.20f + 0.08f * breathe)
         val bandWidth = bandGap * 0.85f
 
         paint.style = Paint.Style.STROKE
@@ -77,7 +83,8 @@ internal object RainbowStill {
         for (i in RainbowSpectrum.indices) {
             val radius = baseRadius + i * bandGap
             val base = RainbowSpectrum[i]
-            val alpha = (0.14f * breathe * 255f).toInt().coerceIn(0, 255)
+            val bandShimmer = 0.75f + 0.25f * sin01(angle * 1.2f + i * 0.55f)
+            val alpha = (0.14f * dim * breathe * bandShimmer * 255f).toInt().coerceIn(0, 255)
             paint.color = Color.argb(alpha, Color.red(base), Color.green(base), Color.blue(base))
             rect.set(centerX - radius, centerY - radius, centerX + radius, centerY + radius)
             canvas.drawArc(rect, 180f, 180f, false, paint)

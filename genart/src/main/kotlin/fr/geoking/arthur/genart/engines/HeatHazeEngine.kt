@@ -42,11 +42,12 @@ internal fun HeatHazeEngine(
                 yFrac = 0.42f + depthFrac * 0.5f + seededRange(i * 13 + 5, -0.02f, 0.02f),
                 thicknessFrac = seededRange(i * 17 + 7, 0.02f, 0.045f),
                 widthFrac = seededRange(i * 19 + 11, 0.82f, 0.97f),
-                shimmerAmpFrac = seededRange(i * 23 + 13, 0.01f, 0.035f),
+                shimmerAmpFrac = seededRange(i * 23 + 13, 0.025f, 0.07f),
                 shimmerFreq = seededRange(i * 29 + 17, 1.4f, 3.2f),
                 shimmerPhase = seededRange(i * 31 + 19, 0f, 2f * PI.toFloat()),
-                driftSpeed = seededRange(i * 37 + 23, 0.03f, 0.08f),
-                alphaBase = seededRange(i * 41 + 29, 0.04f, 0.12f),
+                driftSpeed = seededRange(i * 37 + 23, 0.05f, 0.14f),
+                verticalWobble = seededRange(i * 39 + 27, 0.004f, 0.018f),
+                alphaBase = seededRange(i * 41 + 29, 0.06f, 0.16f),
                 colorIndex = i,
             )
         }
@@ -82,13 +83,15 @@ internal fun HeatHazeEngine(
             val drift = phase01(t * band.driftSpeed) * 2f * PI.toFloat()
             val shimmer = sin(t * band.shimmerFreq * 2f * PI.toFloat() + band.shimmerPhase) *
                 band.shimmerAmpFrac * shimmerScale
+            val yWobble = sin(t * band.shimmerFreq * PI.toFloat() + band.shimmerPhase) *
+                band.verticalWobble * shimmerScale
             val bandWidth = band.widthFrac * w
-            val centerX = w * 0.5f + (shimmer + sin(drift) * 0.006f) * w
-            val y = band.yFrac * h
-            val thickness = band.thicknessFrac * h
+            val centerX = w * 0.5f + (shimmer + sin(drift) * 0.01f) * w
+            val y = (band.yFrac + yWobble) * h
+            val thickness = band.thicknessFrac * h * (1f + 0.25f * shimmer.coerceIn(-1f, 1f))
             val base = TonalPalette.pick(paletteColors, band.colorIndex)
             val tinted = TonalPalette.brightness(base, brightness * (0.7f + band.depthFrac * 0.3f))
-            val alpha = (band.alphaBase * alphaScale).coerceIn(0f, 0.14f)
+            val alpha = (band.alphaBase * alphaScale).coerceIn(0f, 0.22f)
             drawRect(
                 color = TonalPalette.withAlpha(tinted, alpha),
                 topLeft = Offset(centerX - bandWidth / 2f, y - thickness / 2f),
@@ -107,6 +110,7 @@ private data class HeatBandSeed(
     val shimmerFreq: Float,
     val shimmerPhase: Float,
     val driftSpeed: Float,
+    val verticalWobble: Float,
     val alphaBase: Float,
     val colorIndex: Int,
 )

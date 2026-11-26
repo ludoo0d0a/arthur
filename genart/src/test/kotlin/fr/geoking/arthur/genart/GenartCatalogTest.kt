@@ -222,6 +222,7 @@ class GenartCatalogTest {
         assertEquals(GenartEngineId.ReactionBlobs, GenartCatalog.engineForId("genart.reactionblobs"))
         assertEquals(GenartEngineId.SoftTideRipples, GenartCatalog.engineForId("genart.softtideripples"))
         assertEquals(GenartEngineId.HarborMist, GenartCatalog.engineForId("genart.harbormist"))
+        assertEquals(GenartEngineId.TadpoleNebula, GenartCatalog.engineForId("genart.tadpolenebula"))
     }
 
     @Test
@@ -347,6 +348,7 @@ class GenartCatalogTest {
         assertEquals("#168 - Panda qui roule", GenartCatalog.entries().first { it.id == "genart.pandaroll" }.title)
         assertEquals("#254 - Rides de marée douce", GenartCatalog.entries().first { it.id == "genart.softtideripples" }.title)
         assertEquals("#255 - Brume de port", GenartCatalog.entries().first { it.id == "genart.harbormist" }.title)
+        assertEquals("#256 - Nébuleuse têtard", GenartCatalog.entries().first { it.id == "genart.tadpolenebula" }.title)
     }
 
     @Test

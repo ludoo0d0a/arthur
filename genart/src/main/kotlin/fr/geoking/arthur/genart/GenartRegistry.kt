@@ -162,6 +162,7 @@ import fr.geoking.arthur.genart.engines.ReactionMazeEngine
 import fr.geoking.arthur.genart.engines.ReactionBlobsEngine
 import fr.geoking.arthur.genart.engines.SoftTideRipplesEngine
 import fr.geoking.arthur.genart.engines.HarborMistEngine
+import fr.geoking.arthur.genart.engines.TadpoleNebulaEngine
 import fr.geoking.arthur.genart.engines.PandaSitEngine
 import fr.geoking.arthur.genart.engines.KanizsaTriangleEngine
 import fr.geoking.arthur.genart.engines.CheckerShadowEngine
@@ -418,6 +419,7 @@ import fr.geoking.arthur.genart.stills.ReactionMazeStill
 import fr.geoking.arthur.genart.stills.ReactionBlobsStill
 import fr.geoking.arthur.genart.stills.SoftTideRipplesStill
 import fr.geoking.arthur.genart.stills.HarborMistStill
+import fr.geoking.arthur.genart.stills.TadpoleNebulaStill
 import fr.geoking.arthur.genart.stills.PandaSitStill
 import fr.geoking.arthur.genart.stills.KanizsaTriangleStill
 import fr.geoking.arthur.genart.stills.CheckerShadowStill
@@ -3397,6 +3399,17 @@ object GenartRegistry {
             },
             renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
                 HarborMistStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
+            },
+        ),
+        GenartEngineDescriptor(
+            id = GenartEngineId.TadpoleNebula,
+            stableId = "genart.tadpolenebula",
+            title = "#256 - Nébuleuse têtard",
+            render = { isActive, palette, quality, brightness, speed, modifier ->
+                TadpoleNebulaEngine(isActive, palette, quality, brightness, speed, modifier)
+            },
+            renderStill = { canvas, size, generation, phase, rotationDeg, pulse, palette ->
+                TadpoleNebulaStill.draw(canvas, size, generation, phase, rotationDeg, pulse, palette)
             },
         ),
     )

@@ -133,6 +133,7 @@ object GenartPackTopics {
         GenartSource.CONSTELLATION,
         GenartSource.METEORS,
         GenartSource.NEBULA,
+        GenartSource.TADPOLE_NEBULA,
         GenartSource.SOLAR_SYSTEM,
         GenartSource.SPACE_STATION_DRIFT,
         GenartSource.SPIRAL_GALAXY,

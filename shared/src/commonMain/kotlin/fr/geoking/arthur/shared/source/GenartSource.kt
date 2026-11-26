@@ -275,6 +275,7 @@ class GenartSource(
         const val REACTION_BLOBS = "genart.reactionblobs"
         const val SOFT_TIDE_RIPPLES = "genart.softtideripples"
         const val HARBOR_MIST = "genart.harbormist"
+        const val TADPOLE_NEBULA = "genart.tadpolenebula"
 
         fun defaultCatalog(): List<Artwork> = listOf(
             entry(PARTICLES, "#1 - Particules dérivantes"),
@@ -533,6 +534,7 @@ class GenartSource(
             entry(REACTION_BLOBS, "#253 - Réaction — blobs doux"),
             entry(SOFT_TIDE_RIPPLES, "#254 - Rides de marée douce"),
             entry(HARBOR_MIST, "#255 - Brume de port"),
+            entry(TADPOLE_NEBULA, "#256 - Nébuleuse têtard"),
         )
 
         private fun entry(id: String, title: String) = Artwork(

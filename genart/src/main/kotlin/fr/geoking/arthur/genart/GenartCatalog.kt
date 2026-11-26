@@ -257,6 +257,7 @@ enum class GenartEngineId {
     ReactionBlobs,
     SoftTideRipples,
     HarborMist,
+    TadpoleNebula,
 }
 
 enum class GenartQuality { Low, Medium, High }

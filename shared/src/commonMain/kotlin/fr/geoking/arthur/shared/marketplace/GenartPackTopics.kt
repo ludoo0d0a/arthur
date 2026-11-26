@@ -7,69 +7,43 @@ import fr.geoking.arthur.shared.source.GenartSource
  * Topic suffixes match Android [GenartTopic.testTagSuffix] values.
  *
  * Category packs are **exclusive**: each engine id appears in exactly one monetized
- * category set (not Fractal / Custom, which are kinds). Assignment priority when
- * partitioning overlaps: Vintage → Animals → Life → Nature → Weather → Water →
- * Earth → Planets → SciFi → Geometry → Illusions → Seasons → Light → Night →
- * Material → Interior → Crystal → Ink → Botanical → Fire → Kaleido → Zen →
- * Coast → Dream → Micro → Auto → Moto → Avion → Velo → Train → UsVintage →
- * StormStrobe → Physarum → Reactions → Abstract.
+ * category set (not Fractal / Custom, which are kinds).
  */
 object GenartPackTopics {
     const val NATURE = "nature"
     const val WEATHER = "weather"
     const val WATER = "water"
-    const val LIFE = "life"
     const val EARTH = "earth"
     const val PLANETS = "planets"
-    const val SCIFI = "scifi"
     const val VINTAGE = "vintage"
     const val ABSTRACT = "abstract"
     const val GEOMETRY = "geometry"
     const val ILLUSIONS = "illusions"
     const val ANIMALS = "animals"
-    const val SEASONS = "seasons"
     const val LIGHT = "light"
-    const val NIGHT = "night"
     const val MATERIAL = "material"
     const val INTERIOR = "interior"
-    const val CRYSTAL = "crystal"
-    const val INK = "ink"
-    const val BOTANICAL = "botanical"
     const val FIRE = "fire"
-    const val KALEIDO = "kaleido"
     const val ZEN = "zen"
-    const val COAST = "coast"
     const val DREAM = "dream"
-    const val MICRO = "micro"
+    /** Voyages pack (UI); SKU id `genart_auto`. */
     const val AUTO = "auto"
-    const val MOTO = "moto"
-    const val AVION = "avion"
-    const val VELO = "velo"
-    const val TRAIN = "train"
-    const val US_VINTAGE = "us_vintage"
-    const val STORM_STROBE = "storm_strobe"
+    /** Organique pack (UI); SKU id `genart_physarum`. */
     const val PHYSARUM = "physarum"
-    const val REACTIONS = "reactions"
     const val FRACTAL = "fractal"
     const val CUSTOM = "custom"
 
-    /** Monetized topic suffixes (excludes All / Random). */
+    /** Monetized topic suffixes offered in the storefront (excludes All / Random). */
     val monetizedTopicSuffixes: List<String> = listOf(
-        NATURE, WEATHER, WATER, LIFE, EARTH, PLANETS, SCIFI, VINTAGE, ABSTRACT, GEOMETRY,
-        ILLUSIONS,
-        ANIMALS, SEASONS, LIGHT, NIGHT, MATERIAL, INTERIOR, CRYSTAL, INK, BOTANICAL, FIRE,
-        KALEIDO, ZEN, COAST, DREAM, MICRO, AUTO, MOTO, AVION, VELO, TRAIN, US_VINTAGE,
-        STORM_STROBE, PHYSARUM, REACTIONS,
+        NATURE, WEATHER, WATER, EARTH, PLANETS, VINTAGE, ABSTRACT, GEOMETRY, ILLUSIONS,
+        ANIMALS, LIGHT, MATERIAL, INTERIOR, FIRE, ZEN, DREAM, AUTO, PHYSARUM,
         FRACTAL, CUSTOM,
     )
 
     /** Category packs that own engine id sets (excludes Fractal / Custom kinds). */
     val categoryTopicSuffixes: List<String> = listOf(
-        NATURE, WEATHER, WATER, LIFE, EARTH, PLANETS, SCIFI, VINTAGE, ABSTRACT, GEOMETRY,
-        ILLUSIONS,
-        ANIMALS, SEASONS, LIGHT, NIGHT, MATERIAL, INTERIOR, CRYSTAL, INK, BOTANICAL, FIRE,
-        KALEIDO, ZEN, COAST, DREAM, MICRO, AUTO, MOTO, AVION, VELO, TRAIN, US_VINTAGE,
-        STORM_STROBE, PHYSARUM, REACTIONS,
+        NATURE, WEATHER, WATER, EARTH, PLANETS, VINTAGE, ABSTRACT, GEOMETRY, ILLUSIONS,
+        ANIMALS, LIGHT, MATERIAL, INTERIOR, FIRE, ZEN, DREAM, AUTO, PHYSARUM,
     )
 
     val WEATHER_IDS: Set<String> = setOf(
@@ -87,6 +61,16 @@ object GenartPackTopics {
         GenartSource.WATERFALL_MIST,
         GenartSource.SOFT_WIND_STREAKS,
         GenartSource.FIREWORKS,
+        GenartSource.SMOG,
+        GenartSource.HEAT_HAZE,
+        GenartSource.HARBOR_MIST,
+        GenartSource.COAST_CLIFF_HAZE,
+        GenartSource.STORM_STROBE_FLASH,
+        GenartSource.STORM_STROBE_SHEET,
+        GenartSource.STORM_STROBE_PULSE,
+        GenartSource.STORM_STROBE_FORK,
+        GenartSource.STORM_STROBE_HORIZON,
+        GenartSource.STORM_STROBE_CLOUD,
     )
 
     val NATURE_IDS: Set<String> = setOf(
@@ -96,6 +80,33 @@ object GenartPackTopics {
         GenartSource.RIVERS,
         GenartSource.LAKE,
         GenartSource.FLOW_RIBBONS,
+        // seasons
+        GenartSource.SNOW,
+        GenartSource.FALLING_LEAVES,
+        GenartSource.CHERRY_BLOSSOMS,
+        GenartSource.SEASON_SPRING_WASH,
+        GenartSource.SEASON_AUTUMN_WASH,
+        GenartSource.SEASON_WINTER_WASH,
+        // botanical
+        GenartSource.DRIFTING_POLLEN,
+        GenartSource.MOSS_GROWTH,
+        GenartSource.REEDS,
+        GenartSource.TREE,
+        GenartSource.FLOWER,
+        GenartSource.SILK_BLOOM,
+        // coast (haze → weather)
+        GenartSource.WAVES,
+        GenartSource.DUNES,
+        GenartSource.PEBBLE_SHORE_WASH,
+        GenartSource.OBSIDIAN_SHORE,
+        GenartSource.TIDE_FOAM,
+        // micro (MICRO also free via MarketplaceCatalog.freeGenartEngineIds)
+        GenartSource.MICRO,
+        GenartSource.MICRO_DEW,
+        GenartSource.MICRO_FIBER,
+        GenartSource.MICRO_DUST,
+        GenartSource.MICRO_POLLEN_CLOSE,
+        GenartSource.MICRO_BUBBLE_SKIN,
     )
 
     val WATER_IDS: Set<String> = setOf(
@@ -105,16 +116,6 @@ object GenartPackTopics {
         GenartSource.MARBLE_CAUSTICS,
         GenartSource.AIR_BUBBLES,
         GenartSource.SOFT_TIDE_RIPPLES,
-        GenartSource.HARBOR_MIST,
-    )
-
-    val LIFE_IDS: Set<String> = setOf(
-        GenartSource.BIRD_FLOCK,
-        GenartSource.FISH_SCHOOL,
-        GenartSource.ANT_TRAILS,
-        GenartSource.WIND_CHIME,
-        GenartSource.TERRARIUM_DRIP,
-        GenartSource.AQUARIUM,
     )
 
     val EARTH_IDS: Set<String> = setOf(
@@ -141,9 +142,7 @@ object GenartPackTopics {
         GenartSource.LWP_STARFIELD,
         GenartSource.SHADY_WARP_SPEED,
         GenartSource.MILKY_WAY,
-    )
-
-    val SCIFI_IDS: Set<String> = setOf(
+        // scifi
         GenartSource.ION_TRAIL,
         GenartSource.VORTEX_GLOW,
         GenartSource.SUPERDRIVE,
@@ -178,6 +177,13 @@ object GenartPackTopics {
         GenartSource.PPSSPP_CRT_SCANLINES,
         GenartSource.PPSSPP_CEL_SHADER,
         GenartSource.PPSSPP_BLOOM_VIGNETTE,
+        // us vintage
+        GenartSource.US_DINER_NEON,
+        GenartSource.US_MOTEL_SIGN,
+        GenartSource.US_ROUTE66_WASH,
+        GenartSource.US_CRT_ARCADE,
+        GenartSource.US_RETROWAVE,
+        GenartSource.US_DRIVE_IN,
     )
 
     val ABSTRACT_IDS: Set<String> = setOf(
@@ -223,15 +229,13 @@ object GenartPackTopics {
         GenartSource.CAT_TAIL,
         GenartSource.DOG_STRETCH,
         GenartSource.PANDA_ROLL,
-    )
-
-    val SEASONS_IDS: Set<String> = setOf(
-        GenartSource.SNOW,
-        GenartSource.FALLING_LEAVES,
-        GenartSource.CHERRY_BLOSSOMS,
-        GenartSource.SEASON_SPRING_WASH,
-        GenartSource.SEASON_AUTUMN_WASH,
-        GenartSource.SEASON_WINTER_WASH,
+        // life
+        GenartSource.BIRD_FLOCK,
+        GenartSource.FISH_SCHOOL,
+        GenartSource.ANT_TRAILS,
+        GenartSource.WIND_CHIME,
+        GenartSource.TERRARIUM_DRIP,
+        GenartSource.AQUARIUM,
     )
 
     val LIGHT_IDS: Set<String> = setOf(
@@ -242,9 +246,7 @@ object GenartPackTopics {
         GenartSource.DEPTH_SHAFTS,
         GenartSource.FROSTED_WINDOW_DAWN,
         GenartSource.PAPER_LANTERN,
-    )
-
-    val NIGHT_IDS: Set<String> = setOf(
+        // night
         GenartSource.FIREFLIES,
         GenartSource.STAR_FIELD,
         GenartSource.MOONLIGHT_RIPPLES,
@@ -260,6 +262,20 @@ object GenartPackTopics {
         GenartSource.SOAP_FILM,
         GenartSource.PAPER_GRAIN_GRADIENT,
         GenartSource.SHADY_MARBLED_PAPER,
+        // crystal
+        GenartSource.FROST_CRYSTALS,
+        GenartSource.PRISMATIC_SHADOWS,
+        GenartSource.GLASS_MARBLES,
+        GenartSource.SOFT_RAY_ORBS,
+        GenartSource.PRISM_CAVE,
+        GenartSource.CRYSTAL_CAVERN_GLOW,
+        // ink
+        GenartSource.INK_IN_WATER,
+        GenartSource.SPECTRAL_FOLDS,
+        GenartSource.MARBLE_DRIFT,
+        GenartSource.INK_BLOOM,
+        GenartSource.SUMI_WASH,
+        GenartSource.INK_TENDRIL,
     )
 
     val INTERIOR_IDS: Set<String> = setOf(
@@ -271,33 +287,6 @@ object GenartPackTopics {
         GenartSource.FLOOR_LAMP_POOL,
     )
 
-    val CRYSTAL_IDS: Set<String> = setOf(
-        GenartSource.FROST_CRYSTALS,
-        GenartSource.PRISMATIC_SHADOWS,
-        GenartSource.GLASS_MARBLES,
-        GenartSource.SOFT_RAY_ORBS,
-        GenartSource.PRISM_CAVE,
-        GenartSource.CRYSTAL_CAVERN_GLOW,
-    )
-
-    val INK_IDS: Set<String> = setOf(
-        GenartSource.INK_IN_WATER,
-        GenartSource.SPECTRAL_FOLDS,
-        GenartSource.MARBLE_DRIFT,
-        GenartSource.INK_BLOOM,
-        GenartSource.SUMI_WASH,
-        GenartSource.INK_TENDRIL,
-    )
-
-    val BOTANICAL_IDS: Set<String> = setOf(
-        GenartSource.DRIFTING_POLLEN,
-        GenartSource.MOSS_GROWTH,
-        GenartSource.REEDS,
-        GenartSource.TREE,
-        GenartSource.FLOWER,
-        GenartSource.SILK_BLOOM,
-    )
-
     val FIRE_IDS: Set<String> = setOf(
         GenartSource.FIRE_EMBERS,
         GenartSource.SMOKE,
@@ -307,7 +296,14 @@ object GenartPackTopics {
         GenartSource.HEARTH_GLOW,
     )
 
-    val KALEIDO_IDS: Set<String> = setOf(
+    val ZEN_IDS: Set<String> = setOf(
+        GenartSource.LOW_FREQ_NOISE_FIELD,
+        GenartSource.DRIFTING_HALOS,
+        GenartSource.SOFT_DROP,
+        GenartSource.ZEN_EN_SO,
+        GenartSource.ZEN_STONE_RIPPLES,
+        GenartSource.ZEN_INCENSE,
+        // kaleido
         GenartSource.BREATH_CIRCLES,
         GenartSource.SPIRAL_MANDALA,
         GenartSource.NESTED_PACK,
@@ -316,42 +312,14 @@ object GenartPackTopics {
         GenartSource.KALEIDO_ORBIT,
     )
 
-    val ZEN_IDS: Set<String> = setOf(
-        GenartSource.LOW_FREQ_NOISE_FIELD,
-        GenartSource.DRIFTING_HALOS,
-        GenartSource.SOFT_DROP,
-        GenartSource.ZEN_EN_SO,
-        GenartSource.ZEN_STONE_RIPPLES,
-        GenartSource.ZEN_INCENSE,
-    )
-
-    val COAST_IDS: Set<String> = setOf(
-        GenartSource.WAVES,
-        GenartSource.DUNES,
-        GenartSource.PEBBLE_SHORE_WASH,
-        GenartSource.OBSIDIAN_SHORE,
-        GenartSource.TIDE_FOAM,
-        GenartSource.COAST_CLIFF_HAZE,
-    )
-
     val DREAM_IDS: Set<String> = setOf(
-        GenartSource.SMOG,
-        GenartSource.HEAT_HAZE,
         GenartSource.AURORA_WASH,
         GenartSource.DREAM_VEIL,
         GenartSource.LUCID_ORBS,
         GenartSource.SLEEP_PARALLAX,
     )
 
-    val MICRO_IDS: Set<String> = setOf(
-        GenartSource.MICRO,
-        GenartSource.MICRO_DEW,
-        GenartSource.MICRO_FIBER,
-        GenartSource.MICRO_DUST,
-        GenartSource.MICRO_POLLEN_CLOSE,
-        GenartSource.MICRO_BUBBLE_SKIN,
-    )
-
+    /** Voyages: auto + moto + avion + velo + train. */
     val AUTO_IDS: Set<String> = setOf(
         GenartSource.AUTO_DASH_SOFT,
         GenartSource.AUTO_RAIN_GLASS,
@@ -359,36 +327,24 @@ object GenartPackTopics {
         GenartSource.AUTO_DASHBOARD_GLOW,
         GenartSource.AUTO_TUNNEL_LIGHT,
         GenartSource.AUTO_HORIZON_DRIVE,
-    )
-
-    val MOTO_IDS: Set<String> = setOf(
         GenartSource.MOTO_HEADLIGHT,
         GenartSource.MOTO_WIND_STREAKS,
         GenartSource.MOTO_ROAD_BLUR,
         GenartSource.MOTO_NIGHT_LEAN,
         GenartSource.MOTO_TAIL_GLOW,
         GenartSource.MOTO_DAWN_RIDE,
-    )
-
-    val AVION_IDS: Set<String> = setOf(
         GenartSource.AVION_HORIZON_CLOUDS,
         GenartSource.AVION_CONTRAIL,
         GenartSource.AVION_WING_GLOW,
         GenartSource.AVION_CABIN_WINDOW,
         GenartSource.AVION_SUNRISE_BAND,
         GenartSource.AVION_NIGHT_CITY,
-    )
-
-    val VELO_IDS: Set<String> = setOf(
         GenartSource.VELO_PATH_FIELDS,
         GenartSource.VELO_PARALLAX_TREES,
         GenartSource.VELO_DAWN_LANE,
         GenartSource.VELO_RAIN_ASPHALT,
         GenartSource.VELO_GOLDEN_HOUR,
         GenartSource.VELO_FOREST_CANOPY,
-    )
-
-    val TRAIN_IDS: Set<String> = setOf(
         GenartSource.TRAIN_WINDOW_BLUR,
         GenartSource.TRAIN_CATENARY,
         GenartSource.TRAIN_PLATFORM_GLOW,
@@ -397,24 +353,7 @@ object GenartPackTopics {
         GenartSource.TRAIN_TUNNEL_PULSE,
     )
 
-    val US_VINTAGE_IDS: Set<String> = setOf(
-        GenartSource.US_DINER_NEON,
-        GenartSource.US_MOTEL_SIGN,
-        GenartSource.US_ROUTE66_WASH,
-        GenartSource.US_CRT_ARCADE,
-        GenartSource.US_RETROWAVE,
-        GenartSource.US_DRIVE_IN,
-    )
-
-    val STORM_STROBE_IDS: Set<String> = setOf(
-        GenartSource.STORM_STROBE_FLASH,
-        GenartSource.STORM_STROBE_SHEET,
-        GenartSource.STORM_STROBE_PULSE,
-        GenartSource.STORM_STROBE_FORK,
-        GenartSource.STORM_STROBE_HORIZON,
-        GenartSource.STORM_STROBE_CLOUD,
-    )
-
+    /** Organique: physarum + reaction-diffusion. */
     val PHYSARUM_IDS: Set<String> = setOf(
         GenartSource.PHYSARUM_VEINS,
         GenartSource.PHYSARUM_LATTICE,
@@ -422,9 +361,6 @@ object GenartPackTopics {
         GenartSource.PHYSARUM_DRIFT,
         GenartSource.PHYSARUM_NODE,
         GenartSource.PHYSARUM_FILAMENT,
-    )
-
-    val REACTIONS_IDS: Set<String> = setOf(
         GenartSource.REACTION_SPOTS,
         GenartSource.REACTION_CORALS,
         GenartSource.REACTION_WAVES,
@@ -437,38 +373,21 @@ object GenartPackTopics {
         NATURE -> NATURE_IDS
         WEATHER -> WEATHER_IDS
         WATER -> WATER_IDS
-        LIFE -> LIFE_IDS
         EARTH -> EARTH_IDS
         PLANETS -> PLANETS_IDS
-        SCIFI -> SCIFI_IDS
         VINTAGE -> VINTAGE_IDS
         ABSTRACT -> ABSTRACT_IDS
         GEOMETRY -> GEOMETRY_IDS
         ILLUSIONS -> ILLUSIONS_IDS
         ANIMALS -> ANIMALS_IDS
-        SEASONS -> SEASONS_IDS
         LIGHT -> LIGHT_IDS
-        NIGHT -> NIGHT_IDS
         MATERIAL -> MATERIAL_IDS
         INTERIOR -> INTERIOR_IDS
-        CRYSTAL -> CRYSTAL_IDS
-        INK -> INK_IDS
-        BOTANICAL -> BOTANICAL_IDS
         FIRE -> FIRE_IDS
-        KALEIDO -> KALEIDO_IDS
         ZEN -> ZEN_IDS
-        COAST -> COAST_IDS
         DREAM -> DREAM_IDS
-        MICRO -> MICRO_IDS
         AUTO -> AUTO_IDS
-        MOTO -> MOTO_IDS
-        AVION -> AVION_IDS
-        VELO -> VELO_IDS
-        TRAIN -> TRAIN_IDS
-        US_VINTAGE -> US_VINTAGE_IDS
-        STORM_STROBE -> STORM_STROBE_IDS
         PHYSARUM -> PHYSARUM_IDS
-        REACTIONS -> REACTIONS_IDS
         else -> emptySet()
     }
 

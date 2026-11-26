@@ -28,12 +28,6 @@ object MarketplaceCatalog {
     const val DIAMOND_ENTITLEMENT = "pack_diamond"
     const val DIAMOND_PRODUCT = "arthur_pack_diamond"
 
-    /**
-     * Retired wallpaper-topic Play/RC pack id. Still recognized so existing buyers
-     * unlock [GenartPackTopics.ABSTRACT]; not offered in [contentPacks].
-     */
-    const val LEGACY_GENART_WALLPAPER_PACK_ID = "genart_tapet"
-
     fun genartPackId(topicSuffix: String): String = "genart_$topicSuffix"
     fun genartEntitlementId(topicSuffix: String): String = "pack_genart_$topicSuffix"
     fun genartProductId(topicSuffix: String): String = "arthur_pack_genart_$topicSuffix"

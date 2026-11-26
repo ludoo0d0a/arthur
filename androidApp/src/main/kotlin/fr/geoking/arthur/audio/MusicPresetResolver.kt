@@ -194,14 +194,15 @@ object MusicPresetResolver {
     private fun audioTopicPriority(topic: String): Int = when (topic) {
         GenartPackTopics.WATER -> 0
         GenartPackTopics.WEATHER -> 1
-        GenartPackTopics.PLANETS, GenartPackTopics.SCIFI, GenartPackTopics.VINTAGE -> 2
+        GenartPackTopics.PLANETS, GenartPackTopics.VINTAGE -> 2
         GenartPackTopics.ANIMALS -> 3
-        GenartPackTopics.LIFE -> 4
+        GenartPackTopics.AUTO -> 4
         GenartPackTopics.EARTH -> 5
         GenartPackTopics.NATURE -> 6
         GenartPackTopics.ABSTRACT, GenartPackTopics.GEOMETRY, GenartPackTopics.ILLUSIONS -> 7
-        GenartPackTopics.FRACTAL, GenartPackTopics.CUSTOM -> 8
-        else -> 9
+        GenartPackTopics.PHYSARUM, GenartPackTopics.DREAM, GenartPackTopics.ZEN -> 8
+        GenartPackTopics.FRACTAL, GenartPackTopics.CUSTOM -> 9
+        else -> 10
     }
 
     private fun topicToStyles(topic: String): List<MusicStyle> = when (topic) {
@@ -211,16 +212,18 @@ object MusicPresetResolver {
         GenartPackTopics.EARTH -> listOf(MusicStyle.SoftGuitar, MusicStyle.Zen, MusicStyle.AfricanPulse)
         GenartPackTopics.ANIMALS ->
             listOf(MusicStyle.Zen, MusicStyle.Songbirds, MusicStyle.SoftGuitar)
-        GenartPackTopics.LIFE ->
-            listOf(MusicStyle.SoftGuitar, MusicStyle.Songbirds, MusicStyle.JazzPiano)
         GenartPackTopics.WEATHER ->
             listOf(MusicStyle.WindChimes, MusicStyle.SoftRain, MusicStyle.WindAmbience)
         GenartPackTopics.ABSTRACT, GenartPackTopics.GEOMETRY, GenartPackTopics.ILLUSIONS ->
             listOf(MusicStyle.JazzPiano, MusicStyle.BarAmbience, MusicStyle.NightLounge)
-        GenartPackTopics.PLANETS, GenartPackTopics.SCIFI ->
+        GenartPackTopics.PLANETS ->
             listOf(MusicStyle.CosmicDrone, MusicStyle.OrchestraPads, MusicStyle.Zen)
         GenartPackTopics.VINTAGE ->
             listOf(MusicStyle.Chiptune, MusicStyle.ChipArp, MusicStyle.ArcadeGlow)
+        GenartPackTopics.AUTO ->
+            listOf(MusicStyle.SoftGuitar, MusicStyle.NightLounge, MusicStyle.WindAmbience)
+        GenartPackTopics.PHYSARUM, GenartPackTopics.DREAM, GenartPackTopics.ZEN ->
+            listOf(MusicStyle.Zen, MusicStyle.CosmicDrone, MusicStyle.OrchestraPads)
         GenartPackTopics.FRACTAL, GenartPackTopics.CUSTOM ->
             listOf(MusicStyle.JazzPiano, MusicStyle.Zen, MusicStyle.OrchestraPads)
         else -> listOf(MusicStyle.JazzPiano, MusicStyle.Zen)
@@ -231,17 +234,22 @@ object MusicPresetResolver {
         val title = artwork.title.lowercase()
         val blob = "$src ${artwork.id} $title"
         return when {
-            "ocean" in blob || "wave" in blob || "water" in blob || "pexels" in src && "ocean" in title ->
+            "ocean" in blob || "wave" in blob || "water" in blob || "houle" in blob ||
+                "océan" in blob || "pexels" in src && "ocean" in title ->
                 MusicStyle.OceanWaves
-            "rain" in blob || "storm" in blob -> MusicStyle.SoftRain
-            "fire" in blob || "ember" in blob || "hearth" in blob -> MusicStyle.Fireplace
-            "bird" in blob -> MusicStyle.Songbirds
-            "city" in blob || "street" in blob || "architecture" in blob ->
+            "rain" in blob || "storm" in blob || "pluie" in blob || "orage" in blob ||
+                "bruine" in blob || "brouillard" in blob || "brume" in blob ->
+                MusicStyle.SoftRain
+            "fire" in blob || "ember" in blob || "hearth" in blob || "feu" in blob ||
+                "braise" in blob || "âtre" in blob ->
+                MusicStyle.Fireplace
+            "bird" in blob || "oiseaux" in blob -> MusicStyle.Songbirds
+            "city" in blob || "street" in blob || "architecture" in blob || "ville" in blob ->
                 MusicStyle.NightLounge
-            "mountain" in blob || "nature" in blob || "forest" in blob ->
+            "mountain" in blob || "nature" in blob || "forest" in blob || "montagne" in blob ->
                 MusicStyle.Zen
-            "abstract" in blob -> MusicStyle.JazzPiano
-            "sky" in blob || "cloud" in blob -> MusicStyle.WindChimes
+            "abstract" in blob || "abstrait" in blob -> MusicStyle.JazzPiano
+            "sky" in blob || "cloud" in blob || "nuage" in blob -> MusicStyle.WindChimes
             artwork.kind == ArtworkKind.Painting || artwork.kind == ArtworkKind.Sculpture ->
                 MusicStyle.ClassicalPiano
             artwork.kind == ArtworkKind.FractalPreset || artwork.kind == ArtworkKind.CustomFractal ->

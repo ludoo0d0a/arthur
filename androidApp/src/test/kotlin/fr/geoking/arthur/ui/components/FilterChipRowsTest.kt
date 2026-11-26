@@ -214,7 +214,7 @@ class FilterChipRowsTest {
             CategoryFilter.GENART,
             genartTopic = GenartTopic.Abstract,
         )
-        // Breath Circles lives under Kaleido; Abstract keeps wallpaper-style engines only.
+        // Breath Circles lives under Zen; Abstract keeps wallpaper-style engines only.
         assertEquals(listOf(GenartSource.BLOBS), filtered.map { it.id })
     }
 

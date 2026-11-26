@@ -22,9 +22,9 @@ class MarketplaceCatalogTest {
         assertTrue(MarketplaceCatalog.genartPackId(GenartPackTopics.CUSTOM) in ids)
         assertTrue(MarketplaceCatalog.genartPackId(GenartPackTopics.VINTAGE) in ids)
         assertTrue(MarketplaceCatalog.genartPackId(GenartPackTopics.ANIMALS) in ids)
-        assertTrue(MarketplaceCatalog.genartPackId(GenartPackTopics.STORM_STROBE) in ids)
+        assertTrue(MarketplaceCatalog.genartPackId(GenartPackTopics.AUTO) in ids)
         assertTrue(MarketplaceCatalog.genartPackId(GenartPackTopics.PHYSARUM) in ids)
-        assertTrue(MarketplaceCatalog.genartPackId(GenartPackTopics.REACTIONS) in ids)
+        assertTrue(MarketplaceCatalog.genartPackId(GenartPackTopics.WEATHER) in ids)
         assertTrue(MarketplaceCatalog.audioPackId(AudioPackCatalog.HEARTH_WEATHER) in ids)
         assertTrue(MarketplaceCatalog.audioPackId(AudioPackCatalog.SOLO_VIOLIN) in ids)
         assertTrue(MarketplaceCatalog.audioPackId(AudioPackCatalog.ARCADE_CHIPS) in ids)
@@ -89,13 +89,4 @@ class MarketplaceCatalogTest {
         assertFalse(ownership.ownsPersonalPhotos())
     }
 
-    @Test
-    fun legacyWallpaperPack_unlocksAbstractEngines() {
-        val ownership = FakePackOwnership(
-            owned = setOf(MarketplaceCatalog.LEGACY_GENART_WALLPAPER_PACK_ID),
-        )
-        assertTrue(ownership.allowsGenartEngine(GenartSource.BLOBS))
-        assertTrue(ownership.ownsGenartTopic(GenartPackTopics.ABSTRACT))
-        assertFalse(ownership.ownsPersonalPhotos())
-    }
 }

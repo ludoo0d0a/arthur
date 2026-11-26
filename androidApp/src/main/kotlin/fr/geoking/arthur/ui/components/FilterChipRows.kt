@@ -100,38 +100,23 @@ enum class GenartTopic(
     Nature(R.string.genart_topic_nature, "nature"),
     Weather(R.string.genart_topic_weather, "weather"),
     Water(R.string.genart_topic_water, "water"),
-    Life(R.string.genart_topic_life, "life"),
     Earth(R.string.genart_topic_earth, "earth"),
     Planets(R.string.genart_topic_planets, "planets"),
-    SciFi(R.string.genart_topic_scifi, "scifi"),
     Vintage(R.string.genart_topic_vintage, "vintage"),
     Abstract(R.string.genart_topic_abstract, "abstract"),
     Geometry(R.string.genart_topic_geometry, "geometry"),
     Illusions(R.string.genart_topic_illusions, "illusions"),
     Animals(R.string.genart_topic_animals, "animals"),
-    Seasons(R.string.genart_topic_seasons, "seasons"),
     Light(R.string.genart_topic_light, "light"),
-    Night(R.string.genart_topic_night, "night"),
     Material(R.string.genart_topic_material, "material"),
     Interior(R.string.genart_topic_interior, "interior"),
-    Crystal(R.string.genart_topic_crystal, "crystal"),
-    Ink(R.string.genart_topic_ink, "ink"),
-    Botanical(R.string.genart_topic_botanical, "botanical"),
     Fire(R.string.genart_topic_fire, "fire"),
-    Kaleido(R.string.genart_topic_kaleido, "kaleido"),
     Zen(R.string.genart_topic_zen, "zen"),
-    Coast(R.string.genart_topic_coast, "coast"),
     Dream(R.string.genart_topic_dream, "dream"),
-    Micro(R.string.genart_topic_micro, "micro"),
+    /** Voyages (SKU `genart_auto`). */
     Auto(R.string.genart_topic_auto, "auto"),
-    Moto(R.string.genart_topic_moto, "moto"),
-    Avion(R.string.genart_topic_avion, "avion"),
-    Velo(R.string.genart_topic_velo, "velo"),
-    Train(R.string.genart_topic_train, "train"),
-    UsVintage(R.string.genart_topic_us_vintage, "us_vintage"),
-    StormStrobe(R.string.genart_topic_storm_strobe, "storm_strobe"),
+    /** Organique (SKU `genart_physarum`). */
     Physarum(R.string.genart_topic_physarum, "physarum"),
-    Reactions(R.string.genart_topic_reactions, "reactions"),
     Fractal(R.string.genart_topic_fractal, "fractal"),
     Custom(R.string.genart_topic_custom, "custom"),
 }
@@ -385,38 +370,21 @@ fun matchesGenartTopic(art: Artwork, topic: GenartTopic): Boolean = when (topic)
     GenartTopic.Nature -> art.id in GenartPackTopics.NATURE_IDS
     GenartTopic.Weather -> art.id in GenartPackTopics.WEATHER_IDS
     GenartTopic.Water -> art.id in GenartPackTopics.WATER_IDS
-    GenartTopic.Life -> art.id in GenartPackTopics.LIFE_IDS
     GenartTopic.Earth -> art.id in GenartPackTopics.EARTH_IDS
     GenartTopic.Planets -> art.id in GenartPackTopics.PLANETS_IDS
-    GenartTopic.SciFi -> art.id in GenartPackTopics.SCIFI_IDS
     GenartTopic.Vintage -> art.id in GenartPackTopics.VINTAGE_IDS
     GenartTopic.Abstract -> art.id in GenartPackTopics.ABSTRACT_IDS
     GenartTopic.Geometry -> art.id in GenartPackTopics.GEOMETRY_IDS
     GenartTopic.Illusions -> art.id in GenartPackTopics.ILLUSIONS_IDS
     GenartTopic.Animals -> art.id in GenartPackTopics.ANIMALS_IDS
-    GenartTopic.Seasons -> art.id in GenartPackTopics.SEASONS_IDS
     GenartTopic.Light -> art.id in GenartPackTopics.LIGHT_IDS
-    GenartTopic.Night -> art.id in GenartPackTopics.NIGHT_IDS
     GenartTopic.Material -> art.id in GenartPackTopics.MATERIAL_IDS
     GenartTopic.Interior -> art.id in GenartPackTopics.INTERIOR_IDS
-    GenartTopic.Crystal -> art.id in GenartPackTopics.CRYSTAL_IDS
-    GenartTopic.Ink -> art.id in GenartPackTopics.INK_IDS
-    GenartTopic.Botanical -> art.id in GenartPackTopics.BOTANICAL_IDS
     GenartTopic.Fire -> art.id in GenartPackTopics.FIRE_IDS
-    GenartTopic.Kaleido -> art.id in GenartPackTopics.KALEIDO_IDS
     GenartTopic.Zen -> art.id in GenartPackTopics.ZEN_IDS
-    GenartTopic.Coast -> art.id in GenartPackTopics.COAST_IDS
     GenartTopic.Dream -> art.id in GenartPackTopics.DREAM_IDS
-    GenartTopic.Micro -> art.id in GenartPackTopics.MICRO_IDS
     GenartTopic.Auto -> art.id in GenartPackTopics.AUTO_IDS
-    GenartTopic.Moto -> art.id in GenartPackTopics.MOTO_IDS
-    GenartTopic.Avion -> art.id in GenartPackTopics.AVION_IDS
-    GenartTopic.Velo -> art.id in GenartPackTopics.VELO_IDS
-    GenartTopic.Train -> art.id in GenartPackTopics.TRAIN_IDS
-    GenartTopic.UsVintage -> art.id in GenartPackTopics.US_VINTAGE_IDS
-    GenartTopic.StormStrobe -> art.id in GenartPackTopics.STORM_STROBE_IDS
     GenartTopic.Physarum -> art.id in GenartPackTopics.PHYSARUM_IDS
-    GenartTopic.Reactions -> art.id in GenartPackTopics.REACTIONS_IDS
     GenartTopic.Fractal -> art.kind == ArtworkKind.FractalPreset
     GenartTopic.Custom -> art.kind == ArtworkKind.CustomFractal
 }

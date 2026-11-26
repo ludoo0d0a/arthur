@@ -40,55 +40,38 @@ Owns Diamond ⇒ `PackOwnership.owns(any content pack)` is true. Does **not** se
 |---------|-------------|--------------|--------:|:--:|:----:|
 | `personal_photos` | `pack_personal_photos` | `arthur_pack_personal_photos` | **2,99 €** | TODO | TODO |
 
-### Genart topics
+### Genart topics (storefront)
 
 Pattern: pack id `genart_<suffix>` · entitlement `pack_genart_<suffix>` · Play / RC store id `arthur_pack_genart_<suffix>` · type **one_time** (lifetime unlock).
 
-| Pack id | Entitlement | Play product | Prix FR | RC | Play |
-|---------|-------------|--------------|--------:|:--:|:----:|
-| `genart_nature` | `pack_genart_nature` | `arthur_pack_genart_nature` | **1,99 €** | done | done |
-| `genart_weather` | `pack_genart_weather` | `arthur_pack_genart_weather` | **1,99 €** | done | done |
-| `genart_water` | `pack_genart_water` | `arthur_pack_genart_water` | **1,99 €** | done | done |
-| `genart_life` | `pack_genart_life` | `arthur_pack_genart_life` | **1,99 €** | done | done |
-| `genart_earth` | `pack_genart_earth` | `arthur_pack_genart_earth` | **1,99 €** | done | done |
-| `genart_planets` | `pack_genart_planets` | `arthur_pack_genart_planets` | **1,99 €** | done | done |
-| `genart_scifi` | `pack_genart_scifi` | `arthur_pack_genart_scifi` | **1,99 €** | done | done |
-| `genart_vintage` | `pack_genart_vintage` | `arthur_pack_genart_vintage` | **1,99 €** | done | done |
-| `genart_abstract` | `pack_genart_abstract` | `arthur_pack_genart_abstract` | **1,99 €** | done | done |
-| `genart_geometry` | `pack_genart_geometry` | `arthur_pack_genart_geometry` | **1,99 €** | done | done |
-| `genart_illusions` | `pack_genart_illusions` | `arthur_pack_genart_illusions` | **1,99 €** | done | done |
-| `genart_animals` | `pack_genart_animals` | `arthur_pack_genart_animals` | **1,99 €** | done | done |
-| `genart_seasons` | `pack_genart_seasons` | `arthur_pack_genart_seasons` | **1,99 €** | done | done |
-| `genart_light` | `pack_genart_light` | `arthur_pack_genart_light` | **1,99 €** | done | done |
-| `genart_night` | `pack_genart_night` | `arthur_pack_genart_night` | **1,99 €** | done | done |
-| `genart_material` | `pack_genart_material` | `arthur_pack_genart_material` | **1,99 €** | done | done |
-| `genart_interior` | `pack_genart_interior` | `arthur_pack_genart_interior` | **1,99 €** | done | done |
-| `genart_crystal` | `pack_genart_crystal` | `arthur_pack_genart_crystal` | **1,99 €** | done | done |
-| `genart_ink` | `pack_genart_ink` | `arthur_pack_genart_ink` | **1,99 €** | done | done |
-| `genart_botanical` | `pack_genart_botanical` | `arthur_pack_genart_botanical` | **1,99 €** | done | done |
-| `genart_fire` | `pack_genart_fire` | `arthur_pack_genart_fire` | **1,99 €** | done | done |
-| `genart_kaleido` | `pack_genart_kaleido` | `arthur_pack_genart_kaleido` | **1,99 €** | done | done |
-| `genart_zen` | `pack_genart_zen` | `arthur_pack_genart_zen` | **1,99 €** | done | done |
-| `genart_coast` | `pack_genart_coast` | `arthur_pack_genart_coast` | **1,99 €** | done | done |
-| `genart_dream` | `pack_genart_dream` | `arthur_pack_genart_dream` | **1,99 €** | done | done |
-| `genart_micro` | `pack_genart_micro` | `arthur_pack_genart_micro` | **1,99 €** | done | done |
-| `genart_auto` | `pack_genart_auto` | `arthur_pack_genart_auto` | **1,99 €** | done | done |
-| `genart_moto` | `pack_genart_moto` | `arthur_pack_genart_moto` | **1,99 €** | done | done |
-| `genart_avion` | `pack_genart_avion` | `arthur_pack_genart_avion` | **1,99 €** | done | done |
-| `genart_velo` | `pack_genart_velo` | `arthur_pack_genart_velo` | **1,99 €** | done | done |
-| `genart_train` | `pack_genart_train` | `arthur_pack_genart_train` | **1,99 €** | done | done |
-| `genart_us_vintage` | `pack_genart_us_vintage` | `arthur_pack_genart_us_vintage` | **1,99 €** | done | done |
-| `genart_storm_strobe` | `pack_genart_storm_strobe` | `arthur_pack_genart_storm_strobe` | **1,99 €** | done | done |
-| `genart_physarum` | `pack_genart_physarum` | `arthur_pack_genart_physarum` | **1,99 €** | done | done |
-| `genart_reactions` | `pack_genart_reactions` | `arthur_pack_genart_reactions` | **1,99 €** | done | done |
-| `genart_fractal` | `pack_genart_fractal` | `arthur_pack_genart_fractal` | **2,99 €** | done | done |
-| `genart_custom` | `pack_genart_custom` | `arthur_pack_genart_custom` | **2,99 €** | done | done |
+Active packs offered in-app (~20):
 
-Former wallpaper topic SKU `genart_tapet` is retired from the catalog; existing buyers still unlock Abstract via `LEGACY_GENART_WALLPAPER_PACK_ID`.
+| Pack id | UI label (FR) | Entitlement | Play product | Prix FR | Notes |
+|---------|---------------|-------------|--------------|--------:|-------|
+| `genart_nature` | Nature | `pack_genart_nature` | `arthur_pack_genart_nature` | **1,99 €** | + botanical, seasons, coast, micro |
+| `genart_weather` | Météo | `pack_genart_weather` | `arthur_pack_genart_weather` | **1,99 €** | + storm_strobe, brumes |
+| `genart_water` | Eau | `pack_genart_water` | `arthur_pack_genart_water` | **1,99 €** | |
+| `genart_earth` | Terre | `pack_genart_earth` | `arthur_pack_genart_earth` | **1,99 €** | |
+| `genart_planets` | Espace | `pack_genart_planets` | `arthur_pack_genart_planets` | **1,99 €** | + scifi |
+| `genart_vintage` | Jeux vintage | `pack_genart_vintage` | `arthur_pack_genart_vintage` | **1,99 €** | + us_vintage |
+| `genart_abstract` | Abstrait | `pack_genart_abstract` | `arthur_pack_genart_abstract` | **1,99 €** | |
+| `genart_geometry` | Géométrie | `pack_genart_geometry` | `arthur_pack_genart_geometry` | **1,99 €** | |
+| `genart_illusions` | Illusions | `pack_genart_illusions` | `arthur_pack_genart_illusions` | **1,99 €** | |
+| `genart_animals` | Animaux | `pack_genart_animals` | `arthur_pack_genart_animals` | **1,99 €** | + life |
+| `genart_light` | Lumière | `pack_genart_light` | `arthur_pack_genart_light` | **1,99 €** | + night |
+| `genart_material` | Matière | `pack_genart_material` | `arthur_pack_genart_material` | **1,99 €** | + crystal, ink |
+| `genart_interior` | Intérieur | `pack_genart_interior` | `arthur_pack_genart_interior` | **1,99 €** | |
+| `genart_fire` | Feu | `pack_genart_fire` | `arthur_pack_genart_fire` | **1,99 €** | |
+| `genart_zen` | Zen | `pack_genart_zen` | `arthur_pack_genart_zen` | **1,99 €** | + kaleido |
+| `genart_dream` | Rêve | `pack_genart_dream` | `arthur_pack_genart_dream` | **1,99 €** | |
+| `genart_auto` | Voyages | `pack_genart_auto` | `arthur_pack_genart_auto` | **1,99 €** | + moto, avion, velo, train |
+| `genart_physarum` | Organique | `pack_genart_physarum` | `arthur_pack_genart_physarum` | **1,99 €** | + reactions |
+| `genart_fractal` | Fractale | `pack_genart_fractal` | `arthur_pack_genart_fractal` | **2,99 €** | |
+| `genart_custom` | Perso | `pack_genart_custom` | `arthur_pack_genart_custom` | **2,99 €** | |
 
-**RevenueCat (2026-11-22):** all **37** `arthur_pack_genart_*` products exist on the Play Store app as **one_time** IAPs; matching `pack_genart_<suffix>` entitlements created and attached 1:1. Dashboard: [products](https://app.revenuecat.com/projects/d7c31aba/product-catalog/products) · [entitlements](https://app.revenuecat.com/projects/d7c31aba/product-catalog/entitlements).
+No legacy / retired SKU aliases in-app. Only the active packs above appear in `MarketplaceCatalog.contentPacks()`.
 
-**Play Console (2026-11-22):** all **37** genart one-time SKUs pushed via RevenueCat product store-state plans (FR 1,99 € / 2,99 € + equalize from FR). Pilot: Animals + Seasons (`f6581738-e56f-4313-9d13-6cae89c69c04`); remaining batches `a2b207c1…`, `2b5f7ac9…`, `fc2052cb…`, `f6c4bd91…`. **Premium** (`arthur_premium_lifetime`, 4,99 €) + **Diamond** (`arthur_pack_diamond`, 29,99 €) pushed via plan `3442c050-907c-4bb0-a56b-93caa539e4c6` (RC products + entitlements `premium` / `pack_diamond` attached 1:1). Confirm ACTIVE in Play Console; Personal / audio still TODO.
+**RevenueCat / Play:** genart one-time IAPs created 2026-11-22; storefront later reduced to the table above.
 
 Free Genart engines (no purchase): `particles`, `pseudo3d`, `soft_shadows`, `tunnel`, `tonal_geometry`, `sphere`, `waves`, `micro`.
 

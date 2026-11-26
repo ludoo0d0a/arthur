@@ -41,6 +41,7 @@ import fr.geoking.arthur.shared.source.DeviantArtSource
 import fr.geoking.arthur.shared.source.MetSource
 import fr.geoking.arthur.shared.source.PexelsSource
 import fr.geoking.arthur.shared.source.PexelsVideoSource
+import fr.geoking.arthur.shared.source.PinterestSource
 import fr.geoking.arthur.shared.source.PixabayVideoSource
 import fr.geoking.arthur.shared.source.RijksmuseumSource
 import fr.geoking.arthur.shared.source.UnsplashSource
@@ -272,6 +273,7 @@ enum class PhotoTopic(
 ) {
     Pexels(PexelsSource.ID, R.string.source_pexels_video, PexelsSource.ID),
     Unsplash(UnsplashSource.ID, R.string.source_unsplash, UnsplashSource.ID),
+    Pinterest(PinterestSource.ID, R.string.source_pinterest, PinterestSource.ID),
     DeviantArt(DeviantArtSource.ID, R.string.source_deviantart, DeviantArtSource.ID),
     Wikimedia(WikimediaStreetArtSource.ID, R.string.source_wikimedia, WikimediaStreetArtSource.ID),
 }

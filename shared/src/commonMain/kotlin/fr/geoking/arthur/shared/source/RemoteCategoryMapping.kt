@@ -10,6 +10,7 @@ enum class RemoteProvider {
     Pixabay,
     Coverr,
     Unsplash,
+    Pinterest,
     Met,
     Artic,
     Cleveland,
@@ -67,6 +68,7 @@ object RemoteCategoryMapping {
             RemoteProvider.Pixabay -> pixabayStockQuery(resolved)
             RemoteProvider.Coverr -> coverrStockQuery(resolved)
             RemoteProvider.Unsplash -> unsplashStockQuery(resolved)
+            RemoteProvider.Pinterest -> pinterestStockQuery(resolved)
             RemoteProvider.DeviantArt -> deviantArtStockQuery(resolved)
             else -> resolved.query
         }
@@ -146,6 +148,20 @@ object RemoteCategoryMapping {
         StockPhotoCategory.Architecture -> "architecture building"
         StockPhotoCategory.Sky -> "sky clouds"
         StockPhotoCategory.StreetArt -> "street art mural graffiti"
+    }
+
+    // --- Stock: Pinterest partner search free-text ---
+
+    private fun pinterestStockQuery(category: StockPhotoCategory): String = when (category) {
+        StockPhotoCategory.Random -> category.query
+        StockPhotoCategory.Nature -> "nature landscape"
+        StockPhotoCategory.City -> "city urban"
+        StockPhotoCategory.Ocean -> "ocean sea"
+        StockPhotoCategory.Mountains -> "mountains"
+        StockPhotoCategory.Abstract -> "abstract art"
+        StockPhotoCategory.Architecture -> "architecture"
+        StockPhotoCategory.Sky -> "sky clouds"
+        StockPhotoCategory.StreetArt -> "street art mural"
     }
 
     // --- Stock: DeviantArt Browse tags (single alphanumeric word, no spaces) ---

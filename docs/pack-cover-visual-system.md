@@ -197,7 +197,7 @@ Wired via `PackCovers.audio()`. Each topic has its **own primary hue** (semantic
 ### Other covers
 
 - Museum institutions: `pack_met`, `pack_rijksmuseum`, … (gold-on-dark logo variants)
-- Video / photo providers: `pack_pexels`, `pack_unsplash`, `pack_pixabay`, `pack_coverr`, `pack_deviantart`
+- Video / photo providers: `pack_pexels`, `pack_unsplash`, `pack_pinterest`, `pack_pixabay`, `pack_coverr`, `pack_deviantart`
 - Shared Random: `pack_random` (dice motif; wired via `PackCovers.random`)
 
 ---

@@ -6,6 +6,7 @@ import fr.geoking.arthur.shared.source.DeviantArtSource
 import fr.geoking.arthur.shared.source.MetSource
 import fr.geoking.arthur.shared.source.PexelsSource
 import fr.geoking.arthur.shared.source.PexelsVideoSource
+import fr.geoking.arthur.shared.source.PinterestSource
 import fr.geoking.arthur.shared.source.PixabayVideoSource
 import fr.geoking.arthur.shared.source.UnsplashSource
 import fr.geoking.arthur.shared.source.WikimediaStreetArtSource
@@ -112,6 +113,7 @@ class SourceCapabilitiesTest {
             listOf(
                 PexelsSource.ID,
                 UnsplashSource.ID,
+                PinterestSource.ID,
                 DeviantArtSource.ID,
                 WikimediaStreetArtSource.ID,
             ),

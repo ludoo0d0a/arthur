@@ -71,6 +71,8 @@ android {
         buildConfigField("String", "PEXELS_API_KEY", "\"${secret("PEXELS_API_KEY")}\"")
         // Unsplash Access Key = public Client-ID. Secret Key is OAuth-only — do not BuildConfig it into the APK.
         buildConfigField("String", "UNSPLASH_ACCESS_KEY", "\"${secret("UNSPLASH_ACCESS_KEY")}\"")
+        // Pinterest OAuth access token (Bearer) with pins:read,boards:read + partner search access.
+        buildConfigField("String", "PINTEREST_ACCESS_TOKEN", "\"${secret("PINTEREST_ACCESS_TOKEN")}\"")
         buildConfigField("String", "PIXABAY_API_KEY", "\"${secret("PIXABAY_API_KEY")}\"")
         buildConfigField("String", "COVERR_API_KEY", "\"${secret("COVERR_API_KEY")}\"")
         buildConfigField("String", "EUROPEANA_API_KEY", "\"${secret("EUROPEANA_API_KEY")}\"")
@@ -388,7 +390,7 @@ afterEvaluate {
             filter {
                 excludeTestsMatching("fr.geoking.arthur.preview.*")
             }
-            // Live stock-photo e2e: -Pe2eStockPhotos=true (needs PEXELS_API_KEY / UNSPLASH_ACCESS_KEY)
+            // Live stock-photo e2e: -Pe2eStockPhotos=true (PEXELS / UNSPLASH / PINTEREST / DEVIANTART keys)
             systemProperty(
                 "e2e.stockPhotos",
                 (findProperty("e2eStockPhotos") as String?)

@@ -19,6 +19,7 @@ import fr.geoking.arthur.shared.source.LouvreSource
 import fr.geoking.arthur.shared.source.MetSource
 import fr.geoking.arthur.shared.source.PexelsSource
 import fr.geoking.arthur.shared.source.PexelsVideoSource
+import fr.geoking.arthur.shared.source.PinterestSource
 import fr.geoking.arthur.shared.source.PixabayVideoSource
 import fr.geoking.arthur.shared.source.RijksmuseumSource
 import fr.geoking.arthur.shared.source.SmithsonianSource
@@ -42,6 +43,7 @@ fun sourceLabelRes(sourceId: String): Int? = when (sourceId) {
     PixabayVideoSource.ID -> R.string.source_pixabay_video
     CoverrSource.ID -> R.string.source_coverr
     UnsplashSource.ID -> R.string.source_unsplash
+    PinterestSource.ID -> R.string.source_pinterest
     DeviantArtSource.ID -> R.string.source_deviantart
     GenartSource.ID -> R.string.kind_genart
     FractalSource.ID -> R.string.kind_fractal
@@ -77,6 +79,7 @@ fun Artwork.authorForDisplay(sourceLabel: String): String {
 
 private val KnownAttributionSourceSuffixes = listOf(
     "Unsplash",
+    "Pinterest",
     "DeviantArt",
     "Pexels",
     "Pixabay",

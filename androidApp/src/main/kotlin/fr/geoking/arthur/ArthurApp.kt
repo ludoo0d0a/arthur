@@ -46,6 +46,7 @@ import fr.geoking.arthur.shared.source.LouvreSource
 import fr.geoking.arthur.shared.source.MetSource
 import fr.geoking.arthur.shared.source.PexelsSource
 import fr.geoking.arthur.shared.source.PexelsVideoSource
+import fr.geoking.arthur.shared.source.PinterestSource
 import fr.geoking.arthur.shared.source.PixabayVideoSource
 import fr.geoking.arthur.shared.source.RijksmuseumSource
 import fr.geoking.arthur.shared.source.SmithsonianSource
@@ -422,6 +423,26 @@ val appModule = module {
     }
     single {
         val client = get<HttpClient>()
+        val accessToken = BuildConfig.PINTEREST_ACCESS_TOKEN
+        val settings = get<StockPhotoSettings>()
+        val cache = get<ArtworkImageCache>()
+        val errorLogger = get<ErrorLogger>()
+        PinterestSource(
+            accessToken = accessToken,
+            category = { settings.category },
+            offlineFallback = {
+                cache.loadCachedStock(settings.category, PinterestSource.ID)
+            },
+            onLoaded = { arts -> cache.remember(arts, settings.category.query) },
+            httpGet = { url ->
+                safeHttpGet(client, url, PinterestSource.ID, errorLogger) {
+                    header(HttpHeaders.Authorization, "Bearer $accessToken")
+                }
+            },
+        )
+    }
+    single {
+        val client = get<HttpClient>()
         val clientId = BuildConfig.DEVIANTART_CLIENT_ID
         val clientSecret = BuildConfig.DEVIANTART_CLIENT_SECRET
         val settings = get<StockPhotoSettings>()
@@ -489,6 +510,7 @@ val appModule = module {
                 get<BundledPackSource>(),
                 get<PexelsSource>(),
                 get<UnsplashSource>(),
+                get<PinterestSource>(),
                 get<DeviantArtSource>(),
                 get<PexelsVideoSource>(),
                 get<PixabayVideoSource>(),

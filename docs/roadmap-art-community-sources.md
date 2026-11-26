@@ -17,6 +17,7 @@ filter to an open license, and call that out per Source rather than assuming.
 | Source | `sourceId` | API | Key | Notes |
 |--------|------------|-----|-----|--------|
 | DeviantArt | `deviantart` | [Browse API](https://www.deviantart.com/developers/) `browse/tags` | `DEVIANTART_CLIENT_ID` + `DEVIANTART_CLIENT_SECRET` (OAuth2 client-credentials) | Attribution-only: defaults to All-Rights-Reserved, Browse exposes no per-item license field; mature-flagged deviations dropped; uses the shared **photo topic** (tag search) like Pexels/Unsplash |
+| Pinterest | `pinterest` | [API v5 introduction](https://developers.pinterest.com/docs/api/v5/introduction) · `search/partner/pins` | `PINTEREST_ACCESS_TOKEN` (Bearer; scopes `pins:read`,`boards:read`) | Photo pack Source (not community-illustration); partner search is **beta / not all apps**; attribution-only Pins; blank token → cached catalog |
 
 ## Backlog
 
@@ -58,6 +59,7 @@ Status: `idea` until a `Source` ships (then move to **Shipped**).
 ```properties
 DEVIANTART_CLIENT_ID=
 DEVIANTART_CLIENT_SECRET=
+PINTEREST_ACCESS_TOKEN=
 ```
 
 Signup notes:
@@ -66,6 +68,11 @@ Signup notes:
   Client ID + Client Secret; the Browse API only needs the OAuth2 **client-credentials** grant
   (no user login). Review DeviantArt's API ToS before any reuse beyond in-app ambient display —
   Browse does not expose per-item license data, so default to All-Rights-Reserved.
+- **Pinterest** — [API v5 introduction](https://developers.pinterest.com/docs/api/v5/introduction);
+  [create a developer app](https://developers.pinterest.com/), obtain an OAuth access token with
+  `pins:read` and `boards:read`, and request access to the beta
+  [`search/partner/pins`](https://developers.pinterest.com/docs/api/v5/search_partner_pins/)
+  endpoint. Do **not** scrape pinterest.com. Pins are attribution-only.
 
 ## Implementation checklist (when shipping one)
 

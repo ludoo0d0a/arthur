@@ -11,6 +11,7 @@ import fr.geoking.arthur.shared.source.LouvreSource
 import fr.geoking.arthur.shared.source.MetSource
 import fr.geoking.arthur.shared.source.PexelsSource
 import fr.geoking.arthur.shared.source.PexelsVideoSource
+import fr.geoking.arthur.shared.source.PinterestSource
 import fr.geoking.arthur.shared.source.PixabayVideoSource
 import fr.geoking.arthur.shared.source.RijksmuseumSource
 import fr.geoking.arthur.shared.source.SmithsonianSource
@@ -95,6 +96,7 @@ class DebugInterceptor(
         "wikimedia.org" in url -> WikimediaStreetArtSource.ID
         "pexels.com" in url -> PexelsSource.ID
         "unsplash.com" in url -> UnsplashSource.ID
+        "pinterest.com" in url -> PinterestSource.ID
         "deviantart.com" in url -> DeviantArtSource.ID
         "pixabay.com/api/audio" in url || "cdn.pixabay.com/audio" in url -> "pixabay_music"
         "pixabay.com" in url -> PixabayVideoSource.ID

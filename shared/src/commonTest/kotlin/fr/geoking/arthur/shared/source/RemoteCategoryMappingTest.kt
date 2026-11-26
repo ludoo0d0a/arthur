@@ -50,6 +50,10 @@ class RemoteCategoryMappingTest {
             "nature",
             RemoteCategoryMapping.stockQuery(StockPhotoCategory.Nature, RemoteProvider.Coverr),
         )
+        assertEquals(
+            "nature landscape",
+            RemoteCategoryMapping.stockQuery(StockPhotoCategory.Nature, RemoteProvider.Pinterest),
+        )
     }
 
     @Test

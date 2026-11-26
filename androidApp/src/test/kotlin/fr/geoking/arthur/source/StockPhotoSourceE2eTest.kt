@@ -3,6 +3,7 @@ package fr.geoking.arthur.source
 import fr.geoking.arthur.BuildConfig
 import fr.geoking.arthur.shared.source.DeviantArtSource
 import fr.geoking.arthur.shared.source.PexelsSource
+import fr.geoking.arthur.shared.source.PinterestSource
 import fr.geoking.arthur.shared.source.UnsplashSource
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
@@ -98,6 +99,34 @@ class StockPhotoSourceE2eTest {
         assertImageBytes(bytes, label = "Unsplash ${sample.id}")
         val out = writeSample("${sample.id}.jpg", bytes)
         println("Unsplash sample → ${out.absolutePath} (${bytes.size} bytes)")
+    }
+
+    @Test
+    fun pinterest_loadsCatalogAndDownloadsSampleImage() = runBlocking {
+        val accessToken = BuildConfig.PINTEREST_ACCESS_TOKEN
+        assumeTrue(
+            "PINTEREST_ACCESS_TOKEN missing in local.properties / CI secrets",
+            accessToken.isNotBlank(),
+        )
+
+        val source = PinterestSource(
+            accessToken = accessToken,
+            limit = 2,
+            httpGet = { url ->
+                client.get(url) {
+                    header(HttpHeaders.Authorization, "Bearer $accessToken")
+                }.bodyAsText()
+            },
+        )
+        val art = source.load()
+        assertTrue("Pinterest catalog empty", art.isNotEmpty())
+        val sample = art.first()
+        assertTrue("Pinterest remoteUrl missing for ${sample.id}", !sample.remoteUrl.isNullOrBlank())
+
+        val bytes = client.get(sample.remoteUrl!!).bodyAsBytes()
+        assertImageBytes(bytes, label = "Pinterest ${sample.id}")
+        val out = writeSample("${sample.id}.jpg", bytes)
+        println("Pinterest sample → ${out.absolutePath} (${bytes.size} bytes)")
     }
 
     @Test

@@ -11,7 +11,7 @@ import fr.geoking.arthur.shared.source.StockPhotoCategory
 import kotlinx.coroutines.runBlocking
 import java.io.File
 
-/** Persists selected stock-photo topic for Pexels / Unsplash queries. */
+/** Persists selected stock-photo topic for Pexels / Unsplash / Pinterest queries. */
 class StockPhotoSettings(context: Context) {
     private val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 

@@ -17,6 +17,7 @@ import fr.geoking.arthur.shared.source.HarvardSource
 import fr.geoking.arthur.shared.source.LouvreSource
 import fr.geoking.arthur.shared.source.MetSource
 import fr.geoking.arthur.shared.source.PexelsSource
+import fr.geoking.arthur.shared.source.PinterestSource
 import fr.geoking.arthur.shared.source.RijksmuseumSource
 import fr.geoking.arthur.shared.source.SmithsonianSource
 import fr.geoking.arthur.shared.source.UnsplashSource
@@ -47,6 +48,7 @@ object ArthurMediaBrowse {
         WikimediaStreetArtSource.ID,
         PexelsSource.ID,
         UnsplashSource.ID,
+        PinterestSource.ID,
         DeviantArtSource.ID,
     )
 
@@ -97,6 +99,8 @@ object ArthurMediaBrowse {
         WikimediaStreetArtSource.ID -> "Wikimedia"
         PexelsSource.ID -> "Pexels"
         UnsplashSource.ID -> "Unsplash"
+        PinterestSource.ID -> "Pinterest"
+        DeviantArtSource.ID -> "DeviantArt"
         else -> sourceId
     }
 

@@ -36,6 +36,10 @@ object SourceCapabilities {
             kinds = setOf(ArtworkKind.Photo, ArtworkKind.Video),
             remoteSearchKinds = setOf(ArtworkKind.Photo, ArtworkKind.Video),
         ),
+        PinterestSource.ID to SourceContentSupport(
+            kinds = setOf(ArtworkKind.Photo),
+            remoteSearchKinds = setOf(ArtworkKind.Photo),
+        ),
         DeviantArtSource.ID to SourceContentSupport(
             kinds = setOf(ArtworkKind.Photo, ArtworkKind.Painting),
             remoteSearchKinds = setOf(ArtworkKind.Photo, ArtworkKind.Painting),
@@ -100,12 +104,13 @@ object SourceCapabilities {
         sourceIdsWithRemoteSearch(kind)
 
     /**
-     * Photo pack providers only (Pexels, Unsplash, DeviantArt, Wikimedia) —
+     * Photo pack providers only (Pexels, Unsplash, Pinterest, DeviantArt, Wikimedia) —
      * excludes museum Sources even when they expose Photo search.
      */
     fun sourceIdsForPhotoProviders(): List<String> = listOf(
         PexelsSource.ID,
         UnsplashSource.ID,
+        PinterestSource.ID,
         DeviantArtSource.ID,
         WikimediaStreetArtSource.ID,
     )

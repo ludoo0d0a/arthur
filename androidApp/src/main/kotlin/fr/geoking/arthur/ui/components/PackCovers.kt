@@ -71,6 +71,7 @@ object PackCovers {
     fun photoTopic(topic: PhotoTopic): Int = when (topic) {
         PhotoTopic.Pexels -> R.drawable.pack_pexels
         PhotoTopic.Unsplash -> R.drawable.pack_unsplash
+        PhotoTopic.Pinterest -> R.drawable.pack_pinterest
         PhotoTopic.DeviantArt -> R.drawable.pack_deviantart
         PhotoTopic.Wikimedia -> R.drawable.pack_photo_streetart
     }

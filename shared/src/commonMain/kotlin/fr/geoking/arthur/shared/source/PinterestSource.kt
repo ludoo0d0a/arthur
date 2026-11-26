@@ -15,6 +15,8 @@ import kotlinx.serialization.json.jsonPrimitive
 /**
  * Pinterest Remote Source for ambient photography (API v5 partner search).
  *
+ * Docs: [API v5 introduction](https://developers.pinterest.com/docs/api/v5/introduction).
+ *
  * Uses `GET /v5/search/partner/pins` — a **beta** endpoint that searches public Pins
  * by term (unlike `/v5/search/pins`, which only searches the token owner's Pins).
  * Access requires a Pinterest app approved for partner/trial search, plus an OAuth
